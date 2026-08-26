@@ -1,0 +1,92 @@
+<main class="page">
+  <section class="header">
+    <p class="eyebrow">Angular 20 + Spring Boot</p>
+    <h1>CRUD de usuarios</h1>
+    <p class="subtitle">Gestion de usuarios conectada al endpoint de clientes del backend.</p>
+  </section>
+
+  <section class="layout">
+    <article class="panel form-panel">
+      <h2>{{ editingUserId() ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
+
+      <form [formGroup]="userForm" (ngSubmit)="submit()" class="form-grid">
+        <label>
+          Nombres
+          <input type="text" formControlName="firstName" placeholder="Juan" />
+        </label>
+
+        <label>
+          Apellido paterno
+          <input type="text" formControlName="paternalLastName" placeholder="Perez" />
+        </label>
+
+        <label>
+          Apellido materno
+          <input type="text" formControlName="maternalLastName" placeholder="Gomez" />
+        </label>
+
+        <label>
+          Moneda de ingreso
+          <input type="text" formControlName="currencyOfIncome" placeholder="PEN" />
+        </label>
+
+        <label>
+          Ingreso mensual
+          <input type="number" formControlName="monthlyIncome" min="0.01" step="0.01" placeholder="2500" />
+        </label>
+
+        <div class="actions">
+          <button type="submit" [disabled]="saving()">
+            {{ saving() ? 'Guardando...' : (editingUserId() ? 'Actualizar' : 'Crear') }}
+          </button>
+          <button type="button" class="ghost" (click)="cancelEdit()" [disabled]="saving()">Limpiar</button>
+        </div>
+      </form>
+    </article>
+
+    <article class="panel table-panel">
+      <div class="table-head">
+        <h2>Usuarios registrados</h2>
+        <button class="ghost" type="button" (click)="loadUsers()" [disabled]="loading()">
+          {{ loading() ? 'Cargando...' : 'Refrescar' }}
+        </button>
+      </div>
+
+      @if (errorMessage()) {
+        <p class="error">{{ errorMessage() }}</p>
+      }
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre completo</th>
+              <th>Moneda</th>
+              <th>Ingreso</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of users(); track user.clientId) {
+              <tr [class.editing]="isEditing(user)">
+                <td>{{ user.clientId }}</td>
+                <td>{{ user.firstName }} {{ user.paternalLastName }} {{ user.maternalLastName }}</td>
+                <td>{{ user.currencyOfIncome }}</td>
+                <td>{{ user.monthlyIncome | number: '1.2-2' }}</td>
+                <td class="row-actions">
+                  <button type="button" class="ghost" (click)="startEdit(user)">Editar</button>
+                  <button type="button" class="danger" (click)="delete(user)">Eliminar</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="empty">No hay usuarios registrados.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+</main>
