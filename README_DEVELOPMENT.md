@@ -80,6 +80,14 @@ npm test
 - Cada uno tiene su propio ciclo de vida de build
 - El backend expone APIs REST que el frontend consume
 
+## Flujo de ramas
+
+Para trabajar en el proyecto usa la política definida en `BRANCH_POLICY.md`:
+
+- `feature/*` para desarrollo diario
+- `develop` para integración por Pull Request
+- `main` para liberaciones estables
+
 ---
 
 ## Arquitectura
