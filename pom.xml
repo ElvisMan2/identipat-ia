@@ -20,7 +20,6 @@
 
     <modules>
         <module>backend</module>
-        <module>boot</module>
     </modules>
 
     <properties>
