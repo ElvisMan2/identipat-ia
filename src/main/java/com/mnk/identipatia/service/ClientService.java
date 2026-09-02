@@ -5,6 +5,7 @@ import com.mnk.identipatia.exception.ClientNotFoundException;
 import com.mnk.identipatia.mapper.ClientMapper;
 import com.mnk.identipatia.model.Client;
 import com.mnk.identipatia.repository.ClientRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -15,15 +16,21 @@ public class ClientService {
 
     private final ClientRepository clientRepository;
     private final ClientMapper clientMapper;
+    private final PasswordEncoder passwordEncoder;
 
-    public ClientService(ClientRepository clientRepository, ClientMapper clientMapper) {
+    public ClientService(
+            ClientRepository clientRepository,
+            ClientMapper clientMapper,
+            PasswordEncoder passwordEncoder) {
         this.clientRepository = clientRepository;
         this.clientMapper = clientMapper;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public ClientDTO create(ClientDTO clientDTO) {
         Client client = clientMapper.toEntity(clientDTO);
         client.setClientId(null);
+        client.setPassword(passwordEncoder.encode(clientDTO.getPassword()));
         client.setCreationDate(LocalDateTime.now());
         return clientMapper.toDto(clientRepository.save(client));
     }
@@ -45,6 +52,8 @@ public class ClientService {
         client.setMaternalLastName(clientDTO.getMaternalLastName());
         client.setCurrencyOfIncome(clientDTO.getCurrencyOfIncome());
         client.setMonthlyIncome(clientDTO.getMonthlyIncome());
+        client.setUsername(clientDTO.getUsername());
+        client.setPassword(passwordEncoder.encode(clientDTO.getPassword()));
         return clientMapper.toDto(clientRepository.save(client));
     }
 
