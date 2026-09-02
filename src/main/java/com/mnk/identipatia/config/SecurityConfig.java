@@ -32,6 +32,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/users").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users/login").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/users/doi/**").permitAll()
                         .requestMatchers("/", "/index.html", "/*.js", "/*.css", "/*.ico",
                                 "/assets/**", "/favicon.ico").permitAll()
                         .anyRequest().authenticated())

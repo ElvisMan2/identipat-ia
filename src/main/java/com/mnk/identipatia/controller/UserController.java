@@ -63,6 +63,11 @@ public class UserController {
         return ResponseEntity.ok(userService.findById(userId));
     }
 
+    @GetMapping("/doi/{doi}")
+    public ResponseEntity<UserDTO> findByDoi(@PathVariable String doi) {
+        return ResponseEntity.ok(userService.findByDoi(doi));
+    }
+
     @PutMapping("/{userId}")
     public ResponseEntity<UserDTO> update(
             @PathVariable Long userId,

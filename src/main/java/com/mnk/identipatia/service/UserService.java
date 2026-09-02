@@ -48,6 +48,11 @@ public class UserService {
         return userMapper.toDto(getUser(userId));
     }
 
+    public UserDTO findByDoi(String doi) {
+        return userMapper.toDto(userRepository.findByDoi(doi)
+                .orElseThrow(() -> new UserNotFoundException(doi)));
+    }
+
     public UserDTO update(Long userId, UserDTO userDTO) {
         User user = getUser(userId);
         user.setFirstName(userDTO.getFirstName());
