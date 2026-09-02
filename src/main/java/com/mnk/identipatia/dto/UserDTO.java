@@ -11,8 +11,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ClientDTO {
-    private Long clientId;
+public class UserDTO {
+    private Long userId;
 
     @NotBlank
     private String username;
@@ -37,4 +37,3 @@ public class ClientDTO {
     @Positive
     private Double monthlyIncome;
 }
-

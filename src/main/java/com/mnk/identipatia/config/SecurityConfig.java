@@ -1,7 +1,7 @@
 package com.mnk.identipatia.config;
 
-import com.mnk.identipatia.model.Client;
-import com.mnk.identipatia.repository.ClientRepository;
+import com.mnk.identipatia.model.User;
+import com.mnk.identipatia.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -30,8 +30,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/clients").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/clients/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/users").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/users/login").permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults());
 
@@ -39,14 +39,14 @@ public class SecurityConfig {
     }
 
     @Bean
-    public UserDetailsService userDetailsService(ClientRepository clientRepository) {
+    public UserDetailsService userDetailsService(UserRepository userRepository) {
         return username -> {
-            Client client = clientRepository.findByUsername(username)
+            User appUser = userRepository.findByUsername(username)
                     .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
 
             UserDetails userDetails = org.springframework.security.core.userdetails.User
-                    .withUsername(client.getUsername())
-                    .password(client.getPassword())
+                    .withUsername(appUser.getUsername())
+                    .password(appUser.getPassword())
                     .roles("USER")
                     .build();
 
