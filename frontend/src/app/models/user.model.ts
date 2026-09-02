@@ -12,4 +12,5 @@ export interface User {
   mobilePhone: string;
   userType: string;
   profession: string;
+  password?: string;
 }

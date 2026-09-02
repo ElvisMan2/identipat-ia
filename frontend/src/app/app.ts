@@ -32,10 +32,21 @@ export class App implements OnInit {
     phone: ['', [Validators.required]],
     mobilePhone: ['', [Validators.required]],
     userType: ['', [Validators.required]],
-    profession: ['', [Validators.required]]
+    profession: ['', [Validators.required]],
+    password: ['']
   });
 
   ngOnInit(): void {
+    this.userForm.controls.userType.valueChanges.subscribe((userType) => {
+      const passwordControl = this.userForm.controls.password;
+      if (userType === 'ADMIN') {
+        passwordControl.setValidators([Validators.required]);
+      } else {
+        passwordControl.clearValidators();
+      }
+      passwordControl.updateValueAndValidity({ emitEvent: false });
+    });
+
     this.loadUsers();
   }
 
@@ -74,7 +85,8 @@ export class App implements OnInit {
       phone: formValue.phone,
       mobilePhone: formValue.mobilePhone,
       userType: formValue.userType,
-      profession: formValue.profession
+      profession: formValue.profession,
+      password: formValue.password || undefined
     };
 
     this.saving.set(true);
@@ -116,7 +128,8 @@ export class App implements OnInit {
       phone: user.phone,
       mobilePhone: user.mobilePhone,
       userType: user.userType,
-      profession: user.profession
+      profession: user.profession,
+      password: ''
     });
   }
 
@@ -134,7 +147,8 @@ export class App implements OnInit {
       phone: '',
       mobilePhone: '',
       userType: '',
-      profession: ''
+      profession: '',
+      password: ''
     });
   }
 

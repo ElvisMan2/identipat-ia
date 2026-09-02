@@ -1,6 +1,7 @@
 package com.mnk.identipatia.service;
 
 import com.mnk.identipatia.dto.UserDTO;
+import com.mnk.identipatia.exception.InvalidUserDataException;
 import com.mnk.identipatia.exception.UserNotFoundException;
 import com.mnk.identipatia.mapper.UserMapper;
 import com.mnk.identipatia.model.User;
@@ -13,6 +14,8 @@ import java.util.List;
 
 @Service
 public class UserService {
+
+    private static final String ADMIN_USER_TYPE = "ADMIN";
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
@@ -30,7 +33,7 @@ public class UserService {
     public UserDTO create(UserDTO userDTO) {
         User user = userMapper.toEntity(userDTO);
         user.setUserId(null);
-        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+        user.setPassword(resolvePassword(userDTO));
         user.setCreationDate(LocalDateTime.now());
         return userMapper.toDto(userRepository.save(user));
     }
@@ -60,13 +63,24 @@ public class UserService {
         user.setUserType(userDTO.getUserType());
         user.setProfession(userDTO.getProfession());
         user.setUsername(userDTO.getUsername());
-        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+        user.setPassword(resolvePassword(userDTO));
         return userMapper.toDto(userRepository.save(user));
     }
 
     public void delete(Long userId) {
         User user = getUser(userId);
         userRepository.delete(user);
+    }
+
+    private String resolvePassword(UserDTO userDTO) {
+        boolean isAdmin = ADMIN_USER_TYPE.equalsIgnoreCase(userDTO.getUserType());
+        boolean hasPassword = userDTO.getPassword() != null && !userDTO.getPassword().isBlank();
+
+        if (isAdmin && !hasPassword) {
+            throw new InvalidUserDataException("Password is required for admin users");
+        }
+
+        return hasPassword ? passwordEncoder.encode(userDTO.getPassword()) : null;
     }
 
     private User getUser(Long userId) {

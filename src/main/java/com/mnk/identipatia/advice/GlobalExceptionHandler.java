@@ -6,6 +6,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import com.mnk.identipatia.exception.InvalidUserDataException;
 import com.mnk.identipatia.exception.UserNotFoundException;
 
 import java.time.LocalDateTime;
@@ -51,6 +52,16 @@ public class GlobalExceptionHandler {
         error.put("error", "Unauthorized");
         error.put("message", "Usuario o password invalido");
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler(InvalidUserDataException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidUserData(InvalidUserDataException ex) {
+        Map<String, Object> error = new HashMap<>();
+        error.put("timestamp", LocalDateTime.now());
+        error.put("status", HttpStatus.BAD_REQUEST.value());
+        error.put("error", "Bad Request");
+        error.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(Exception.class)

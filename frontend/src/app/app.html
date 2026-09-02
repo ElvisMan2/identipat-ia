@@ -67,8 +67,19 @@
 
         <label>
           Tipo de usuario
-          <input type="text" formControlName="userType" placeholder="ADMIN" />
+          <select formControlName="userType">
+            <option value="" disabled>Seleccione</option>
+            <option value="ADMIN">Administrador</option>
+            <option value="USER">Usuario</option>
+          </select>
         </label>
+
+        @if (userForm.controls.userType.value === 'ADMIN') {
+          <label>
+            Contraseña
+            <input type="password" formControlName="password" placeholder="********" />
+          </label>
+        }
 
         <label>
           Profesion

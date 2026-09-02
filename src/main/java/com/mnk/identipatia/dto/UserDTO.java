@@ -20,7 +20,6 @@ public class UserDTO {
     @NotBlank
     private String username;
 
-    @NotBlank
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 

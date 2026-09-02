@@ -1,6 +1,7 @@
 package com.mnk.identipatia.service;
 
 import com.mnk.identipatia.dto.UserDTO;
+import com.mnk.identipatia.exception.InvalidUserDataException;
 import com.mnk.identipatia.exception.UserNotFoundException;
 import com.mnk.identipatia.mapper.UserMapper;
 import com.mnk.identipatia.model.User;
@@ -19,6 +20,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -59,6 +61,50 @@ class UserServiceTest {
         assertNotNull(user.getCreationDate());
         verify(userRepository).save(user);
         verify(userMapper).toDto(savedUser);
+    }
+
+    @Test
+    void createAdminWithoutPasswordThrows() {
+        UserDTO request = userDTO(null, "Ana", "Torres", "Salas", "12345678", "DNI");
+        request.setUserType("ADMIN");
+        User user = user();
+
+        when(userMapper.toEntity(request)).thenReturn(user);
+
+        assertThrows(InvalidUserDataException.class, () -> userService.create(request));
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    @Test
+    void createAdminWithPasswordEncodesPassword() {
+        UserDTO request = userDTO(null, "Ana", "Torres", "Salas", "12345678", "DNI");
+        request.setUserType("ADMIN");
+        request.setPassword("secret");
+        User user = user();
+
+        when(userMapper.toEntity(request)).thenReturn(user);
+        when(passwordEncoder.encode("secret")).thenReturn("encoded-secret");
+        when(userRepository.save(user)).thenReturn(user);
+        when(userMapper.toDto(user)).thenReturn(request);
+
+        userService.create(request);
+
+        assertEquals("encoded-secret", user.getPassword());
+    }
+
+    @Test
+    void createStandardUserWithoutPasswordSucceeds() {
+        UserDTO request = userDTO(null, "Ana", "Torres", "Salas", "12345678", "DNI");
+        User user = user();
+
+        when(userMapper.toEntity(request)).thenReturn(user);
+        when(userRepository.save(user)).thenReturn(user);
+        when(userMapper.toDto(user)).thenReturn(request);
+
+        userService.create(request);
+
+        assertNull(user.getPassword());
+        verifyNoInteractions(passwordEncoder);
     }
 
     @Test
