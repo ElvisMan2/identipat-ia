@@ -5,15 +5,15 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "clients")
+@Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Client {
+public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long clientId;
+    private Long userId;
 
     @Column(nullable = false, unique = true)
     private String username;
@@ -29,4 +29,3 @@ public class Client {
     private LocalDateTime creationDate;
 
 }
-

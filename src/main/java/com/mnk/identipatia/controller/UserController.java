@@ -1,9 +1,9 @@
 package com.mnk.identipatia.controller;
 
-import com.mnk.identipatia.dto.ClientDTO;
+import com.mnk.identipatia.dto.UserDTO;
 import com.mnk.identipatia.dto.LoginRequestDTO;
 import com.mnk.identipatia.dto.LoginResponseDTO;
-import com.mnk.identipatia.service.ClientService;
+import com.mnk.identipatia.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,14 +23,14 @@ import java.util.Base64;
 import java.util.List;
 
 @RestController
-@RequestMapping("/clients")
-public class ClientController {
+@RequestMapping("/users")
+public class UserController {
 
-    private final ClientService clientService;
+    private final UserService userService;
     private final AuthenticationManager authenticationManager;
 
-    public ClientController(ClientService clientService, AuthenticationManager authenticationManager) {
-        this.clientService = clientService;
+    public UserController(UserService userService, AuthenticationManager authenticationManager) {
+        this.userService = userService;
         this.authenticationManager = authenticationManager;
     }
 
@@ -49,30 +49,30 @@ public class ClientController {
     }
 
     @PostMapping
-    public ResponseEntity<ClientDTO> create(@Valid @RequestBody ClientDTO clientDTO) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(clientService.create(clientDTO));
+    public ResponseEntity<UserDTO> create(@Valid @RequestBody UserDTO userDTO) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.create(userDTO));
     }
 
     @GetMapping
-    public ResponseEntity<List<ClientDTO>> findAll() {
-        return ResponseEntity.ok(clientService.findAll());
+    public ResponseEntity<List<UserDTO>> findAll() {
+        return ResponseEntity.ok(userService.findAll());
     }
 
-    @GetMapping("/{clientId}")
-    public ResponseEntity<ClientDTO> findById(@PathVariable Long clientId) {
-        return ResponseEntity.ok(clientService.findById(clientId));
+    @GetMapping("/{userId}")
+    public ResponseEntity<UserDTO> findById(@PathVariable Long userId) {
+        return ResponseEntity.ok(userService.findById(userId));
     }
 
-    @PutMapping("/{clientId}")
-    public ResponseEntity<ClientDTO> update(
-            @PathVariable Long clientId,
-            @Valid @RequestBody ClientDTO clientDTO) {
-        return ResponseEntity.ok(clientService.update(clientId, clientDTO));
+    @PutMapping("/{userId}")
+    public ResponseEntity<UserDTO> update(
+            @PathVariable Long userId,
+            @Valid @RequestBody UserDTO userDTO) {
+        return ResponseEntity.ok(userService.update(userId, userDTO));
     }
 
-    @DeleteMapping("/{clientId}")
-    public ResponseEntity<Void> delete(@PathVariable Long clientId) {
-        clientService.delete(clientId);
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<Void> delete(@PathVariable Long userId) {
+        userService.delete(userId);
         return ResponseEntity.noContent().build();
     }
 }
