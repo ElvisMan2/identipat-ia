@@ -13,6 +13,17 @@ bin/
 tmp/
 *.sublime-workspace
 
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+
 # OS-specific files
 .DS_Store
 Thumbs.db
@@ -33,10 +44,19 @@ Thumbs.db
 *.zip
 *.7z
 *.rar
+*.jar
+*.war
+*.ear
 
 # Logs
 logs/
 *.log
+
+# Spring Boot DevTools
+spring-boot-devtools.properties
+
+# JaCoCo coverage
+jacoco.exec
 
 # Generated files
 *.class
