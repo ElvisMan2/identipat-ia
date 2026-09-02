@@ -20,8 +20,8 @@
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "outputPath": {
-              "base": "dist",
-              "browser": ""
+              "base": "dist/identipat-ia",
+              "browser": "browser"
             },
             "assets": [
               {
