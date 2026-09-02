@@ -84,6 +84,9 @@ public class UserService {
         if (isAdmin && !hasPassword) {
             throw new InvalidUserDataException("Password is required for admin users");
         }
+        if (!isAdmin && hasPassword) {
+            throw new InvalidUserDataException("Standard users cannot have a password");
+        }
 
         return hasPassword ? passwordEncoder.encode(userDTO.getPassword()) : null;
     }

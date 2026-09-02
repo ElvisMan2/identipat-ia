@@ -108,6 +108,18 @@ class UserServiceTest {
     }
 
     @Test
+    void createStandardUserWithPasswordThrows() {
+        UserDTO request = userDTO(null, "Ana", "Torres", "Salas", "12345678", "DNI");
+        request.setPassword("secret");
+        User user = user();
+
+        when(userMapper.toEntity(request)).thenReturn(user);
+
+        assertThrows(InvalidUserDataException.class, () -> userService.create(request));
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    @Test
     void findAllMapsEveryUser() {
         User first = user();
         User second = user();
