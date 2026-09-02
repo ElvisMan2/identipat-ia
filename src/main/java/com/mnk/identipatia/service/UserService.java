@@ -16,6 +16,7 @@ import java.util.List;
 public class UserService {
 
     private static final String ADMIN_USER_TYPE = "ADMIN";
+    private static final String STANDARD_USER_TYPE = "STANDARD";
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
@@ -31,8 +32,10 @@ public class UserService {
     }
 
     public UserDTO create(UserDTO userDTO) {
+        validateUniqueDoi(userDTO.getDoi());
         User user = userMapper.toEntity(userDTO);
         user.setUserId(null);
+        user.setUserType(resolveUserType(userDTO));
         user.setPassword(resolvePassword(userDTO));
         user.setCreationDate(LocalDateTime.now());
         return userMapper.toDto(userRepository.save(user));
@@ -55,6 +58,9 @@ public class UserService {
 
     public UserDTO update(Long userId, UserDTO userDTO) {
         User user = getUser(userId);
+        if (userRepository.existsByDoiAndUserIdNot(userDTO.getDoi(), userId)) {
+            throw new InvalidUserDataException("A user with DOI " + userDTO.getDoi() + " already exists");
+        }
         user.setFirstName(userDTO.getFirstName());
         user.setPaternalLastName(userDTO.getPaternalLastName());
         user.setMaternalLastName(userDTO.getMaternalLastName());
@@ -65,9 +71,8 @@ public class UserService {
         user.setEmail(userDTO.getEmail());
         user.setPhone(userDTO.getPhone());
         user.setMobilePhone(userDTO.getMobilePhone());
-        user.setUserType(userDTO.getUserType());
+        user.setUserType(resolveUserType(userDTO));
         user.setProfession(userDTO.getProfession());
-        user.setUsername(userDTO.getUsername());
         user.setPassword(resolvePassword(userDTO));
         return userMapper.toDto(userRepository.save(user));
     }
@@ -77,8 +82,14 @@ public class UserService {
         userRepository.delete(user);
     }
 
+    private void validateUniqueDoi(String doi) {
+        if (userRepository.existsByDoi(doi)) {
+            throw new InvalidUserDataException("A user with DOI " + doi + " already exists");
+        }
+    }
+
     private String resolvePassword(UserDTO userDTO) {
-        boolean isAdmin = ADMIN_USER_TYPE.equalsIgnoreCase(userDTO.getUserType());
+        boolean isAdmin = ADMIN_USER_TYPE.equalsIgnoreCase(resolveUserType(userDTO));
         boolean hasPassword = userDTO.getPassword() != null && !userDTO.getPassword().isBlank();
 
         if (isAdmin && !hasPassword) {
@@ -89,6 +100,20 @@ public class UserService {
         }
 
         return hasPassword ? passwordEncoder.encode(userDTO.getPassword()) : null;
+    }
+
+    private String resolveUserType(UserDTO userDTO) {
+        boolean hasUserType = userDTO.getUserType() != null && !userDTO.getUserType().isBlank();
+        boolean hasPassword = userDTO.getPassword() != null && !userDTO.getPassword().isBlank();
+
+        if (hasUserType) {
+            return userDTO.getUserType();
+        }
+        if (hasPassword) {
+            throw new InvalidUserDataException("userType is required");
+        }
+
+        return STANDARD_USER_TYPE;
     }
 
     private User getUser(Long userId) {

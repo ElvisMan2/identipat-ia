@@ -38,10 +38,10 @@ public class UserController {
     public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO loginRequestDTO) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        loginRequestDTO.getUsername(),
+                    loginRequestDTO.getDoi(),
                         loginRequestDTO.getPassword()));
 
-        String tokenPayload = loginRequestDTO.getUsername() + ":" + loginRequestDTO.getPassword();
+            String tokenPayload = loginRequestDTO.getDoi() + ":" + loginRequestDTO.getPassword();
         String accessToken = Base64.getEncoder()
                 .encodeToString(tokenPayload.getBytes(StandardCharsets.UTF_8));
 

@@ -120,6 +120,36 @@ class UserServiceTest {
     }
 
     @Test
+    void createWithoutUserTypeOrPasswordDefaultsToStandard() {
+        UserDTO request = userDTO(null, "Ana", "Torres", "Salas", "12345678", "DNI");
+        request.setUserType(null);
+        User user = user();
+
+        when(userMapper.toEntity(request)).thenReturn(user);
+        when(userRepository.save(user)).thenReturn(user);
+        when(userMapper.toDto(user)).thenReturn(request);
+
+        userService.create(request);
+
+        assertEquals("STANDARD", user.getUserType());
+        assertNull(user.getPassword());
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    @Test
+    void createWithoutUserTypeButWithPasswordThrows() {
+        UserDTO request = userDTO(null, "Ana", "Torres", "Salas", "12345678", "DNI");
+        request.setUserType(null);
+        request.setPassword("secret");
+        User user = user();
+
+        when(userMapper.toEntity(request)).thenReturn(user);
+
+        assertThrows(InvalidUserDataException.class, () -> userService.create(request));
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    @Test
     void findAllMapsEveryUser() {
         User first = user();
         User second = user();

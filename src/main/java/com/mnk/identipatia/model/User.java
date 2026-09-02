@@ -16,14 +16,12 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long userId;
 
-    @Column(nullable = false, unique = true)
-    private String username;
-
     private String password;
 
     private String firstName;
     private String paternalLastName;
     private String maternalLastName;
+    @Column(nullable = false, unique = true)
     private String doi;
     private String doiType;
     private LocalDate birthDate;

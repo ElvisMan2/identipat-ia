@@ -17,9 +17,6 @@ import java.time.LocalDate;
 public class UserDTO {
     private Long userId;
 
-    @NotBlank
-    private String username;
-
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
@@ -55,7 +52,6 @@ public class UserDTO {
     @NotBlank
     private String mobilePhone;
 
-    @NotBlank
     private String userType;
 
     @NotBlank
