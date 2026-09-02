@@ -1,22 +1,22 @@
 package com.mnk.identipatia.mapper;
 
-import com.mnk.identipatia.dto.ClientDTO;
-import com.mnk.identipatia.model.Client;
+import com.mnk.identipatia.dto.UserDTO;
+import com.mnk.identipatia.model.User;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class ClientMapperTest {
+class UserMapperTest {
 
-    private final ClientMapper clientMapper = new ClientMapperImpl();
+    private final UserMapper userMapper = new UserMapperImpl();
 
     @Test
     void testToEntity() {
         // GIVEN
-        ClientDTO dto = new ClientDTO();
-        dto.setClientId(1L);
+        UserDTO dto = new UserDTO();
+        dto.setUserId(1L);
         dto.setFirstName("Luis");
         dto.setPaternalLastName("Fernández");
         dto.setMaternalLastName("Ramos");
@@ -24,11 +24,11 @@ class ClientMapperTest {
         dto.setMonthlyIncome(3200.0);
 
         // WHEN
-        Client entity = clientMapper.toEntity(dto);
+        User entity = userMapper.toEntity(dto);
 
         // THEN
         assertNotNull(entity);
-        assertEquals(dto.getClientId(), entity.getClientId());
+        assertEquals(dto.getUserId(), entity.getUserId());
         assertEquals(dto.getFirstName(), entity.getFirstName());
         assertEquals(dto.getPaternalLastName(), entity.getPaternalLastName());
         assertEquals(dto.getMaternalLastName(), entity.getMaternalLastName());
@@ -40,8 +40,8 @@ class ClientMapperTest {
     @Test
     void testToDto() {
         // GIVEN
-        Client entity = new Client();
-        entity.setClientId(2L);
+        User entity = new User();
+        entity.setUserId(2L);
         entity.setFirstName("Ana");
         entity.setPaternalLastName("Torres");
         entity.setMaternalLastName("Salas");
@@ -50,11 +50,11 @@ class ClientMapperTest {
         entity.setCreationDate(LocalDateTime.now());
 
         // WHEN
-        ClientDTO dto = clientMapper.toDto(entity);
+        UserDTO dto = userMapper.toDto(entity);
 
         // THEN
         assertNotNull(dto);
-        assertEquals(entity.getClientId(), dto.getClientId());
+        assertEquals(entity.getUserId(), dto.getUserId());
         assertEquals(entity.getFirstName(), dto.getFirstName());
         assertEquals(entity.getPaternalLastName(), dto.getPaternalLastName());
         assertEquals(entity.getMaternalLastName(), dto.getMaternalLastName());
@@ -62,4 +62,3 @@ class ClientMapperTest {
         assertEquals(entity.getMonthlyIncome(), dto.getMonthlyIncome());
     }
 }
-

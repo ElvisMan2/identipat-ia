@@ -2,7 +2,7 @@
   <section class="header">
     <p class="eyebrow">Angular 20 + Spring Boot</p>
     <h1>CRUD de usuarios</h1>
-    <p class="subtitle">Gestion de usuarios conectada al endpoint de clientes del backend.</p>
+    <p class="subtitle">Gestion de usuarios conectada al endpoint de usuarios del backend.</p>
   </section>
 
   <section class="layout">
@@ -68,9 +68,9 @@
             </tr>
           </thead>
           <tbody>
-            @for (user of users(); track user.clientId) {
+            @for (user of users(); track user.userId) {
               <tr [class.editing]="isEditing(user)">
-                <td>{{ user.clientId }}</td>
+                <td>{{ user.userId }}</td>
                 <td>{{ user.firstName }} {{ user.paternalLastName }} {{ user.maternalLastName }}</td>
                 <td>{{ user.currencyOfIncome }}</td>
                 <td>{{ user.monthlyIncome | number: '1.2-2' }}</td>

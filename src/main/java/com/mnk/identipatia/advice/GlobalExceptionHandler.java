@@ -6,7 +6,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import com.mnk.identipatia.exception.ClientNotFoundException;
+import com.mnk.identipatia.exception.UserNotFoundException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -33,8 +33,8 @@ public class GlobalExceptionHandler {
     }
 
     // Errores generales
-    @ExceptionHandler(ClientNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleClientNotFound(ClientNotFoundException ex) {
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleUserNotFound(UserNotFoundException ex) {
         Map<String, Object> error = new HashMap<>();
         error.put("timestamp", LocalDateTime.now());
         error.put("status", HttpStatus.NOT_FOUND.value());
