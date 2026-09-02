@@ -1,5 +1,5 @@
 export interface User {
-  clientId?: number;
+  userId?: number;
   firstName: string;
   paternalLastName: string;
   maternalLastName: string;

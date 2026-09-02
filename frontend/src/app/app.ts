@@ -85,11 +85,11 @@ export class App implements OnInit {
   }
 
   startEdit(user: User): void {
-    if (!user.clientId) {
+    if (!user.userId) {
       return;
     }
 
-    this.editingUserId.set(user.clientId);
+    this.editingUserId.set(user.userId);
     this.userForm.setValue({
       firstName: user.firstName,
       paternalLastName: user.paternalLastName,
@@ -111,23 +111,23 @@ export class App implements OnInit {
   }
 
   delete(user: User): void {
-    if (!user.clientId) {
+    if (!user.userId) {
       return;
     }
 
-    const accepted = confirm(`¿Seguro que quieres eliminar al usuario #${user.clientId}?`);
+    const accepted = confirm(`¿Seguro que quieres eliminar al usuario #${user.userId}?`);
     if (!accepted) {
       return;
     }
 
     this.errorMessage.set('');
-    this.userService.delete(user.clientId).subscribe({
+    this.userService.delete(user.userId).subscribe({
       next: () => this.loadUsers(),
       error: () => this.errorMessage.set('No se pudo eliminar el usuario.')
     });
   }
 
   isEditing(user: User): boolean {
-    return this.editingUserId() === user.clientId;
+    return this.editingUserId() === user.userId;
   }
 }
