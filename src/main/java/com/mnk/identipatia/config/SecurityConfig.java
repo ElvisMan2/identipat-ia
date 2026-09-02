@@ -34,6 +34,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/users").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/users/doi/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/users/admin/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/users/**").permitAll()
                         .requestMatchers("/", "/index.html", "/*.js", "/*.css", "/*.ico",
                                 "/assets/**", "/favicon.ico").permitAll()
                         .anyRequest().authenticated())
@@ -55,7 +57,7 @@ public class SecurityConfig {
             UserDetails userDetails = org.springframework.security.core.userdetails.User
                     .withUsername(appUser.getDoi())
                     .password(appUser.getPassword())
-                    .roles("USER")
+                    .roles(appUser.getUserType())
                     .build();
 
             return userDetails;

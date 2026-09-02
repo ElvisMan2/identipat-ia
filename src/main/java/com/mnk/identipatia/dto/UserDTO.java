@@ -56,4 +56,7 @@ public class UserDTO {
 
     @NotBlank
     private String profession;
+
+    @Pattern(regexp = "[AI]", message = "Status must be A or I")
+    private String status;
 }

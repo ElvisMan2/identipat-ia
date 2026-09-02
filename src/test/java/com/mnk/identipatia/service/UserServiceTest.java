@@ -58,6 +58,7 @@ class UserServiceTest {
 
         assertEquals(expected, result);
         assertEquals(null, user.getUserId());
+        assertEquals("A", user.getStatus());
         assertNotNull(user.getCreationDate());
         verify(userRepository).save(user);
         verify(userMapper).toDto(savedUser);
@@ -182,6 +183,9 @@ class UserServiceTest {
         existing.setUserId(7L);
         LocalDateTime creationDate = LocalDateTime.of(2025, 1, 1, 10, 0);
         existing.setCreationDate(creationDate);
+        existing.setDoi("12345678");
+        existing.setDoiType("DNI");
+        existing.setPassword("encoded-password");
         UserDTO request = userDTO(null, "Luis", "Ramos", "Diaz", "87654321", "CE");
         UserDTO expected = userDTO(7L, "Luis", "Ramos", "Diaz", "87654321", "CE");
 
@@ -195,8 +199,9 @@ class UserServiceTest {
         assertEquals("Luis", existing.getFirstName());
         assertEquals("Ramos", existing.getPaternalLastName());
         assertEquals("Diaz", existing.getMaternalLastName());
-        assertEquals("87654321", existing.getDoi());
-        assertEquals("CE", existing.getDoiType());
+        assertEquals("12345678", existing.getDoi());
+        assertEquals("DNI", existing.getDoiType());
+        assertEquals("encoded-password", existing.getPassword());
         assertEquals(LocalDate.of(1990, 1, 1), existing.getBirthDate());
         assertEquals("FEMALE", existing.getGender());
         assertEquals("ana.torres@example.com", existing.getEmail());

@@ -75,6 +75,13 @@ public class UserController {
         return ResponseEntity.ok(userService.update(userId, userDTO));
     }
 
+    @PutMapping("/admin/{userId}")
+    public ResponseEntity<UserDTO> updateAll(
+            @PathVariable Long userId,
+            @Valid @RequestBody UserDTO userDTO) {
+        return ResponseEntity.ok(userService.updateAll(userId, userDTO));
+    }
+
     @DeleteMapping("/{userId}")
     public ResponseEntity<Void> delete(@PathVariable Long userId) {
         userService.delete(userId);

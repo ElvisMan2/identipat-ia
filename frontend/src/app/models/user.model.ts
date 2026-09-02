@@ -13,4 +13,5 @@ export interface User {
   userType: string;
   profession: string;
   password?: string;
+  status?: string;
 }

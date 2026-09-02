@@ -30,6 +30,7 @@ class UserMapperTest {
         dto.setMobilePhone("987654321");
         dto.setUserType("ADMIN");
         dto.setProfession("Ingeniero");
+        dto.setStatus("A");
 
         // WHEN
         User entity = userMapper.toEntity(dto);
@@ -49,6 +50,7 @@ class UserMapperTest {
         assertEquals(dto.getMobilePhone(), entity.getMobilePhone());
         assertEquals(dto.getUserType(), entity.getUserType());
         assertEquals(dto.getProfession(), entity.getProfession());
+        assertEquals(dto.getStatus(), entity.getStatus());
 
     }
 
@@ -69,6 +71,7 @@ class UserMapperTest {
         entity.setMobilePhone("912345678");
         entity.setUserType("STANDARD");
         entity.setProfession("Abogada");
+        entity.setStatus("I");
         entity.setCreationDate(LocalDateTime.now());
 
         // WHEN
@@ -89,5 +92,6 @@ class UserMapperTest {
         assertEquals(entity.getMobilePhone(), dto.getMobilePhone());
         assertEquals(entity.getUserType(), dto.getUserType());
         assertEquals(entity.getProfession(), dto.getProfession());
+        assertEquals(entity.getStatus(), dto.getStatus());
     }
 }

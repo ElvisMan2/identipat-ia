@@ -121,6 +121,7 @@
               <th>Celular</th>
               <th>Tipo de usuario</th>
               <th>Profesion</th>
+              <th>Estado</th>
               <th>Acciones</th>
             </tr>
           </thead>
@@ -137,6 +138,7 @@
                 <td>{{ user.mobilePhone }}</td>
                 <td>{{ user.userType }}</td>
                 <td>{{ user.profession }}</td>
+                <td>{{ user.status }}</td>
                 <td class="row-actions">
                   <button type="button" class="ghost" (click)="startEdit(user)">Editar</button>
                   <button type="button" class="danger" (click)="delete(user)">Eliminar</button>
@@ -144,7 +146,7 @@
               </tr>
             } @empty {
               <tr>
-                <td colspan="11" class="empty">No hay usuarios registrados.</td>
+                <td colspan="12" class="empty">No hay usuarios registrados.</td>
               </tr>
             }
           </tbody>

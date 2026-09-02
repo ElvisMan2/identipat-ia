@@ -15,6 +15,7 @@ import java.util.List;
 @Service
 public class UserService {
 
+    private static final String ACTIVE_STATUS = "A";
     private static final String ADMIN_USER_TYPE = "ADMIN";
     private static final String STANDARD_USER_TYPE = "STANDARD";
 
@@ -36,6 +37,7 @@ public class UserService {
         User user = userMapper.toEntity(userDTO);
         user.setUserId(null);
         user.setUserType(resolveUserType(userDTO));
+        user.setStatus(ACTIVE_STATUS);
         user.setPassword(resolvePassword(userDTO));
         user.setCreationDate(LocalDateTime.now());
         return userMapper.toDto(userRepository.save(user));
@@ -58,6 +60,23 @@ public class UserService {
 
     public UserDTO update(Long userId, UserDTO userDTO) {
         User user = getUser(userId);
+        user.setFirstName(userDTO.getFirstName());
+        user.setPaternalLastName(userDTO.getPaternalLastName());
+        user.setMaternalLastName(userDTO.getMaternalLastName());
+        user.setBirthDate(userDTO.getBirthDate());
+        user.setGender(userDTO.getGender());
+        user.setEmail(userDTO.getEmail());
+        user.setPhone(userDTO.getPhone());
+        user.setMobilePhone(userDTO.getMobilePhone());
+        if (userDTO.getUserType() != null && !userDTO.getUserType().isBlank()) {
+            user.setUserType(userDTO.getUserType());
+        }
+        user.setProfession(userDTO.getProfession());
+        return userMapper.toDto(userRepository.save(user));
+    }
+
+    public UserDTO updateAll(Long userId, UserDTO userDTO) {
+        User user = getUser(userId);
         if (userRepository.existsByDoiAndUserIdNot(userDTO.getDoi(), userId)) {
             throw new InvalidUserDataException("A user with DOI " + userDTO.getDoi() + " already exists");
         }
@@ -73,6 +92,9 @@ public class UserService {
         user.setMobilePhone(userDTO.getMobilePhone());
         user.setUserType(resolveUserType(userDTO));
         user.setProfession(userDTO.getProfession());
+        if (userDTO.getStatus() != null && !userDTO.getStatus().isBlank()) {
+            user.setStatus(userDTO.getStatus());
+        }
         user.setPassword(resolvePassword(userDTO));
         return userMapper.toDto(userRepository.save(user));
     }

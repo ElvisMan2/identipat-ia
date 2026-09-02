@@ -31,6 +31,8 @@ public class User {
     private String mobilePhone;
     private String userType;
     private String profession;
+    @Column(nullable = false, length = 1)
+    private String status;
     private LocalDateTime creationDate;
 
 }
