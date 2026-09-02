@@ -12,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -41,11 +42,11 @@ class UserServiceTest {
 
     @Test
     void createIgnoresUserIdAndSetsCreationDate() {
-        UserDTO request = userDTO(99L, "Ana", "Torres", "Salas", "PEN", 5000.0);
+        UserDTO request = userDTO(99L, "Ana", "Torres", "Salas", "12345678", "DNI");
         User user = user();
         User savedUser = user();
         savedUser.setUserId(1L);
-        UserDTO expected = userDTO(1L, "Ana", "Torres", "Salas", "PEN", 5000.0);
+        UserDTO expected = userDTO(1L, "Ana", "Torres", "Salas", "12345678", "DNI");
 
         when(userMapper.toEntity(request)).thenReturn(user);
         when(userRepository.save(user)).thenReturn(savedUser);
@@ -64,8 +65,8 @@ class UserServiceTest {
     void findAllMapsEveryUser() {
         User first = user();
         User second = user();
-        UserDTO firstDTO = userDTO(1L, "Ana", "Torres", "Salas", "PEN", 5000.0);
-        UserDTO secondDTO = userDTO(2L, "Luis", "Ramos", "Diaz", "USD", 3200.0);
+        UserDTO firstDTO = userDTO(1L, "Ana", "Torres", "Salas", "12345678", "DNI");
+        UserDTO secondDTO = userDTO(2L, "Luis", "Ramos", "Diaz", "87654321", "CE");
 
         when(userRepository.findAll()).thenReturn(List.of(first, second));
         when(userMapper.toDto(first)).thenReturn(firstDTO);
@@ -79,7 +80,7 @@ class UserServiceTest {
     @Test
     void findByIdReturnsMappedUser() {
         User user = user();
-        UserDTO expected = userDTO(7L, "Ana", "Torres", "Salas", "PEN", 5000.0);
+        UserDTO expected = userDTO(7L, "Ana", "Torres", "Salas", "12345678", "DNI");
         when(userRepository.findById(7L)).thenReturn(Optional.of(user));
         when(userMapper.toDto(user)).thenReturn(expected);
 
@@ -93,8 +94,8 @@ class UserServiceTest {
         existing.setUserId(7L);
         LocalDateTime creationDate = LocalDateTime.of(2025, 1, 1, 10, 0);
         existing.setCreationDate(creationDate);
-        UserDTO request = userDTO(null, "Luis", "Ramos", "Diaz", "USD", 3200.0);
-        UserDTO expected = userDTO(7L, "Luis", "Ramos", "Diaz", "USD", 3200.0);
+        UserDTO request = userDTO(null, "Luis", "Ramos", "Diaz", "87654321", "CE");
+        UserDTO expected = userDTO(7L, "Luis", "Ramos", "Diaz", "87654321", "CE");
 
         when(userRepository.findById(7L)).thenReturn(Optional.of(existing));
         when(userRepository.save(existing)).thenReturn(existing);
@@ -106,8 +107,15 @@ class UserServiceTest {
         assertEquals("Luis", existing.getFirstName());
         assertEquals("Ramos", existing.getPaternalLastName());
         assertEquals("Diaz", existing.getMaternalLastName());
-        assertEquals("USD", existing.getCurrencyOfIncome());
-        assertEquals(3200.0, existing.getMonthlyIncome());
+        assertEquals("87654321", existing.getDoi());
+        assertEquals("CE", existing.getDoiType());
+        assertEquals(LocalDate.of(1990, 1, 1), existing.getBirthDate());
+        assertEquals("FEMALE", existing.getGender());
+        assertEquals("ana.torres@example.com", existing.getEmail());
+        assertEquals("016543210", existing.getPhone());
+        assertEquals("912345678", existing.getMobilePhone());
+        assertEquals("STANDARD", existing.getUserType());
+        assertEquals("Abogada", existing.getProfession());
         verify(userRepository).save(existing);
     }
 
@@ -126,7 +134,7 @@ class UserServiceTest {
         when(userRepository.findById(7L)).thenReturn(Optional.empty());
 
         assertThrows(UserNotFoundException.class, () -> userService.findById(7L));
-        assertThrows(UserNotFoundException.class, () -> userService.update(7L, userDTO(null, "Luis", "Ramos", "Diaz", "USD", 3200.0)));
+        assertThrows(UserNotFoundException.class, () -> userService.update(7L, userDTO(null, "Luis", "Ramos", "Diaz", "87654321", "CE")));
         assertThrows(UserNotFoundException.class, () -> userService.delete(7L));
         verifyNoInteractions(userMapper);
     }
@@ -136,14 +144,21 @@ class UserServiceTest {
     }
 
     private static UserDTO userDTO(Long id, String firstName, String paternalLastName,
-                                       String maternalLastName, String currency, Double income) {
+                                       String maternalLastName, String doi, String doiType) {
         return UserDTO.builder()
                 .userId(id)
                 .firstName(firstName)
                 .paternalLastName(paternalLastName)
                 .maternalLastName(maternalLastName)
-                .currencyOfIncome(currency)
-                .monthlyIncome(income)
+                .doi(doi)
+                .doiType(doiType)
+                .birthDate(LocalDate.of(1990, 1, 1))
+                .gender("FEMALE")
+                .email("ana.torres@example.com")
+                .phone("016543210")
+                .mobilePhone("912345678")
+                .userType("STANDARD")
+                .profession("Abogada")
                 .build();
     }
 }

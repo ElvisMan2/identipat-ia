@@ -24,8 +24,15 @@ export class App implements OnInit {
     firstName: ['', [Validators.required]],
     paternalLastName: ['', [Validators.required]],
     maternalLastName: ['', [Validators.required]],
-    currencyOfIncome: ['', [Validators.required]],
-    monthlyIncome: [0, [Validators.required, Validators.min(0.01)]]
+    doi: ['', [Validators.required]],
+    doiType: ['', [Validators.required]],
+    birthDate: ['', [Validators.required, Validators.pattern(/^\d{2}\/\d{2}\/\d{4}$/)]],
+    gender: ['', [Validators.required]],
+    email: ['', [Validators.required, Validators.email]],
+    phone: ['', [Validators.required]],
+    mobilePhone: ['', [Validators.required]],
+    userType: ['', [Validators.required]],
+    profession: ['', [Validators.required]]
   });
 
   ngOnInit(): void {
@@ -59,8 +66,15 @@ export class App implements OnInit {
       firstName: formValue.firstName,
       paternalLastName: formValue.paternalLastName,
       maternalLastName: formValue.maternalLastName,
-      currencyOfIncome: formValue.currencyOfIncome,
-      monthlyIncome: Number(formValue.monthlyIncome)
+      doi: formValue.doi,
+      doiType: formValue.doiType,
+      birthDate: formValue.birthDate,
+      gender: formValue.gender,
+      email: formValue.email,
+      phone: formValue.phone,
+      mobilePhone: formValue.mobilePhone,
+      userType: formValue.userType,
+      profession: formValue.profession
     };
 
     this.saving.set(true);
@@ -94,8 +108,15 @@ export class App implements OnInit {
       firstName: user.firstName,
       paternalLastName: user.paternalLastName,
       maternalLastName: user.maternalLastName,
-      currencyOfIncome: user.currencyOfIncome,
-      monthlyIncome: user.monthlyIncome
+      doi: user.doi,
+      doiType: user.doiType,
+      birthDate: user.birthDate,
+      gender: user.gender,
+      email: user.email,
+      phone: user.phone,
+      mobilePhone: user.mobilePhone,
+      userType: user.userType,
+      profession: user.profession
     });
   }
 
@@ -105,8 +126,15 @@ export class App implements OnInit {
       firstName: '',
       paternalLastName: '',
       maternalLastName: '',
-      currencyOfIncome: '',
-      monthlyIncome: 0
+      doi: '',
+      doiType: '',
+      birthDate: '',
+      gender: '',
+      email: '',
+      phone: '',
+      mobilePhone: '',
+      userType: '',
+      profession: ''
     });
   }
 

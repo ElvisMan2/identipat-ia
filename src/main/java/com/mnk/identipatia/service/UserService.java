@@ -50,8 +50,15 @@ public class UserService {
         user.setFirstName(userDTO.getFirstName());
         user.setPaternalLastName(userDTO.getPaternalLastName());
         user.setMaternalLastName(userDTO.getMaternalLastName());
-        user.setCurrencyOfIncome(userDTO.getCurrencyOfIncome());
-        user.setMonthlyIncome(userDTO.getMonthlyIncome());
+        user.setDoi(userDTO.getDoi());
+        user.setDoiType(userDTO.getDoiType());
+        user.setBirthDate(userDTO.getBirthDate());
+        user.setGender(userDTO.getGender());
+        user.setEmail(userDTO.getEmail());
+        user.setPhone(userDTO.getPhone());
+        user.setMobilePhone(userDTO.getMobilePhone());
+        user.setUserType(userDTO.getUserType());
+        user.setProfession(userDTO.getProfession());
         user.setUsername(userDTO.getUsername());
         user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
         return userMapper.toDto(userRepository.save(user));

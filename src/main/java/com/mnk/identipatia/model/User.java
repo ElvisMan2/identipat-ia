@@ -2,6 +2,7 @@ package com.mnk.identipatia.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -24,8 +25,15 @@ public class User {
     private String firstName;
     private String paternalLastName;
     private String maternalLastName;
-    private String currencyOfIncome;
-    private Double monthlyIncome;
+    private String doi;
+    private String doiType;
+    private LocalDate birthDate;
+    private String gender;
+    private String email;
+    private String phone;
+    private String mobilePhone;
+    private String userType;
+    private String profession;
     private LocalDateTime creationDate;
 
 }

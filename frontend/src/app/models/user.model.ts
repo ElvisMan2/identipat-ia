@@ -3,6 +3,13 @@ export interface User {
   firstName: string;
   paternalLastName: string;
   maternalLastName: string;
-  currencyOfIncome: string;
-  monthlyIncome: number;
+  doi: string;
+  doiType: string;
+  birthDate: string;
+  gender: string;
+  email: string;
+  phone: string;
+  mobilePhone: string;
+  userType: string;
+  profession: string;
 }
