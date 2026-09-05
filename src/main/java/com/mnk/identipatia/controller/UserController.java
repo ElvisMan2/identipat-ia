@@ -3,6 +3,7 @@ package com.mnk.identipatia.controller;
 import com.mnk.identipatia.dto.UserDTO;
 import com.mnk.identipatia.dto.LoginRequestDTO;
 import com.mnk.identipatia.dto.LoginResponseDTO;
+import com.mnk.identipatia.service.JwtService;
 import com.mnk.identipatia.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -18,8 +19,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.List;
 
 @RestController
@@ -28,10 +27,12 @@ public class UserController {
 
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
 
-    public UserController(UserService userService, AuthenticationManager authenticationManager) {
+    public UserController(UserService userService, AuthenticationManager authenticationManager, JwtService jwtService) {
         this.userService = userService;
         this.authenticationManager = authenticationManager;
+        this.jwtService = jwtService;
     }
 
     @PostMapping("/login")
@@ -41,11 +42,9 @@ public class UserController {
                     loginRequestDTO.getDoi(),
                         loginRequestDTO.getPassword()));
 
-            String tokenPayload = loginRequestDTO.getDoi() + ":" + loginRequestDTO.getPassword();
-        String accessToken = Base64.getEncoder()
-                .encodeToString(tokenPayload.getBytes(StandardCharsets.UTF_8));
+            String accessToken = jwtService.generateToken(loginRequestDTO.getDoi());
 
-        return ResponseEntity.ok(new LoginResponseDTO("Basic", accessToken));
+            return ResponseEntity.ok(new LoginResponseDTO("Bearer", accessToken));
     }
 
     @PostMapping
