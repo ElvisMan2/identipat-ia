@@ -61,5 +61,5 @@ jacoco.exec
 # Generated files
 *.class
 
-# docs
-docs/
+# Codex local working prompts
+codex-prompts/
