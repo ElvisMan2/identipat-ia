@@ -1,5 +1,8 @@
 package com.mnk.identipatia.service;
 
+import com.mnk.identipatia.dto.DocumentRecognitionRequest;
+import com.mnk.identipatia.dto.StandardUserRegistrationRequest;
+import com.mnk.identipatia.dto.StandardUserRegistrationResponse;
 import com.mnk.identipatia.dto.UserDTO;
 import com.mnk.identipatia.exception.InvalidUserDataException;
 import com.mnk.identipatia.exception.UserNotFoundException;
@@ -8,6 +11,7 @@ import com.mnk.identipatia.model.User;
 import com.mnk.identipatia.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -19,10 +23,12 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -43,111 +49,53 @@ class UserServiceTest {
     private UserService userService;
 
     @Test
-    void createIgnoresUserIdAndSetsCreationDate() {
-        UserDTO request = userDTO(99L, "Ana", "Torres", "Salas", "12345678", "DNI");
-        User user = user();
-        User savedUser = user();
-        savedUser.setUserId(1L);
-        UserDTO expected = userDTO(1L, "Ana", "Torres", "Salas", "12345678", "DNI");
+    void registerStandardForcesStandardActiveAndPasswordlessUser() {
+        StandardUserRegistrationRequest request = registrationRequest("12345678", "DNI");
+        User mappedUser = new User();
 
-        when(userMapper.toEntity(request)).thenReturn(user);
-        when(userRepository.save(user)).thenReturn(savedUser);
-        when(userMapper.toDto(savedUser)).thenReturn(expected);
+        when(userRepository.existsByDoi(request.getDoi())).thenReturn(false);
+        when(userMapper.toEntity(request)).thenReturn(mappedUser);
 
-        UserDTO result = userService.create(request);
+        StandardUserRegistrationResponse response = userService.registerStandard(request);
 
-        assertEquals(expected, result);
-        assertEquals(null, user.getUserId());
-        assertEquals("A", user.getStatus());
-        assertNotNull(user.getCreationDate());
-        verify(userRepository).save(user);
-        verify(userMapper).toDto(savedUser);
-    }
-
-    @Test
-    void createAdminWithoutPasswordThrows() {
-        UserDTO request = userDTO(null, "Ana", "Torres", "Salas", "12345678", "DNI");
-        request.setUserType("ADMIN");
-        User user = user();
-
-        when(userMapper.toEntity(request)).thenReturn(user);
-
-        assertThrows(InvalidUserDataException.class, () -> userService.create(request));
+        ArgumentCaptor<User> savedUser = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(savedUser.capture());
+        assertEquals("STANDARD", savedUser.getValue().getUserType());
+        assertEquals("A", savedUser.getValue().getStatus());
+        assertNull(savedUser.getValue().getPassword());
+        assertNull(savedUser.getValue().getUserId());
+        assertNotNull(savedUser.getValue().getCreationDate());
+        assertEquals(true, response.isRegistered());
         verifyNoInteractions(passwordEncoder);
     }
 
     @Test
-    void createAdminWithPasswordEncodesPassword() {
-        UserDTO request = userDTO(null, "Ana", "Torres", "Salas", "12345678", "DNI");
-        request.setUserType("ADMIN");
-        request.setPassword("secret");
-        User user = user();
+    void registerStandardRejectsDuplicateDocument() {
+        StandardUserRegistrationRequest request = registrationRequest("12345678", "DNI");
+        when(userRepository.existsByDoi(request.getDoi())).thenReturn(true);
 
-        when(userMapper.toEntity(request)).thenReturn(user);
-        when(passwordEncoder.encode("secret")).thenReturn("encoded-secret");
-        when(userRepository.save(user)).thenReturn(user);
-        when(userMapper.toDto(user)).thenReturn(request);
+        assertThrows(InvalidUserDataException.class, () -> userService.registerStandard(request));
 
-        userService.create(request);
-
-        assertEquals("encoded-secret", user.getPassword());
-    }
-
-    @Test
-    void createStandardUserWithoutPasswordSucceeds() {
-        UserDTO request = userDTO(null, "Ana", "Torres", "Salas", "12345678", "DNI");
-        User user = user();
-
-        when(userMapper.toEntity(request)).thenReturn(user);
-        when(userRepository.save(user)).thenReturn(user);
-        when(userMapper.toDto(user)).thenReturn(request);
-
-        userService.create(request);
-
-        assertNull(user.getPassword());
+        verify(userMapper, never()).toEntity(any(StandardUserRegistrationRequest.class));
+        verify(userRepository, never()).save(any(User.class));
         verifyNoInteractions(passwordEncoder);
     }
 
     @Test
-    void createStandardUserWithPasswordThrows() {
-        UserDTO request = userDTO(null, "Ana", "Torres", "Salas", "12345678", "DNI");
-        request.setPassword("secret");
-        User user = user();
+    void identifyDocumentReturnsTrueOnlyForMatchingDocumentTypeAndNumber() {
+        DocumentRecognitionRequest request = recognitionRequest("12345678", "DNI");
+        when(userRepository.existsByDoiAndDoiType("12345678", "DNI")).thenReturn(true);
 
-        when(userMapper.toEntity(request)).thenReturn(user);
-
-        assertThrows(InvalidUserDataException.class, () -> userService.create(request));
-        verifyNoInteractions(passwordEncoder);
+        assertEquals(true, userService.identifyDocument(request).isRegistered());
+        verify(userRepository).existsByDoiAndDoiType("12345678", "DNI");
     }
 
     @Test
-    void createWithoutUserTypeOrPasswordDefaultsToStandard() {
-        UserDTO request = userDTO(null, "Ana", "Torres", "Salas", "12345678", "DNI");
-        request.setUserType(null);
-        User user = user();
+    void identifyDocumentReturnsFalseForUnknownDocument() {
+        DocumentRecognitionRequest request = recognitionRequest("99999999", "CE");
+        when(userRepository.existsByDoiAndDoiType("99999999", "CE")).thenReturn(false);
 
-        when(userMapper.toEntity(request)).thenReturn(user);
-        when(userRepository.save(user)).thenReturn(user);
-        when(userMapper.toDto(user)).thenReturn(request);
-
-        userService.create(request);
-
-        assertEquals("STANDARD", user.getUserType());
-        assertNull(user.getPassword());
-        verifyNoInteractions(passwordEncoder);
-    }
-
-    @Test
-    void createWithoutUserTypeButWithPasswordThrows() {
-        UserDTO request = userDTO(null, "Ana", "Torres", "Salas", "12345678", "DNI");
-        request.setUserType(null);
-        request.setPassword("secret");
-        User user = user();
-
-        when(userMapper.toEntity(request)).thenReturn(user);
-
-        assertThrows(InvalidUserDataException.class, () -> userService.create(request));
-        verifyNoInteractions(passwordEncoder);
+        assertFalse(userService.identifyDocument(request).isRegistered());
     }
 
     @Test
@@ -236,8 +184,31 @@ class UserServiceTest {
         return new User();
     }
 
+    private static DocumentRecognitionRequest recognitionRequest(String doi, String doiType) {
+        DocumentRecognitionRequest request = new DocumentRecognitionRequest();
+        request.setDoi(doi);
+        request.setDoiType(doiType);
+        return request;
+    }
+
+    private static StandardUserRegistrationRequest registrationRequest(String doi, String doiType) {
+        StandardUserRegistrationRequest request = new StandardUserRegistrationRequest();
+        request.setFirstName("Ana");
+        request.setPaternalLastName("Torres");
+        request.setMaternalLastName("Salas");
+        request.setDoi(doi);
+        request.setDoiType(doiType);
+        request.setBirthDate(LocalDate.of(1990, 1, 1));
+        request.setGender("FEMALE");
+        request.setEmail("ana.torres@example.com");
+        request.setPhone("016543210");
+        request.setMobilePhone("912345678");
+        request.setProfession("Abogada");
+        return request;
+    }
+
     private static UserDTO userDTO(Long id, String firstName, String paternalLastName,
-                                       String maternalLastName, String doi, String doiType) {
+            String maternalLastName, String doi, String doiType) {
         return UserDTO.builder()
                 .userId(id)
                 .firstName(firstName)

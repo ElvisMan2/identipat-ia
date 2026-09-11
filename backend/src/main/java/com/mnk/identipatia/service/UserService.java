@@ -1,5 +1,9 @@
 package com.mnk.identipatia.service;
 
+import com.mnk.identipatia.dto.DocumentRecognitionRequest;
+import com.mnk.identipatia.dto.DocumentRecognitionResponse;
+import com.mnk.identipatia.dto.StandardUserRegistrationRequest;
+import com.mnk.identipatia.dto.StandardUserRegistrationResponse;
 import com.mnk.identipatia.dto.UserDTO;
 import com.mnk.identipatia.exception.InvalidUserDataException;
 import com.mnk.identipatia.exception.UserNotFoundException;
@@ -32,15 +36,21 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public UserDTO create(UserDTO userDTO) {
-        validateUniqueDoi(userDTO.getDoi());
-        User user = userMapper.toEntity(userDTO);
+    public DocumentRecognitionResponse identifyDocument(DocumentRecognitionRequest request) {
+        boolean registered = userRepository.existsByDoiAndDoiType(request.getDoi(), request.getDoiType());
+        return new DocumentRecognitionResponse(registered);
+    }
+
+    public StandardUserRegistrationResponse registerStandard(StandardUserRegistrationRequest request) {
+        validateUniqueDoi(request.getDoi());
+        User user = userMapper.toEntity(request);
         user.setUserId(null);
-        user.setUserType(resolveUserType(userDTO));
+        user.setUserType(STANDARD_USER_TYPE);
         user.setStatus(ACTIVE_STATUS);
-        user.setPassword(resolvePassword(userDTO));
+        user.setPassword(null);
         user.setCreationDate(LocalDateTime.now());
-        return userMapper.toDto(userRepository.save(user));
+        userRepository.save(user);
+        return new StandardUserRegistrationResponse(true);
     }
 
     public List<UserDTO> findAll() {

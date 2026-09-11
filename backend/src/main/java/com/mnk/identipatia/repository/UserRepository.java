@@ -10,5 +10,6 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
 	Optional<User> findByDoi(String doi);
 	boolean existsByDoi(String doi);
+	boolean existsByDoiAndDoiType(String doi, String doiType);
 	boolean existsByDoiAndUserIdNot(String doi, Long userId);
 }

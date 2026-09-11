@@ -1,8 +1,12 @@
 package com.mnk.identipatia.controller;
 
 import com.mnk.identipatia.dto.UserDTO;
+import com.mnk.identipatia.dto.DocumentRecognitionRequest;
+import com.mnk.identipatia.dto.DocumentRecognitionResponse;
 import com.mnk.identipatia.dto.LoginRequestDTO;
 import com.mnk.identipatia.dto.LoginResponseDTO;
+import com.mnk.identipatia.dto.StandardUserRegistrationRequest;
+import com.mnk.identipatia.dto.StandardUserRegistrationResponse;
 import com.mnk.identipatia.service.JwtService;
 import com.mnk.identipatia.service.UserService;
 import jakarta.validation.Valid;
@@ -47,9 +51,16 @@ public class UserController {
             return ResponseEntity.ok(new LoginResponseDTO("Bearer", accessToken));
     }
 
+    @PostMapping("/identify")
+    public ResponseEntity<DocumentRecognitionResponse> identify(
+            @Valid @RequestBody DocumentRecognitionRequest request) {
+        return ResponseEntity.ok(userService.identifyDocument(request));
+    }
+
     @PostMapping
-    public ResponseEntity<UserDTO> create(@Valid @RequestBody UserDTO userDTO) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(userService.create(userDTO));
+    public ResponseEntity<StandardUserRegistrationResponse> registerStandard(
+            @Valid @RequestBody StandardUserRegistrationRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.registerStandard(request));
     }
 
     @GetMapping

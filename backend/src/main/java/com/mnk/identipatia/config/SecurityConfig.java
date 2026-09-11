@@ -5,6 +5,7 @@ import com.mnk.identipatia.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -20,6 +21,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 
 @Configuration
 @EnableWebSecurity
@@ -34,14 +36,15 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/users").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/users/identify").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users/login").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/users/doi/**").permitAll()
-                        .requestMatchers(HttpMethod.PUT, "/users/admin/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/users/**").permitAll()
+                        .requestMatchers("/users/**").hasRole("ADMIN")
                         .requestMatchers("/", "/index.html", "/*.js", "/*.css", "/*.ico",
                                 "/assets/**", "/favicon.ico").permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(httpBasic -> httpBasic.disable())
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -61,6 +64,7 @@ public class SecurityConfig {
                     .withUsername(appUser.getDoi())
                     .password(appUser.getPassword())
                     .roles(appUser.getUserType())
+                    .disabled(!"A".equalsIgnoreCase(appUser.getStatus()))
                     .build();
 
             return userDetails;

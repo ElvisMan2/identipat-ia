@@ -26,6 +26,10 @@ identipat-ia/
 │   │   │   │   ├── dto/
 │   │   │   │   │   ├── LoginRequestDTO.java
 │   │   │   │   │   ├── LoginResponseDTO.java
+│   │   │   │   │   ├── DocumentRecognitionRequest.java
+│   │   │   │   │   ├── DocumentRecognitionResponse.java
+│   │   │   │   │   ├── StandardUserRegistrationRequest.java
+│   │   │   │   │   ├── StandardUserRegistrationResponse.java
 │   │   │   │   │   └── UserDTO.java
 │   │   │   │   ├── exception/
 │   │   │   │   │   ├── InvalidUserDataException.java
@@ -44,6 +48,10 @@ identipat-ia/
 │   │   │       └── application.properties
 │   │   └── test/
 │   │       └── java/com/mnk/identipatia/
+│   │           ├── config/
+│   │           │   └── SecurityConfigTest.java
+│   │           ├── controller/
+│   │           │   └── UserSecurityWebMvcTest.java
 │   │           ├── mapper/
 │   │           │   └── UserMapperTest.java
 │   │           ├── service/
@@ -56,6 +64,8 @@ identipat-ia/
 │   ├── architecture/
 │   │   └── architecture-overview.md
 │   ├── diagnostico-proyecto.md
+│   └── security/
+│       └── authorization-matrix.md
 ├── frontend/
 │   ├── .angular/
 │   │   └── cache/                    # Caché generada por Angular
