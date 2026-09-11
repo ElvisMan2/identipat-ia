@@ -1,0 +1,22 @@
+# Defaults de conveniencia exclusivos para desarrollo local. Todos admiten override.
+server:
+  port: ${SERVER_PORT:8082}
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/${DB_NAME:identipatdb}}
+    username: ${DB_USER:identipat_dev_user}
+    password: ${DB_PASSWORD:dev_password_123}
+  jpa:
+    hibernate:
+      ddl-auto: update
+  web:
+    resources:
+      static-locations: '${STATIC_LOCATIONS:classpath:/static/,file:../frontend/dist/identipat-ia/browser/}'
+
+app:
+  jwt:
+    # Valor conocido y no productivo; reemplazar mediante JWT_SECRET cuando sea necesario.
+    secret: ${JWT_SECRET:identipat-dev-secret-key-change-me-32chars}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}

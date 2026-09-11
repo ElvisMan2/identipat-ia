@@ -7,15 +7,20 @@ import com.mnk.identipatia.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.core.env.Environment;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
+@ActiveProfiles("test")
 class IdentipatIaApplicationTests {
 
     @Autowired
@@ -24,8 +29,20 @@ class IdentipatIaApplicationTests {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private Environment environment;
+
     @Test
     void contextLoads() {
+    }
+
+    @Test
+    void testProfileProvidesDeterministicJwtConfiguration() {
+        assertTrue(List.of(environment.getActiveProfiles()).contains("test"));
+        assertEquals("identipat-test-secret-key-only-for-automated-tests",
+                environment.getRequiredProperty("app.jwt.secret"));
+        assertEquals(3600000L,
+                environment.getRequiredProperty("app.jwt.expiration-ms", Long.class));
     }
 
     @Test

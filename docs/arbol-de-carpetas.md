@@ -45,13 +45,19 @@ identipat-ia/
 │   │   │   │   │   └── UserService.java
 │   │   │   │   └── IdentipatIaApplication.java
 │   │   │   └── resources/
-│   │   │       └── application.properties
+│   │   │       ├── application.yml
+│   │   │       ├── application-dev.yml
+│   │   │       ├── application-test.yml
+│   │   │       └── application-prod.yml
 │   │   └── test/
 │   │       └── java/com/mnk/identipatia/
 │   │           ├── config/
+│   │           │   ├── ProductionConfigurationTest.java
 │   │           │   └── SecurityConfigTest.java
 │   │           ├── controller/
 │   │           │   └── UserSecurityWebMvcTest.java
+│   │           ├── dto/
+│   │           │   └── SensitiveDtoLoggingTest.java
 │   │           ├── mapper/
 │   │           │   └── UserMapperTest.java
 │   │           ├── service/
@@ -63,6 +69,8 @@ identipat-ia/
 │   ├── arbol-de-carpetas.md
 │   ├── architecture/
 │   │   └── architecture-overview.md
+│   ├── development/
+│   │   └── configuration.md
 │   ├── diagnostico-proyecto.md
 │   └── security/
 │       └── authorization-matrix.md
@@ -107,6 +115,7 @@ identipat-ia/
 ├── postman/
 │   └── identipat-api.collection.json
 ├── .env                              # Variables locales; ignorado por Git
+├── .env.example                      # Variables de ejemplo sin secretos reales
 ├── .gitignore
 ├── AGENTS.md
 ├── docker-compose.yml

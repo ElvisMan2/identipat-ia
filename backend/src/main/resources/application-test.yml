@@ -1,0 +1,19 @@
+# Perfil temporal: hasta F0.5 las pruebas de contexto requieren PostgreSQL local en localhost:5433.
+server:
+  port: ${SERVER_PORT:0}
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/${DB_NAME:identipatdb}}
+    username: ${DB_USER:identipat_dev_user}
+    password: ${DB_PASSWORD:dev_password_123}
+  jpa:
+    # No elimina tablas ni datos; F0.5 lo reemplazará por Flyway + Testcontainers.
+    hibernate:
+      ddl-auto: update
+
+app:
+  jwt:
+    secret: identipat-test-secret-key-only-for-automated-tests
+  cors:
+    allowed-origins: http://localhost:4200
