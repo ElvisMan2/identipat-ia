@@ -9,6 +9,9 @@ identipat-ia/
 ├── .vscode/
 │   └── settings.json
 ├── backend/
+│   ├── .mvn/                         # Soporte de Maven Wrapper
+│   ├── mvnw                          # Maven Wrapper para Linux/macOS
+│   ├── mvnw.cmd                      # Maven Wrapper para Windows
 │   ├── src/
 │   │   ├── main/
 │   │   │   ├── java/com/mnk/identipatia/
@@ -50,8 +53,9 @@ identipat-ia/
 ├── codex-prompts/                    # Prompts locales; carpeta ignorada por Git
 ├── docs/
 │   ├── arbol-de-carpetas.md
+│   ├── architecture/
+│   │   └── architecture-overview.md
 │   ├── diagnostico-proyecto.md
-│   └── plan-migracion-postgres.md
 ├── frontend/
 │   ├── .angular/
 │   │   └── cache/                    # Caché generada por Angular
@@ -100,3 +104,7 @@ identipat-ia/
 ```
 
 > `.git/` se omite por ser metadato interno. También se omite el contenido de `frontend/node_modules/` y `frontend/.angular/cache/` por ser dependencias o artefactos generados. `docs/` se versiona; `.env`, `codex-prompts/`, `.vscode/`, los directorios `target/` y los artefactos generados de Angular permanecen ignorados.
+
+## Estructura objetivo futura
+
+La estructura actual todavía no incluye un servicio Python. Cuando una fase posterior lo incorpore, su denominación objetivo será `preprocessing-service/`; no debe interpretarse como una carpeta ya creada. Será un servicio especializado para preprocesamiento técnico de PDF y audio, mientras que Java conservará la integración e inferencia con IA generativa.

@@ -3,6 +3,8 @@
 **Fecha de revisión:** 10 de septiembre de 2026
 **Alcance:** inspección estática del repositorio y verificaciones locales de backend, frontend, persistencia, seguridad y automatización. No se modificó el código de la aplicación.
 
+> **Nota de vigencia arquitectónica:** este documento conserva el diagnóstico de su fecha de revisión. Las decisiones arquitectónicas y funcionales posteriores vigentes se documentan en [architecture-overview.md](architecture/architecture-overview.md).
+
 ## Resumen ejecutivo
 
 Identipat IA es una aplicación de gestión de usuarios compuesta por una API Java/Spring Boot y una interfaz Angular. Desde el diagnóstico anterior, la persistencia fue migrada de H2 a PostgreSQL 16, se añadió un entorno local con Docker Compose y pgAdmin, y se incorporó una colección de 25 solicitudes para probar la API. El build de desarrollo del frontend se completa correctamente.
