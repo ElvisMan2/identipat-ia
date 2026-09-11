@@ -1,6 +1,6 @@
 # Árbol de carpetas actual
 
-**Fecha de generación:** 10 de septiembre de 2026
+**Fecha de actualización:** 11 de septiembre de 2026
 
 ```text
 identipat-ia/
@@ -45,6 +45,9 @@ identipat-ia/
 │   │   │   │   │   └── UserService.java
 │   │   │   │   └── IdentipatIaApplication.java
 │   │   │   └── resources/
+│   │   │       ├── db/
+│   │   │       │   └── migration/
+│   │   │       │       └── V1__baseline_schema.sql
 │   │   │       ├── application.yml
 │   │   │       ├── application-dev.yml
 │   │   │       ├── application-test.yml
@@ -70,7 +73,8 @@ identipat-ia/
 │   ├── architecture/
 │   │   └── architecture-overview.md
 │   ├── development/
-│   │   └── configuration.md
+│   │   ├── configuration.md
+│   │   └── database-migrations.md
 │   ├── diagnostico-proyecto.md
 │   └── security/
 │       └── authorization-matrix.md

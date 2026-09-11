@@ -6,8 +6,10 @@ spring:
     url: ${DB_URL}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
   jpa:
-    # El esquema productivo debe existir y será gestionado por Flyway a partir de F0.5.
     hibernate:
       ddl-auto: validate
 

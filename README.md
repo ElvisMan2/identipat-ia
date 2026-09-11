@@ -14,7 +14,7 @@ Repositorio del sistema IDENTIPAT-IA, organizado como una aplicación web con ba
 ## Requisitos
 
 - JDK 21 (versión oficial del proyecto).
-- Docker Compose para PostgreSQL local.
+- Docker Compose para PostgreSQL local y Docker Engine para las pruebas de integración.
 - Node.js/npm para el frontend.
 
 El backend se construye con el Maven Wrapper incluido; no requiere una instalación global de Maven.
@@ -47,21 +47,25 @@ La API se publica bajo `http://localhost:8082/identipat-ia` y el frontend de des
 
 ## Build y pruebas del backend
 
+Flyway crea y evoluciona el esquema PostgreSQL. Las pruebas de integración usan un PostgreSQL efímero de Testcontainers, por lo que requieren Docker Engine, pero no una instancia PostgreSQL local.
+
 Windows:
 
 ```powershell
 cd backend
-.\mvnw.cmd clean package
-.\mvnw.cmd test
+.\mvnw.cmd clean test
+.\mvnw.cmd clean package -DskipTests
 ```
 
 Linux/macOS:
 
 ```bash
 cd backend
-./mvnw clean package
-./mvnw test
+./mvnw clean test
+./mvnw clean package -DskipTests
 ```
+
+Consulta [la guía de migraciones](docs/development/database-migrations.md) para crear una base nueva y evolucionar el esquema.
 
 ## Configuración por ambiente
 

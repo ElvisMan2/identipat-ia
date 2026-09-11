@@ -7,9 +7,12 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5433/${DB_NAME:identipatdb}}
     username: ${DB_USER:identipat_dev_user}
     password: ${DB_PASSWORD:dev_password_123}
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
   web:
     resources:
       static-locations: '${STATIC_LOCATIONS:classpath:/static/,file:../frontend/dist/identipat-ia/browser/}'

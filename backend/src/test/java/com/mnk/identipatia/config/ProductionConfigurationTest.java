@@ -11,15 +11,43 @@ import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ProductionConfigurationTest {
 
     @Test
+    void allProfilesUseFlywayWithoutBaselineAndHibernateValidate() throws IOException {
+        for (String resource : List.of(
+                "application-dev.yml",
+                "application-test.yml",
+                "application-prod.yml")) {
+            String yaml = readClasspathResource(resource);
+
+            assertThat(yaml)
+                    .contains("enabled: true")
+                    .contains("baseline-on-migrate: false")
+                    .contains("ddl-auto: validate")
+                    .doesNotContain("ddl-auto: update");
+        }
+    }
+
+    @Test
+    void testProfileDoesNotContainLocalDevelopmentDatasource() throws IOException {
+        String yaml = readClasspathResource("application-test.yml");
+
+        assertThat(yaml)
+                .doesNotContain("datasource:")
+                .doesNotContain("DB_URL")
+                .doesNotContain("DB_USER")
+                .doesNotContain("DB_PASSWORD")
+                .doesNotContain("localhost:5433");
+    }
+
+    @Test
     void productionSecretsHaveMandatoryPlaceholdersWithoutFallbacks() throws IOException {
-        String yaml = new ClassPathResource("application-prod.yml")
-                .getContentAsString(StandardCharsets.UTF_8);
+        String yaml = readClasspathResource("application-prod.yml");
 
         assertThat(yaml)
                 .contains("password: ${DB_PASSWORD}")
@@ -52,6 +80,10 @@ class ProductionConfigurationTest {
             rootCause = rootCause.getCause();
         }
         return rootCause;
+    }
+
+    private static String readClasspathResource(String path) throws IOException {
+        return new ClassPathResource(path).getContentAsString(StandardCharsets.UTF_8);
     }
 
     private static ApplicationContextRunner productionContext(Class<?> configuration, String requiredProperty) {
