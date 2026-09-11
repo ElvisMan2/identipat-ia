@@ -61,5 +61,13 @@ jacoco.exec
 # Generated files
 *.class
 
+# Python preprocessing service
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+
 # Codex local working prompts
 codex-prompts/

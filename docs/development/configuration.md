@@ -5,9 +5,9 @@ El backend requiere JDK 21 y usa los perfiles explícitos `dev`, `test` y `prod`
 ## Archivos y responsabilidades
 
 - `application.yml`: nombre y contexto de la aplicación, driver/dialecto PostgreSQL, formato y zona horaria, recursos estáticos empaquetados y expiración JWT comunes.
-- `application-dev.yml`: ejecución local en el puerto 8082, PostgreSQL en `localhost:5433`, ruta local opcional del build Angular, CORS para Angular local, credenciales/secreto conocidos exclusivamente de desarrollo y OpenAPI/Swagger habilitados.
-- `application-test.yml`: configuración determinista de pruebas, secreto JWT exclusivo de test, políticas Flyway/JPA y OpenAPI/Swagger habilitados; el datasource lo aporta Testcontainers.
-- `application-prod.yml`: conexión y secretos obligatorios desde el entorno, CORS explícito, `ddl-auto=validate` y OpenAPI/Swagger deshabilitados por defecto.
+- `application-dev.yml`: ejecución local en el puerto 8082, PostgreSQL en `localhost:5433`, ruta local opcional del build Angular, CORS para Angular local, credenciales/secreto conocidos exclusivamente de desarrollo, URL local del servicio de preprocesamiento y OpenAPI/Swagger habilitados.
+- `application-test.yml`: configuración determinista de pruebas, secreto JWT exclusivo de test, URL dummy del servicio de preprocesamiento, políticas Flyway/JPA y OpenAPI/Swagger habilitados; el datasource lo aporta Testcontainers.
+- `application-prod.yml`: conexión y secretos obligatorios desde el entorno, CORS explícito, URL obligatoria del servicio de preprocesamiento, `ddl-auto=validate` y OpenAPI/Swagger deshabilitados por defecto.
 
 ## Activación
 
@@ -46,10 +46,19 @@ Producción requiere `SPRING_PROFILES_ACTIVE=prod` además de todas las variable
 | `SERVER_PORT` | `8082` | `0` (puerto aleatorio) | `8082` | Puerto HTTP |
 | `APP_TIME_ZONE` | `America/Lima` | `America/Lima` | `America/Lima` | Zona de Jackson y JDBC/Hibernate |
 | `STATIC_LOCATIONS` | Classpath y build Angular local | Solo classpath | Solo classpath | Ubicaciones de recursos, separadas por coma |
+| `PREPROCESSING_SERVICE_BASE_URL` | `http://localhost:8090` si no se define | No aplica; se usa `http://preprocessing-service.test` | Obligatoria | URL base del servicio Python consumido internamente por Java |
 | `PGADMIN_EMAIL` | Sin default en Compose | No aplica | No aplica | Cuenta local de pgAdmin |
 | `PGADMIN_PASSWORD` | Sin default en Compose | No aplica | No aplica | Password local de pgAdmin |
 
 Los valores DEV son conocidos, no productivos y pueden reemplazarse desde el entorno. TEST recibe la conexión a PostgreSQL mediante `@ServiceConnection`; no usa variables de base DEV. PROD no tiene fallback para URL, usuario o password de base de datos, secreto JWT ni orígenes CORS; un placeholder obligatorio sin resolver impide crear los componentes que consumen esa configuración.
+
+## Servicio de preprocesamiento
+
+Java se comunica internamente con `preprocessing-service` mediante `app.preprocessing.base-url` y un
+cliente `RestClient`, con timeout de conexión y lectura de cinco segundos. DEV usa
+`http://localhost:8090` y permite reemplazarlo con `PREPROCESSING_SERVICE_BASE_URL`; TEST tiene una
+URL dummy y sus pruebas usan HTTP simulado; PROD exige esa variable sin fallback. El backend no
+consulta el health del servicio al iniciar. Consulta [preprocessing-service.md](preprocessing-service.md).
 
 ## PostgreSQL y esquema
 

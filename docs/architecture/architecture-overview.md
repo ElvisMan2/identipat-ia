@@ -12,7 +12,7 @@ Angular (frontend)
         ▼
 Java / Spring Boot (backend principal)
   ├── JDBC ─────────────► PostgreSQL
-  ├── REST interno ─────► Python preprocessing-service (futuro)
+  ├── REST interno ─────► Python preprocessing-service
   └── GenerativeAiProvider ─► GeminiProvider ─► Gemini
 ```
 
@@ -30,11 +30,11 @@ Java es el backend principal y dueño de los casos de uso. Es responsable de la 
 
 Java también integra y ejecuta la inferencia con IA generativa. La arquitectura prevista debe abstraer al proveedor, conceptualmente mediante `GenerativeAiProvider` y una implementación inicial `GeminiProvider`; Gemini es el proveedor inicial. Estas clases e integración no se implementan todavía.
 
-### Python: `preprocessing-service` futuro
+### Python: `preprocessing-service`
 
-Python será un servicio especializado de preprocesamiento técnico, no el backend principal. Sus responsabilidades previstas incluyen extracción y normalización de texto desde PDF, procesamiento de audio, transcripción o transformación de audio, y otros preprocesamientos de entradas que se definan.
+Python es un servicio FastAPI especializado de preprocesamiento técnico, no el backend principal. Por ahora expone únicamente `GET /health`; sus responsabilidades futuras incluyen extracción y normalización de texto desde PDF, procesamiento de audio, transcripción o transformación de audio, y otros preprocesamientos de entradas que se definan.
 
-Python no realiza inferencia principal del LLM, prompts de diagnóstico, clasificación de propiedad intelectual mediante LLM, integración con Gemini, reglas de negocio, persistencia principal, usuarios ni autenticación. La carpeta `preprocessing-service/` es una denominación objetivo; no existe aún y no se crea en esta fase.
+Python no realiza inferencia principal del LLM, prompts de diagnóstico, clasificación de propiedad intelectual mediante LLM, integración con Gemini, reglas de negocio, persistencia principal, usuarios ni autenticación. Angular no lo consume directamente; Java encapsula la comunicación mediante un cliente interno.
 
 ### PostgreSQL
 
@@ -88,5 +88,5 @@ Quedan deliberadamente abiertas la política definitiva de retención y minimiza
 | F0.4 | Configuración dev/test/prod | Pendiente |
 | F0.5 | Flyway + Testcontainers | Pendiente |
 | F0.6 | OpenAPI + Postman | Pendiente |
-| F0.7 | Bootstrap Python `preprocessing-service` | Pendiente |
+| F0.7 | Bootstrap Python `preprocessing-service` | Completada |
 | F0.8 | CI GitHub | Pendiente |

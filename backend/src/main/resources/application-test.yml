@@ -10,6 +10,9 @@ spring:
       ddl-auto: validate
 
 app:
+  preprocessing:
+    base-url: http://preprocessing-service.test
+    timeout: 5s
   jwt:
     secret: identipat-test-secret-key-only-for-automated-tests
   cors:

@@ -120,6 +120,18 @@ identipat-ia/
 │   └── tsconfig.spec.json
 ├── postman/
 │   └── identipat-api.collection.json
+├── preprocessing-service/
+│   ├── src/preprocessing_service/
+│   │   ├── api/                      # Ruta técnica /health
+│   │   ├── core/                     # Configuración externa mínima
+│   │   ├── schemas/                  # Schemas Pydantic
+│   │   └── main.py                   # Bootstrap FastAPI
+│   ├── tests/
+│   │   └── test_health.py
+│   ├── .dockerignore
+│   ├── Dockerfile
+│   ├── pyproject.toml
+│   └── README.md
 ├── .env                              # Variables locales; ignorado por Git
 ├── .env.example                      # Variables de ejemplo sin secretos reales
 ├── .gitignore
@@ -130,6 +142,8 @@ identipat-ia/
 
 > `.git/` se omite por ser metadato interno. También se omite el contenido de `frontend/node_modules/` y `frontend/.angular/cache/` por ser dependencias o artefactos generados. `docs/` se versiona; `.env`, `codex-prompts/`, `.vscode/`, los directorios `target/` y los artefactos generados de Angular permanecen ignorados.
 
-## Estructura objetivo futura
+## Servicio de preprocesamiento
 
-La estructura actual todavía no incluye un servicio Python. Cuando una fase posterior lo incorpore, su denominación objetivo será `preprocessing-service/`; no debe interpretarse como una carpeta ya creada. Será un servicio especializado para preprocesamiento técnico de PDF y audio, mientras que Java conservará la integración e inferencia con IA generativa.
+`preprocessing-service/` es un bootstrap FastAPI con el único contrato `GET /health`. Aún no contiene
+procesamiento de PDF/audio ni sus dependencias. Java conserva la orquestación y la integración de IA;
+Angular nunca llama a Python directamente.

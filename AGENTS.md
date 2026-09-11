@@ -4,7 +4,7 @@
 
 - `frontend/`: aplicación Angular.
 - `backend/`: backend principal Java/Spring Boot.
-- `preprocessing-service/`: servicio Python futuro de preprocesamiento especializado; no crear ni implementar salvo que la fase lo requiera.
+- `preprocessing-service/`: servicio FastAPI de preprocesamiento técnico especializado; actualmente solo expone `/health`, y PDF/audio se implementarán en una fase posterior.
 - `docs/`: documentación técnica y de arquitectura.
 - `postman/`: colecciones de pruebas de API.
 

@@ -52,15 +52,17 @@ class ProductionConfigurationTest {
         assertThat(yaml)
                 .contains("password: ${DB_PASSWORD}")
                 .contains("secret: ${JWT_SECRET}")
+                .contains("base-url: ${PREPROCESSING_SERVICE_BASE_URL}")
                 .doesNotContain("${DB_PASSWORD:")
-                .doesNotContain("${JWT_SECRET:");
+                .doesNotContain("${JWT_SECRET:")
+                .doesNotContain("${PREPROCESSING_SERVICE_BASE_URL:");
     }
 
     @Test
     void productionDisablesOpenApiAndSwaggerUiByDefault() throws IOException {
         String yaml = readClasspathResource("application-prod.yml");
 
-        assertThat(yaml).contains("""
+        assertThat(yaml.replace("\r\n", "\n")).contains("""
                 springdoc:
                   api-docs:
                     enabled: false
@@ -84,6 +86,16 @@ class ProductionConfigurationTest {
                 "spring.datasource.password=${F04_MISSING_DB_PASSWORD}").run(context -> {
             assertThat(context).hasFailed();
             assertThat(rootCauseOf(context.getStartupFailure()).getMessage()).contains("F04_MISSING_DB_PASSWORD");
+        });
+    }
+
+    @Test
+    void incompleteProductionConfigurationFailsForMissingPreprocessingServiceUrl() {
+        productionContext(RequiredPreprocessingServiceUrl.class,
+                "app.preprocessing.base-url=${F07_MISSING_PREPROCESSING_URL}").run(context -> {
+            assertThat(context).hasFailed();
+            assertThat(rootCauseOf(context.getStartupFailure()).getMessage())
+                    .contains("F07_MISSING_PREPROCESSING_URL");
         });
     }
 
@@ -120,6 +132,15 @@ class ProductionConfigurationTest {
 
         @Bean
         Object requiredDatabasePassword(@Value("${spring.datasource.password}") String ignored) {
+            return new Object();
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    static class RequiredPreprocessingServiceUrl {
+
+        @Bean
+        Object requiredPreprocessingServiceUrl(@Value("${app.preprocessing.base-url}") String ignored) {
             return new Object();
         }
     }

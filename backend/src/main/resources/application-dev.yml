@@ -18,6 +18,9 @@ spring:
       static-locations: '${STATIC_LOCATIONS:classpath:/static/,file:../frontend/dist/identipat-ia/browser/}'
 
 app:
+  preprocessing:
+    base-url: ${PREPROCESSING_SERVICE_BASE_URL:http://localhost:8090}
+    timeout: 5s
   jwt:
     # Valor conocido y no productivo; reemplazar mediante JWT_SECRET cuando sea necesario.
     secret: ${JWT_SECRET:identipat-dev-secret-key-change-me-32chars}

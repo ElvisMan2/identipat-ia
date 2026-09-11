@@ -6,6 +6,7 @@ Repositorio del sistema IDENTIPAT-IA, organizado como una aplicación web con ba
 
 - `backend/`: API principal, reglas de negocio y seguridad.
 - `frontend/`: interfaz web Angular.
+- `preprocessing-service/`: servicio FastAPI interno para futuros preprocesamientos técnicos de PDF y audio.
 - `postman/`: colección de pruebas manuales de la API.
 - `docs/`: diagnóstico y documentación técnica.
 - `docker-compose.yml`: PostgreSQL 16 y pgAdmin para desarrollo local.
@@ -16,6 +17,7 @@ Repositorio del sistema IDENTIPAT-IA, organizado como una aplicación web con ba
 - JDK 21 (versión oficial del proyecto).
 - Docker Compose para PostgreSQL local y Docker Engine para las pruebas de integración.
 - Node.js/npm para el frontend.
+- Python 3.12 para `preprocessing-service/`.
 
 El backend se construye con el Maven Wrapper incluido; no requiere una instalación global de Maven.
 
@@ -44,6 +46,15 @@ cd backend
 4. Ejecuta el frontend desde `frontend/` con `npm start`.
 
 La API se publica bajo `http://localhost:8082/identipat-ia` y el frontend de desarrollo utiliza su proxy local `/api`.
+
+## Servicio de preprocesamiento
+
+El servicio Python es un componente técnico interno consumido solo por Java; Angular nunca lo llama
+directamente. En desarrollo expone `GET http://127.0.0.1:8090/health`. La URL que usa el backend
+puede reemplazarse mediante `PREPROCESSING_SERVICE_BASE_URL`.
+
+Consulta [la guía del servicio de preprocesamiento](docs/development/preprocessing-service.md) para
+ejecución local con Python 3.12, pruebas y Docker.
 
 ## Documentación de API y Postman
 
