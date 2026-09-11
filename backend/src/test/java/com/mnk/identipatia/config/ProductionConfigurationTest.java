@@ -57,6 +57,19 @@ class ProductionConfigurationTest {
     }
 
     @Test
+    void productionDisablesOpenApiAndSwaggerUiByDefault() throws IOException {
+        String yaml = readClasspathResource("application-prod.yml");
+
+        assertThat(yaml).contains("""
+                springdoc:
+                  api-docs:
+                    enabled: false
+                  swagger-ui:
+                    enabled: false
+                """);
+    }
+
+    @Test
     void incompleteProductionConfigurationFailsForMissingJwtSecret() {
         productionContext(RequiredJwtSecret.class,
                 "app.jwt.secret=${F04_MISSING_JWT_SECRET}").run(context -> {

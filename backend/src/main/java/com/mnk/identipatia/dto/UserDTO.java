@@ -2,6 +2,7 @@ package com.mnk.identipatia.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,6 +20,7 @@ public class UserDTO {
     private Long userId;
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @Schema(accessMode = Schema.AccessMode.WRITE_ONLY, description = "Contraseña en texto plano para una actualización administrativa; nunca se devuelve.")
     @ToString.Exclude
     private String password;
 

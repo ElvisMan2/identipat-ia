@@ -4,15 +4,20 @@ import com.mnk.identipatia.dto.StandardUserRegistrationRequest;
 import com.mnk.identipatia.model.User;
 import com.mnk.identipatia.repository.UserRepository;
 import com.mnk.identipatia.service.UserService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.core.env.Environment;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -30,8 +35,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Testcontainers
 class IdentipatIaApplicationTests {
@@ -55,6 +65,12 @@ class IdentipatIaApplicationTests {
 
     @Autowired
     private DataSource dataSource;
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Test
     void contextLoads() {
@@ -111,6 +127,49 @@ class IdentipatIaApplicationTests {
                 environment.getRequiredProperty("app.jwt.secret"));
         assertEquals(3600000L,
                 environment.getRequiredProperty("app.jwt.expiration-ms", Long.class));
+        assertTrue(environment.getRequiredProperty("springdoc.api-docs.enabled", Boolean.class));
+        assertTrue(environment.getRequiredProperty("springdoc.swagger-ui.enabled", Boolean.class));
+    }
+
+    @Test
+    void openApiDocumentationExposesTheCurrentContractWithoutPublicSensitiveSchemas() throws Exception {
+        MvcResult result = mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("application/json"))
+                .andReturn();
+
+        JsonNode api = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(api.path("openapi").asText()).startsWith("3.");
+        assertThat(api.at("/paths/~1users~1identify/post").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1users/post").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1users~1login/post").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1users/get").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1users~1{userId}/delete").isMissingNode()).isFalse();
+
+        assertThat(api.at("/paths/~1users~1identify/post/security").isMissingNode()).isTrue();
+        assertThat(api.at("/paths/~1users/post/security").isMissingNode()).isTrue();
+        assertThat(api.at("/paths/~1users~1login/post/security").isMissingNode()).isTrue();
+        assertThat(api.at("/paths/~1users/get/security/0/bearerAuth").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1users/get/responses/200/content/application~1json/schema/type").asText()).isEqualTo("array");
+        assertThat(api.at("/paths/~1users~1{userId}/get/security/0/bearerAuth").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1users~1doi~1{doi}/get/security/0/bearerAuth").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1users~1admin~1{userId}/put/security/0/bearerAuth").isMissingNode()).isFalse();
+
+        assertThat(api.at("/components/securitySchemes/bearerAuth/type").asText()).isEqualTo("http");
+        assertThat(api.at("/components/securitySchemes/bearerAuth/scheme").asText()).isEqualTo("bearer");
+        assertThat(api.at("/components/securitySchemes/bearerAuth/bearerFormat").asText()).isEqualTo("JWT");
+
+        JsonNode recognitionProperties = api.at("/components/schemas/DocumentRecognitionResponse/properties");
+        assertThat(recognitionProperties.size()).isEqualTo(1);
+        assertThat(recognitionProperties.has("registered")).isTrue();
+
+        JsonNode registrationProperties = api.at("/components/schemas/StandardUserRegistrationRequest/properties");
+        assertThat(registrationProperties.has("userType")).isFalse();
+        assertThat(registrationProperties.has("status")).isFalse();
+        assertThat(registrationProperties.has("password")).isFalse();
+
+        mockMvc.perform(get("/swagger-ui.html"))
+                .andExpect(status().is3xxRedirection());
     }
 
     @Test

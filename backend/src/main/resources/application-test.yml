@@ -14,3 +14,9 @@ app:
     secret: identipat-test-secret-key-only-for-automated-tests
   cors:
     allowed-origins: http://localhost:4200
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

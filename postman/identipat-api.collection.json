@@ -1,969 +1,240 @@
 {
   "info": {
-    "name": "Identipat",
+    "_postman_id": "f06a0ec4-28a7-4f0d-bcf8-9b3c901c0f60",
+    "name": "IDENTIPAT-IA API",
+    "description": "Colección alineada con el contrato OpenAPI actual. Configure valores locales antes de ejecutar las solicitudes que escriben o administran usuarios.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8082/identipat-ia" },
+    { "key": "adminDoi", "value": "ADMIN_DOI_PLACEHOLDER" },
+    { "key": "adminPassword", "value": "" },
+    { "key": "adminJwt", "value": "" },
+    { "key": "standardDoi", "value": "00000000" },
+    { "key": "standardDoiType", "value": "DNI" },
+    { "key": "adminUserId", "value": "1" }
+  ],
   "item": [
     {
-      "name": "Login admin exitoso",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json",
-            "disabled": false,
-            "type": "default"
-          }
-        ],
-        "auth": {
-          "type": "noauth"
-        },
-        "description": "200 OK. Devuelve token Basic.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users/login",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users",
-            "login"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"doi\": \"47278416\",\n  \"password\": \"werWER@1\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Login credenciales invalidas",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json",
-            "disabled": false,
-            "type": "default"
-          }
-        ],
-        "auth": {
-          "type": "noauth"
-        },
-        "description": "401 Unauthorized. Usuario o password invalido.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users/login",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users",
-            "login"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"doi\": \"47278416\",\n  \"password\": \"password-incorrecto\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Login campos vacios",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json",
-            "disabled": false,
-            "type": "default"
-          }
-        ],
-        "auth": {
-          "type": "noauth"
-        },
-        "description": "400 Bad Request. Error de validacion.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users/login",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users",
-            "login"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"doi\": \"\",\n  \"password\": \"\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Crear usuario ADMIN exitoso",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json",
-            "disabled": false,
-            "type": "default"
-          }
-        ],
-        "auth": {
-          "type": "noauth"
-        },
-        "description": "201 Created. La password no se devuelve.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"firstName\": \"Juan\",\n  \"paternalLastName\": \"Garcia\",\n  \"maternalLastName\": \"Lopez\",\n  \"password\": \"werWER@1\",\n  \"doiType\": \"DNI\",\n  \"doi\": \"47278416\",\n  \"birthDate\": \"17/10/1991\",\n  \"profession\": \"ingeniero\",\n  \"gender\": \"masculino\",\n  \"mobilePhone\": \"997314069\",\n  \"phone\": \"3707079\",\n  \"userType\": \"ADMIN\",\n  \"email\": \"elvis.manco@gmail.com\",\n  \"status\": \"A\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Crear usuario STANDARD exitoso",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json",
-            "disabled": false,
-            "type": "default"
-          }
-        ],
-        "auth": {
-          "type": "noauth"
-        },
-        "description": "201 Created. STANDARD no debe enviar password.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"firstName\": \"Maria\",\n  \"paternalLastName\": \"Perez\",\n  \"maternalLastName\": \"Soto\",\n  \"doiType\": \"DNI\",\n  \"doi\": \"99999999\",\n  \"birthDate\": \"01/01/1990\",\n  \"profession\": \"analista\",\n  \"gender\": \"femenino\",\n  \"mobilePhone\": \"999999999\",\n  \"phone\": \"1111111\",\n  \"userType\": \"STANDARD\",\n  \"email\": \"maria.perez@example.com\",\n  \"status\": \"A\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Listar usuarios autenticado",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "auth": {
-          "type": "basic",
-          "basic": [
-            {
-              "key": "password",
-              "value": "werWER@1",
-              "type": "string"
+      "name": "Public - Standard",
+      "item": [
+        {
+          "name": "Recognize document",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "noauth" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"doi\": \"{{standardDoi}}\",\n  \"doiType\": \"{{standardDoiType}}\"\n}",
+              "options": { "raw": { "language": "json" } }
             },
-            {
-              "key": "username",
-              "value": "47278416",
-              "type": "string"
+            "url": "{{baseUrl}}/users/identify",
+            "description": "Público. Solo devuelve registered; no autentica ni expone PII."
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Recognition is successful', function () { pm.response.to.have.status(200); });",
+                "const body = pm.response.json();",
+                "pm.test('Recognition exposes only registered', function () { pm.expect(Object.keys(body)).to.eql(['registered']); });"
+              ]
             }
-          ]
+          }]
         },
-        "description": "200 OK. Requiere HTTP Basic.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users"
-          ],
-          "query": [],
-          "variable": []
-        }
-      }
-    },
-    {
-      "name": "Buscar usuario por ID",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "auth": {
-          "type": "basic",
-          "basic": [
-            {
-              "key": "password",
-              "value": "werWER@1",
-              "type": "string"
+        {
+          "name": "Register STANDARD",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "noauth" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Nombre de prueba\",\n  \"paternalLastName\": \"Apellido paterno\",\n  \"maternalLastName\": \"Apellido materno\",\n  \"doi\": \"{{standardDoi}}\",\n  \"doiType\": \"{{standardDoiType}}\",\n  \"birthDate\": \"01/01/1990\",\n  \"gender\": \"FEMALE\",\n  \"email\": \"standard.placeholder@example.test\",\n  \"phone\": \"016543210\",\n  \"mobilePhone\": \"912345678\",\n  \"profession\": \"Profesión de prueba\"\n}",
+              "options": { "raw": { "language": "json" } }
             },
-            {
-              "key": "username",
-              "value": "47278416",
-              "type": "string"
+            "url": "{{baseUrl}}/users",
+            "description": "Público. El body coincide con StandardUserRegistrationRequest y no contiene userType, status ni password. Use un DOI de prueba único."
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('STANDARD registration is created', function () { pm.response.to.have.status(201); });",
+                "const body = pm.response.json();",
+                "pm.test('Registration response exposes only registered', function () { pm.expect(Object.keys(body)).to.eql(['registered']); });"
+              ]
             }
-          ]
-        },
-        "description": "200 OK. Requiere HTTP Basic. Cambiar 1 por un ID existente.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users/1",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users",
-            "1"
-          ],
-          "query": [],
-          "variable": []
+          }]
         }
-      }
+      ]
     },
     {
-      "name": "Buscar usuario por DOI",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "auth": {
-          "type": "noauth"
+      "name": "Admin - Authentication",
+      "item": [{
+        "name": "Login ADMIN and save JWT",
+        "request": {
+          "method": "POST",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "auth": { "type": "noauth" },
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"doi\": \"{{adminDoi}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+            "options": { "raw": { "language": "json" } }
+          },
+          "url": "{{baseUrl}}/users/login",
+          "description": "Público sin token previo, pero solo un ADMIN activo recibe JWT. Complete las variables locales sin versionar credenciales."
         },
-        "description": "200 OK. Endpoint publico.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users/doi/47278416",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users",
-            "doi",
-            "47278416"
-          ],
-          "query": [],
-          "variable": []
-        }
-      }
+        "event": [{
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('ADMIN login is successful', function () { pm.response.to.have.status(200); });",
+              "const body = pm.response.json();",
+              "pm.test('Bearer access token is returned', function () { pm.expect(body.tokenType).to.eql('Bearer'); pm.expect(body.accessToken).to.be.a('string').and.not.empty; });",
+              "if (body.accessToken) { pm.collectionVariables.set('adminJwt', body.accessToken); }"
+            ]
+          }
+        }]
+      }]
     },
     {
-      "name": "Actualizar datos permitidos",
-      "request": {
-        "method": "PUT",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json",
-            "disabled": false,
-            "type": "default"
+      "name": "Admin - Users",
+      "item": [
+        {
+          "name": "List users",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/users"
           }
-        ],
-        "auth": {
-          "type": "noauth"
         },
-        "description": "200 OK. PUT publico; actualiza datos basicos.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users/1",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users",
-            "1"
-          ],
-          "query": [],
-          "variable": []
+        {
+          "name": "Get user by ID",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/users/{{adminUserId}}"
+          }
         },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"firstName\": \"Juan Actualizado\",\n  \"paternalLastName\": \"Garcia\",\n  \"maternalLastName\": \"Lopez\",\n  \"doiType\": \"DNI\",\n  \"doi\": \"47278416\",\n  \"birthDate\": \"17/10/1991\",\n  \"profession\": \"arquitecto\",\n  \"gender\": \"masculino\",\n  \"mobilePhone\": \"997314069\",\n  \"phone\": \"3707079\",\n  \"userType\": \"ADMIN\",\n  \"email\": \"juan.actualizado@example.com\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
+        {
+          "name": "Get user by DOI",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/users/doi/{{standardDoi}}"
           }
-        }
-      }
-    },
-    {
-      "name": "Actualizar todos los datos como ADMIN",
-      "request": {
-        "method": "PUT",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json",
-            "disabled": false,
-            "type": "default"
-          }
-        ],
-        "auth": {
-          "type": "basic",
-          "basic": [
-            {
-              "key": "password",
-              "value": "werWER@1",
-              "type": "string"
+        },
+        {
+          "name": "Update user data",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Nombre actualizado\",\n  \"paternalLastName\": \"Apellido paterno\",\n  \"maternalLastName\": \"Apellido materno\",\n  \"doi\": \"{{standardDoi}}\",\n  \"doiType\": \"{{standardDoiType}}\",\n  \"birthDate\": \"01/01/1990\",\n  \"gender\": \"FEMALE\",\n  \"email\": \"updated.placeholder@example.test\",\n  \"phone\": \"016543210\",\n  \"mobilePhone\": \"912345678\",\n  \"profession\": \"Profesión actualizada\"\n}",
+              "options": { "raw": { "language": "json" } }
             },
-            {
-              "key": "username",
-              "value": "47278416",
-              "type": "string"
-            }
-          ]
-        },
-        "description": "200 OK. Requiere rol ADMIN.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users/admin/1",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users",
-            "admin",
-            "1"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"firstName\": \"Juan Admin\",\n  \"paternalLastName\": \"Garcia\",\n  \"maternalLastName\": \"Lopez\",\n  \"doiType\": \"DNI\",\n  \"doi\": \"47278416\",\n  \"birthDate\": \"17/10/1991\",\n  \"profession\": \"ingeniero senior\",\n  \"gender\": \"masculino\",\n  \"mobilePhone\": \"997314069\",\n  \"phone\": \"3707079\",\n  \"email\": \"elvis.manco@gmail.com\",\n  \"userType\": \"ADMIN\",\n  \"password\": \"werWER@1\",\n  \"status\": \"A\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
+            "url": "{{baseUrl}}/users/{{adminUserId}}"
           }
-        }
-      }
-    },
-    {
-      "name": "Eliminar usuario",
-      "request": {
-        "method": "DELETE",
-        "header": [],
-        "auth": {
-          "type": "basic",
-          "basic": [
-            {
-              "key": "password",
-              "value": "werWER@1",
-              "type": "string"
+        },
+        {
+          "name": "Update user administratively",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Nombre administrativo\",\n  \"paternalLastName\": \"Apellido paterno\",\n  \"maternalLastName\": \"Apellido materno\",\n  \"doi\": \"{{adminDoi}}\",\n  \"doiType\": \"DNI\",\n  \"birthDate\": \"01/01/1990\",\n  \"gender\": \"FEMALE\",\n  \"email\": \"admin.placeholder@example.test\",\n  \"phone\": \"016543210\",\n  \"mobilePhone\": \"912345678\",\n  \"userType\": \"ADMIN\",\n  \"profession\": \"Administración\",\n  \"status\": \"A\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": { "raw": { "language": "json" } }
             },
-            {
-              "key": "username",
-              "value": "47278416",
-              "type": "string"
+            "url": "{{baseUrl}}/users/admin/{{adminUserId}}",
+            "description": "La actualización integral de un ADMIN exige una contraseña; complete adminPassword localmente."
+          }
+        },
+        {
+          "name": "Delete user",
+          "request": {
+            "method": "DELETE",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/users/{{adminUserId}}",
+            "description": "Operación destructiva: use solo con un usuario de prueba."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Security - Negative",
+      "item": [
+        {
+          "name": "Admin endpoint without JWT",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/users"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test('JWT is required for administrative listing', function () { pm.response.to.have.status(401); });"]
             }
-          ]
+          }]
         },
-        "description": "204 No Content. Requiere HTTP Basic.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users/1",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users",
-            "1"
-          ],
-          "query": [],
-          "variable": []
-        }
-      }
-    },
-    {
-      "name": "Crear DOI duplicado 400",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json",
-            "disabled": false,
-            "type": "default"
-          }
-        ],
-        "auth": {
-          "type": "noauth"
-        },
-        "description": "400 Bad Request. El DOI ya existe.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"firstName\": \"Duplicado\",\n  \"paternalLastName\": \"Prueba\",\n  \"maternalLastName\": \"Prueba\",\n  \"doiType\": \"DNI\",\n  \"doi\": \"47278416\",\n  \"birthDate\": \"01/01/1990\",\n  \"profession\": \"analista\",\n  \"gender\": \"otro\",\n  \"mobilePhone\": \"999999998\",\n  \"phone\": \"1111112\",\n  \"email\": \"duplicado@example.com\",\n  \"userType\": \"STANDARD\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Crear ADMIN sin password 400",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json",
-            "disabled": false,
-            "type": "default"
-          }
-        ],
-        "auth": {
-          "type": "noauth"
-        },
-        "description": "400 Bad Request. Password is required for admin users.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"firstName\": \"Admin\",\n  \"paternalLastName\": \"Sin\",\n  \"maternalLastName\": \"Password\",\n  \"doiType\": \"DNI\",\n  \"doi\": \"88888888\",\n  \"birthDate\": \"01/01/1990\",\n  \"profession\": \"admin\",\n  \"gender\": \"otro\",\n  \"mobilePhone\": \"999999997\",\n  \"phone\": \"1111113\",\n  \"email\": \"sin-password@example.com\",\n  \"userType\": \"ADMIN\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Crear STANDARD con password 400",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json",
-            "disabled": false,
-            "type": "default"
-          }
-        ],
-        "auth": {
-          "type": "noauth"
-        },
-        "description": "400 Bad Request. Standard users cannot have a password.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"firstName\": \"Standard\",\n  \"paternalLastName\": \"Con\",\n  \"maternalLastName\": \"Password\",\n  \"password\": \"werWER@1\",\n  \"doiType\": \"DNI\",\n  \"doi\": \"77777777\",\n  \"birthDate\": \"01/01/1990\",\n  \"profession\": \"analista\",\n  \"gender\": \"otro\",\n  \"mobilePhone\": \"999999996\",\n  \"phone\": \"1111114\",\n  \"email\": \"con-password@example.com\",\n  \"userType\": \"STANDARD\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Crear password sin userType 400",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json",
-            "disabled": false,
-            "type": "default"
-          }
-        ],
-        "auth": {
-          "type": "noauth"
-        },
-        "description": "400 Bad Request. userType is required.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"firstName\": \"Tipo\",\n  \"paternalLastName\": \"Faltante\",\n  \"maternalLastName\": \"Prueba\",\n  \"password\": \"werWER@1\",\n  \"doiType\": \"DNI\",\n  \"doi\": \"66666666\",\n  \"birthDate\": \"01/01/1990\",\n  \"profession\": \"analista\",\n  \"gender\": \"otro\",\n  \"mobilePhone\": \"999999994\",\n  \"phone\": \"1111116\",\n  \"email\": \"tipo-faltante@example.com\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Crear usuario validacion 400",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json",
-            "disabled": false,
-            "type": "default"
-          }
-        ],
-        "auth": {
-          "type": "noauth"
-        },
-        "description": "400 Bad Request. details contiene los campos invalidos.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"firstName\": \"\",\n  \"paternalLastName\": \"\",\n  \"maternalLastName\": \"\",\n  \"doiType\": \"DNI\",\n  \"doi\": \"\",\n  \"birthDate\": null,\n  \"profession\": \"\",\n  \"gender\": \"\",\n  \"mobilePhone\": \"\",\n  \"phone\": \"not-a-phone\",\n  \"email\": \"correo-invalido\",\n  \"status\": \"X\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Listar usuarios sin autenticacion 401",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "auth": {
-          "type": "noauth"
-        },
-        "description": "401 Unauthorized. Requiere HTTP Basic.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users"
-          ],
-          "query": [],
-          "variable": []
-        }
-      }
-    },
-    {
-      "name": "Buscar ID inexistente 404",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "auth": {
-          "type": "basic",
-          "basic": [
-            {
-              "key": "password",
-              "value": "werWER@1",
-              "type": "string"
+        {
+          "name": "STANDARD login is rejected",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "noauth" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"doi\": \"{{standardDoi}}\",\n  \"password\": \"not-a-standard-credential\"\n}",
+              "options": { "raw": { "language": "json" } }
             },
-            {
-              "key": "username",
-              "value": "47278416",
-              "type": "string"
+            "url": "{{baseUrl}}/users/login",
+            "description": "Precondición: standardDoi debe corresponder a un STANDARD registrado."
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('STANDARD users do not receive JWT', function () { pm.response.to.have.status(401); });",
+                "pm.test('No access token is exposed', function () { pm.expect(pm.response.json()).not.to.have.property('accessToken'); });"
+              ]
             }
-          ]
+          }]
         },
-        "description": "404 Not Found.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users/999999",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users",
-            "999999"
-          ],
-          "query": [],
-          "variable": []
-        }
-      }
-    },
-    {
-      "name": "Buscar DOI inexistente 404",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "auth": {
-          "type": "noauth"
-        },
-        "description": "404 Not Found. Endpoint publico.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users/00000000",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users",
-            "00000000"
-          ],
-          "query": [],
-          "variable": []
-        }
-      }
-    },
-    {
-      "name": "Login usuario STANDARD bloqueado 401",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json",
-            "disabled": false,
-            "type": "default"
-          }
-        ],
-        "auth": {
-          "type": "noauth"
-        },
-        "description": "401 Unauthorized. Standard users cannot log in.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users/login",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users",
-            "login"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"doi\": \"99999999\",\n  \"password\": \"cualquier-password\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Actualizar usuario inexistente 404",
-      "request": {
-        "method": "PUT",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json",
-            "disabled": false,
-            "type": "default"
-          }
-        ],
-        "auth": {
-          "type": "noauth"
-        },
-        "description": "404 Not Found.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users/999999",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users",
-            "999999"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"firstName\": \"No Existe\",\n  \"paternalLastName\": \"Prueba\",\n  \"maternalLastName\": \"Prueba\",\n  \"doiType\": \"DNI\",\n  \"doi\": \"12345678\",\n  \"birthDate\": \"01/01/1990\",\n  \"profession\": \"analista\",\n  \"gender\": \"otro\",\n  \"mobilePhone\": \"999999995\",\n  \"phone\": \"1111115\",\n  \"email\": \"noexiste@example.com\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Actualizar todos sin autenticacion 401",
-      "request": {
-        "method": "PUT",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json",
-            "disabled": false,
-            "type": "default"
-          }
-        ],
-        "auth": {
-          "type": "noauth"
-        },
-        "description": "401 Unauthorized. Requiere rol ADMIN.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users/admin/1",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users",
-            "admin",
-            "1"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"firstName\": \"Intento\",\n  \"paternalLastName\": \"No\",\n  \"maternalLastName\": \"Autorizado\",\n  \"doiType\": \"DNI\",\n  \"doi\": \"47278416\",\n  \"birthDate\": \"17/10/1991\",\n  \"profession\": \"ingeniero\",\n  \"gender\": \"masculino\",\n  \"mobilePhone\": \"997314069\",\n  \"phone\": \"3707079\",\n  \"email\": \"no-autorizado@example.com\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Actualizar todos DOI duplicado 400",
-      "request": {
-        "method": "PUT",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json",
-            "disabled": false,
-            "type": "default"
-          }
-        ],
-        "auth": {
-          "type": "basic",
-          "basic": [
-            {
-              "key": "password",
-              "value": "werWER@1",
-              "type": "string"
+        {
+          "name": "Duplicate STANDARD DOI",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "noauth" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Duplicado\",\n  \"paternalLastName\": \"Prueba\",\n  \"maternalLastName\": \"Prueba\",\n  \"doi\": \"{{standardDoi}}\",\n  \"doiType\": \"{{standardDoiType}}\",\n  \"birthDate\": \"01/01/1990\",\n  \"gender\": \"FEMALE\",\n  \"email\": \"duplicate.placeholder@example.test\",\n  \"phone\": \"016543210\",\n  \"mobilePhone\": \"912345678\",\n  \"profession\": \"Prueba\"\n}",
+              "options": { "raw": { "language": "json" } }
             },
-            {
-              "key": "username",
-              "value": "47278416",
-              "type": "string"
+            "url": "{{baseUrl}}/users",
+            "description": "Precondición: el DOI debe existir. El comportamiento actual devuelve 400."
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test('Duplicate DOI is rejected', function () { pm.response.to.have.status(400); });"]
             }
-          ]
-        },
-        "description": "400 Bad Request. El DOI ya existe.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users/admin/1",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users",
-            "admin",
-            "1"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"firstName\": \"Juan\",\n  \"paternalLastName\": \"Garcia\",\n  \"maternalLastName\": \"Lopez\",\n  \"doiType\": \"DNI\",\n  \"doi\": \"99999999\",\n  \"birthDate\": \"17/10/1991\",\n  \"profession\": \"ingeniero\",\n  \"gender\": \"masculino\",\n  \"mobilePhone\": \"997314069\",\n  \"phone\": \"3707079\",\n  \"email\": \"duplicado-update@example.com\",\n  \"userType\": \"ADMIN\",\n  \"password\": \"werWER@1\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
+          }]
         }
-      }
-    },
-    {
-      "name": "Eliminar usuario inexistente 404",
-      "request": {
-        "method": "DELETE",
-        "header": [],
-        "auth": {
-          "type": "basic",
-          "basic": [
-            {
-              "key": "password",
-              "value": "werWER@1",
-              "type": "string"
-            },
-            {
-              "key": "username",
-              "value": "47278416",
-              "type": "string"
-            }
-          ]
-        },
-        "description": "404 Not Found.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users/999999",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users",
-            "999999"
-          ],
-          "query": [],
-          "variable": []
-        }
-      }
-    },
-    {
-      "name": "Eliminar usuario sin autenticacion 401",
-      "request": {
-        "method": "DELETE",
-        "header": [],
-        "auth": {
-          "type": "noauth"
-        },
-        "description": "401 Unauthorized. Requiere HTTP Basic.",
-        "url": {
-          "raw": "http://localhost:8082/identipat-ia/users/1",
-          "protocol": "http",
-          "host": [
-            "localhost:8082"
-          ],
-          "path": [
-            "identipat-ia",
-            "users",
-            "1"
-          ],
-          "query": [],
-          "variable": []
-        }
-      }
+      ]
     }
-  ],
-  "variable": []
+  ]
 }

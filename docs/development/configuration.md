@@ -5,9 +5,9 @@ El backend requiere JDK 21 y usa los perfiles explícitos `dev`, `test` y `prod`
 ## Archivos y responsabilidades
 
 - `application.yml`: nombre y contexto de la aplicación, driver/dialecto PostgreSQL, formato y zona horaria, recursos estáticos empaquetados y expiración JWT comunes.
-- `application-dev.yml`: ejecución local en el puerto 8082, PostgreSQL en `localhost:5433`, ruta local opcional del build Angular, CORS para Angular local y credenciales/secreto conocidos exclusivamente de desarrollo.
-- `application-test.yml`: configuración determinista de pruebas, secreto JWT exclusivo de test y políticas Flyway/JPA; el datasource lo aporta Testcontainers.
-- `application-prod.yml`: conexión y secretos obligatorios desde el entorno, CORS explícito y `ddl-auto=validate`.
+- `application-dev.yml`: ejecución local en el puerto 8082, PostgreSQL en `localhost:5433`, ruta local opcional del build Angular, CORS para Angular local, credenciales/secreto conocidos exclusivamente de desarrollo y OpenAPI/Swagger habilitados.
+- `application-test.yml`: configuración determinista de pruebas, secreto JWT exclusivo de test, políticas Flyway/JPA y OpenAPI/Swagger habilitados; el datasource lo aporta Testcontainers.
+- `application-prod.yml`: conexión y secretos obligatorios desde el entorno, CORS explícito, `ddl-auto=validate` y OpenAPI/Swagger deshabilitados por defecto.
 
 ## Activación
 
@@ -56,6 +56,10 @@ Los valores DEV son conocidos, no productivos y pueden reemplazarse desde el ent
 Flyway es la fuente de verdad del esquema en DEV, TEST y PROD. En los tres perfiles `spring.flyway.enabled=true`, `baseline-on-migrate=false` y `spring.jpa.hibernate.ddl-auto=validate`: Flyway aplica las migraciones antes de que Hibernate valide, y Hibernate nunca crea ni evoluciona tablas.
 
 DEV apunta por defecto a PostgreSQL local en `localhost:5433`. TEST usa un PostgreSQL 16 efímero con puerto dinámico mediante Testcontainers y no depende de PostgreSQL local. PROD aplica migraciones versionadas sin baseline automático antes de la validación de Hibernate. Consulta [database-migrations.md](database-migrations.md).
+
+## OpenAPI y Swagger
+
+Los perfiles `dev` y `test` habilitan `springdoc.api-docs` y `springdoc.swagger-ui`; `prod` los deshabilita explícitamente. No hay una variable de entorno que los active en producción por accidente. Las rutas de documentación se publican bajo el contexto de la aplicación: `/identipat-ia/v3/api-docs` y `/identipat-ia/swagger-ui.html` en desarrollo local. Consulta [api-documentation.md](api-documentation.md).
 
 ## Archivos `.env`
 

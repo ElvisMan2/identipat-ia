@@ -20,6 +20,7 @@ identipat-ia/
 │   │   │   │   ├── config/
 │   │   │   │   │   ├── JacksonConfig.java
 │   │   │   │   │   ├── JwtAuthenticationFilter.java
+│   │   │   │   │   ├── OpenApiConfig.java
 │   │   │   │   │   └── SecurityConfig.java
 │   │   │   │   ├── controller/
 │   │   │   │   │   └── UserController.java
@@ -73,6 +74,7 @@ identipat-ia/
 │   ├── architecture/
 │   │   └── architecture-overview.md
 │   ├── development/
+│   │   ├── api-documentation.md
 │   │   ├── configuration.md
 │   │   └── database-migrations.md
 │   ├── diagnostico-proyecto.md

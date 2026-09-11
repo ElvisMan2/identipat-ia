@@ -45,6 +45,17 @@ cd backend
 
 La API se publica bajo `http://localhost:8082/identipat-ia` y el frontend de desarrollo utiliza su proxy local `/api`.
 
+## Documentación de API y Postman
+
+Con el perfil `dev` activo, la especificación OpenAPI y Swagger UI están disponibles en:
+
+- `http://localhost:8082/identipat-ia/v3/api-docs`
+- `http://localhost:8082/identipat-ia/swagger-ui.html`
+
+La colección para pruebas manuales está en `postman/identipat-api.collection.json`. Configura `adminDoi` y `adminPassword` como variables locales en Postman, ejecuta **Login ADMIN and save JWT** y la colección almacenará el resultado en `adminJwt` para las solicitudes administrativas Bearer. No versiones credenciales ni JWT.
+
+Consulta [la guía de documentación de API](docs/development/api-documentation.md) para la disponibilidad por ambiente y el flujo STANDARD.
+
 ## Build y pruebas del backend
 
 Flyway crea y evoluciona el esquema PostgreSQL. Las pruebas de integración usan un PostgreSQL efímero de Testcontainers, por lo que requieren Docker Engine, pero no una instancia PostgreSQL local.
