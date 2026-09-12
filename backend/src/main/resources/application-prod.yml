@@ -12,6 +12,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+  web:
+    resources:
+      static-locations: '${STATIC_LOCATIONS:file:./frontend/dist/identipat-ia/browser/}'
 
 app:
   preprocessing:

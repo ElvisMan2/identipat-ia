@@ -14,7 +14,7 @@ spring:
     time-zone: ${APP_TIME_ZONE:America/Lima}
   web:
     resources:
-      static-locations: classpath:/static/
+      static-locations: file:./frontend/dist/identipat-ia/browser/
 
 server:
   servlet:
