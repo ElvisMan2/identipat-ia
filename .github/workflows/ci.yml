@@ -1,0 +1,99 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+  push:
+    branches:
+      - develop
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Temurin JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Make Maven Wrapper executable
+        working-directory: backend
+        run: chmod +x mvnw
+
+      - name: Run backend tests
+        working-directory: backend
+        run: ./mvnw clean test
+
+      - name: Package backend
+        working-directory: backend
+        run: ./mvnw clean package -DskipTests
+
+  preprocessing:
+    name: Preprocessing CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: preprocessing-service/pyproject.toml
+
+      - name: Install preprocessing service and development dependencies
+        working-directory: preprocessing-service
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Run preprocessing tests
+        working-directory: preprocessing-service
+        run: python -m pytest
+
+      - name: Run Ruff
+        working-directory: preprocessing-service
+        run: python -m ruff check .
+
+      - name: Build preprocessing Docker image
+        working-directory: preprocessing-service
+        run: docker build -t identipat-preprocessing:ci .
+
+      - name: Verify preprocessing container health
+        working-directory: preprocessing-service
+        shell: bash
+        run: |
+          set -euo pipefail
+          container_name="identipat-preprocessing-ci"
+          trap 'docker rm -f "$container_name" >/dev/null 2>&1 || true' EXIT
+          docker run --detach --name "$container_name" --publish 127.0.0.1::8090 identipat-preprocessing:ci
+          health_url="http://$(docker port "$container_name" 8090/tcp)"
+          response=""
+          for attempt in {1..10}; do
+            if response="$(curl --fail --silent --show-error "$health_url/health")"; then
+              break
+            fi
+            sleep 1
+          done
+          test "$response" = '{"status":"UP","service":"preprocessing-service","version":"0.1.0"}'

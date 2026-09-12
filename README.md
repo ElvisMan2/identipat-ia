@@ -89,6 +89,13 @@ cd backend
 
 Consulta [la guía de migraciones](docs/development/database-migrations.md) para crear una base nueva y evolucionar el esquema.
 
+## Integración continua
+
+GitHub Actions valida automáticamente el backend (Java 21, Maven, Testcontainers y Flyway) y el
+servicio de preprocesamiento (Python 3.12, pytest, Ruff y construcción Docker) en Push y Pull
+Request hacia `develop` y `main`. El flujo no despliega ni publica imágenes. Consulta la
+[guía de integración continua](docs/development/continuous-integration.md).
+
 ## Configuración por ambiente
 
 El perfil se selecciona con `SPRING_PROFILES_ACTIVE`; no hay un perfil activo por defecto. DEV ofrece valores locales no productivos para `DB_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`, `CORS_ALLOWED_ORIGINS` y `SERVER_PORT`. Las variables siempre pueden reemplazarlos desde el entorno, IDE o mecanismo de despliegue.

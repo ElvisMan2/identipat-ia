@@ -29,3 +29,5 @@
 - Agregar o actualizar pruebas cuando cambie el comportamiento.
 - No convertir Python en un segundo backend funcional ni permitir integraciones directas Angular → Python/LLM.
 - No confirmar secretos ni archivos locales de entorno.
+- Los cambios en workflows de CI deben preservar la validación de ambos stacks: backend con Maven
+  Wrapper, Testcontainers y Flyway; y `preprocessing-service` con Python 3.12, pytest, Ruff y Docker.

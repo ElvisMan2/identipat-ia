@@ -5,7 +5,9 @@
 ```text
 identipat-ia/
 ├── .github/
-│   └── pull_request_template.md
+│   ├── pull_request_template.md
+│   └── workflows/
+│       └── ci.yml
 ├── .vscode/
 │   └── settings.json
 ├── backend/
@@ -75,8 +77,10 @@ identipat-ia/
 │   │   └── architecture-overview.md
 │   ├── development/
 │   │   ├── api-documentation.md
+│   │   ├── continuous-integration.md
 │   │   ├── configuration.md
-│   │   └── database-migrations.md
+│   │   ├── database-migrations.md
+│   │   └── preprocessing-service.md
 │   ├── diagnostico-proyecto.md
 │   └── security/
 │       └── authorization-matrix.md
