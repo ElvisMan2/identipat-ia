@@ -10,4 +10,7 @@ import lombok.Data;
 public class DocumentRecognitionResponse {
     @Schema(description = "Indica si el documento ya está registrado", example = "true")
     private boolean registered;
+
+    @Schema(description = "Indica si el siguiente paso requiere contraseña administrativa", example = "false")
+    private boolean passwordRequired;
 }

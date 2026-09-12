@@ -4,19 +4,50 @@ import { Observable } from 'rxjs';
 import { User } from '../models/user.model';
 import { environment } from '../../environments/environment';
 
+export interface DocumentRecognitionResponse {
+  registered: boolean;
+  passwordRequired: boolean;
+}
+
+export interface LoginResponse {
+  tokenType: string;
+  accessToken: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class UserService {
   private readonly http = inject(HttpClient);
   private readonly endpoint = `${environment.apiBaseUrl}/users`;
+  private accessToken = '';
+
+  identify(doi: string, doiType: string): Observable<DocumentRecognitionResponse> {
+    return this.http.post<DocumentRecognitionResponse>(`${this.endpoint}/identify`, { doi, doiType });
+  }
+
+  login(doi: string, password: string): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.endpoint}/login`, { doi, password });
+  }
+
+  setAccessToken(accessToken: string): void {
+    this.accessToken = accessToken;
+  }
+
+  clearAccessToken(): void {
+    this.accessToken = '';
+  }
+
+  private get authenticatedOptions(): { headers: { Authorization: string } } {
+    return { headers: { Authorization: `Bearer ${this.accessToken}` } };
+  }
 
   findAll(): Observable<User[]> {
-    return this.http.get<User[]>(this.endpoint);
+    return this.http.get<User[]>(this.endpoint, this.authenticatedOptions);
   }
 
   findById(userId: number): Observable<User> {
-    return this.http.get<User>(`${this.endpoint}/${userId}`);
+    return this.http.get<User>(`${this.endpoint}/${userId}`, this.authenticatedOptions);
   }
 
   create(user: User): Observable<User> {
@@ -24,10 +55,10 @@ export class UserService {
   }
 
   update(userId: number, user: User): Observable<User> {
-    return this.http.put<User>(`${this.endpoint}/${userId}`, user);
+    return this.http.put<User>(`${this.endpoint}/admin/${userId}`, user, this.authenticatedOptions);
   }
 
   delete(userId: number): Observable<void> {
-    return this.http.delete<void>(`${this.endpoint}/${userId}`);
+    return this.http.delete<void>(`${this.endpoint}/${userId}`, this.authenticatedOptions);
   }
 }

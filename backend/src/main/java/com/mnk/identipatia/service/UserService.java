@@ -37,8 +37,12 @@ public class UserService {
     }
 
     public DocumentRecognitionResponse identifyDocument(DocumentRecognitionRequest request) {
-        boolean registered = userRepository.existsByDoiAndDoiType(request.getDoi(), request.getDoiType());
-        return new DocumentRecognitionResponse(registered);
+        return userRepository.findByDoi(request.getDoi())
+            .filter(user -> request.getDoiType().equalsIgnoreCase(user.getDoiType()))
+            .map(user -> new DocumentRecognitionResponse(
+                true,
+                ADMIN_USER_TYPE.equals(user.getUserType())))
+            .orElseGet(() -> new DocumentRecognitionResponse(false, false));
     }
 
     public StandardUserRegistrationResponse registerStandard(StandardUserRegistrationRequest request) {

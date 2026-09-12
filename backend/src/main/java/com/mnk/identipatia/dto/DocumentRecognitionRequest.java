@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
-@Schema(description = "Documento usado exclusivamente para reconocer si existe un registro STANDARD.")
+@Schema(description = "Documento usado para reconocer el registro y determinar el siguiente paso de acceso.")
 public class DocumentRecognitionRequest {
 
     @NotBlank

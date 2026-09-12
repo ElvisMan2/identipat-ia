@@ -1,6 +1,7 @@
 package com.mnk.identipatia.service;
 
 import com.mnk.identipatia.dto.DocumentRecognitionRequest;
+import com.mnk.identipatia.dto.DocumentRecognitionResponse;
 import com.mnk.identipatia.dto.StandardUserRegistrationRequest;
 import com.mnk.identipatia.dto.StandardUserRegistrationResponse;
 import com.mnk.identipatia.dto.UserDTO;
@@ -27,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -82,20 +84,40 @@ class UserServiceTest {
     }
 
     @Test
-    void identifyDocumentReturnsTrueOnlyForMatchingDocumentTypeAndNumber() {
+    void identifyDocumentRecognizesStandardWithoutRequestingPassword() {
         DocumentRecognitionRequest request = recognitionRequest("12345678", "DNI");
-        when(userRepository.existsByDoiAndDoiType("12345678", "DNI")).thenReturn(true);
+        User standard = user();
+        standard.setDoi("12345678");
+        standard.setDoiType("DNI");
+        standard.setUserType("STANDARD");
+        when(userRepository.findByDoi("12345678")).thenReturn(Optional.of(standard));
 
         assertEquals(true, userService.identifyDocument(request).isRegistered());
-        verify(userRepository).existsByDoiAndDoiType("12345678", "DNI");
+        assertFalse(userService.identifyDocument(request).isPasswordRequired());
+    }
+
+    @Test
+    void identifyDocumentRequestsPasswordForAdmin() {
+        DocumentRecognitionRequest request = recognitionRequest("87654321", "CE");
+        User admin = user();
+        admin.setDoi("87654321");
+        admin.setDoiType("CE");
+        admin.setUserType("ADMIN");
+        when(userRepository.findByDoi("87654321")).thenReturn(Optional.of(admin));
+
+        DocumentRecognitionResponse response = userService.identifyDocument(request);
+
+        assertTrue(response.isRegistered());
+        assertTrue(response.isPasswordRequired());
     }
 
     @Test
     void identifyDocumentReturnsFalseForUnknownDocument() {
         DocumentRecognitionRequest request = recognitionRequest("99999999", "CE");
-        when(userRepository.existsByDoiAndDoiType("99999999", "CE")).thenReturn(false);
+        when(userRepository.findByDoi("99999999")).thenReturn(Optional.empty());
 
         assertFalse(userService.identifyDocument(request).isRegistered());
+        assertFalse(userService.identifyDocument(request).isPasswordRequired());
     }
 
     @Test

@@ -160,8 +160,9 @@ class IdentipatIaApplicationTests {
         assertThat(api.at("/components/securitySchemes/bearerAuth/bearerFormat").asText()).isEqualTo("JWT");
 
         JsonNode recognitionProperties = api.at("/components/schemas/DocumentRecognitionResponse/properties");
-        assertThat(recognitionProperties.size()).isEqualTo(1);
+        assertThat(recognitionProperties.size()).isEqualTo(2);
         assertThat(recognitionProperties.has("registered")).isTrue();
+        assertThat(recognitionProperties.has("passwordRequired")).isTrue();
 
         JsonNode registrationProperties = api.at("/components/schemas/StandardUserRegistrationRequest/properties");
         assertThat(registrationProperties.has("userType")).isFalse();
