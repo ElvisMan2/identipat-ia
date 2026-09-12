@@ -2,6 +2,9 @@ server:
   port: ${SERVER_PORT:0}
 
 spring:
+  web:
+    resources:
+      static-locations: '${STATIC_LOCATIONS:file:../frontend/dist/identipat-ia/browser/}'
   flyway:
     enabled: true
     baseline-on-migrate: false
