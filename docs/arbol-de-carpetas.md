@@ -1,6 +1,6 @@
 # Árbol de carpetas actual
 
-**Fecha de actualización:** 11 de septiembre de 2026
+**Fecha de actualización:** 12 de septiembre de 2026
 
 ```text
 identipat-ia/
@@ -81,7 +81,11 @@ identipat-ia/
 │   │   ├── configuration.md
 │   │   ├── database-migrations.md
 │   │   └── preprocessing-service.md
+│   ├── design/
+│   │   ├── analysis-contract.md       # Contrato conceptual F1.0, aún no implementado
+│   │   └── analysis-domain.md         # Dominio y persistencia conceptual F1.0
 │   ├── diagnostico-proyecto.md
+│   ├── roadmap-funcional.md
 │   └── security/
 │       └── authorization-matrix.md
 ├── frontend/
