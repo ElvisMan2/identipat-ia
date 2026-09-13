@@ -26,6 +26,14 @@ app:
     secret: ${JWT_SECRET:identipat-dev-secret-key-change-me-32chars}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+  standard-session:
+    # 32 bytes nulos en Base64: valor conocido y exclusivo de desarrollo.
+    pepper: ${STANDARD_SESSION_PEPPER:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=}
+    inactivity-timeout: ${STANDARD_SESSION_INACTIVITY_TIMEOUT:30m}
+    absolute-timeout: ${STANDARD_SESSION_ABSOLUTE_TIMEOUT:8h}
+    cookie-secure: ${STANDARD_SESSION_COOKIE_SECURE:false}
+    consent-current-version: ${CONSENT_CURRENT_VERSION:personal-data/1.0}
+    consent-document-sha256: '${CONSENT_DOCUMENT_SHA256:0000000000000000000000000000000000000000000000000000000000000000}'
 
 springdoc:
   api-docs:

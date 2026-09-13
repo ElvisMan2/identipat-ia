@@ -10,6 +10,7 @@ import com.mnk.identipatia.exception.UserNotFoundException;
 import com.mnk.identipatia.mapper.UserMapper;
 import com.mnk.identipatia.model.User;
 import com.mnk.identipatia.repository.UserRepository;
+import com.mnk.identipatia.repository.StandardSessionRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -26,14 +27,17 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final StandardSessionRepository standardSessionRepository;
 
     public UserService(
             UserRepository userRepository,
             UserMapper userMapper,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            StandardSessionRepository standardSessionRepository) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
+        this.standardSessionRepository = standardSessionRepository;
     }
 
     public DocumentRecognitionResponse identifyDocument(DocumentRecognitionRequest request) {
@@ -115,7 +119,12 @@ public class UserService {
 
     public void delete(Long userId) {
         User user = getUser(userId);
-        userRepository.delete(user);
+        if (standardSessionRepository.existsByUserUserId(userId)) {
+            user.setStatus("I");
+            userRepository.save(user);
+        } else {
+            userRepository.delete(user);
+        }
     }
 
     private void validateUniqueDoi(String doi) {
