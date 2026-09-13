@@ -71,4 +71,49 @@ describe('App', () => {
 
     expect(fixture.nativeElement.textContent).toContain('Usuarios registrados');
   });
+
+  it('should create only a standard user through the registration contract', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.view.set('admin');
+    fixture.detectChanges();
+
+    app.userForm.setValue({
+      firstName: 'Nombre de prueba',
+      paternalLastName: 'Apellido paterno',
+      maternalLastName: 'Apellido materno',
+      doi: '12345678',
+      doiType: 'DNI',
+      birthDate: '01/01/1990',
+      gender: 'FEMALE',
+      email: 'standard.placeholder@example.test',
+      phone: '016543210',
+      mobilePhone: '912345678',
+      profession: 'Profesión de prueba',
+      password: ''
+    });
+
+    fixture.detectChanges();
+  const createButton = fixture.nativeElement.querySelector('.actions button') as HTMLButtonElement;
+  createButton.click();
+
+    const registrationRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users`);
+    expect(registrationRequest.request.method).toBe('POST');
+    expect(registrationRequest.request.body).toEqual({
+      firstName: 'Nombre de prueba',
+      paternalLastName: 'Apellido paterno',
+      maternalLastName: 'Apellido materno',
+      doi: '12345678',
+      doiType: 'DNI',
+      birthDate: '01/01/1990',
+      gender: 'FEMALE',
+      email: 'standard.placeholder@example.test',
+      phone: '016543210',
+      mobilePhone: '912345678',
+      profession: 'Profesión de prueba'
+    });
+    registrationRequest.flush({ registered: true });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/users`).flush([]);
+  });
 });

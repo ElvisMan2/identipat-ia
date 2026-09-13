@@ -14,6 +14,24 @@ export interface LoginResponse {
   accessToken: string;
 }
 
+export interface StandardUserRegistrationRequest {
+  firstName: string;
+  paternalLastName: string;
+  maternalLastName: string;
+  doi: string;
+  doiType: string;
+  birthDate: string;
+  gender: string;
+  email: string;
+  phone: string;
+  mobilePhone: string;
+  profession: string;
+}
+
+export interface StandardUserRegistrationResponse {
+  registered: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -50,8 +68,8 @@ export class UserService {
     return this.http.get<User>(`${this.endpoint}/${userId}`, this.authenticatedOptions);
   }
 
-  create(user: User): Observable<User> {
-    return this.http.post<User>(this.endpoint, user);
+  create(user: StandardUserRegistrationRequest): Observable<StandardUserRegistrationResponse> {
+    return this.http.post<StandardUserRegistrationResponse>(this.endpoint, user);
   }
 
   update(userId: number, user: User): Observable<User> {

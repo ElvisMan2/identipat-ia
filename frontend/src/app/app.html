@@ -29,15 +29,12 @@
           <label>Correo electrónico <input type="email" formControlName="email" placeholder="juan@example.com" /></label>
           <label>Teléfono <input type="text" formControlName="phone" placeholder="014567890" /></label>
           <label>Celular <input type="text" formControlName="mobilePhone" placeholder="987654321" /></label>
-          <label>Tipo de usuario
-            <select formControlName="userType"><option value="" disabled>Seleccione</option><option value="ADMIN">Administrador</option><option value="USER">Usuario</option></select>
-          </label>
-          @if (userForm.controls.userType.value === 'ADMIN') {
+          @if (editingUserType() === 'ADMIN') {
             <label>Contraseña <input type="password" formControlName="password" placeholder="••••••••" /></label>
           }
           <label>Profesión <input type="text" formControlName="profession" placeholder="Ingeniero" /></label>
           <div class="actions">
-            <button type="submit" [disabled]="saving()">{{ saving() ? 'Guardando...' : (editingUserId() ? 'Actualizar' : 'Crear') }}</button>
+            <button type="button" (click)="submit()" [disabled]="saving()">{{ saving() ? 'Guardando...' : (editingUserId() ? 'Actualizar' : 'Crear') }}</button>
             <button type="button" class="ghost" (click)="cancelEdit()" [disabled]="saving()">Limpiar</button>
           </div>
         </form>
@@ -75,7 +72,7 @@
 
     <section class="hero">
       <div class="hero-copy">
-        <p class="eyebrow">Orientación psicológica accesible</p>
+        <p class="eyebrow">Orientación en patentes</p>
         <h1>Comprender lo que sientes es un buen lugar para empezar.</h1>
         <p class="intro">IDENTIPAT IA te acompaña con una evaluación orientativa, privada y sencilla para ayudarte a reconocer patrones y encontrar el siguiente paso adecuado.</p>
 

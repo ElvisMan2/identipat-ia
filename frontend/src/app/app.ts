@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { UserService } from './services/user.service';
+import { Observable } from 'rxjs';
+import { StandardUserRegistrationRequest, UserService } from './services/user.service';
 import { User } from './models/user.model';
 
 @Component({
@@ -10,7 +11,7 @@ import { User } from './models/user.model';
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class App implements OnInit {
+export class App {
   private readonly fb = inject(FormBuilder);
   private readonly userService = inject(UserService);
 
@@ -19,6 +20,7 @@ export class App implements OnInit {
   readonly saving = signal(false);
   readonly errorMessage = signal('');
   readonly editingUserId = signal<number | null>(null);
+  readonly editingUserType = signal('STANDARD');
   readonly view = signal<'home' | 'admin-login' | 'admin'>('home');
   readonly checkingDocument = signal(false);
   readonly authenticating = signal(false);
@@ -44,22 +46,9 @@ export class App implements OnInit {
     email: ['', [Validators.required, Validators.email]],
     phone: ['', [Validators.required]],
     mobilePhone: ['', [Validators.required]],
-    userType: ['', [Validators.required]],
     profession: ['', [Validators.required]],
     password: ['']
   });
-
-  ngOnInit(): void {
-    this.userForm.controls.userType.valueChanges.subscribe((userType) => {
-      const passwordControl = this.userForm.controls.password;
-      if (userType === 'ADMIN') {
-        passwordControl.setValidators([Validators.required]);
-      } else {
-        passwordControl.clearValidators();
-      }
-      passwordControl.updateValueAndValidity({ emitEvent: false });
-    });
-  }
 
   identifyDocument(): void {
     if (this.accessForm.invalid) {
@@ -146,11 +135,12 @@ export class App implements OnInit {
   submit(): void {
     if (this.userForm.invalid) {
       this.userForm.markAllAsTouched();
+      this.errorMessage.set('Completa correctamente todos los campos obligatorios.');
       return;
     }
 
     const formValue = this.userForm.getRawValue();
-    const payload: User = {
+    const registrationPayload: StandardUserRegistrationRequest = {
       firstName: formValue.firstName,
       paternalLastName: formValue.paternalLastName,
       maternalLastName: formValue.maternalLastName,
@@ -161,18 +151,20 @@ export class App implements OnInit {
       email: formValue.email,
       phone: formValue.phone,
       mobilePhone: formValue.mobilePhone,
-      userType: formValue.userType,
-      profession: formValue.profession,
-      password: formValue.password || undefined
+      profession: formValue.profession
     };
 
     this.saving.set(true);
     this.errorMessage.set('');
 
     const userId = this.editingUserId();
-    const request$ = userId === null
-      ? this.userService.create(payload)
-      : this.userService.update(userId, payload);
+    const request$: Observable<unknown> = userId === null
+      ? this.userService.create(registrationPayload)
+      : this.userService.update(userId, {
+          ...registrationPayload,
+          userType: this.editingUserType(),
+          password: formValue.password || undefined
+        });
 
     request$.subscribe({
       next: () => {
@@ -193,6 +185,14 @@ export class App implements OnInit {
     }
 
     this.editingUserId.set(user.userId);
+    this.editingUserType.set(user.userType);
+    const passwordControl = this.userForm.controls.password;
+    if (user.userType === 'ADMIN') {
+      passwordControl.setValidators([Validators.required]);
+    } else {
+      passwordControl.clearValidators();
+    }
+    passwordControl.updateValueAndValidity({ emitEvent: false });
     this.userForm.setValue({
       firstName: user.firstName,
       paternalLastName: user.paternalLastName,
@@ -204,7 +204,6 @@ export class App implements OnInit {
       email: user.email,
       phone: user.phone,
       mobilePhone: user.mobilePhone,
-      userType: user.userType,
       profession: user.profession,
       password: ''
     });
@@ -212,6 +211,9 @@ export class App implements OnInit {
 
   cancelEdit(): void {
     this.editingUserId.set(null);
+    this.editingUserType.set('STANDARD');
+    this.userForm.controls.password.clearValidators();
+    this.userForm.controls.password.updateValueAndValidity({ emitEvent: false });
     this.userForm.reset({
       firstName: '',
       paternalLastName: '',
@@ -223,7 +225,6 @@ export class App implements OnInit {
       email: '',
       phone: '',
       mobilePhone: '',
-      userType: '',
       profession: '',
       password: ''
     });
