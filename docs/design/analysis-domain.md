@@ -1,6 +1,6 @@
 # Dominio de análisis — F1.0
 
-**Estado:** diseño aprobado para revisión humana; no implementado.
+**Estado:** diseño aprobado; sesión y consentimiento implementados en F1.1, dominio de análisis aún no implementado.
 **Alcance:** base conceptual para F1.1–F1.4. PDF y audio se incorporarán sobre este modelo en F1.5 y F1.6.
 
 ## 1. Objetivo
@@ -102,7 +102,7 @@ Se selecciona una cookie de sesión propia, por ejemplo `IDENTIPAT_STANDARD_SESS
 | `Path` | `/identipat-ia`, el contexto actual del backend. |
 | Expiración | `Max-Age` no mayor que el TTL absoluto configurado; el servidor aplica además el timeout por inactividad. |
 
-F1.1 debe definir e implementar una estrategia CSRF explícita para todas las rutas `STANDARD` mutables autorizadas mediante esta cookie. `SameSite` y CORS son defensas complementarias, no sustituyen esa protección. El mecanismo concreto —token CSRF, double-submit cookie, `CookieCsrfTokenRepository` u otro compatible con Angular/Spring Security— se seleccionará durante F1.1 tras revisar la configuración existente. Si un despliegue futuro exige frontend y API en sitios distintos, deberá además habilitar `Secure` y CORS de orígenes concretos; no se cambiará silenciosamente a `SameSite=None`. La cookie no crea una sesión HTTP de Spring Security y `ADMIN` conserva su JWT stateless separado.
+F1.1 implementó `CookieCsrfTokenRepository` (`XSRF-TOKEN`/`X-XSRF-TOKEN`) y un handler SPA compatible con Spring Security 6.2. La protección se exige selectivamente en creación/cierre de sesión y consentimiento; F1.3 deberá extender el matcher a mutaciones `/analyses/**`. `SameSite` y CORS son defensas complementarias, no sustituyen CSRF. La cookie no crea una sesión HTTP de Spring Security y `ADMIN` conserva su JWT stateless separado.
 
 El header se descarta porque obliga a exponer el secreto a JavaScript, normalmente mediante memoria persistente, `localStorage` o mecanismos equivalentes, aumentando el impacto de XSS. No se usa un JWT para esta capacidad, para no confundirla con el acceso administrativo ni introducir verificación sin estado que impida revocación inmediata.
 
@@ -340,7 +340,7 @@ La base de dominio no se sustituye por logs. Los logs operativos no deben imprim
 | TTL | Solo absoluto; solo inactividad; ambos | 30 min inactividad + 8 h absoluto configurables | Equilibra exposición de cookie abandonada y continuidad de uso. | F1.1 |
 | Creación de sesión | Incluirla en identify/registro; endpoint propio | `POST /standard-sessions` separado | Mantiene reconocimiento y registro sin efectos de sesión. | F1.1 |
 | Consentimiento | Flag mutable; solo aceptaciones; eventos | Eventos `ACCEPTED`/`REJECTED` por sesión | Evidencia trazable sin datos técnicos innecesarios. | F1.1 |
-| CSRF para STANDARD | Solo SameSite/CORS; token; double-submit; repositorio Spring | Estrategia CSRF explícita obligatoria; mecanismo por definir | Las rutas mutables usan cookie y requieren una defensa CSRF específica; ADMIN JWT permanece separado. | F1.1 |
+| CSRF para STANDARD | Solo SameSite/CORS; token; double-submit; repositorio Spring | `CookieCsrfTokenRepository`, cookie `XSRF-TOKEN`, header `X-XSRF-TOKEN`, handler SPA 6.2 | Las rutas mutables usan cookie y requieren una defensa CSRF específica; ADMIN JWT permanece separado. | F1.1 |
 | PK nuevas entidades | BIGINT; UUID | UUID, salvo resultado 1:1 que usa `analysis_id` | No enumerables y consistentes para referencias internas/externas. | F1.1–F1.3 |
 | Analysis/Input | Tres análisis; campos en Analysis; tabla 1:1 | Un `Analysis` + `analysis_inputs` 1:1 | Unifica fuente y desacopla contenido voluminoso/evolutivo. | F1.3 |
 | Invocaciones IA | Campos en Analysis; tabla separada | `ai_invocations` 1:N | Conserva retries, timeouts y respuestas inválidas. | F1.2/F1.3 |
@@ -373,7 +373,7 @@ F1.3 no introducirá Kafka, Redis, Celery ni una dependencia de cola solo para e
 - Contenido jurídico, taxonomía final de conclusiones, criterios/referencias y cualquier indicador cualitativo de certeza (F1.4).
 - Archivos originales, object storage, límites, MIME, OCR, transcripción y contratos de Python para PDF/audio (F1.5/F1.6).
 - Implementación concreta del proveedor/SDK, política de retry, límites de costo y catálogo final de errores (F1.2/F1.3).
-- Protección anti-enumeración, rate limiting y hardening operativo (F2.2). La estrategia CSRF para rutas STANDARD basadas en cookie es obligatoria en F1.1; solo el mecanismo concreto queda por elegir.
+- Protección anti-enumeración, rate limiting y hardening operativo (F2.2). F1.1 cerró el mecanismo CSRF; F1.3 debe aplicarlo también a mutaciones de análisis.
 - Visualización del disclaimer, reporte web/PDF y su versionado de presentación (F1.7).
 
 Estas decisiones diferidas no requieren rediseñar `Analysis`, su entrada 1:1 ni la separación de `AiInvocation` y `AnalysisResult`.

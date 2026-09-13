@@ -20,6 +20,13 @@ app:
     secret: identipat-test-secret-key-only-for-automated-tests
   cors:
     allowed-origins: http://localhost:4200
+  standard-session:
+    pepper: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+    inactivity-timeout: 30m
+    absolute-timeout: 8h
+    cookie-secure: false
+    consent-current-version: personal-data/1.0
+    consent-document-sha256: '0000000000000000000000000000000000000000000000000000000000000000'
 
 springdoc:
   api-docs:

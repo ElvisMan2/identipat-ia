@@ -52,9 +52,11 @@ STANDARD no hace login convencional ni recibe JWT. No usa contraseña para acced
 
 El DNI/CE sirve únicamente para identificar o reconocer si existe un registro en PostgreSQL; no constituye autenticación, contraseña, credencial ni factor de autenticación. Si no existe registro, el flujo contempla registro y aceptación previa; si existe, continúa al uso de la herramienta conforme a la validación del flujo. Un usuario registrado no ve sus datos personales previamente registrados y pasa al uso de la herramienta.
 
-## Consentimiento y disclaimer
+## Sesión STANDARD, consentimiento y disclaimer
 
-El consentimiento para el tratamiento de datos personales debe contemplarse en el registro y es distinto del disclaimer del diagnóstico. El disclaimer debe indicar que los resultados de IA son orientativos y no sustituyen evaluación técnica, experta ni decisiones oficiales de Indecopi. Ambos mecanismos se preparan conceptualmente aquí; no se implementan en esta fase.
+F1.1 implementa en Java una capacidad temporal server-side asociada al registro STANDARD: token opaco de 256 bits en cookie HttpOnly y solo su HMAC-SHA-256 en PostgreSQL. La sesión es revocable, expira por inactividad y por límite absoluto, y nunca se convierte en JWT o autenticación ADMIN. Las mutaciones usan CSRF de Spring Security mediante cookie `XSRF-TOKEN` y header `X-XSRF-TOKEN`; CORS permite credenciales solo desde orígenes explícitos.
+
+El consentimiento de tratamiento de datos se persiste como evento inmutable versionado, distinto del disclaimer orientativo del diagnóstico. La evidencia vincula sesión y registro, pero no prueba la identidad real de quien opera el navegador. F1.1 no inventa texto legal: configura la versión y SHA-256 del documento aprobado externamente.
 
 ## Persistencia interna e historial visible
 
@@ -85,7 +87,7 @@ autenticación equivalente.
 La asociación de una sesión o de un evento de consentimiento con `user_id` y `session_id` deja
 trazabilidad de la decisión tomada desde una experiencia vinculada al registro STANDARD. No demuestra
 la identidad real de quien utiliza el navegador: DNI/CE no es autenticación ni verificación
-criptográfica o presencial. F1.1 deberá definir e implementar una estrategia CSRF explícita para las
+criptográfica o presencial. F1.1 implementa `CookieCsrfTokenRepository` y un handler SPA Spring Security 6.2 para las
 rutas STANDARD mutables que usan la cookie temporal; `SameSite` y CORS son complementarios. ADMIN
 mantiene su modelo JWT Bearer separado.
 
@@ -107,10 +109,10 @@ de esta arquitectura.
 | --- | --- | --- |
 | F0.1 | Reorganización del repositorio | Completada |
 | F0.2 | Maven Wrapper / build reproducible | Completada |
-| F0.2A | Alineamiento arquitectónico | En curso |
-| F0.3 | Seguridad + modelo de acceso usuarios | Pendiente |
-| F0.4 | Configuración dev/test/prod | Pendiente |
-| F0.5 | Flyway + Testcontainers | Pendiente |
-| F0.6 | OpenAPI + Postman | Pendiente |
+| F0.2A | Alineamiento arquitectónico | Completada |
+| F0.3 | Seguridad + modelo de acceso usuarios | Completada |
+| F0.4 | Configuración dev/test/prod | Completada |
+| F0.5 | Flyway + Testcontainers | Completada |
+| F0.6 | OpenAPI + Postman | Completada |
 | F0.7 | Bootstrap Python `preprocessing-service` | Completada |
-| F0.8 | CI GitHub | Pendiente |
+| F0.8 | CI GitHub | Completada |

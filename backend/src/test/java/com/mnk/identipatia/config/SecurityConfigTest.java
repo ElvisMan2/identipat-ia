@@ -70,6 +70,7 @@ class SecurityConfigTest {
 
         assertEquals(List.of("http://localhost:4200"), configuration.getAllowedOrigins());
         assertEquals(Boolean.TRUE, configuration.getAllowCredentials());
+        assertTrue(configuration.getAllowedHeaders().contains("X-XSRF-TOKEN"));
         assertFalse(configuration.getAllowedOrigins().contains("*"));
     }
 

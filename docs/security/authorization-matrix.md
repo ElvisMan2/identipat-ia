@@ -1,49 +1,29 @@
-# Matriz de autorización — F0.3
+# Matriz de autorización — F1.1
 
-## Principios vigentes
+Las rutas son relativas a `/identipat-ia`. Existen tres categorías separadas:
 
-- Solo `ADMIN` se autentica con contraseña, Spring Security y JWT.
-- `STANDARD` no usa contraseña para acceder, no recibe JWT y no dispone de perfil ni historial visibles.
-- `doi` y `doiType` (DNI/CE) solo determinan si ya existe un registro; no autentican ni prueban identidad.
-- Angular consume estas rutas exclusivamente a través del backend Java.
+- `PUBLIC`: no exige una capacidad de acceso; una mutación puede exigir CSRF.
+- `ADMIN_JWT`: autenticación ADMIN mediante Bearer JWT.
+- `STANDARD_SESSION`: capacidad temporal por cookie HttpOnly; no es login, JWT, identidad verificada ni una authority ADMIN.
 
-Las rutas de la tabla son relativas al contexto de la aplicación (`/identipat-ia`).
+| Endpoint | Acceso | Observaciones |
+| --- | --- | --- |
+| `GET /standard-session/csrf` | `PUBLIC` | Emite `XSRF-TOKEN`; CSRF no autentica. |
+| `POST /standard-sessions` | `PUBLIC + CSRF` | Exige `X-XSRF-TOKEN`; valida un STANDARD activo y emite `IDENTIPAT_STANDARD_SESSION`. |
+| `GET /standard-session` | `STANDARD_SESSION` | Renueva inactividad sin superar el límite absoluto. |
+| `POST /standard-session/consent` | `STANDARD_SESSION + CSRF` | Persiste una decisión inmutable; `REJECTED` cierra la sesión. |
+| `DELETE /standard-session` | `STANDARD_SESSION + CSRF` | Revoca server-side y elimina la cookie. |
+| `POST /users/identify` | `PUBLIC` | Solo reconoce el registro; DNI/CE no autentica. |
+| `POST /users` | `PUBLIC` | Registra STANDARD activo sin password. |
+| `POST /users/login` | `PUBLIC` | Solo un ADMIN activo recibe JWT. |
+| `GET /users/**` | `ADMIN_JWT` | Consulta administrativa. |
+| `PUT /users/**` | `ADMIN_JWT` | Mutación administrativa; no depende de cookie STANDARD. |
+| `DELETE /users/{userId}` | `ADMIN_JWT` | Si hay sesiones históricas, desactiva para conservar trazabilidad; nunca hace cascade. |
 
-| Método y endpoint | Propósito | Público | ADMIN autenticado | Respuesta relevante | Observaciones de seguridad |
-| --- | --- | --- | --- | --- | --- |
-| `POST /users/identify` | Reconocer si existe un registro por documento | Sí | Sí | `200 { "registered": true|false }` | Solo recibe `doi` y `doiType`; no emite JWT ni devuelve id, PII, rol, estado, contraseña, historial o consultas. |
-| `POST /users` | Registrar un nuevo STANDARD | Sí | Sí | `201 { "registered": true }` | El request no contiene id, rol, estado ni contraseña. El servidor fuerza `STANDARD`, estado activo y `password = null`; el documento debe ser único. |
-| `POST /users/login` | Autenticar administración | Sin token previo | Sí, si sus credenciales son válidas | `200 { "tokenType": "Bearer", "accessToken": "..." }` | Únicamente ADMIN activo puede autenticarse. STANDARD es rechazado y nunca recibe JWT. |
-| `GET /users` | Listar usuarios | No | Sí | `200` con usuarios | Operación administrativa; sin token válido responde `401`. |
-| `GET /users/{userId}` | Consultar detalle de usuario | No | Sí | `200` con `UserDTO` | El detalle completo, incluida la consulta por id, es administrativo. |
-| `GET /users/doi/{doi}` | Consultar detalle por documento | No | Sí | `200` con `UserDTO` | Ya no es una vía pública de reconocimiento y queda protegida por `ROLE_ADMIN`. |
-| `PUT /users/{userId}` | Actualizar datos de usuario | No | Sí | `200` con `UserDTO` | Solo ADMIN; STANDARD no puede editar perfil. |
-| `PUT /users/admin/{userId}` | Actualización administrativa integral, incluidos rol/estado | No | Sí | `200` con `UserDTO` | Solo ADMIN. No existe cambio de rol o estado público. |
-| `DELETE /users/{userId}` | Eliminar usuario | No | Sí | `204` | Solo ADMIN; sin token válido responde `401`. |
+## CSRF y CORS
 
-## Contrato de reconocimiento público
+Spring Security 6.2 usa `CookieCsrfTokenRepository` con cookie `XSRF-TOKEN` (`HttpOnly=false`, `SameSite=Lax`, `Path=/`) y header `X-XSRF-TOKEN`. La protección es selectiva para las mutaciones STANDARD implementadas. F1.3 deberá extenderla a las mutaciones `/analyses/**`. CORS admite credenciales únicamente para `CORS_ALLOWED_ORIGINS` explícitos; `*` está prohibido.
 
-Request:
+## Límites
 
-```json
-{
-  "doi": "12345678",
-  "doiType": "DNI"
-}
-```
-
-Response:
-
-```json
-{
-  "registered": true
-}
-```
-
-`doiType` es el campo que distingue DNI y CE en el modelo actual. La unicidad vigente del modelo es sobre `doi`; la verificación pública comprueba ambos campos para no reconocer un tipo de documento distinto.
-
-## Límites funcionales
-
-Si `registered` es `false`, el frontend debe continuar con el registro STANDARD. Si es `true`, debe continuar al flujo posterior de la herramienta cuando exista. No se implementan en F0.3 sesiones, perfil, historial, consentimiento, disclaimer, análisis ni consultas.
-
-La respuesta de reconocimiento permite enumerar la existencia de un documento, comportamiento requerido por el flujo actual. Mitigaciones futuras posibles —sin implementar aquí— incluyen límites de frecuencia, monitoreo, CAPTCHA u otra verificación acordada con Indecopi.
+La cookie `IDENTIPAT_STANDARD_SESSION` vincula una experiencia a un registro STANDARD, pero no demuestra que quien opera el navegador sea titular real del DNI/CE. No existe perfil, historial visible ni recuperación de sesiones para STANDARD. Consentimiento de datos y disclaimer orientativo son conceptos distintos; F1.1 no implementa análisis ni disclaimer.

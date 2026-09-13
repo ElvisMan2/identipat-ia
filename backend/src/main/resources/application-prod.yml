@@ -24,6 +24,13 @@ app:
     secret: ${JWT_SECRET}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS}
+  standard-session:
+    pepper: ${STANDARD_SESSION_PEPPER}
+    inactivity-timeout: ${STANDARD_SESSION_INACTIVITY_TIMEOUT:30m}
+    absolute-timeout: ${STANDARD_SESSION_ABSOLUTE_TIMEOUT:8h}
+    cookie-secure: true
+    consent-current-version: ${CONSENT_CURRENT_VERSION}
+    consent-document-sha256: ${CONSENT_DOCUMENT_SHA256}
 
 springdoc:
   api-docs:

@@ -43,6 +43,12 @@ Producción requiere `SPRING_PROFILES_ACTIVE=prod` además de todas las variable
 | `JWT_SECRET` | Secreto conocido solo DEV | No se usa; hay un secreto fijo exclusivo de test | Obligatoria | Firma JWT; mínimo práctico de 32 bytes para el algoritmo actual |
 | `JWT_EXPIRATION_MS` | `3600000` | `3600000` | `3600000` si no se reemplaza | Vigencia del JWT en milisegundos |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:4200` | `http://localhost:4200` | Obligatoria | Orígenes exactos separados por coma; `*` no está permitido con credenciales |
+| `STANDARD_SESSION_PEPPER` | Base64 fijo no productivo | Base64 fijo de test | Obligatoria | Secreto independiente, mínimo 32 bytes decodificados, para HMAC-SHA-256 |
+| `STANDARD_SESSION_INACTIVITY_TIMEOUT` | `30m` | `30m` | `30m` si no se reemplaza | Timeout renovable por actividad |
+| `STANDARD_SESSION_ABSOLUTE_TIMEOUT` | `8h` | `8h` | `8h` si no se reemplaza | Límite absoluto no renovable |
+| `STANDARD_SESSION_COOKIE_SECURE` | `false` | `false` | Forzado a `true` | Permite HTTP solo en desarrollo/pruebas |
+| `CONSENT_CURRENT_VERSION` | `personal-data/1.0` de prueba | Igual | Obligatoria | Versión del documento legal vigente |
+| `CONSENT_DOCUMENT_SHA256` | 64 ceros como placeholder | Igual | Obligatoria | SHA-256 hex lowercase del documento aprobado externamente |
 | `SERVER_PORT` | `8082` | `0` (puerto aleatorio) | `8082` | Puerto HTTP |
 | `APP_TIME_ZONE` | `America/Lima` | `America/Lima` | `America/Lima` | Zona de Jackson y JDBC/Hibernate |
 | `STATIC_LOCATIONS` | Classpath y build Angular local | Solo classpath | Solo classpath | Ubicaciones de recursos, separadas por coma |
@@ -50,7 +56,7 @@ Producción requiere `SPRING_PROFILES_ACTIVE=prod` además de todas las variable
 | `PGADMIN_EMAIL` | Sin default en Compose | No aplica | No aplica | Cuenta local de pgAdmin |
 | `PGADMIN_PASSWORD` | Sin default en Compose | No aplica | No aplica | Password local de pgAdmin |
 
-Los valores DEV son conocidos, no productivos y pueden reemplazarse desde el entorno. TEST recibe la conexión a PostgreSQL mediante `@ServiceConnection`; no usa variables de base DEV. PROD no tiene fallback para URL, usuario o password de base de datos, secreto JWT ni orígenes CORS; un placeholder obligatorio sin resolver impide crear los componentes que consumen esa configuración.
+Los valores DEV son conocidos, no productivos y pueden reemplazarse desde el entorno. TEST recibe la conexión a PostgreSQL mediante `@ServiceConnection`; no usa variables de base DEV. PROD no tiene fallback para URL, usuario o password de base de datos, secreto JWT, pepper, versión/hash de consentimiento ni orígenes CORS; un placeholder obligatorio sin resolver impide crear los componentes que consumen esa configuración. El hash no es texto legal: debe calcularse sobre el documento aprobado externamente.
 
 ## Servicio de preprocesamiento
 
