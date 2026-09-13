@@ -231,4 +231,38 @@ describe('App', () => {
     updateRequest.flush({ ...user, status: 'A' });
     httpTesting.expectOne(`${environment.apiBaseUrl}/users`).flush([]);
   });
+
+  it('should update the authenticated administrator password', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    const admin = {
+      userId: 1,
+      firstName: 'Admin',
+      paternalLastName: 'Principal',
+      maternalLastName: 'Sistema',
+      doi: '12345678',
+      doiType: 'DNI',
+      birthDate: '01/01/1990',
+      gender: 'OTHER',
+      email: 'admin@example.test',
+      phone: '016543210',
+      mobilePhone: '912345678',
+      userType: 'ADMIN',
+      profession: 'Administrador',
+      status: 'A'
+    };
+    app.accessForm.setValue({ doi: admin.doi, doiType: admin.doiType });
+    app.users.set([admin]);
+    app.passwordForm.setValue({ newPassword: 'new-secret', confirmPassword: 'new-secret' });
+
+    app.changeAdminPassword();
+
+    const updateRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users/admin/1`);
+    expect(updateRequest.request.method).toBe('PUT');
+    expect(updateRequest.request.body).toEqual({ ...admin, password: 'new-secret' });
+    updateRequest.flush(admin);
+    expect(app.passwordMessage()).toBe('Contraseña actualizada correctamente.');
+    expect(app.passwordForm.getRawValue()).toEqual({ newPassword: '', confirmPassword: '' });
+  });
 });

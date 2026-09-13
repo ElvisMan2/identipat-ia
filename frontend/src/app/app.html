@@ -12,6 +12,7 @@
     </section>
 
     <section class="layout">
+      <div class="admin-tools">
       <article class="panel">
         <h2>{{ editingUserId() ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
         <form [formGroup]="userForm" (ngSubmit)="submit()" class="form-grid">
@@ -39,6 +40,28 @@
           </div>
         </form>
       </article>
+
+      <article class="panel password-panel">
+        <h2>Cambiar contraseña</h2>
+        <form [formGroup]="passwordForm" (ngSubmit)="changeAdminPassword()" class="form-grid">
+          <label>Nueva contraseña
+            <input type="password" formControlName="newPassword" autocomplete="new-password" placeholder="Mínimo 8 caracteres" />
+          </label>
+          <label>Confirmar contraseña
+            <input type="password" formControlName="confirmPassword" autocomplete="new-password" placeholder="Repite la contraseña" />
+          </label>
+          @if (passwordForm.controls.newPassword.touched && passwordForm.controls.newPassword.invalid) {
+            <p class="field-error">La contraseña debe tener al menos 8 caracteres.</p>
+          }
+          @if (passwordMessage()) {
+            <p [class]="passwordMessage().includes('correctamente') ? 'success-message' : 'error'" role="status">{{ passwordMessage() }}</p>
+          }
+          <div class="actions">
+            <button type="submit" [disabled]="changingPassword()">{{ changingPassword() ? 'Actualizando...' : 'Actualizar contraseña' }}</button>
+          </div>
+        </form>
+      </article>
+      </div>
 
       <article class="panel table-panel">
         <div class="table-head">

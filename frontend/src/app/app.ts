@@ -25,6 +25,8 @@ export class App {
   readonly checkingDocument = signal(false);
   readonly authenticating = signal(false);
   readonly accessMessage = signal('');
+  readonly changingPassword = signal(false);
+  readonly passwordMessage = signal('');
 
   readonly accessForm = this.fb.nonNullable.group({
     doiType: ['DNI', [Validators.required]],
@@ -33,6 +35,11 @@ export class App {
 
   readonly loginForm = this.fb.nonNullable.group({
     password: ['', [Validators.required]]
+  });
+
+  readonly passwordForm = this.fb.nonNullable.group({
+    newPassword: ['', [Validators.required, Validators.minLength(8)]],
+    confirmPassword: ['', [Validators.required]]
   });
 
   readonly userForm = this.fb.nonNullable.group({
@@ -119,8 +126,48 @@ export class App {
   logout(): void {
     this.userService.clearAccessToken();
     this.users.set([]);
+    this.passwordForm.reset({ newPassword: '', confirmPassword: '' });
+    this.passwordMessage.set('');
     this.cancelEdit();
     this.backHome();
+  }
+
+  changeAdminPassword(): void {
+    if (this.passwordForm.invalid) {
+      this.passwordForm.markAllAsTouched();
+      return;
+    }
+
+    const { newPassword, confirmPassword } = this.passwordForm.getRawValue();
+    if (newPassword !== confirmPassword) {
+      this.passwordMessage.set('Las contraseñas no coinciden.');
+      return;
+    }
+
+    const { doi, doiType } = this.accessForm.getRawValue();
+    const admin = this.users().find(user =>
+      user.userType?.toUpperCase() === 'ADMIN'
+      && user.doi === doi
+      && user.doiType === doiType
+    );
+    if (!admin?.userId) {
+      this.passwordMessage.set('No se pudo identificar al administrador autenticado.');
+      return;
+    }
+
+    this.changingPassword.set(true);
+    this.passwordMessage.set('');
+    this.userService.update(admin.userId, { ...admin, password: newPassword }).subscribe({
+      next: () => {
+        this.changingPassword.set(false);
+        this.passwordForm.reset({ newPassword: '', confirmPassword: '' });
+        this.passwordMessage.set('Contraseña actualizada correctamente.');
+      },
+      error: () => {
+        this.changingPassword.set(false);
+        this.passwordMessage.set('No se pudo actualizar la contraseña.');
+      }
+    });
   }
 
   loadUsers(): void {
