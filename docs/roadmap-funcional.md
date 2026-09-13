@@ -270,6 +270,8 @@ Debe permitir representar, como mínimo:
 
 # F1.1 — Sesión STANDARD + consentimiento
 
+**Estado:** implementada; pendiente de revisión humana.
+
 ## Objetivo
 
 Completar el flujo previo al análisis.
@@ -302,6 +304,8 @@ La evidencia de consentimiento se asocia a la sesión temporal y al registro STA
 autentica ni verifica criptográfica o presencialmente la identidad real de quien opera el navegador.
 `SameSite` y CORS no sustituyen CSRF: F1.1 debe seleccionar un mecanismo compatible con
 Angular/Spring Security. ADMIN mantiene JWT Bearer separado.
+
+Implementación seleccionada: sesión server-side con cookie HttpOnly y HMAC, TTL de inactividad/absoluto configurables, eventos de consentimiento inmutables y `CookieCsrfTokenRepository` con patrón SPA Spring Security 6.2. F1.3 extenderá CSRF a las mutaciones de análisis.
 
 ---
 

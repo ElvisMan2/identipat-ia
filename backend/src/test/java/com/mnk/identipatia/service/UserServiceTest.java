@@ -10,6 +10,7 @@ import com.mnk.identipatia.exception.UserNotFoundException;
 import com.mnk.identipatia.mapper.UserMapper;
 import com.mnk.identipatia.model.User;
 import com.mnk.identipatia.repository.UserRepository;
+import com.mnk.identipatia.repository.StandardSessionRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -46,6 +47,9 @@ class UserServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private StandardSessionRepository standardSessionRepository;
 
     @InjectMocks
     private UserService userService;
@@ -190,6 +194,20 @@ class UserServiceTest {
         userService.delete(7L);
 
         verify(userRepository).delete(existing);
+    }
+
+    @Test
+    void deleteDeactivatesUserWhenHistoricalSessionsExist() {
+        User existing = user();
+        existing.setStatus("A");
+        when(userRepository.findById(7L)).thenReturn(Optional.of(existing));
+        when(standardSessionRepository.existsByUserUserId(7L)).thenReturn(true);
+
+        userService.delete(7L);
+
+        assertEquals("I", existing.getStatus());
+        verify(userRepository).save(existing);
+        verify(userRepository, never()).delete(existing);
     }
 
     @Test

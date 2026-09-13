@@ -52,9 +52,15 @@ class ProductionConfigurationTest {
         assertThat(yaml)
                 .contains("password: ${DB_PASSWORD}")
                 .contains("secret: ${JWT_SECRET}")
+                .contains("pepper: ${STANDARD_SESSION_PEPPER}")
+                .contains("consent-current-version: ${CONSENT_CURRENT_VERSION}")
+                .contains("consent-document-sha256: ${CONSENT_DOCUMENT_SHA256}")
                 .contains("base-url: ${PREPROCESSING_SERVICE_BASE_URL}")
                 .doesNotContain("${DB_PASSWORD:")
                 .doesNotContain("${JWT_SECRET:")
+                .doesNotContain("${STANDARD_SESSION_PEPPER:")
+                .doesNotContain("${CONSENT_CURRENT_VERSION:")
+                .doesNotContain("${CONSENT_DOCUMENT_SHA256:")
                 .doesNotContain("${PREPROCESSING_SERVICE_BASE_URL:");
     }
 

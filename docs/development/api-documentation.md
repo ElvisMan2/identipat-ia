@@ -11,13 +11,13 @@ La API se documenta en tiempo de ejecución con `springdoc-openapi-starter-webmv
 
 ## Seguridad
 
-La especificación define el esquema HTTP `bearerAuth` con formato `JWT`. Solo las operaciones administrativas de usuarios requieren dicho esquema. Las rutas públicas son `POST /users/identify`, `POST /users` y `POST /users/login`; que una ruta sea pública no modifica que el login solo acepte un ADMIN activo.
+La especificación define `bearerAuth` para ADMIN. STANDARD no recibe JWT: usa `IDENTIPAT_STANDARD_SESSION` HttpOnly como capacidad temporal. `GET /standard-session/csrf` es público; `POST /standard-sessions` es público pero exige CSRF; consultar, consentir y cerrar requieren la cookie válida. `POST /users/identify`, `POST /users` y `POST /users/login` conservan acceso público y no exigen CSRF porque no se autorizan mediante la cookie STANDARD.
 
 Swagger UI permite usar **Authorize** con el JWT emitido por el login administrativo. No se usa HTTP Basic.
 
 ## Postman
 
-La colección está en `postman/identipat-api.collection.json` y tiene cuatro grupos: `Public - Standard`, `Admin - Authentication`, `Admin - Users` y `Security - Negative`.
+La colección está en `postman/identipat-api.collection.json` e incluye `STANDARD - Session and consent`, además de reconocimiento/registro, administración y negativos.
 
 Las variables de colección no contienen secretos reales:
 
@@ -25,11 +25,25 @@ Las variables de colección no contienen secretos reales:
 - `adminDoi` y `adminPassword`: placeholders que el operador debe definir localmente.
 - `adminJwt`: vacío inicialmente; el request **Login ADMIN and save JWT** lo guarda automáticamente al recibir una respuesta correcta.
 - `standardDoi`, `standardDoiType` y `adminUserId`: datos de prueba ajustables.
+- `csrfToken`: se guarda dinámicamente desde **Get CSRF and save token**.
+- `consentVersion`: versión esperada por el backend.
 
 Ejecuta primero **Login ADMIN and save JWT** y luego las operaciones en `Admin - Users`, que envían `Authorization: Bearer {{adminJwt}}`. Las solicitudes que crean, actualizan o eliminan datos requieren valores de prueba únicos y son intencionalmente manuales.
 
-El flujo STANDARD no usa token: primero **Recognize document** y, si el resultado es `registered: false`, **Register STANDARD**. El request de registro refleja exclusivamente `StandardUserRegistrationRequest`; no envía identificador administrativo, tipo de usuario, estado ni contraseña.
+El flujo STANDARD no usa Bearer token: primero **Recognize document** y, si aplica, **Register STANDARD**. Después ejecuta **Get CSRF**, crea sesión y registra consentimiento. Postman conserva las cookies en su cookie jar y envía `X-XSRF-TOKEN: {{csrfToken}}`. No deben guardarse DNI reales, cookies, pepper, JWT ni secretos en variables compartidas.
+
+## Endpoints F1.1
+
+| Método y ruta | Resultado principal |
+| --- | --- |
+| `GET /standard-session/csrf` | Cookie `XSRF-TOKEN` y `{token, headerName}`; no autentica. |
+| `POST /standard-sessions` | `201`, cookie HttpOnly y estado sin PII/IDs/token. |
+| `GET /standard-session` | Estado vigente y renovación de inactividad. |
+| `POST /standard-session/consent` | Evento `ACCEPTED`/`REJECTED`; nunca recibe hash/IDs. |
+| `DELETE /standard-session` | `204`, revocación y borrado de cookie. |
+
+Las mutaciones anteriores requieren cookie `XSRF-TOKEN` y header `X-XSRF-TOKEN`; su ausencia o discordancia responde `403`. Spring Boot 3.2.12 resuelve Spring Security 6.2.8, por lo que se usa un handler SPA: valor plano para cookie/header y manejo XOR/BREACH para atributos de request. F1.3 deberá extender el matcher CSRF a mutaciones `/analyses/**`.
 
 ## Errores actuales
 
-Las respuestas de validación y errores de negocio usan el `GlobalExceptionHandler` actual y no se rediseñan en esta fase. La documentación declara los estados relevantes según cada operación: `400` para validación o datos inválidos/DOI duplicado, `401` para JWT ausente o login rechazado, `403` para falta de rol ADMIN y `404` para usuarios inexistentes. La entrada sin JWT de una ruta protegida puede responder solo con el estado 401, conforme a `HttpStatusEntryPoint`.
+F1.1 añade códigos seguros `INVALID_DOCUMENT`, `STANDARD_REGISTRATION_REQUIRED`, `STANDARD_SESSION_NOT_AVAILABLE`, `STANDARD_SESSION_REQUIRED`, `INVALID_CONSENT_DECISION`, `CONSENT_VERSION_OUTDATED` y `CONSENT_ALREADY_DECIDED`. Ningún error expone token, hash, pepper, PII, stack trace o detalle de base. Los rechazos CSRF los produce Spring Security con `403`.

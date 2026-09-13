@@ -1,6 +1,6 @@
 # Contrato conceptual de análisis — F1.0
 
-**Estado:** diseño para fases futuras; estas rutas, cuerpos y respuestas no están implementados todavía.
+**Estado:** sesión y consentimiento implementados en F1.1; contratos de análisis reservados para fases posteriores.
 **Ámbito:** contrato que Angular consumirá exclusivamente a través de Java/Spring Boot. Ninguna ruta autoriza llamadas directas a PostgreSQL, `preprocessing-service` o un proveedor LLM.
 
 ## 1. Principios del contrato
@@ -15,7 +15,7 @@
 
 Todas las rutas siguientes son relativas al context path actual `/identipat-ia`.
 
-F1.1 debe definir e implementar una estrategia CSRF explícita para las rutas `STANDARD` mutables que usan la cookie temporal, incluido consentimiento, creación/cierre de sesión y creación de análisis. `SameSite` y CORS no sustituyen esta protección. El mecanismo concreto se decidirá en F1.1 entre opciones compatibles con Angular/Spring Security, como token CSRF, double-submit cookie, `CookieCsrfTokenRepository` u otra alternativa equivalente. El modelo JWT Bearer de `ADMIN` sigue separado.
+F1.1 usa `CookieCsrfTokenRepository`: `GET /standard-session/csrf` emite `XSRF-TOKEN` y devuelve su valor para el header `X-XSRF-TOKEN`. Creación/cierre de sesión y consentimiento requieren ambos. F1.3 extenderá la protección a mutaciones `/analyses/**`. `SameSite` y CORS no sustituyen CSRF; el JWT Bearer ADMIN sigue separado.
 
 ## 2. Contrato conceptual de sesión
 
@@ -45,7 +45,8 @@ Set-Cookie: IDENTIPAT_STANDARD_SESSION=<token-opaco>; Path=/identipat-ia; HttpOn
   "status": "ACTIVE",
   "expiresAt": "2030-01-15T14:30:00Z",
   "absoluteExpiresAt": "2030-01-15T22:00:00Z",
-  "consentRequired": true
+  "consentRequired": true,
+  "requiredConsentVersion": "personal-data/1.0"
 }
 ```
 
@@ -87,13 +88,15 @@ Para una aceptación vigente, respuesta `200 OK`:
 
 ```json
 {
-  "consentStatus": "ACCEPTED",
   "consentVersion": "personal-data/1.0",
-  "decidedAt": "2030-01-15T14:05:00Z"
+  "decision": "ACCEPTED",
+  "decidedAt": "2030-01-15T14:05:00Z",
+  "sessionStatus": "ACTIVE",
+  "consentRequired": false
 }
 ```
 
-Para `REJECTED`, Java persiste el evento inmutable, cierra la sesión y borra la cookie. Puede responder `200` con `consentStatus: "REJECTED"` y `sessionClosed: true`, sin reenviar la decisión como un error técnico. Un nuevo intento requiere abrir una sesión nueva y elegir explícitamente.
+Para `REJECTED`, Java persiste el evento inmutable, cierra la sesión y borra la cookie. Responde `200` con `decision: "REJECTED"`, `sessionStatus: "CLOSED"` y `consentRequired: true`. Un nuevo intento requiere abrir una sesión nueva y elegir explícitamente.
 
 El servidor valida que la versión enviada sea la vigente y conserva en `consent_events` la versión, hash del documento, decisión, instante, `sessionId` y `userId` internos. La evidencia registra una decisión tomada desde una sesión temporal asociada al registro `STANDARD`; no prueba que quien operó el navegador sea la persona titular real del DNI/CE. No se registran IP, geolocalización, huella de dispositivo ni user-agent. El endpoint no presenta ni acepta el disclaimer de IA como consentimiento.
 
@@ -102,6 +105,7 @@ El servidor valida que la versión enviada sea la vigente y conserva en `consent
 | `400` | `INVALID_CONSENT_DECISION` | La decisión no es `ACCEPTED` ni `REJECTED`. |
 | `409` | `CONSENT_VERSION_OUTDATED` | La pantalla usa una versión que ya no es la vigente. |
 | `401` | `STANDARD_SESSION_REQUIRED` | No hay sesión `ACTIVE` válida. |
+| `409` | `CONSENT_ALREADY_DECIDED` | Ya existe una decisión distinta para sesión/versión. |
 
 ## 4. Análisis por texto
 
