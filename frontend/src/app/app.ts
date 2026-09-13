@@ -248,21 +248,27 @@ export class App {
     });
   }
 
-  deactivate(user: User): void {
+  toggleStatus(user: User): void {
     if (!user.userId) {
       return;
     }
 
-    const accepted = confirm(`¿Seguro que quieres inactivar al usuario #${user.userId}?`);
+    const activating = user.status?.toUpperCase() === 'I';
+    const action = activating ? 'activar' : 'inactivar';
+    const accepted = confirm(`¿Seguro que quieres ${action} al usuario #${user.userId}?`);
     if (!accepted) {
       return;
     }
 
     this.errorMessage.set('');
-    this.userService.update(user.userId, { ...user, status: 'I' }).subscribe({
+    this.userService.update(user.userId, { ...user, status: activating ? 'A' : 'I' }).subscribe({
       next: () => this.loadUsers(),
-      error: () => this.errorMessage.set('No se pudo inactivar el usuario.')
+      error: () => this.errorMessage.set(`No se pudo ${action} el usuario.`)
     });
+  }
+
+  isInactive(user: User): boolean {
+    return user.status?.toUpperCase() === 'I';
   }
 
   isEditing(user: User): boolean {

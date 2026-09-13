@@ -191,13 +191,44 @@ describe('App', () => {
     };
     spyOn(window, 'confirm').and.returnValue(true);
 
-    app.deactivate(user);
+    app.toggleStatus(user);
 
     const updateRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users/admin/7`);
     expect(updateRequest.request.method).toBe('PUT');
     expect(updateRequest.request.body).toEqual({ ...user, status: 'I' });
     httpTesting.expectNone(`${environment.apiBaseUrl}/users/7`);
     updateRequest.flush({ ...user, status: 'I' });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/users`).flush([]);
+  });
+
+  it('should reactivate an inactive user through an update', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    const user = {
+      userId: 8,
+      firstName: 'Nombre',
+      paternalLastName: 'Apellido',
+      maternalLastName: 'Materno',
+      doi: '87654321',
+      doiType: 'DNI',
+      birthDate: '01/01/1990',
+      gender: 'FEMALE',
+      email: 'inactive@example.test',
+      phone: '016543210',
+      mobilePhone: '912345678',
+      userType: 'STANDARD',
+      profession: 'Profesión',
+      status: 'I'
+    };
+    spyOn(window, 'confirm').and.returnValue(true);
+
+    app.toggleStatus(user);
+
+    const updateRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users/admin/8`);
+    expect(updateRequest.request.method).toBe('PUT');
+    expect(updateRequest.request.body).toEqual({ ...user, status: 'A' });
+    updateRequest.flush({ ...user, status: 'A' });
     httpTesting.expectOne(`${environment.apiBaseUrl}/users`).flush([]);
   });
 });
