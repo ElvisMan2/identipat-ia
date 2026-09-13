@@ -248,20 +248,20 @@ export class App {
     });
   }
 
-  delete(user: User): void {
+  deactivate(user: User): void {
     if (!user.userId) {
       return;
     }
 
-    const accepted = confirm(`¿Seguro que quieres eliminar al usuario #${user.userId}?`);
+    const accepted = confirm(`¿Seguro que quieres inactivar al usuario #${user.userId}?`);
     if (!accepted) {
       return;
     }
 
     this.errorMessage.set('');
-    this.userService.delete(user.userId).subscribe({
+    this.userService.update(user.userId, { ...user, status: 'I' }).subscribe({
       next: () => this.loadUsers(),
-      error: () => this.errorMessage.set('No se pudo eliminar el usuario.')
+      error: () => this.errorMessage.set('No se pudo inactivar el usuario.')
     });
   }
 

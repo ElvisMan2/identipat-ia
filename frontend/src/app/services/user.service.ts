@@ -75,8 +75,4 @@ export class UserService {
   update(userId: number, user: User): Observable<User> {
     return this.http.put<User>(`${this.endpoint}/admin/${userId}`, user, this.authenticatedOptions);
   }
-
-  delete(userId: number): Observable<void> {
-    return this.http.delete<void>(`${this.endpoint}/${userId}`, this.authenticatedOptions);
-  }
 }

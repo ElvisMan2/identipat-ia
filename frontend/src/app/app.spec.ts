@@ -168,4 +168,36 @@ describe('App', () => {
     registrationRequest.flush({ registered: true });
     httpTesting.expectOne(`${environment.apiBaseUrl}/users`).flush([]);
   });
+
+  it('should inactivate a user through an update without deleting it', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    const user = {
+      userId: 7,
+      firstName: 'Nombre',
+      paternalLastName: 'Apellido',
+      maternalLastName: 'Materno',
+      doi: '12345678',
+      doiType: 'DNI',
+      birthDate: '01/01/1990',
+      gender: 'FEMALE',
+      email: 'user@example.test',
+      phone: '016543210',
+      mobilePhone: '912345678',
+      userType: 'STANDARD',
+      profession: 'Profesión',
+      status: 'A'
+    };
+    spyOn(window, 'confirm').and.returnValue(true);
+
+    app.deactivate(user);
+
+    const updateRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users/admin/7`);
+    expect(updateRequest.request.method).toBe('PUT');
+    expect(updateRequest.request.body).toEqual({ ...user, status: 'I' });
+    httpTesting.expectNone(`${environment.apiBaseUrl}/users/7`);
+    updateRequest.flush({ ...user, status: 'I' });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/users`).flush([]);
+  });
 });
