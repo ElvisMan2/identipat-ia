@@ -265,4 +265,39 @@ describe('App', () => {
     expect(app.passwordMessage()).toBe('Contraseña actualizada correctamente.');
     expect(app.passwordForm.getRawValue()).toEqual({ newPassword: '', confirmPassword: '' });
   });
+
+  it('should promote a standard user to admin with the default password', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    const user = {
+      userId: 9,
+      firstName: 'Usuario',
+      paternalLastName: 'Estándar',
+      maternalLastName: 'Prueba',
+      doi: '11223344',
+      doiType: 'DNI',
+      birthDate: '01/01/1990',
+      gender: 'OTHER',
+      email: 'standard@example.test',
+      phone: '016543210',
+      mobilePhone: '912345678',
+      userType: 'STANDARD',
+      profession: 'Profesional',
+      status: 'A'
+    };
+    spyOn(window, 'confirm').and.returnValue(true);
+
+    app.promoteToAdmin(user);
+
+    const updateRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users/admin/9`);
+    expect(updateRequest.request.method).toBe('PUT');
+    expect(updateRequest.request.body).toEqual({
+      ...user,
+      userType: 'ADMIN',
+      password: 'admin'
+    });
+    updateRequest.flush({ ...user, userType: 'ADMIN' });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/users`).flush([]);
+  });
 });

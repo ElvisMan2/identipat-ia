@@ -69,10 +69,11 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .actions { margin-top: .4rem; }
 .table-head { justify-content: space-between; }
 .table-head h2 { margin-bottom: 0; }
-.actions button, .ghost, .danger, .activate { border: 0; border-radius: 5px; padding: .62rem .9rem; color: #fff; background: var(--teal); font-weight: 600; cursor: pointer; }
+.actions button, .ghost, .danger, .activate, .promote { border: 0; border-radius: 5px; padding: .62rem .9rem; color: #fff; background: var(--teal); font-weight: 600; cursor: pointer; }
 .ghost { color: var(--teal-dark); background: var(--mint); }
 .danger { color: var(--danger); background: #f9dfdc; }
 .activate { color: #17643a; background: #dff3e6; }
+.promote { color: #fff; background: #365a8c; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: .72rem .4rem; border-bottom: 1px solid var(--line); text-align: left; font-size: .86rem; }

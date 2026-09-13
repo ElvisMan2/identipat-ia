@@ -314,6 +314,31 @@ export class App {
     });
   }
 
+  promoteToAdmin(user: User): void {
+    if (!user.userId || user.userType?.toUpperCase() !== 'STANDARD') {
+      return;
+    }
+
+    const accepted = confirm(`¿Seguro que quieres convertir al usuario #${user.userId} en administrador?`);
+    if (!accepted) {
+      return;
+    }
+
+    this.errorMessage.set('');
+    this.userService.update(user.userId, {
+      ...user,
+      userType: 'ADMIN',
+      password: 'admin'
+    }).subscribe({
+      next: () => this.loadUsers(),
+      error: () => this.errorMessage.set('No se pudo convertir el usuario en administrador.')
+    });
+  }
+
+  isStandard(user: User): boolean {
+    return user.userType?.toUpperCase() === 'STANDARD';
+  }
+
   isInactive(user: User): boolean {
     return user.status?.toUpperCase() === 'I';
   }
