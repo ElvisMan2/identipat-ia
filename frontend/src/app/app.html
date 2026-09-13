@@ -77,29 +77,56 @@
         <p class="intro">IDENTIPAT IA te acompaña con una evaluación orientativa, privada y sencilla para ayudarte a reconocer patrones y encontrar el siguiente paso adecuado.</p>
 
         <div class="access-block">
-          <span class="section-label">{{ view() === 'admin-login' ? 'Acceso seguro' : 'Comienza aquí' }}</span>
-          <h2>{{ view() === 'admin-login' ? 'Ingresa como administrador' : 'Identifícate para continuar' }}</h2>
-          <form [formGroup]="accessForm" (ngSubmit)="view() === 'admin-login' ? loginAdmin() : identifyDocument()">
-            <div class="document-fields">
-              <label>Tipo
-                <select formControlName="doiType" aria-label="Tipo de documento"><option value="DNI">DNI</option><option value="CE">CE</option></select>
+          @if (view() === 'registration') {
+            <span class="section-label">Nuevo usuario</span>
+            <h2>Completa tu registro</h2>
+            <form [formGroup]="userForm" (ngSubmit)="registerStandard()" class="registration-form">
+              <label>Nombres <input type="text" formControlName="firstName" placeholder="Nombre de prueba" /></label>
+              <label>Apellido paterno <input type="text" formControlName="paternalLastName" placeholder="Apellido paterno" /></label>
+              <label>Apellido materno <input type="text" formControlName="maternalLastName" placeholder="Apellido materno" /></label>
+              <label>Tipo de documento
+                <select formControlName="doiType"><option value="DNI">DNI</option><option value="CE">CE</option></select>
               </label>
-              <label>Número de documento
-                <input type="text" inputmode="numeric" autocomplete="username" formControlName="doi" placeholder="Ingresa tu documento" />
+              <label>Número de documento <input type="text" formControlName="doi" inputmode="numeric" /></label>
+              <label>Fecha de nacimiento <input type="text" formControlName="birthDate" placeholder="01/01/1990" /></label>
+              <label>Género
+                <select formControlName="gender"><option value="" disabled>Seleccione</option><option value="MALE">Masculino</option><option value="FEMALE">Femenino</option><option value="OTHER">Otro</option></select>
               </label>
-            </div>
-            @if (accessForm.controls.doi.touched && accessForm.controls.doi.invalid) { <p class="field-error">Ingresa un documento válido de 8 a 12 dígitos.</p> }
-            @if (view() === 'admin-login') {
-              <label class="password-field">Contraseña
-                <input type="password" autocomplete="current-password" [formControl]="loginForm.controls.password" placeholder="Ingresa tu contraseña" />
-              </label>
-            }
-            @if (accessMessage()) { <p class="access-message" role="status">{{ accessMessage() }}</p> }
-            <button class="primary-button" type="submit" [disabled]="checkingDocument() || authenticating()">
-              @if (view() === 'admin-login') { {{ authenticating() ? 'Verificando...' : 'Ingresar al panel' }} }
-              @else { {{ checkingDocument() ? 'Verificando...' : 'Continuar evaluación' }} }
-            </button>
-          </form>
+              <label>Correo electrónico <input type="email" formControlName="email" placeholder="standard.placeholder@example.test" /></label>
+              <label>Teléfono <input type="text" formControlName="phone" placeholder="016543210" /></label>
+              <label>Celular <input type="text" formControlName="mobilePhone" placeholder="912345678" /></label>
+              <label class="registration-wide">Profesión <input type="text" formControlName="profession" placeholder="Profesión de prueba" /></label>
+              @if (accessMessage()) { <p class="access-message registration-wide" role="alert">{{ accessMessage() }}</p> }
+              <div class="registration-actions registration-wide">
+                <button class="primary-button" type="submit" [disabled]="saving()">{{ saving() ? 'Registrando...' : 'Registrarme' }}</button>
+                <button class="outline-button" type="button" (click)="cancelRegistration()" [disabled]="saving()">Volver</button>
+              </div>
+            </form>
+          } @else {
+            <span class="section-label">{{ view() === 'admin-login' ? 'Acceso seguro' : 'Comienza aquí' }}</span>
+            <h2>{{ view() === 'admin-login' ? 'Ingresa como administrador' : 'Identifícate para continuar' }}</h2>
+            <form [formGroup]="accessForm" (ngSubmit)="view() === 'admin-login' ? loginAdmin() : identifyDocument()">
+              <div class="document-fields">
+                <label>Tipo
+                  <select formControlName="doiType" aria-label="Tipo de documento"><option value="DNI">DNI</option><option value="CE">CE</option></select>
+                </label>
+                <label>Número de documento
+                  <input type="text" inputmode="numeric" autocomplete="username" formControlName="doi" placeholder="Ingresa tu documento" />
+                </label>
+              </div>
+              @if (accessForm.controls.doi.touched && accessForm.controls.doi.invalid) { <p class="field-error">Ingresa un documento válido de 8 a 12 dígitos.</p> }
+              @if (view() === 'admin-login') {
+                <label class="password-field">Contraseña
+                  <input type="password" autocomplete="current-password" [formControl]="loginForm.controls.password" placeholder="Ingresa tu contraseña" />
+                </label>
+              }
+              @if (accessMessage()) { <p class="access-message" role="status">{{ accessMessage() }}</p> }
+              <button class="primary-button" type="submit" [disabled]="checkingDocument() || authenticating()">
+                @if (view() === 'admin-login') { {{ authenticating() ? 'Verificando...' : 'Ingresar al panel' }} }
+                @else { {{ checkingDocument() ? 'Verificando...' : 'Continuar evaluación' }} }
+              </button>
+            </form>
+          }
         </div>
         <p class="privacy-note">Tu información se trata de forma confidencial y solo para los fines autorizados.</p>
       </div>

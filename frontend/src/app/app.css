@@ -27,6 +27,10 @@ button, input, select { font: inherit; }
 .section-label { color: var(--teal); font-size: .76rem; font-weight: 700; text-transform: uppercase; }
 .access-block h2 { margin: .25rem 0 1rem; font-size: 1.25rem; }
 .document-fields { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: .75rem; }
+.registration-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.registration-wide { grid-column: 1 / -1; }
+.registration-actions { display: flex; align-items: center; gap: .75rem; }
+.registration-actions .primary-button { width: auto; margin-top: 0; }
 label { display: grid; gap: .38rem; color: var(--ink); font-size: .82rem; font-weight: 600; }
 input, select { width: 100%; min-height: 46px; border: 1px solid var(--line); border-radius: 5px; padding: .68rem .75rem; outline: none; color: var(--ink); background: #fff; transition: border-color 150ms ease, box-shadow 150ms ease; }
 input:focus, select:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgb(20 108 99 / .13); }
@@ -87,6 +91,8 @@ tr.editing { background: #eef8f5; }
   .hero { width: min(100% - 2rem, 1180px); gap: 2.25rem; }
   .hero h1 { font-size: 2.45rem; }
   .document-fields { grid-template-columns: 92px minmax(0, 1fr); }
+  .registration-form { grid-template-columns: 1fr; }
+  .registration-wide { grid-column: auto; }
   .access-block { padding: 1rem; }
   .trust-strip { grid-template-columns: 1fr; padding: 0 1rem; }
   .trust-strip div, .trust-strip div:first-child { padding: 1rem 0; border-right: 0; border-bottom: 1px solid rgb(255 255 255 / .18); }

@@ -21,7 +21,7 @@ export class App {
   readonly errorMessage = signal('');
   readonly editingUserId = signal<number | null>(null);
   readonly editingUserType = signal('STANDARD');
-  readonly view = signal<'home' | 'admin-login' | 'admin'>('home');
+  readonly view = signal<'home' | 'registration' | 'admin-login' | 'admin'>('home');
   readonly checkingDocument = signal(false);
   readonly authenticating = signal(false);
   readonly accessMessage = signal('');
@@ -64,10 +64,12 @@ export class App {
         if (passwordRequired) {
           this.view.set('admin-login');
           this.loginForm.reset({ password: '' });
+        } else if (!registered) {
+          this.cancelEdit();
+          this.userForm.patchValue({ doi, doiType });
+          this.view.set('registration');
         } else {
-          this.accessMessage.set(registered
-            ? 'Documento reconocido. Ya puedes continuar con tu evaluación.'
-            : 'No encontramos este documento. Completa tu registro para continuar.');
+          this.accessMessage.set('Documento reconocido. Ya puedes continuar con tu evaluación.');
         }
         this.checkingDocument.set(false);
       },
@@ -82,6 +84,11 @@ export class App {
     this.view.set('home');
     this.accessMessage.set('');
     this.loginForm.reset({ password: '' });
+  }
+
+  cancelRegistration(): void {
+    this.cancelEdit();
+    this.backHome();
   }
 
   loginAdmin(): void {
@@ -132,6 +139,29 @@ export class App {
     });
   }
 
+  registerStandard(): void {
+    if (this.userForm.invalid) {
+      this.userForm.markAllAsTouched();
+      this.accessMessage.set('Completa correctamente todos los campos obligatorios.');
+      return;
+    }
+
+    this.saving.set(true);
+    this.accessMessage.set('');
+    this.userService.create(this.registrationPayload()).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.cancelEdit();
+        this.view.set('home');
+        this.accessMessage.set('Registro completado. Ya puedes continuar con tu evaluación.');
+      },
+      error: () => {
+        this.saving.set(false);
+        this.accessMessage.set('No se pudo completar el registro. Verifica los datos e inténtalo nuevamente.');
+      }
+    });
+  }
+
   submit(): void {
     if (this.userForm.invalid) {
       this.userForm.markAllAsTouched();
@@ -140,19 +170,7 @@ export class App {
     }
 
     const formValue = this.userForm.getRawValue();
-    const registrationPayload: StandardUserRegistrationRequest = {
-      firstName: formValue.firstName,
-      paternalLastName: formValue.paternalLastName,
-      maternalLastName: formValue.maternalLastName,
-      doi: formValue.doi,
-      doiType: formValue.doiType,
-      birthDate: formValue.birthDate,
-      gender: formValue.gender,
-      email: formValue.email,
-      phone: formValue.phone,
-      mobilePhone: formValue.mobilePhone,
-      profession: formValue.profession
-    };
+    const registrationPayload = this.registrationPayload();
 
     this.saving.set(true);
     this.errorMessage.set('');
@@ -249,5 +267,22 @@ export class App {
 
   isEditing(user: User): boolean {
     return this.editingUserId() === user.userId;
+  }
+
+  private registrationPayload(): StandardUserRegistrationRequest {
+    const formValue = this.userForm.getRawValue();
+    return {
+      firstName: formValue.firstName,
+      paternalLastName: formValue.paternalLastName,
+      maternalLastName: formValue.maternalLastName,
+      doi: formValue.doi,
+      doiType: formValue.doiType,
+      birthDate: formValue.birthDate,
+      gender: formValue.gender,
+      email: formValue.email,
+      phone: formValue.phone,
+      mobilePhone: formValue.mobilePhone,
+      profession: formValue.profession
+    };
   }
 }
