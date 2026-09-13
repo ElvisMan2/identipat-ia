@@ -18,7 +18,8 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("IDENTIPAT-IA API")
                         .version("v1")
-                        .description("API del backend IDENTIPAT-IA para reconocimiento, registro STANDARD y administración de usuarios."))
+                        .description("API IDENTIPAT-IA. ADMIN usa JWT Bearer. STANDARD usa una cookie HttpOnly temporal "
+                                + "independiente y XSRF-TOKEN/X-XSRF-TOKEN para CSRF; CSRF no autentica."))
                 .components(new Components()
                         .addSecuritySchemes(BEARER_AUTH, new SecurityScheme()
                                 .type(SecurityScheme.Type.HTTP)

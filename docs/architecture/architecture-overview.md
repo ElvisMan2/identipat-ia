@@ -52,9 +52,11 @@ STANDARD no hace login convencional ni recibe JWT. No usa contraseña para acced
 
 El DNI/CE sirve únicamente para identificar o reconocer si existe un registro en PostgreSQL; no constituye autenticación, contraseña, credencial ni factor de autenticación. Si no existe registro, el flujo contempla registro y aceptación previa; si existe, continúa al uso de la herramienta conforme a la validación del flujo. Un usuario registrado no ve sus datos personales previamente registrados y pasa al uso de la herramienta.
 
-## Consentimiento y disclaimer
+## Sesión STANDARD, consentimiento y disclaimer
 
-El consentimiento para el tratamiento de datos personales debe contemplarse en el registro y es distinto del disclaimer del diagnóstico. El disclaimer debe indicar que los resultados de IA son orientativos y no sustituyen evaluación técnica, experta ni decisiones oficiales de Indecopi. Ambos mecanismos se preparan conceptualmente aquí; no se implementan en esta fase.
+F1.1 implementa en Java una capacidad temporal server-side asociada al registro STANDARD: token opaco de 256 bits en cookie HttpOnly y solo su HMAC-SHA-256 en PostgreSQL. La sesión es revocable, expira por inactividad y por límite absoluto, y nunca se convierte en JWT o autenticación ADMIN. Las mutaciones usan CSRF de Spring Security mediante cookie `XSRF-TOKEN` y header `X-XSRF-TOKEN`; CORS permite credenciales solo desde orígenes explícitos.
+
+El consentimiento de tratamiento de datos se persiste como evento inmutable versionado, distinto del disclaimer orientativo del diagnóstico. La evidencia vincula sesión y registro, pero no prueba la identidad real de quien opera el navegador. F1.1 no inventa texto legal: configura la versión y SHA-256 del documento aprobado externamente.
 
 ## Persistencia interna e historial visible
 
@@ -73,9 +75,33 @@ La política definitiva permanece pendiente: minimización de datos, contenido d
 7. La retención de consultas es provisional durante desarrollo y deberá minimizarse mediante una política futura.
 8. El frontend consume únicamente Java; no existen integraciones directas Angular → Python o Angular → LLM.
 
-## Decisiones pendientes
+## Diseño F1.0 y decisiones aún pendientes
 
-Quedan deliberadamente abiertas la política definitiva de retención y minimización, duración y mecanismo técnico de sesión temporal STANDARD, vínculo permanente o por metadatos de consultas, almacenamiento de archivos PDF/audio, tecnología concreta de extracción PDF y transcripción/procesamiento de audio, SDK o cliente Gemini, estructura final del resultado de IA, observabilidad y auditoría, y una eventual autenticación futura de STANDARD.
+F1.0 cerró el diseño conceptual de sesión temporal STANDARD, consentimiento, `Analysis`, entradas,
+invocaciones de IA, resultado estructurado y contrato asíncrono. Sus decisiones detalladas y no
+implementadas se encuentran en [el dominio de análisis](../design/analysis-domain.md) y [su contrato
+conceptual](../design/analysis-contract.md). En particular, la sesión se diseñó como una capacidad
+server-side temporal mediante cookie HttpOnly con token opaco, independiente del JWT ADMIN; no es una
+autenticación equivalente.
+
+La asociación de una sesión o de un evento de consentimiento con `user_id` y `session_id` deja
+trazabilidad de la decisión tomada desde una experiencia vinculada al registro STANDARD. No demuestra
+la identidad real de quien utiliza el navegador: DNI/CE no es autenticación ni verificación
+criptográfica o presencial. F1.1 implementa `CookieCsrfTokenRepository` y un handler SPA Spring Security 6.2 para las
+rutas STANDARD mutables que usan la cookie temporal; `SameSite` y CORS son complementarios. ADMIN
+mantiene su modelo JWT Bearer separado.
+
+Cuando un usuario tenga sesiones, consentimientos, análisis u otra evidencia histórica, la dirección
+funcional es su desactivación lógica y la conservación de trazabilidad, no borrado físico en cascada.
+La anonimización de PII, derecho de eliminación, retención, condiciones de borrado físico y adaptación
+del endpoint ADMIN actual son decisiones de gobierno de datos/producción.
+
+Permanecen deliberadamente abiertas la política definitiva de retención, minimización, anonimización,
+cifrado y condiciones de borrado físico; almacenamiento de archivos PDF/audio, tecnología concreta de extracción y
+transcripción; SDK concreto de Gemini; criterios jurídicos detallados del diagnóstico; observabilidad,
+acceso administrativo y una eventual autenticación futura de STANDARD. Esas decisiones se cierran en
+las fases funcionales y de gobierno indicadas en el roadmap, sin alterar los límites de responsabilidad
+de esta arquitectura.
 
 ## Roadmap de Fase 0
 
@@ -83,10 +109,10 @@ Quedan deliberadamente abiertas la política definitiva de retención y minimiza
 | --- | --- | --- |
 | F0.1 | Reorganización del repositorio | Completada |
 | F0.2 | Maven Wrapper / build reproducible | Completada |
-| F0.2A | Alineamiento arquitectónico | En curso |
-| F0.3 | Seguridad + modelo de acceso usuarios | Pendiente |
-| F0.4 | Configuración dev/test/prod | Pendiente |
-| F0.5 | Flyway + Testcontainers | Pendiente |
-| F0.6 | OpenAPI + Postman | Pendiente |
+| F0.2A | Alineamiento arquitectónico | Completada |
+| F0.3 | Seguridad + modelo de acceso usuarios | Completada |
+| F0.4 | Configuración dev/test/prod | Completada |
+| F0.5 | Flyway + Testcontainers | Completada |
+| F0.6 | OpenAPI + Postman | Completada |
 | F0.7 | Bootstrap Python `preprocessing-service` | Completada |
-| F0.8 | CI GitHub | Pendiente |
+| F0.8 | CI GitHub | Completada |

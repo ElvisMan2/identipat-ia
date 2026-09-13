@@ -1,10 +1,23 @@
+server:
+  port: ${SERVER_PORT:8082}
+  servlet:
+    context-path: /identipat-ia
+
 spring:
   application:
     name: identipat-ia
   datasource:
     driver-class-name: org.postgresql.Driver
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/${DB_NAME:identipatdb}}
+    username: ${DB_USER:identipat_dev_user}
+    password: ${DB_PASSWORD:dev_password_123}
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
     properties:
       hibernate:
         jdbc:
@@ -14,12 +27,22 @@ spring:
     time-zone: ${APP_TIME_ZONE:America/Lima}
   web:
     resources:
-      static-locations: classpath:/static/
-
-server:
-  servlet:
-    context-path: /identipat-ia
+      static-locations: '${STATIC_LOCATIONS:file:../frontend/dist/identipat-ia/browser/}'
 
 app:
+  preprocessing:
+    base-url: ${PREPROCESSING_SERVICE_BASE_URL:http://localhost:8090}
+    timeout: 5s
   jwt:
+    secret: ${JWT_SECRET:identipat-dev-secret-key-change-me-32chars}
     expiration-ms: ${JWT_EXPIRATION_MS:3600000}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+  standard-session:
+    cookie-name: IDENTIPAT_STANDARD_SESSION
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

@@ -69,7 +69,7 @@ public class UserController {
     }
 
     @PostMapping("/identify")
-    @Operation(summary = "Reconocer documento STANDARD", description = "Indica solo si existe un registro para el DOI y tipo de documento proporcionados.")
+        @Operation(summary = "Reconocer documento", description = "Indica si existe un registro y si el siguiente paso requiere contraseña administrativa.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Estado de registro", content = @Content(mediaType = "application/json", schema = @Schema(implementation = DocumentRecognitionResponse.class))),
             @ApiResponse(responseCode = "400", description = "Request inválido", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Map.class)))

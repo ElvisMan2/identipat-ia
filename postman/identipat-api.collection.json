@@ -12,7 +12,9 @@
     { "key": "adminJwt", "value": "" },
     { "key": "standardDoi", "value": "00000000" },
     { "key": "standardDoiType", "value": "DNI" },
-    { "key": "adminUserId", "value": "1" }
+    { "key": "adminUserId", "value": "1" },
+    { "key": "csrfToken", "value": "" },
+    { "key": "consentVersion", "value": "personal-data/1.0" }
   ],
   "item": [
     {
@@ -69,6 +71,110 @@
               ]
             }
           }]
+        }
+      ]
+    },
+    {
+      "name": "STANDARD - Session and consent",
+      "description": "La cookie HttpOnly IDENTIPAT_STANDARD_SESSION se conserva en el cookie jar. CSRF no autentica y usa XSRF-TOKEN + X-XSRF-TOKEN.",
+      "item": [
+        {
+          "name": "1. Get CSRF and save token",
+          "request": { "method": "GET", "auth": { "type": "noauth" }, "url": "{{baseUrl}}/standard-session/csrf" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('CSRF bootstrap succeeds', function () { pm.response.to.have.status(200); });",
+            "const body = pm.response.json();",
+            "pm.expect(body.headerName).to.eql('X-XSRF-TOKEN');",
+            "pm.collectionVariables.set('csrfToken', body.token);"
+          ] } }]
+        },
+        {
+          "name": "2. Identify STANDARD",
+          "request": {
+            "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "auth": { "type": "noauth" },
+            "body": { "mode": "raw", "raw": "{\n  \"doi\": \"{{standardDoi}}\",\n  \"doiType\": \"{{standardDoiType}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/users/identify"
+          }
+        },
+        {
+          "name": "3. Register STANDARD if needed",
+          "request": {
+            "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "auth": { "type": "noauth" },
+            "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Nombre de prueba\",\n  \"paternalLastName\": \"Apellido\",\n  \"maternalLastName\": \"Prueba\",\n  \"doi\": \"{{standardDoi}}\",\n  \"doiType\": \"{{standardDoiType}}\",\n  \"birthDate\": \"01/01/1990\",\n  \"gender\": \"FEMALE\",\n  \"email\": \"standard.placeholder@example.test\",\n  \"phone\": \"016543210\",\n  \"mobilePhone\": \"912345678\",\n  \"profession\": \"Prueba\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/users",
+            "description": "Ejecutar solo si Identify devuelve registered=false. Use datos ficticios y un DOI de prueba."
+          }
+        },
+        {
+          "name": "4. Create STANDARD session",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }],
+            "auth": { "type": "noauth" },
+            "body": { "mode": "raw", "raw": "{\n  \"doi\": \"{{standardDoi}}\",\n  \"doiType\": \"{{standardDoiType}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/standard-sessions",
+            "description": "Ejecutar después de Identify/Register. El token de sesión nunca aparece en JSON; Postman conserva la cookie HttpOnly."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Session is created', function () { pm.response.to.have.status(201); });", "pm.expect(pm.response.json()).not.to.have.property('token');"] } }]
+        },
+        {
+          "name": "5. Get STANDARD session",
+          "request": { "method": "GET", "auth": { "type": "noauth" }, "url": "{{baseUrl}}/standard-session" }
+        },
+        {
+          "name": "6. Accept consent",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }],
+            "auth": { "type": "noauth" },
+            "body": { "mode": "raw", "raw": "{\n  \"consentVersion\": \"{{consentVersion}}\",\n  \"decision\": \"ACCEPTED\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/standard-session/consent"
+          }
+        },
+        {
+          "name": "7. Get session after consent",
+          "request": { "method": "GET", "auth": { "type": "noauth" }, "url": "{{baseUrl}}/standard-session" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Consent is current', function () { pm.expect(pm.response.json().consentRequired).to.eql(false); });"] } }]
+        },
+        {
+          "name": "8. Close session",
+          "request": { "method": "DELETE", "header": [{ "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }], "auth": { "type": "noauth" }, "url": "{{baseUrl}}/standard-session" }
+        },
+        {
+          "name": "9. Reject consent (new-session case)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }],
+            "auth": { "type": "noauth" },
+            "body": { "mode": "raw", "raw": "{\n  \"consentVersion\": \"{{consentVersion}}\",\n  \"decision\": \"REJECTED\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/standard-session/consent",
+            "description": "Caso separado: ejecutar Get CSRF y Create STANDARD session antes de este request. REJECTED cierra la sesión y elimina su cookie."
+          }
+        },
+        {
+          "name": "10. Negative - missing CSRF",
+          "request": {
+            "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "auth": { "type": "noauth" },
+            "body": { "mode": "raw", "raw": "{\n  \"doi\": \"{{standardDoi}}\",\n  \"doiType\": \"{{standardDoiType}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/standard-sessions"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Missing CSRF is forbidden', function () { pm.response.to.have.status(403); });"] } }]
+        },
+        {
+          "name": "11. Negative - missing or expired session",
+          "request": { "method": "GET", "auth": { "type": "noauth" }, "url": "{{baseUrl}}/standard-session", "description": "Borre IDENTIPAT_STANDARD_SESSION del cookie jar o ejecute después de cierre/rechazo." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Session is required', function () { pm.response.to.have.status(401); });"] } }]
+        },
+        {
+          "name": "12. Negative - outdated consent version",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }],
+            "auth": { "type": "noauth" },
+            "body": { "mode": "raw", "raw": "{\n  \"consentVersion\": \"personal-data/obsolete\",\n  \"decision\": \"ACCEPTED\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/standard-session/consent"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Outdated version conflicts', function () { pm.response.to.have.status(409); });"] } }]
         }
       ]
     },

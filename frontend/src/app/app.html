@@ -1,157 +1,122 @@
-<main class="page">
-  <section class="header">
-    <p class="eyebrow">Angular 20 + Spring Boot</p>
-    <h1>CRUD de usuarios</h1>
-    <p class="subtitle">Gestion de usuarios conectada al endpoint de usuarios del backend.</p>
-  </section>
+@if (view() === 'admin') {
+  <main class="admin-page">
+    <header class="topbar admin-bar">
+      <div><a class="brand" href="/" (click)="$event.preventDefault(); logout()">IDENTIPAT IA</a><span>Panel administrativo</span></div>
+      <button class="outline-button" type="button" (click)="logout()">Cerrar sesión</button>
+    </header>
 
-  <section class="layout">
-    <article class="panel form-panel">
-      <h2>{{ editingUserId() ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
+    <section class="admin-title">
+      <p class="eyebrow">Administración</p>
+      <h1>Gestión de usuarios</h1>
+      <p>Consulta, registra y actualiza la información de los usuarios.</p>
+    </section>
 
-      <form [formGroup]="userForm" (ngSubmit)="submit()" class="form-grid">
-        <label>
-          Nombres
-          <input type="text" formControlName="firstName" placeholder="Juan" />
-        </label>
-
-        <label>
-          Apellido paterno
-          <input type="text" formControlName="paternalLastName" placeholder="Perez" />
-        </label>
-
-        <label>
-          Apellido materno
-          <input type="text" formControlName="maternalLastName" placeholder="Gomez" />
-        </label>
-
-        <label>
-          Tipo de documento
-          <input type="text" formControlName="doiType" placeholder="DNI" />
-        </label>
-
-        <label>
-          Numero de documento
-          <input type="text" formControlName="doi" placeholder="12345678" />
-        </label>
-
-        <label>
-          Fecha de nacimiento
-          <input type="text" formControlName="birthDate" placeholder="17/10/1991" />
-        </label>
-
-        <label>
-          Genero
-          <select formControlName="gender">
-            <option value="" disabled>Seleccione</option>
-            <option value="MALE">Masculino</option>
-            <option value="FEMALE">Femenino</option>
-            <option value="OTHER">Otro</option>
-          </select>
-        </label>
-
-        <label>
-          Correo electronico
-          <input type="email" formControlName="email" placeholder="juan.perez@example.com" />
-        </label>
-
-        <label>
-          Telefono
-          <input type="text" formControlName="phone" placeholder="014567890" />
-        </label>
-
-        <label>
-          Celular
-          <input type="text" formControlName="mobilePhone" placeholder="987654321" />
-        </label>
-
-        <label>
-          Tipo de usuario
-          <select formControlName="userType">
-            <option value="" disabled>Seleccione</option>
-            <option value="ADMIN">Administrador</option>
-            <option value="USER">Usuario</option>
-          </select>
-        </label>
-
-        @if (userForm.controls.userType.value === 'ADMIN') {
-          <label>
-            Contraseña
-            <input type="password" formControlName="password" placeholder="********" />
+    <section class="layout">
+      <article class="panel">
+        <h2>{{ editingUserId() ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
+        <form [formGroup]="userForm" (ngSubmit)="submit()" class="form-grid">
+          <label>Nombres <input type="text" formControlName="firstName" placeholder="Juan" /></label>
+          <label>Apellido paterno <input type="text" formControlName="paternalLastName" placeholder="Pérez" /></label>
+          <label>Apellido materno <input type="text" formControlName="maternalLastName" placeholder="Gómez" /></label>
+          <label>Tipo de documento
+            <select formControlName="doiType"><option value="" disabled>Seleccione</option><option value="DNI">DNI</option><option value="CE">CE</option></select>
           </label>
-        }
+          <label>Número de documento <input type="text" formControlName="doi" placeholder="12345678" /></label>
+          <label>Fecha de nacimiento <input type="text" formControlName="birthDate" placeholder="17/10/1991" /></label>
+          <label>Género
+            <select formControlName="gender"><option value="" disabled>Seleccione</option><option value="MALE">Masculino</option><option value="FEMALE">Femenino</option><option value="OTHER">Otro</option></select>
+          </label>
+          <label>Correo electrónico <input type="email" formControlName="email" placeholder="juan@example.com" /></label>
+          <label>Teléfono <input type="text" formControlName="phone" placeholder="014567890" /></label>
+          <label>Celular <input type="text" formControlName="mobilePhone" placeholder="987654321" /></label>
+          <label>Tipo de usuario
+            <select formControlName="userType"><option value="" disabled>Seleccione</option><option value="ADMIN">Administrador</option><option value="USER">Usuario</option></select>
+          </label>
+          @if (userForm.controls.userType.value === 'ADMIN') {
+            <label>Contraseña <input type="password" formControlName="password" placeholder="••••••••" /></label>
+          }
+          <label>Profesión <input type="text" formControlName="profession" placeholder="Ingeniero" /></label>
+          <div class="actions">
+            <button type="submit" [disabled]="saving()">{{ saving() ? 'Guardando...' : (editingUserId() ? 'Actualizar' : 'Crear') }}</button>
+            <button type="button" class="ghost" (click)="cancelEdit()" [disabled]="saving()">Limpiar</button>
+          </div>
+        </form>
+      </article>
 
-        <label>
-          Profesion
-          <input type="text" formControlName="profession" placeholder="Ingeniero" />
-        </label>
-
-        <div class="actions">
-          <button type="submit" [disabled]="saving()">
-            {{ saving() ? 'Guardando...' : (editingUserId() ? 'Actualizar' : 'Crear') }}
-          </button>
-          <button type="button" class="ghost" (click)="cancelEdit()" [disabled]="saving()">Limpiar</button>
+      <article class="panel table-panel">
+        <div class="table-head">
+          <h2>Usuarios registrados</h2>
+          <button class="ghost" type="button" (click)="loadUsers()" [disabled]="loading()">{{ loading() ? 'Cargando...' : 'Refrescar' }}</button>
         </div>
-      </form>
-    </article>
+        @if (errorMessage()) { <p class="error" role="alert">{{ errorMessage() }}</p> }
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Nombre completo</th><th>Documento</th><th>Nacimiento</th><th>Género</th><th>Correo</th><th>Teléfono</th><th>Celular</th><th>Tipo</th><th>Profesión</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody>
+              @for (user of users(); track user.userId) {
+                <tr [class.editing]="isEditing(user)">
+                  <td>{{ user.userId }}</td><td>{{ user.firstName }} {{ user.paternalLastName }} {{ user.maternalLastName }}</td>
+                  <td>{{ user.doiType }} {{ user.doi }}</td><td>{{ user.birthDate }}</td><td>{{ user.gender }}</td><td>{{ user.email }}</td>
+                  <td>{{ user.phone }}</td><td>{{ user.mobilePhone }}</td><td>{{ user.userType }}</td><td>{{ user.profession }}</td><td>{{ user.status }}</td>
+                  <td class="row-actions"><button type="button" class="ghost" (click)="startEdit(user)">Editar</button><button type="button" class="danger" (click)="delete(user)">Eliminar</button></td>
+                </tr>
+              } @empty { <tr><td colspan="12" class="empty">No hay usuarios registrados.</td></tr> }
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+  </main>
+} @else {
+  <main class="home-page">
+    <header class="topbar">
+      <a class="brand" href="/">IDENTIPAT IA</a>
+    </header>
 
-    <article class="panel table-panel">
-      <div class="table-head">
-        <h2>Usuarios registrados</h2>
-        <button class="ghost" type="button" (click)="loadUsers()" [disabled]="loading()">
-          {{ loading() ? 'Cargando...' : 'Refrescar' }}
-        </button>
-      </div>
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Orientación psicológica accesible</p>
+        <h1>Comprender lo que sientes es un buen lugar para empezar.</h1>
+        <p class="intro">IDENTIPAT IA te acompaña con una evaluación orientativa, privada y sencilla para ayudarte a reconocer patrones y encontrar el siguiente paso adecuado.</p>
 
-      @if (errorMessage()) {
-        <p class="error">{{ errorMessage() }}</p>
-      }
-
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nombre completo</th>
-              <th>Documento</th>
-              <th>Fecha de nacimiento</th>
-              <th>Genero</th>
-              <th>Correo</th>
-              <th>Telefono</th>
-              <th>Celular</th>
-              <th>Tipo de usuario</th>
-              <th>Profesion</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (user of users(); track user.userId) {
-              <tr [class.editing]="isEditing(user)">
-                <td>{{ user.userId }}</td>
-                <td>{{ user.firstName }} {{ user.paternalLastName }} {{ user.maternalLastName }}</td>
-                <td>{{ user.doiType }} {{ user.doi }}</td>
-                <td>{{ user.birthDate }}</td>
-                <td>{{ user.gender }}</td>
-                <td>{{ user.email }}</td>
-                <td>{{ user.phone }}</td>
-                <td>{{ user.mobilePhone }}</td>
-                <td>{{ user.userType }}</td>
-                <td>{{ user.profession }}</td>
-                <td>{{ user.status }}</td>
-                <td class="row-actions">
-                  <button type="button" class="ghost" (click)="startEdit(user)">Editar</button>
-                  <button type="button" class="danger" (click)="delete(user)">Eliminar</button>
-                </td>
-              </tr>
-            } @empty {
-              <tr>
-                <td colspan="12" class="empty">No hay usuarios registrados.</td>
-              </tr>
+        <div class="access-block">
+          <span class="section-label">{{ view() === 'admin-login' ? 'Acceso seguro' : 'Comienza aquí' }}</span>
+          <h2>{{ view() === 'admin-login' ? 'Ingresa como administrador' : 'Identifícate para continuar' }}</h2>
+          <form [formGroup]="accessForm" (ngSubmit)="view() === 'admin-login' ? loginAdmin() : identifyDocument()">
+            <div class="document-fields">
+              <label>Tipo
+                <select formControlName="doiType" aria-label="Tipo de documento"><option value="DNI">DNI</option><option value="CE">CE</option></select>
+              </label>
+              <label>Número de documento
+                <input type="text" inputmode="numeric" autocomplete="username" formControlName="doi" placeholder="Ingresa tu documento" />
+              </label>
+            </div>
+            @if (accessForm.controls.doi.touched && accessForm.controls.doi.invalid) { <p class="field-error">Ingresa un documento válido de 8 a 12 dígitos.</p> }
+            @if (view() === 'admin-login') {
+              <label class="password-field">Contraseña
+                <input type="password" autocomplete="current-password" [formControl]="loginForm.controls.password" placeholder="Ingresa tu contraseña" />
+              </label>
             }
-          </tbody>
-        </table>
+            @if (accessMessage()) { <p class="access-message" role="status">{{ accessMessage() }}</p> }
+            <button class="primary-button" type="submit" [disabled]="checkingDocument() || authenticating()">
+              @if (view() === 'admin-login') { {{ authenticating() ? 'Verificando...' : 'Ingresar al panel' }} }
+              @else { {{ checkingDocument() ? 'Verificando...' : 'Continuar evaluación' }} }
+            </button>
+          </form>
+        </div>
+        <p class="privacy-note">Tu información se trata de forma confidencial y solo para los fines autorizados.</p>
       </div>
-    </article>
-  </section>
-</main>
+
+      <figure class="hero-visual">
+        <img src="https://images.unsplash.com/photo-1573497491208-6b1acb260507?auto=format&fit=crop&w=1200&q=85" alt="Profesional conversando de forma cercana con una persona" />
+        <figcaption>Un espacio de orientación, a tu ritmo.</figcaption>
+      </figure>
+    </section>
+
+    <section class="trust-strip" aria-label="Características del servicio">
+      <div><strong>Privado</strong><span>Tus datos bajo control</span></div>
+      <div><strong>Orientativo</strong><span>No reemplaza un diagnóstico clínico</span></div>
+      <div><strong>Cercano</strong><span>Diseñado para acompañarte</span></div>
+    </section>
+  </main>
+}

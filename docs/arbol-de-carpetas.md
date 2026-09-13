@@ -1,6 +1,6 @@
 # Árbol de carpetas actual
 
-**Fecha de actualización:** 11 de septiembre de 2026
+**Fecha de actualización:** 12 de septiembre de 2026
 
 ```text
 identipat-ia/
@@ -23,8 +23,12 @@ identipat-ia/
 │   │   │   │   │   ├── JacksonConfig.java
 │   │   │   │   │   ├── JwtAuthenticationFilter.java
 │   │   │   │   │   ├── OpenApiConfig.java
-│   │   │   │   │   └── SecurityConfig.java
+│   │   │   │   │   ├── SecurityConfig.java
+│   │   │   │   │   ├── SpaCsrfTokenRequestHandler.java
+│   │   │   │   │   ├── StandardSessionProperties.java
+│   │   │   │   │   └── TimeConfig.java
 │   │   │   │   ├── controller/
+│   │   │   │   │   ├── StandardSessionController.java
 │   │   │   │   │   └── UserController.java
 │   │   │   │   ├── dto/
 │   │   │   │   │   ├── LoginRequestDTO.java
@@ -33,24 +37,36 @@ identipat-ia/
 │   │   │   │   │   ├── DocumentRecognitionResponse.java
 │   │   │   │   │   ├── StandardUserRegistrationRequest.java
 │   │   │   │   │   ├── StandardUserRegistrationResponse.java
-│   │   │   │   │   └── UserDTO.java
+│   │   │   │   │   ├── UserDTO.java
+│   │   │   │   │   ├── StandardSessionCreateRequest.java
+│   │   │   │   │   ├── StandardSessionResponse.java
+│   │   │   │   │   ├── ConsentRequest.java
+│   │   │   │   │   ├── ConsentResponse.java
+│   │   │   │   │   └── CsrfTokenResponse.java
 │   │   │   │   ├── exception/
 │   │   │   │   │   ├── InvalidUserDataException.java
 │   │   │   │   │   └── UserNotFoundException.java
 │   │   │   │   ├── mapper/
 │   │   │   │   │   └── UserMapper.java
 │   │   │   │   ├── model/
-│   │   │   │   │   └── User.java
+│   │   │   │   │   ├── User.java
+│   │   │   │   │   ├── StandardSession.java
+│   │   │   │   │   ├── ConsentEvent.java
+│   │   │   │   │   └── enums de sesión/consentimiento
 │   │   │   │   ├── repository/
-│   │   │   │   │   └── UserRepository.java
+│   │   │   │   │   ├── UserRepository.java
+│   │   │   │   │   ├── StandardSessionRepository.java
+│   │   │   │   │   └── ConsentEventRepository.java
 │   │   │   │   ├── service/
 │   │   │   │   │   ├── JwtService.java
-│   │   │   │   │   └── UserService.java
+│   │   │   │   │   ├── UserService.java
+│   │   │   │   │   └── servicios/resolver de sesión STANDARD
 │   │   │   │   └── IdentipatIaApplication.java
 │   │   │   └── resources/
 │   │   │       ├── db/
 │   │   │       │   └── migration/
-│   │   │       │       └── V1__baseline_schema.sql
+│   │   │       │       ├── V1__baseline_schema.sql
+│   │   │       │       └── V2__standard_sessions_and_consent.sql
 │   │   │       ├── application.yml
 │   │   │       ├── application-dev.yml
 │   │   │       ├── application-test.yml
@@ -68,7 +84,8 @@ identipat-ia/
 │   │           │   └── UserMapperTest.java
 │   │           ├── service/
 │   │           │   └── UserServiceTest.java
-│   │           └── IdentipatIaApplicationTests.java
+│   │           ├── IdentipatIaApplicationTests.java
+│   │           └── StandardSessionIntegrationTest.java
 │   └── pom.xml
 ├── codex-prompts/                    # Prompts locales; carpeta ignorada por Git
 ├── docs/
@@ -81,7 +98,11 @@ identipat-ia/
 │   │   ├── configuration.md
 │   │   ├── database-migrations.md
 │   │   └── preprocessing-service.md
+│   ├── design/
+│   │   ├── analysis-contract.md       # Contrato conceptual F1.0, aún no implementado
+│   │   └── analysis-domain.md         # Dominio y persistencia conceptual F1.0
 │   ├── diagnostico-proyecto.md
+│   ├── roadmap-funcional.md
 │   └── security/
 │       └── authorization-matrix.md
 ├── frontend/

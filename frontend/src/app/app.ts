@@ -19,6 +19,19 @@ export class App implements OnInit {
   readonly saving = signal(false);
   readonly errorMessage = signal('');
   readonly editingUserId = signal<number | null>(null);
+  readonly view = signal<'home' | 'admin-login' | 'admin'>('home');
+  readonly checkingDocument = signal(false);
+  readonly authenticating = signal(false);
+  readonly accessMessage = signal('');
+
+  readonly accessForm = this.fb.nonNullable.group({
+    doiType: ['DNI', [Validators.required]],
+    doi: ['', [Validators.required, Validators.pattern(/^\d{8,12}$/)]]
+  });
+
+  readonly loginForm = this.fb.nonNullable.group({
+    password: ['', [Validators.required]]
+  });
 
   readonly userForm = this.fb.nonNullable.group({
     firstName: ['', [Validators.required]],
@@ -46,8 +59,72 @@ export class App implements OnInit {
       }
       passwordControl.updateValueAndValidity({ emitEvent: false });
     });
+  }
 
-    this.loadUsers();
+  identifyDocument(): void {
+    if (this.accessForm.invalid) {
+      this.accessForm.markAllAsTouched();
+      return;
+    }
+
+    const { doi, doiType } = this.accessForm.getRawValue();
+    this.checkingDocument.set(true);
+    this.accessMessage.set('');
+    this.userService.identify(doi, doiType).subscribe({
+      next: ({ registered, passwordRequired }) => {
+        if (passwordRequired) {
+          this.view.set('admin-login');
+          this.loginForm.reset({ password: '' });
+        } else {
+          this.accessMessage.set(registered
+            ? 'Documento reconocido. Ya puedes continuar con tu evaluación.'
+            : 'No encontramos este documento. Completa tu registro para continuar.');
+        }
+        this.checkingDocument.set(false);
+      },
+      error: () => {
+        this.accessMessage.set('No pudimos verificar el documento. Inténtalo nuevamente.');
+        this.checkingDocument.set(false);
+      }
+    });
+  }
+
+  backHome(): void {
+    this.view.set('home');
+    this.accessMessage.set('');
+    this.loginForm.reset({ password: '' });
+  }
+
+  loginAdmin(): void {
+    if (this.accessForm.invalid || this.loginForm.invalid) {
+      this.accessForm.markAllAsTouched();
+      this.loginForm.markAllAsTouched();
+      return;
+    }
+
+    const { doi } = this.accessForm.getRawValue();
+    const { password } = this.loginForm.getRawValue();
+    this.authenticating.set(true);
+    this.accessMessage.set('');
+    this.userService.login(doi, password).subscribe({
+      next: ({ accessToken }) => {
+        this.userService.setAccessToken(accessToken);
+        this.authenticating.set(false);
+        this.view.set('admin');
+        this.loadUsers();
+      },
+      error: () => {
+        this.accessMessage.set('Documento o contraseña incorrectos.');
+        this.authenticating.set(false);
+      }
+    });
+  }
+
+  logout(): void {
+    this.userService.clearAccessToken();
+    this.users.set([]);
+    this.cancelEdit();
+    this.backHome();
   }
 
   loadUsers(): void {

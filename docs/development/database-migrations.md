@@ -14,7 +14,7 @@ Las migraciones residen en `backend/src/main/resources/db/migration/` y siguen l
 V{n}__descripcion.sql
 ```
 
-Por ejemplo, un cambio posterior se incorpora como `V2__descripcion_del_cambio.sql`, luego `V3__otra_evolucion.sql`. Una migración aplicada nunca se edita ni se reemplaza: cualquier modificación del esquema requiere una migración nueva. No se insertan secretos ni datos personales en migraciones estructurales.
+`V2__standard_sessions_and_consent.sql` crea `standard_sessions` y `consent_events`. La primera conserva solo HMAC del token, estados/TTL y FK restrictiva a usuario; la segunda conserva decisiones inmutables con versión/hash y FK compuesta `(session_id, user_id)`. No existe `ON DELETE CASCADE`. Una migración aplicada nunca se edita ni se reemplaza: cualquier modificación requiere otra migración. No se insertan secretos ni datos personales en migraciones estructurales.
 
 Flyway registra versiones, checksums, tiempo de ejecución y resultado en `flyway_schema_history`. Esta tabla permite verificar qué migraciones se aplicaron en cada base.
 
@@ -43,7 +43,7 @@ Después de confirmar esos datos, puede recrearse la base o el volumen del servi
 
 ## Pruebas de integración
 
-Los tests que requieren persistencia levantan un único PostgreSQL 16 efímero por clase mediante Testcontainers y `@ServiceConnection`. El contenedor comienza con una base vacía, asigna un puerto dinámico y entrega el datasource a Spring Boot. Flyway aplica V1 y Hibernate valida el resultado antes de iniciar el contexto.
+Los tests que requieren persistencia levantan PostgreSQL 16 efímero mediante Testcontainers y `@ServiceConnection`. El contenedor comienza con una base vacía y no depende de PostgreSQL local. Flyway aplica V1 y V2 y Hibernate valida el resultado antes de iniciar el contexto.
 
 Docker Engine debe estar disponible para ejecutar:
 

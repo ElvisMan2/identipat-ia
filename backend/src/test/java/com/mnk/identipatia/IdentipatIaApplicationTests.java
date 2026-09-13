@@ -77,7 +77,7 @@ class IdentipatIaApplicationTests {
     }
 
     @Test
-    void flywayAppliesV1ToFreshTestcontainerAndHibernateValidates() {
+    void flywayAppliesV1AndV2ToFreshTestcontainerAndHibernateValidates() {
         Integer usersTableCount = jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
                 FROM information_schema.tables
@@ -88,6 +88,14 @@ class IdentipatIaApplicationTests {
                 FROM information_schema.tables
                 WHERE table_schema = 'public' AND table_name = 'flyway_schema_history'
                 """, Integer.class);
+        Integer sessionTableCount = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM information_schema.tables
+                WHERE table_schema = 'public' AND table_name = 'standard_sessions'
+                """, Integer.class);
+        Integer consentTableCount = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM information_schema.tables
+                WHERE table_schema = 'public' AND table_name = 'consent_events'
+                """, Integer.class);
         Map<String, Object> migration = jdbcTemplate.queryForMap("""
                 SELECT installed_rank, version, description, type, success
                 FROM flyway_schema_history
@@ -96,11 +104,15 @@ class IdentipatIaApplicationTests {
 
         assertEquals(1, usersTableCount);
         assertEquals(1, historyTableCount);
+        assertEquals(1, sessionTableCount);
+        assertEquals(1, consentTableCount);
         assertEquals(1, migration.get("installed_rank"));
         assertEquals("1", migration.get("version"));
         assertEquals("baseline schema", migration.get("description"));
         assertEquals("SQL", migration.get("type"));
         assertEquals(true, migration.get("success"));
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '2' AND success", Integer.class));
         assertEquals("validate", environment.getRequiredProperty("spring.jpa.hibernate.ddl-auto"));
         assertFalse(environment.getRequiredProperty("spring.flyway.baseline-on-migrate", Boolean.class));
     }
@@ -145,6 +157,11 @@ class IdentipatIaApplicationTests {
         assertThat(api.at("/paths/~1users~1login/post").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1users/get").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1users~1{userId}/delete").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1standard-session~1csrf/get").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1standard-sessions/post").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1standard-session/get").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1standard-session~1consent/post").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1standard-session/delete").isMissingNode()).isFalse();
 
         assertThat(api.at("/paths/~1users~1identify/post/security").isMissingNode()).isTrue();
         assertThat(api.at("/paths/~1users/post/security").isMissingNode()).isTrue();
@@ -160,8 +177,9 @@ class IdentipatIaApplicationTests {
         assertThat(api.at("/components/securitySchemes/bearerAuth/bearerFormat").asText()).isEqualTo("JWT");
 
         JsonNode recognitionProperties = api.at("/components/schemas/DocumentRecognitionResponse/properties");
-        assertThat(recognitionProperties.size()).isEqualTo(1);
+        assertThat(recognitionProperties.size()).isEqualTo(2);
         assertThat(recognitionProperties.has("registered")).isTrue();
+        assertThat(recognitionProperties.has("passwordRequired")).isTrue();
 
         JsonNode registrationProperties = api.at("/components/schemas/StandardUserRegistrationRequest/properties");
         assertThat(registrationProperties.has("userType")).isFalse();

@@ -95,14 +95,15 @@ class UserSecurityWebMvcTest {
     }
 
     @Test
-    void publicRecognitionReturnsOnlyRegistrationStateForExistingDocument() throws Exception {
-        when(userService.identifyDocument(any())).thenReturn(new DocumentRecognitionResponse(true));
+        void publicRecognitionReturnsOnlyAccessStateForExistingDocument() throws Exception {
+                when(userService.identifyDocument(any())).thenReturn(new DocumentRecognitionResponse(true, true));
 
         mockMvc.perform(post("/users/identify")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"doi\":\"12345678\",\"doiType\":\"DNI\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.registered").value(true))
+                .andExpect(jsonPath("$.passwordRequired").value(true))
                 .andExpect(jsonPath("$.email").doesNotExist())
                 .andExpect(jsonPath("$.password").doesNotExist())
                 .andExpect(jsonPath("$.userType").doesNotExist())
@@ -112,13 +113,14 @@ class UserSecurityWebMvcTest {
 
     @Test
     void publicRecognitionReturnsFalseForUnknownDocument() throws Exception {
-        when(userService.identifyDocument(any())).thenReturn(new DocumentRecognitionResponse(false));
+                when(userService.identifyDocument(any())).thenReturn(new DocumentRecognitionResponse(false, false));
 
         mockMvc.perform(post("/users/identify")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"doi\":\"99999999\",\"doiType\":\"CE\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.registered").value(false));
+                .andExpect(jsonPath("$.registered").value(false))
+                .andExpect(jsonPath("$.passwordRequired").value(false));
     }
 
     @Test
