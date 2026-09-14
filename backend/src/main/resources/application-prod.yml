@@ -17,6 +17,13 @@ spring:
       static-locations: '${STATIC_LOCATIONS:file:../frontend/dist/identipat-ia/browser/}'
 
 app:
+  ai:
+    enabled: ${IDENTIPAT_AI_ENABLED}
+    provider: ${IDENTIPAT_AI_PROVIDER}
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      model: ${OPENAI_MODEL}
+      timeout: ${OPENAI_TIMEOUT}
   preprocessing:
     base-url: ${PREPROCESSING_SERVICE_BASE_URL}
     timeout: 5s

@@ -56,12 +56,20 @@ class ProductionConfigurationTest {
                 .contains("consent-current-version: ${CONSENT_CURRENT_VERSION}")
                 .contains("consent-document-sha256: ${CONSENT_DOCUMENT_SHA256}")
                 .contains("base-url: ${PREPROCESSING_SERVICE_BASE_URL}")
+                .contains("enabled: ${IDENTIPAT_AI_ENABLED}")
+                .contains("provider: ${IDENTIPAT_AI_PROVIDER}")
+                .contains("api-key: ${OPENAI_API_KEY}")
+                .contains("model: ${OPENAI_MODEL}")
+                .contains("timeout: ${OPENAI_TIMEOUT}")
                 .doesNotContain("${DB_PASSWORD:")
                 .doesNotContain("${JWT_SECRET:")
                 .doesNotContain("${STANDARD_SESSION_PEPPER:")
                 .doesNotContain("${CONSENT_CURRENT_VERSION:")
                 .doesNotContain("${CONSENT_DOCUMENT_SHA256:")
-                .doesNotContain("${PREPROCESSING_SERVICE_BASE_URL:");
+                .doesNotContain("${PREPROCESSING_SERVICE_BASE_URL:")
+                .doesNotContain("${OPENAI_API_KEY:")
+                .doesNotContain("${OPENAI_MODEL:")
+                .doesNotContain("${OPENAI_TIMEOUT:");
     }
 
     @Test

@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "status", "message"],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "enum": ["provider-smoke-result/1.0"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["OK"]
+    },
+    "message": {
+      "type": "string"
+    }
+  }
+}

@@ -12,6 +12,11 @@ Repositorio del sistema IDENTIPAT-IA, organizado como una aplicación web con ba
 - `docker-compose.yml`: PostgreSQL 16 y pgAdmin para desarrollo local.
 - `codex-prompts/`: instrucciones locales para Codex; su contenido no se versiona.
 
+El backend contiene una capa de IA generativa agnóstica al proveedor. OpenAI es el adapter inicial
+mediante Responses API; la aplicación arranca sin credenciales externas mientras
+`IDENTIPAT_AI_ENABLED=false`. Consulta la
+[guía de integración de IA generativa](docs/development/generative-ai-integration.md).
+
 ## Requisitos
 
 - JDK 21 (versión oficial del proyecto).
@@ -101,6 +106,9 @@ Request hacia `develop` y `main`. El flujo no despliega ni publica imágenes. Co
 El perfil se selecciona con `SPRING_PROFILES_ACTIVE`; no hay un perfil activo por defecto. DEV ofrece valores locales no productivos para `DB_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`, `CORS_ALLOWED_ORIGINS` y `SERVER_PORT`. Las variables siempre pueden reemplazarlos desde el entorno, IDE o mecanismo de despliegue.
 
 PROD exige `SPRING_PROFILES_ACTIVE=prod` y valores externos para `DB_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`, `STANDARD_SESSION_PEPPER`, `CONSENT_CURRENT_VERSION`, `CONSENT_DOCUMENT_SHA256` y `CORS_ALLOWED_ORIGINS`. No existen fallbacks productivos para secretos, credenciales ni evidencia legal versionada.
+
+La IA se controla con `IDENTIPAT_AI_ENABLED` y `IDENTIPAT_AI_PROVIDER`. Al habilitar OpenAI se
+requieren `OPENAI_API_KEY`, `OPENAI_MODEL` y `OPENAI_TIMEOUT`; no hay un modelo hardcodeado.
 
 La sesión STANDARD es server-side y usa `IDENTIPAT_STANDARD_SESSION` HttpOnly; no es login ni JWT. Las mutaciones de sesión/consentimiento requieren `XSRF-TOKEN` y `X-XSRF-TOKEN`. El backend no devuelve PII, IDs internos ni el token de sesión en esos contratos.
 

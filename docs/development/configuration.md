@@ -53,10 +53,15 @@ Producción requiere `SPRING_PROFILES_ACTIVE=prod` además de todas las variable
 | `APP_TIME_ZONE` | `America/Lima` | `America/Lima` | `America/Lima` | Zona de Jackson y JDBC/Hibernate |
 | `STATIC_LOCATIONS` | Classpath y build Angular local | Solo classpath | Solo classpath | Ubicaciones de recursos, separadas por coma |
 | `PREPROCESSING_SERVICE_BASE_URL` | `http://localhost:8090` si no se define | No aplica; se usa `http://preprocessing-service.test` | Obligatoria | URL base del servicio Python consumido internamente por Java |
+| `IDENTIPAT_AI_ENABLED` | `false` | `false` | Obligatoria | Activa la creación del adapter LLM |
+| `IDENTIPAT_AI_PROVIDER` | `openai` | `openai` | Obligatoria | Selecciona el provider; F1.2 admite `openai` |
+| `OPENAI_API_KEY` | Sin default efectivo | Vacía con IA deshabilitada | Obligatoria al habilitar OpenAI | Secreto del SDK oficial |
+| `OPENAI_MODEL` | Sin default efectivo | Vacío con IA deshabilitada | Obligatoria al habilitar OpenAI | Modelo Responses configurado externamente |
+| `OPENAI_TIMEOUT` | `60s` | `60s` | Obligatoria al habilitar OpenAI | Timeout total positivo |
 | `PGADMIN_EMAIL` | Sin default en Compose | No aplica | No aplica | Cuenta local de pgAdmin |
 | `PGADMIN_PASSWORD` | Sin default en Compose | No aplica | No aplica | Password local de pgAdmin |
 
-Los valores DEV son conocidos, no productivos y pueden reemplazarse desde el entorno. TEST recibe la conexión a PostgreSQL mediante `@ServiceConnection`; no usa variables de base DEV. PROD no tiene fallback para URL, usuario o password de base de datos, secreto JWT, pepper, versión/hash de consentimiento ni orígenes CORS; un placeholder obligatorio sin resolver impide crear los componentes que consumen esa configuración. El hash no es texto legal: debe calcularse sobre el documento aprobado externamente.
+Los valores DEV son conocidos, no productivos y pueden reemplazarse desde el entorno. TEST recibe la conexión a PostgreSQL mediante `@ServiceConnection`; no usa variables de base DEV. PROD no tiene fallback para URL, usuario o password de base de datos, secreto JWT, pepper, versión/hash de consentimiento, orígenes CORS ni configuración OpenAI; un placeholder obligatorio sin resolver impide crear los componentes que consumen esa configuración. El hash no es texto legal: debe calcularse sobre el documento aprobado externamente.
 
 ## Servicio de preprocesamiento
 
@@ -65,6 +70,24 @@ cliente `RestClient`, con timeout de conexión y lectura de cinco segundos. DEV 
 `http://localhost:8090` y permite reemplazarlo con `PREPROCESSING_SERVICE_BASE_URL`; TEST tiene una
 URL dummy y sus pruebas usan HTTP simulado; PROD exige esa variable sin fallback. El backend no
 consulta el health del servicio al iniciar. Consulta [preprocessing-service.md](preprocessing-service.md).
+
+## IA generativa y OpenAI
+
+`IDENTIPAT_AI_ENABLED` activa la capa LLM y `IDENTIPAT_AI_PROVIDER` selecciona su adapter. DEV y
+TEST usan `false` y `openai` como defaults; por ello el backend arranca y ejecuta la suite normal sin
+credenciales ni tráfico externo. PROD exige ambos valores explícitos.
+
+Cuando `IDENTIPAT_AI_ENABLED=true` y `IDENTIPAT_AI_PROVIDER=openai`, son obligatorios:
+
+| Variable | Uso |
+| --- | --- |
+| `OPENAI_API_KEY` | Secreto de autenticación; nunca se registra ni se versiona. |
+| `OPENAI_MODEL` | Modelo Responses compatible; no existe valor por defecto. |
+| `OPENAI_TIMEOUT` | Timeout total de la llamada. DEV/TEST usan `60s`; PROD no tiene fallback. |
+
+OpenAI no se contacta durante el arranque ni desde health checks. Los retries internos están
+deshabilitados. Consulta [generative-ai-integration.md](generative-ai-integration.md) para el diseño y
+el smoke test manual.
 
 ## PostgreSQL y esquema
 
