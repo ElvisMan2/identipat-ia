@@ -77,7 +77,7 @@ class IdentipatIaApplicationTests {
     }
 
     @Test
-    void flywayAppliesV1AndV2ToFreshTestcontainerAndHibernateValidates() {
+    void flywayAppliesV1V2AndV3ToFreshTestcontainerAndHibernateValidates() {
         Integer usersTableCount = jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
                 FROM information_schema.tables
@@ -106,6 +106,22 @@ class IdentipatIaApplicationTests {
         assertEquals(1, historyTableCount);
         assertEquals(1, sessionTableCount);
         assertEquals(1, consentTableCount);
+        assertEquals(1, jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM information_schema.tables
+                WHERE table_schema = 'public' AND table_name = 'analyses'
+                """, Integer.class));
+        assertEquals(1, jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM information_schema.tables
+                WHERE table_schema = 'public' AND table_name = 'analysis_inputs'
+                """, Integer.class));
+        assertEquals(1, jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM information_schema.tables
+                WHERE table_schema = 'public' AND table_name = 'ai_invocations'
+                """, Integer.class));
+        assertEquals(1, jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM information_schema.tables
+                WHERE table_schema = 'public' AND table_name = 'analysis_results'
+                """, Integer.class));
         assertEquals(1, migration.get("installed_rank"));
         assertEquals("1", migration.get("version"));
         assertEquals("baseline schema", migration.get("description"));
@@ -113,6 +129,8 @@ class IdentipatIaApplicationTests {
         assertEquals(true, migration.get("success"));
         assertEquals(1, jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '2' AND success", Integer.class));
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '3' AND success", Integer.class));
         assertEquals("validate", environment.getRequiredProperty("spring.jpa.hibernate.ddl-auto"));
         assertFalse(environment.getRequiredProperty("spring.flyway.baseline-on-migrate", Boolean.class));
     }
@@ -162,6 +180,8 @@ class IdentipatIaApplicationTests {
         assertThat(api.at("/paths/~1standard-session/get").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1standard-session~1consent/post").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1standard-session/delete").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1analyses~1text/post").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1analyses~1{analysisId}/get").isMissingNode()).isFalse();
 
         assertThat(api.at("/paths/~1users~1identify/post/security").isMissingNode()).isTrue();
         assertThat(api.at("/paths/~1users/post/security").isMissingNode()).isTrue();

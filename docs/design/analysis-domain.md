@@ -1,6 +1,6 @@
 # Dominio de análisis — F1.0
 
-**Estado:** diseño aprobado; sesión y consentimiento implementados en F1.1, dominio de análisis aún no implementado.
+**Estado:** diseño aprobado; sesión/consentimiento implementados en F1.1 y flujo de texto materializado en F1.3.
 **Alcance:** base conceptual para F1.1–F1.4. PDF y audio se incorporarán sobre este modelo en F1.5 y F1.6.
 
 ## 1. Objetivo
@@ -258,18 +258,17 @@ AnalysisResult
 ├── schemaVersion
 ├── summary
 ├── patentabilityAssessment
-│   ├── conclusion
-│   ├── explanation
-│   └── references[]
+│   ├── outcome
+│   └── rationale
 ├── protectionOptions[]
 │   ├── type
-│   ├── relevance
+│   ├── applicability
 │   └── rationale
 ├── observations[]
 └── warnings[]
 ```
 
-`patentabilityAssessment.conclusion` representa una conclusión orientativa, no una decisión oficial ni una probabilidad calibrada. F1.4 definirá su vocabulario jurídico y referencias/criterios concretos. No se agregará un porcentaje numérico de confianza por defecto. `protectionOptions[].type` prevé `INVENTION_PATENT`, `UTILITY_MODEL`, `INDUSTRIAL_DESIGN`, `DISTINCTIVE_SIGNS`, `COPYRIGHT` y `OTHER`; `relevance` será una escala cualitativa (`HIGH`, `MEDIUM`, `LOW`) que F1.4 validará en detalle. `warnings[]` contiene exclusivamente advertencias derivadas de la entrada o del diagnóstico, como información insuficiente, ambigüedad o necesidad de describir un componente; no contiene el disclaimer institucional.
+`patentabilityAssessment.outcome` usa `POTENTIALLY_PATENTABLE`, `POTENTIALLY_NOT_PATENTABLE` o `INSUFFICIENT_INFORMATION`; es una conclusión orientativa, no una decisión oficial ni una probabilidad calibrada. No se agrega confianza numérica. `protectionOptions[].type` prevé `INVENTION_PATENT`, `UTILITY_MODEL`, `INDUSTRIAL_DESIGN`, `DISTINCTIVE_SIGN`, `COPYRIGHT` y `OTHER`; `applicability` usa `LIKELY`, `POSSIBLE` o `UNLIKELY`. F1.4 profundizará el contenido jurídico sin tratar esta taxonomía preliminar como dictamen final. `warnings[]` contiene exclusivamente advertencias derivadas de la entrada o del diagnóstico, no el disclaimer institucional.
 
 El disclaimer institucional no depende de Gemini ni de contenido libre generado por el modelo, no se persiste por defecto dentro de `warnings[]` y será contenido controlado y versionado por la aplicación en F1.7.
 

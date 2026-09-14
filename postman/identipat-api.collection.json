@@ -14,7 +14,8 @@
     { "key": "standardDoiType", "value": "DNI" },
     { "key": "adminUserId", "value": "1" },
     { "key": "csrfToken", "value": "" },
-    { "key": "consentVersion", "value": "personal-data/1.0" }
+    { "key": "consentVersion", "value": "personal-data/1.0" },
+    { "key": "analysisId", "value": "" }
   ],
   "item": [
     {
@@ -175,6 +176,62 @@
             "url": "{{baseUrl}}/standard-session/consent"
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Outdated version conflicts', function () { pm.response.to.have.status(409); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "STANDARD - Text analysis",
+      "description": "Ejecute primero CSRF, sesión y consentimiento ACCEPTED. La creación es asíncrona; GET se ejecuta una vez y no hace polling infinito.",
+      "item": [
+        {
+          "name": "1. Create text analysis and save ID",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }
+            ],
+            "auth": { "type": "noauth" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"He desarrollado un mecanismo modular que controla el riego según mediciones del suelo.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/analyses/text",
+            "description": "Requiere cookie STANDARD vigente, consentimiento aceptado y CSRF. Responde 202 sin esperar al proveedor."
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Analysis is accepted asynchronously', function () { pm.response.to.have.status(202); });",
+                "pm.expect(pm.response.headers.get('Retry-After')).to.eql('2');",
+                "const body = pm.response.json();",
+                "if (body.analysisId) { pm.collectionVariables.set('analysisId', body.analysisId); }"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "2. Get text analysis once",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/analyses/{{analysisId}}",
+            "description": "No requiere CSRF. Devuelve RECEIVED/ANALYZING/COMPLETED/FAILED únicamente para la misma session_id. Repita manualmente si sigue procesando."
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Analysis lookup succeeds', function () { pm.response.to.have.status(200); });",
+                "pm.expect(['RECEIVED', 'ANALYZING', 'COMPLETED', 'FAILED']).to.include(pm.response.json().status);",
+                "pm.expect(pm.response.json()).not.to.have.property('invocations');"
+              ]
+            }
+          }]
         }
       ]
     },

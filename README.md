@@ -17,6 +17,10 @@ mediante Responses API; la aplicación arranca sin credenciales externas mientra
 `IDENTIPAT_AI_ENABLED=false`. Consulta la
 [guía de integración de IA generativa](docs/development/generative-ai-integration.md).
 
+El flujo de texto persiste la consulta antes de responder `202`, la procesa mediante un worker
+PostgreSQL claim/lease y permite consultar el resultado solo desde la misma sesión STANDARD. Consulta
+la [guía del flujo de análisis de texto](docs/development/text-analysis-flow.md).
+
 ## Requisitos
 
 - JDK 21 (versión oficial del proyecto).
@@ -68,7 +72,7 @@ Con el perfil `dev` activo, la especificación OpenAPI y Swagger UI están dispo
 - `http://localhost:8082/identipat-ia/v3/api-docs`
 - `http://localhost:8082/identipat-ia/swagger-ui.html`
 
-La colección para pruebas manuales está en `postman/identipat-api.collection.json`. Para STANDARD ejecuta **Get CSRF**, reconocimiento/registro, creación de sesión y consentimiento; Postman conserva las cookies y guarda solo el token CSRF temporal. Para ADMIN configura credenciales localmente y usa **Login ADMIN and save JWT**. No versiones documentos reales, cookies, credenciales, JWT ni secretos.
+La colección para pruebas manuales está en `postman/identipat-api.collection.json`. Para STANDARD ejecuta **Get CSRF**, reconocimiento/registro, creación de sesión, consentimiento y luego **Create text analysis** / **Get text analysis once**; Postman conserva las cookies y guarda solo los IDs/tokens temporales necesarios. Para ADMIN configura credenciales localmente y usa **Login ADMIN and save JWT**. No versiones documentos reales, cookies, credenciales, JWT ni secretos.
 
 Consulta [la guía de documentación de API](docs/development/api-documentation.md) para la disponibilidad por ambiente y el flujo STANDARD.
 
@@ -111,5 +115,8 @@ La IA se controla con `IDENTIPAT_AI_ENABLED` y `IDENTIPAT_AI_PROVIDER`. Al habil
 requieren `OPENAI_API_KEY`, `OPENAI_MODEL` y `OPENAI_TIMEOUT`; no hay un modelo hardcodeado.
 
 La sesión STANDARD es server-side y usa `IDENTIPAT_STANDARD_SESSION` HttpOnly; no es login ni JWT. Las mutaciones de sesión/consentimiento requieren `XSRF-TOKEN` y `X-XSRF-TOKEN`. El backend no devuelve PII, IDs internos ni el token de sesión en esos contratos.
+
+El análisis de texto usa las variables `ANALYSIS_*` para límites y worker. Sus valores predeterminados
+son técnicos para DEV/TEST y todos pueden sobrescribirse por ambiente.
 
 Spring Boot y Maven no cargan automáticamente un archivo `.env`; este sirve como referencia y para Docker Compose. Consulta [la guía de configuración](docs/development/configuration.md) y [.env.example](.env.example) para conocer todas las variables.

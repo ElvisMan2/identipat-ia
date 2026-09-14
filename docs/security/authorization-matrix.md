@@ -13,6 +13,8 @@ Las rutas son relativas a `/identipat-ia`. Existen tres categorías separadas:
 | `GET /standard-session` | `STANDARD_SESSION` | Renueva inactividad sin superar el límite absoluto. |
 | `POST /standard-session/consent` | `STANDARD_SESSION + CSRF` | Persiste una decisión inmutable; `REJECTED` cierra la sesión. |
 | `DELETE /standard-session` | `STANDARD_SESSION + CSRF` | Revoca server-side y elimina la cookie. |
+| `POST /analyses/text` | `STANDARD_SESSION + CSRF` | Exige consentimiento vigente; deriva user/session del servidor y responde `202`. |
+| `GET /analyses/{analysisId}` | `STANDARD_SESSION` | Solo la misma `session_id`; otra sesión o UUID inexistente responde `404`. |
 | `POST /users/identify` | `PUBLIC` | Solo reconoce el registro; DNI/CE no autentica. |
 | `POST /users` | `PUBLIC` | Registra STANDARD activo sin password. |
 | `POST /users/login` | `PUBLIC` | Solo un ADMIN activo recibe JWT. |
@@ -22,7 +24,7 @@ Las rutas son relativas a `/identipat-ia`. Existen tres categorías separadas:
 
 ## CSRF y CORS
 
-Spring Security 6.2 usa `CookieCsrfTokenRepository` con cookie `XSRF-TOKEN` (`HttpOnly=false`, `SameSite=Lax`, `Path=/`) y header `X-XSRF-TOKEN`. La protección es selectiva para las mutaciones STANDARD implementadas. F1.3 deberá extenderla a las mutaciones `/analyses/**`. CORS admite credenciales únicamente para `CORS_ALLOWED_ORIGINS` explícitos; `*` está prohibido.
+Spring Security 6.2 usa `CookieCsrfTokenRepository` con cookie `XSRF-TOKEN` (`HttpOnly=false`, `SameSite=Lax`, `Path=/`) y header `X-XSRF-TOKEN`. La protección es selectiva para las mutaciones STANDARD implementadas, incluido `POST /analyses/text`; GET no requiere CSRF. CORS admite credenciales únicamente para `CORS_ALLOWED_ORIGINS` explícitos; `*` está prohibido.
 
 ## Límites
 

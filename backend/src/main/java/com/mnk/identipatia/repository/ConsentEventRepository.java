@@ -12,4 +12,7 @@ public interface ConsentEventRepository extends JpaRepository<ConsentEvent, UUID
     Optional<ConsentEvent> findBySessionAndConsentVersion(StandardSession session, String consentVersion);
     boolean existsBySessionAndConsentVersionAndDecision(
             StandardSession session, String consentVersion, ConsentDecision decision);
+    Optional<ConsentEvent> findBySessionSessionIdAndUserUserIdAndConsentVersionAndConsentDocumentHashAndDecision(
+            UUID sessionId, Long userId, String consentVersion, String consentDocumentHash,
+            ConsentDecision decision);
 }

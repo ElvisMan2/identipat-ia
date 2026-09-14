@@ -16,6 +16,11 @@ V{n}__descripcion.sql
 
 `V2__standard_sessions_and_consent.sql` crea `standard_sessions` y `consent_events`. La primera conserva solo HMAC del token, estados/TTL y FK restrictiva a usuario; la segunda conserva decisiones inmutables con versión/hash y FK compuesta `(session_id, user_id)`. No existe `ON DELETE CASCADE`. Una migración aplicada nunca se edita ni se reemplaza: cualquier modificación requiere otra migración. No se insertan secretos ni datos personales en migraciones estructurales.
 
+`V3__analysis_domain.sql` crea `analyses`, `analysis_inputs`, `ai_invocations` y `analysis_results`.
+Añade una clave única auxiliar sobre consentimiento para que FK compuestas garanticen que análisis,
+sesión, usuario y evidencia pertenecen al mismo contexto. Incluye el índice parcial
+`idx_analyses_claim` para estados reclamables y no añade cascadas de borrado al historial.
+
 Flyway registra versiones, checksums, tiempo de ejecución y resultado en `flyway_schema_history`. Esta tabla permite verificar qué migraciones se aplicaron en cada base.
 
 ## Inicializar una base nueva
@@ -43,7 +48,7 @@ Después de confirmar esos datos, puede recrearse la base o el volumen del servi
 
 ## Pruebas de integración
 
-Los tests que requieren persistencia levantan PostgreSQL 16 efímero mediante Testcontainers y `@ServiceConnection`. El contenedor comienza con una base vacía y no depende de PostgreSQL local. Flyway aplica V1 y V2 y Hibernate valida el resultado antes de iniciar el contexto.
+Los tests que requieren persistencia levantan PostgreSQL 16 efímero mediante Testcontainers y `@ServiceConnection`. El contenedor comienza con una base vacía y no depende de PostgreSQL local. Flyway aplica V1, V2 y V3 y Hibernate valida el resultado antes de iniciar el contexto.
 
 Docker Engine debe estar disponible para ejecutar:
 
