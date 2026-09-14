@@ -311,6 +311,8 @@ Implementación seleccionada: sesión server-side con cookie HttpOnly y HMAC, TT
 
 # F1.2 — Capa de IA generativa en Java
 
+**Estado:** implementada con OpenAI como adapter inicial; pendiente de revisión humana y smoke real con credenciales.
+
 ## Objetivo
 
 Crear la abstracción de proveedor de IA generativa.
@@ -320,15 +322,18 @@ Crear la abstracción de proveedor de IA generativa.
 ```text
 GenerativeAiProvider
         ↑
-GeminiProvider
+OpenAiGenerativeAiProvider
 ```
 
-El resto de la aplicación debe depender de la interfaz, no directamente de Gemini.
+El resto de la aplicación depende de la interfaz, no directamente de OpenAI. Gemini se incorporará
+como adapter futuro cuando existan credenciales, sin modificar el contrato común.
 
 ## Alcance
 
 - interfaz del proveedor;
-- implementación Gemini inicial;
+- implementación OpenAI inicial mediante Responses API y SDK oficial directo;
+- prompts y JSON Schemas versionados;
+- structured output estricto con validación local;
 - configuración por ambiente;
 - secreto/API key externalizado;
 - timeout;

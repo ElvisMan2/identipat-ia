@@ -1,6 +1,6 @@
 # Árbol de carpetas actual
 
-**Fecha de actualización:** 12 de septiembre de 2026
+**Fecha de actualización:** 14 de septiembre de 2026
 
 ```text
 identipat-ia/
@@ -17,6 +17,14 @@ identipat-ia/
 │   ├── src/
 │   │   ├── main/
 │   │   │   ├── java/com/mnk/identipatia/
+│   │   │   │   ├── ai/
+│   │   │   │   │   ├── GenerativeAiProvider.java
+│   │   │   │   │   ├── config/      # Activación y selección de provider
+│   │   │   │   │   ├── exception/   # Errores agnósticos y saneados
+│   │   │   │   │   ├── model/       # Request, response, prompt, schema, usage
+│   │   │   │   │   ├── prompt/      # Registry, renderer y hashes
+│   │   │   │   │   ├── schema/      # Registry y validación JSON Schema
+│   │   │   │   │   └── provider/openai/ # Único boundary del SDK OpenAI
 │   │   │   │   ├── advice/
 │   │   │   │   │   └── GlobalExceptionHandler.java
 │   │   │   │   ├── config/
@@ -67,6 +75,10 @@ identipat-ia/
 │   │   │       │   └── migration/
 │   │   │       │       ├── V1__baseline_schema.sql
 │   │   │       │       └── V2__standard_sessions_and_consent.sql
+│   │   │       ├── prompts/provider-smoke-test/v1.0/
+│   │   │       │   ├── system.md
+│   │   │       │   └── user.md
+│   │   │       ├── ai-schemas/provider-smoke-result/v1.0/schema.json
 │   │   │       ├── application.yml
 │   │   │       ├── application-dev.yml
 │   │   │       ├── application-test.yml
@@ -76,6 +88,7 @@ identipat-ia/
 │   │           ├── config/
 │   │           │   ├── ProductionConfigurationTest.java
 │   │           │   └── SecurityConfigTest.java
+│   │           ├── ai/               # Contratos, prompts, schemas, config y adapter OpenAI
 │   │           ├── controller/
 │   │           │   └── UserSecurityWebMvcTest.java
 │   │           ├── dto/
@@ -97,6 +110,7 @@ identipat-ia/
 │   │   ├── continuous-integration.md
 │   │   ├── configuration.md
 │   │   ├── database-migrations.md
+│   │   ├── generative-ai-integration.md
 │   │   └── preprocessing-service.md
 │   ├── design/
 │   │   ├── analysis-contract.md       # Contrato conceptual F1.0, aún no implementado

@@ -28,7 +28,11 @@ Angular es responsable de la presentación, interacción, navegación, captura d
 
 Java es el backend principal y dueño de los casos de uso. Es responsable de la API de negocio, usuarios, seguridad y autenticación ADMIN, consentimiento y disclaimer, análisis, reglas de negocio, orquestación, persistencia, sesiones/ejecuciones, reportes, catálogo y orientación de propiedad intelectual, y comunicación con Python.
 
-Java también integra y ejecuta la inferencia con IA generativa. La arquitectura prevista debe abstraer al proveedor, conceptualmente mediante `GenerativeAiProvider` y una implementación inicial `GeminiProvider`; Gemini es el proveedor inicial. Estas clases e integración no se implementan todavía.
+Java también integra y ejecuta la inferencia con IA generativa. F1.2 implementa la abstracción
+`GenerativeAiProvider` y `OpenAiGenerativeAiProvider` como primer adapter técnico mediante el SDK
+oficial y Responses API. Ningún controller ni caso de uso conoce tipos `com.openai.*`; prompts y
+schemas siguen siendo contratos versionados de IDENTIPAT. Gemini queda como adapter futuro y podrá
+incorporarse sin cambiar el contrato común.
 
 ### Python: `preprocessing-service`
 

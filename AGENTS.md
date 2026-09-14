@@ -12,7 +12,7 @@
 
 - Angular es responsable de presentación, interacción, navegación, captura de texto/PDF/audio, resultados y sesión visual actual. Solo se comunica con Java; nunca directamente con PostgreSQL, Python, Gemini ni otro proveedor LLM.
 - Java/Spring Boot es dueño del caso de negocio: API, usuarios ADMIN y STANDARD, reglas de negocio, persistencia, consentimiento, disclaimer, análisis, orquestación, reportes y comunicación con Python.
-- Java/Spring Boot integra y ejecuta la inferencia con IA generativa. La integración debe abstraer el proveedor; Gemini es el proveedor inicial previsto.
+- Java/Spring Boot integra y ejecuta la inferencia con IA generativa. La integración abstrae el proveedor; OpenAI es el primer adapter técnico y Gemini queda como proveedor futuro.
 - Python se limita al preprocesamiento especializado de PDF, audio y otras entradas técnicas. No es un backend funcional y no implementa inferencia LLM, prompts, integración Gemini, reglas de negocio, persistencia ni autenticación.
 - PostgreSQL es el sistema de persistencia principal. Durante desarrollo se almacenan internamente consultas y análisis, aunque STANDARD no tenga historial visible.
 

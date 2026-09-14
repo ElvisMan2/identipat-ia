@@ -13,6 +13,13 @@ spring:
       ddl-auto: validate
 
 app:
+  ai:
+    enabled: false
+    provider: openai
+    openai:
+      api-key: ''
+      model: ''
+      timeout: 60s
   preprocessing:
     base-url: http://preprocessing-service.test
     timeout: 5s
