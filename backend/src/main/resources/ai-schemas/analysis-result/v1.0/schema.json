@@ -1,0 +1,75 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "summary",
+    "patentabilityAssessment",
+    "protectionOptions",
+    "observations",
+    "warnings"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "enum": ["analysis-result/1.0"]
+    },
+    "summary": {
+      "type": "string"
+    },
+    "patentabilityAssessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "rationale"],
+      "properties": {
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "POTENTIALLY_PATENTABLE",
+            "POTENTIALLY_NOT_PATENTABLE",
+            "INSUFFICIENT_INFORMATION"
+          ]
+        },
+        "rationale": {
+          "type": "string"
+        }
+      }
+    },
+    "protectionOptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "applicability", "rationale"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "INVENTION_PATENT",
+              "UTILITY_MODEL",
+              "INDUSTRIAL_DESIGN",
+              "DISTINCTIVE_SIGN",
+              "COPYRIGHT",
+              "OTHER"
+            ]
+          },
+          "applicability": {
+            "type": "string",
+            "enum": ["LIKELY", "POSSIBLE", "UNLIKELY"]
+          },
+          "rationale": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "observations": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "warnings": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  }
+}

@@ -58,6 +58,16 @@ Producción requiere `SPRING_PROFILES_ACTIVE=prod` además de todas las variable
 | `OPENAI_API_KEY` | Sin default efectivo | Vacía con IA deshabilitada | Obligatoria al habilitar OpenAI | Secreto del SDK oficial |
 | `OPENAI_MODEL` | Sin default efectivo | Vacío con IA deshabilitada | Obligatoria al habilitar OpenAI | Modelo Responses configurado externamente |
 | `OPENAI_TIMEOUT` | `60s` | `60s` | Obligatoria al habilitar OpenAI | Timeout total positivo |
+| `ANALYSIS_TEXT_MIN_LENGTH` | `20` | `20` | Configurable | Límite técnico mínimo aplicado al texto normalizado |
+| `ANALYSIS_TEXT_MAX_LENGTH` | `20000` | `20000` | Configurable | Límite técnico máximo aplicado al texto normalizado |
+| `ANALYSIS_WORKER_ENABLED` | `true` | `false` | Configurable | Activa el poller; los tests pueden invocar un ciclo manual |
+| `ANALYSIS_POLL_INTERVAL` | `2s` | `2s` | Configurable | Intervalo positivo entre polls |
+| `ANALYSIS_WORKER_THREADS` | `2` | `2` | Configurable | Threads del executor acotado |
+| `ANALYSIS_WORKER_QUEUE_CAPACITY` | `2` | `2` | Configurable | Capacidad local máxima en espera |
+| `ANALYSIS_LEASE_DURATION` | `120s` | `120s` | Configurable | Duración positiva del lease PostgreSQL |
+| `ANALYSIS_MAX_ATTEMPTS` | `2` | `2` | Configurable | Máximo de invocaciones por análisis |
+| `ANALYSIS_RETRY_DELAY` | `5s` | `5s` | Configurable | Backoff durable mediante `next_attempt_at` |
+| `ANALYSIS_AI_MAX_OUTPUT_TOKENS` | `4000` | `4000` | Configurable | Límite enviado en `GenerationOptions`; evita truncar la salida estructurada validada |
 | `PGADMIN_EMAIL` | Sin default en Compose | No aplica | No aplica | Cuenta local de pgAdmin |
 | `PGADMIN_PASSWORD` | Sin default en Compose | No aplica | No aplica | Password local de pgAdmin |
 
@@ -88,6 +98,18 @@ Cuando `IDENTIPAT_AI_ENABLED=true` y `IDENTIPAT_AI_PROVIDER=openai`, son obligat
 OpenAI no se contacta durante el arranque ni desde health checks. Los retries internos están
 deshabilitados. Consulta [generative-ai-integration.md](generative-ai-integration.md) para el diseño y
 el smoke test manual.
+
+## Análisis de texto y worker
+
+Los valores `20`/`20000` son defaults técnicos DEV/TEST y no deben presentarse como una regla
+institucional. La creación de análisis exige `IDENTIPAT_AI_ENABLED=true`; si está deshabilitada,
+responde `503` y no persiste la consulta. PostgreSQL conserva la cola durable y el executor Java solo
+procesa claims ya confirmados. `ANALYSIS_WORKER_ENABLED=false` detiene el scheduler sin eliminar los
+métodos internos de un ciclo usados por pruebas.
+
+`ANALYSIS_LEASE_DURATION` debe ser mayor que el timeout efectivo del proveedor, con margen operativo,
+porque F1.3 no implementa heartbeat. Duraciones y enteros deben ser positivos; la capacidad de cola
+puede ser cero. Consulta [text-analysis-flow.md](text-analysis-flow.md).
 
 ## PostgreSQL y esquema
 

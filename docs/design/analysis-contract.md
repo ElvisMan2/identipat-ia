@@ -1,6 +1,6 @@
 # Contrato conceptual de análisis — F1.0
 
-**Estado:** sesión y consentimiento implementados en F1.1; contratos de análisis reservados para fases posteriores.
+**Estado:** sesión/consentimiento implementados en F1.1 y contrato de texto implementado en F1.3.
 **Ámbito:** contrato que Angular consumirá exclusivamente a través de Java/Spring Boot. Ninguna ruta autoriza llamadas directas a PostgreSQL, `preprocessing-service` o un proveedor LLM.
 
 ## 1. Principios del contrato
@@ -119,7 +119,7 @@ Request ilustrativo:
 
 ```json
 {
-  "text": "Sistema modular que ajusta el riego según mediciones del suelo."
+  "description": "Sistema modular que ajusta el riego según mediciones del suelo."
 }
 ```
 
@@ -137,10 +137,11 @@ El frontend consulta posteriormente la ruta de estado. No asume que una consulta
 
 | Estado | Código conceptual | Significado |
 | --- | --- | --- |
-| `400` | `INVALID_INPUT` | Texto ausente, vacío o fuera de límites. Una falla de validación previa puede no crear `Analysis`. |
+| `400` | `INVALID_REQUEST` | JSON malformado. |
 | `401` | `STANDARD_SESSION_REQUIRED` | Falta una sesión activa o su cookie no es válida. |
 | `409` | `CONSENT_REQUIRED` | La sesión existe pero no cuenta con aceptación vigente. |
-| `429` | `ANALYSIS_RATE_LIMITED` | Reservado para el hardening posterior; no se implementa en F1.0. |
+| `422` | `INVALID_ANALYSIS_DESCRIPTION` | Texto vacío o fuera de los límites configurados. |
+| `503` | `ANALYSIS_AI_UNAVAILABLE` | IA deshabilitada/no disponible; no se crea `Analysis`. |
 
 ### 4.2 Consultar estado o resultado
 
@@ -172,25 +173,18 @@ Respuesta completada (`200 OK`) ilustrativa:
     "schemaVersion": "analysis-result/1.0",
     "summary": "La propuesta describe un sistema técnico de riego modular.",
     "patentabilityAssessment": {
-      "conclusion": "REQUIRES_SPECIALIST_REVIEW",
-      "explanation": "La información disponible permite una evaluación solo orientativa y requiere contraste técnico adicional.",
-      "references": [
-        {
-          "kind": "CRITERION",
-          "label": "Novedad",
-          "note": "Debe contrastarse frente a antecedentes relevantes."
-        }
-      ]
+      "outcome": "POTENTIALLY_PATENTABLE",
+      "rationale": "La información describe una posible solución técnica, sujeta a evaluación posterior."
     },
     "protectionOptions": [
       {
         "type": "INVENTION_PATENT",
-        "relevance": "HIGH",
+        "applicability": "POSSIBLE",
         "rationale": "La descripción plantea una solución técnica que requiere evaluación especializada."
       },
       {
         "type": "COPYRIGHT",
-        "relevance": "LOW",
+        "applicability": "UNLIKELY",
         "rationale": "Puede aplicar a materiales expresivos asociados, no necesariamente a la solución técnica."
       }
     ],
@@ -214,7 +208,7 @@ Respuesta de fallo terminal (`200 OK`) ilustrativa:
   "status": "FAILED",
   "failedAt": "2030-01-15T14:10:12Z",
   "failure": {
-    "code": "AI_TIMEOUT",
+    "code": "ANALYSIS_TEMPORARILY_UNAVAILABLE",
     "message": "No fue posible completar el análisis en este momento."
   }
 }
@@ -263,8 +257,8 @@ Una sesión puede vencer después de que autorizó el `POST`: el análisis inici
 | --- | --- | --- |
 | `schemaVersion` | string | Obligatorio; coincide con la columna persistida, por ejemplo `analysis-result/1.0`. |
 | `summary` | string | Obligatorio; síntesis orientativa legible. |
-| `patentabilityAssessment` | object | Obligatorio; contiene conclusión, explicación y referencias/criterios considerados. |
-| `protectionOptions` | array | Obligatorio, posiblemente vacío; cada elemento tiene `type`, `relevance`, `rationale`. |
+| `patentabilityAssessment` | object | Obligatorio; contiene `outcome` y `rationale`. |
+| `protectionOptions` | array | Obligatorio, posiblemente vacío; cada elemento tiene `type`, `applicability`, `rationale`. |
 | `observations` | array de strings | Obligatorio, posiblemente vacío. |
 | `warnings` | array de strings | Obligatorio, posiblemente vacío; únicamente advertencias del diagnóstico, nunca el disclaimer institucional de F1.7. |
 
@@ -276,10 +270,10 @@ Tipos conceptuales iniciales:
 | `AnalysisStatus` | `RECEIVED`, `PREPROCESSING`, `ANALYZING`, `COMPLETED`, `FAILED`. |
 | `SessionStatus` | `ACTIVE`, `EXPIRED`, `CLOSED`. |
 | `ConsentDecision` | `ACCEPTED`, `REJECTED`. |
-| `AiInvocationStatus` | `STARTED`, `SUCCEEDED`, `FAILED`, `TIMED_OUT`, `INVALID_RESPONSE`. |
-| `ProtectionOptionType` | `INVENTION_PATENT`, `UTILITY_MODEL`, `INDUSTRIAL_DESIGN`, `DISTINCTIVE_SIGNS`, `COPYRIGHT`, `OTHER`. |
-| `Relevance` | `HIGH`, `MEDIUM`, `LOW`; escala cualitativa provisional. |
-| `PatentabilityAssessment.conclusion` | string semántico; F1.4 define catálogo jurídico, no se fija uno artificial en F1.0. |
+| `AiInvocationStatus` | `STARTED`, `SUCCEEDED`, `FAILED`, `TIMED_OUT`, `INVALID_RESPONSE`, `ABANDONED`. |
+| `ProtectionType` | `INVENTION_PATENT`, `UTILITY_MODEL`, `INDUSTRIAL_DESIGN`, `DISTINCTIVE_SIGN`, `COPYRIGHT`, `OTHER`. |
+| `ProtectionApplicability` | `LIKELY`, `POSSIBLE`, `UNLIKELY`. |
+| `PatentabilityOutcome` | `POTENTIALLY_PATENTABLE`, `POTENTIALLY_NOT_PATENTABLE`, `INSUFFICIENT_INFORMATION`. |
 
 La versión sigue versionado semántico del envelope. En el mismo major, se permiten campos opcionales nuevos; una ruptura incrementa el major y exige adaptador/contrato compatible. Las respuestas históricas conservan su `schemaVersion` original: no se reinterpretan ni se sobrescriben para aparentar que usaron una taxonomía nueva.
 

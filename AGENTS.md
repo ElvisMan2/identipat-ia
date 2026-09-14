@@ -31,3 +31,8 @@
 - No confirmar secretos ni archivos locales de entorno.
 - Los cambios en workflows de CI deben preservar la validación de ambos stacks: backend con Maven
   Wrapper, Testcontainers y Flyway; y `preprocessing-service` con Python 3.12, pytest, Ruff y Docker.
+- `Analysis` y su cola de trabajo son durables en PostgreSQL; un executor local nunca es source of truth.
+- Los workers reclaman trabajo mediante claim/lease PostgreSQL y ninguna espera al LLM mantiene una transacción o conexión DB abierta.
+- Cada llamada real a `GenerativeAiProvider` corresponde a una `AiInvocation`; los retries pertenecen al orquestador de `Analysis`, no al SDK.
+- STANDARD solo puede leer un análisis de la misma `session_id` activa que lo creó.
+- Inputs, prompts, respuestas raw/structured y resultados completos no se escriben en logs; metadata técnica del proveedor y de invocaciones tampoco se expone a STANDARD.

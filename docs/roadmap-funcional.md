@@ -356,6 +356,8 @@ como adapter futuro cuando existan credenciales, sin modificar el contrato comú
 
 # F1.3 — Análisis end-to-end desde texto
 
+**Estado:** implementado en backend; pendiente revisión del reporte y validación HTTP manual.
+
 ## Objetivo
 
 Construir la primera vertical funcional completa del producto.

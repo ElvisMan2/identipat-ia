@@ -54,7 +54,8 @@ public class SecurityConfig {
         OrRequestMatcher standardMutations = new OrRequestMatcher(
                 new AntPathRequestMatcher("/standard-sessions", "POST"),
                 new AntPathRequestMatcher("/standard-session/consent", "POST"),
-                new AntPathRequestMatcher("/standard-session", "DELETE"));
+                new AntPathRequestMatcher("/standard-session", "DELETE"),
+                new AntPathRequestMatcher("/analyses/text", "POST"));
 
         http
                 .csrf(csrf -> csrf
@@ -69,6 +70,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/users/identify").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users/login").permitAll()
                         .requestMatchers("/standard-session", "/standard-session/**", "/standard-sessions").permitAll()
+                        .requestMatchers("/analyses/**").permitAll()
                         .requestMatchers("/users/**").hasRole("ADMIN")
                         .requestMatchers("/", "/index.html", "/*.js", "/*.css", "/*.ico",
                                 "/assets/**", "/favicon.ico").permitAll()

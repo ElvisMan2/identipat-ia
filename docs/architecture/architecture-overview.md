@@ -13,7 +13,7 @@ Angular (frontend)
 Java / Spring Boot (backend principal)
   ├── JDBC ─────────────► PostgreSQL
   ├── REST interno ─────► Python preprocessing-service
-  └── GenerativeAiProvider ─► GeminiProvider ─► Gemini
+  └── GenerativeAiProvider ─► OpenAI adapter (Gemini futuro)
 ```
 
 Angular se comunica exclusivamente con Java. Java es quien se comunica con PostgreSQL, con el futuro servicio Python y con el proveedor de IA generativa.
@@ -43,6 +43,10 @@ Python no realiza inferencia principal del LLM, prompts de diagnóstico, clasifi
 ### PostgreSQL
 
 PostgreSQL es el sistema de persistencia principal, accedido desde Java. Durante el desarrollo se almacenarán internamente consultas/análisis y resultados para pruebas, trazabilidad, evaluación y evolución del sistema. También albergará los datos que correspondan a usuarios, catálogos y auditoría según las decisiones posteriores.
+
+F1.3 usa PostgreSQL además como source of truth del trabajo asíncrono. El worker reclama filas con
+`FOR UPDATE SKIP LOCKED`, confirma un lease y libera la transacción antes de esperar al LLM. Cada
+llamada al provider tiene una `AiInvocation` durable y la semántica de recuperación es at-least-once.
 
 ## Modelo de acceso
 
@@ -106,6 +110,10 @@ transcripción; SDK concreto de Gemini; criterios jurídicos detallados del diag
 acceso administrativo y una eventual autenticación futura de STANDARD. Esas decisiones se cierran en
 las fases funcionales y de gobierno indicadas en el roadmap, sin alterar los límites de responsabilidad
 de esta arquitectura.
+
+F1.3 materializa el flujo de texto descrito por F1.0: `POST /analyses/text` responde `202` después de
+persistir, el worker durable produce `AnalysisResult`, y `GET /analyses/{id}` exige la misma sesión.
+Los detalles operativos están en [el flujo E2E](../development/text-analysis-flow.md).
 
 ## Roadmap de Fase 0
 

@@ -13,6 +13,8 @@ spring:
       ddl-auto: validate
 
 app:
+  analysis:
+    worker-enabled: false
   ai:
     enabled: false
     provider: openai

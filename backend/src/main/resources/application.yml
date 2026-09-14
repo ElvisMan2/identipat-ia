@@ -30,6 +30,17 @@ spring:
       static-locations: '${STATIC_LOCATIONS:file:../frontend/dist/identipat-ia/browser/}'
 
 app:
+  analysis:
+    text-min-length: ${ANALYSIS_TEXT_MIN_LENGTH:20}
+    text-max-length: ${ANALYSIS_TEXT_MAX_LENGTH:20000}
+    worker-enabled: ${ANALYSIS_WORKER_ENABLED:true}
+    poll-interval: ${ANALYSIS_POLL_INTERVAL:2s}
+    worker-threads: ${ANALYSIS_WORKER_THREADS:2}
+    worker-queue-capacity: ${ANALYSIS_WORKER_QUEUE_CAPACITY:2}
+    lease-duration: ${ANALYSIS_LEASE_DURATION:120s}
+    max-attempts: ${ANALYSIS_MAX_ATTEMPTS:2}
+    retry-delay: ${ANALYSIS_RETRY_DELAY:5s}
+    ai-max-output-tokens: ${ANALYSIS_AI_MAX_OUTPUT_TOKENS:4000}
   preprocessing:
     base-url: ${PREPROCESSING_SERVICE_BASE_URL:http://localhost:8090}
     timeout: 5s

@@ -6,6 +6,7 @@ import com.mnk.identipatia.model.StandardSession;
 import com.mnk.identipatia.model.StandardSessionCloseReason;
 import com.mnk.identipatia.model.StandardSessionStatus;
 import com.mnk.identipatia.model.User;
+import com.mnk.identipatia.analysis.repository.AnalysisRepository;
 import com.mnk.identipatia.repository.ConsentEventRepository;
 import com.mnk.identipatia.repository.StandardSessionRepository;
 import com.mnk.identipatia.repository.UserRepository;
@@ -60,6 +61,24 @@ class StandardSessionIntegrationTest {
     @Autowired ConsentEventRepository consentRepository;
     @Autowired StandardSessionTokenService tokenService;
     @Autowired UserService userService;
+    @Autowired AnalysisRepository analysisRepository;
+
+    @Test
+    void textAnalysisReturns503AndPersistsNothingWhenAiIsDisabled() throws Exception {
+        User user = saveUser("STANDARD", "A");
+        Csrf csrf = csrf();
+        Cookie standard = createSession(user, csrf, null).getResponse()
+                .getCookie("IDENTIPAT_STANDARD_SESSION");
+        mockMvc.perform(consentPost(standard, csrf, "ACCEPTED", "personal-data/1.0"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/analyses/text").cookie(standard, csrf.cookie())
+                        .header("X-XSRF-TOKEN", csrf.token()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"description\":\"Descripción suficientemente extensa para analizar.\"}"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("ANALYSIS_AI_UNAVAILABLE"));
+        assertThat(analysisRepository.count()).isZero();
+    }
 
     @Test
     void realCookieHeaderCsrfProtectsCreateConsentAndClose() throws Exception {

@@ -17,6 +17,15 @@ identipat-ia/
 │   ├── src/
 │   │   ├── main/
 │   │   │   ├── java/com/mnk/identipatia/
+│   │   │   │   ├── analysis/
+│   │   │   │   │   ├── config/      # Límites, poller y executor acotado
+│   │   │   │   │   ├── controller/  # POST texto y GET estado/resultado
+│   │   │   │   │   ├── dto/         # Contratos HTTP estables
+│   │   │   │   │   ├── model/       # Analysis/Input/Invocation/resultado persistido
+│   │   │   │   │   ├── repository/  # Persistencia del aggregate
+│   │   │   │   │   ├── result/      # AnalysisResult canónico y enums
+│   │   │   │   │   ├── service/     # Creación, consulta y normalización
+│   │   │   │   │   └── worker/      # Claim/lease, intentos, retry y recovery
 │   │   │   │   ├── ai/
 │   │   │   │   │   ├── GenerativeAiProvider.java
 │   │   │   │   │   ├── config/      # Activación y selección de provider
@@ -74,11 +83,16 @@ identipat-ia/
 │   │   │       ├── db/
 │   │   │       │   └── migration/
 │   │   │       │       ├── V1__baseline_schema.sql
-│   │   │       │       └── V2__standard_sessions_and_consent.sql
+│   │   │       │       ├── V2__standard_sessions_and_consent.sql
+│   │   │       │       └── V3__analysis_domain.sql
+│   │   │       ├── prompts/intellectual-property-analysis/v0.1/
+│   │   │       │   ├── system.md
+│   │   │       │   └── user.md
 │   │   │       ├── prompts/provider-smoke-test/v1.0/
 │   │   │       │   ├── system.md
 │   │   │       │   └── user.md
 │   │   │       ├── ai-schemas/provider-smoke-result/v1.0/schema.json
+│   │   │       ├── ai-schemas/analysis-result/v1.0/schema.json
 │   │   │       ├── application.yml
 │   │   │       ├── application-dev.yml
 │   │   │       ├── application-test.yml
@@ -89,6 +103,7 @@ identipat-ia/
 │   │           │   ├── ProductionConfigurationTest.java
 │   │           │   └── SecurityConfigTest.java
 │   │           ├── ai/               # Contratos, prompts, schemas, config y adapter OpenAI
+│   │           ├── analysis/         # E2E, contratos, claim, retry, recovery y rechazo local
 │   │           ├── controller/
 │   │           │   └── UserSecurityWebMvcTest.java
 │   │           ├── dto/
@@ -111,6 +126,7 @@ identipat-ia/
 │   │   ├── configuration.md
 │   │   ├── database-migrations.md
 │   │   ├── generative-ai-integration.md
+│   │   ├── text-analysis-flow.md
 │   │   └── preprocessing-service.md
 │   ├── design/
 │   │   ├── analysis-contract.md       # Contrato conceptual F1.0, aún no implementado
