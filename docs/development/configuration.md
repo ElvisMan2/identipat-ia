@@ -9,15 +9,33 @@ El backend requiere JDK 21 y usa los perfiles explícitos `dev`, `test` y `prod`
 - `application-test.yml`: configuración determinista de pruebas, secreto JWT exclusivo de test, URL dummy del servicio de preprocesamiento, políticas Flyway/JPA y OpenAPI/Swagger habilitados; el datasource lo aporta Testcontainers.
 - `application-prod.yml`: conexión y secretos obligatorios desde el entorno, CORS explícito, URL obligatoria del servicio de preprocesamiento, `ddl-auto=validate` y OpenAPI/Swagger deshabilitados por defecto.
 
-## Activación
+## Backend DEV — inicio rápido
 
-Desarrollo en PowerShell:
+Desde la raíz del repositorio:
 
 ```powershell
-$env:SPRING_PROFILES_ACTIVE="dev"
-cd backend
-.\mvnw.cmd spring-boot:run
+Copy-Item .env.example .env
+# Completa los valores locales/secretos necesarios, especialmente OPENAI_API_KEY.
+.\scripts\run-backend-dev.ps1
 ```
+
+El launcher carga `.env` solo en el entorno del proceso, fuerza siempre
+`SPRING_PROFILES_ACTIVE=dev`, comprueba la credencial cuando la IA está habilitada, asegura el
+servicio PostgreSQL `db` mediante Docker Compose y ejecuta el Maven Wrapper desde `backend/`. No
+inicia pgAdmin ni imprime secretos.
+
+Spring Boot y Maven no leen `.env` por sí mismos. Docker Compose sí usa el `.env` local de la raíz;
+el script carga ese mismo archivo para que Spring Boot reciba la configuración. Los defaults DEV no
+sensibles viven en `application-dev.yml`; `.env` es la configuración local completa del
+desarrollador y contiene también secretos; `.env.example` es su plantilla versionada sin secretos
+reales. `.env` está ignorado y nunca debe versionarse.
+
+El parser del launcher admite líneas `NOMBRE=valor`, divide solo por el primer `=`, acepta valores
+sin comillas o completamente encerrados en comillas simples/dobles, e ignora líneas vacías y
+comentarios completos. No interpreta `export`, comentarios inline, interpolación, expansión de
+variables ni sustitución de comandos.
+
+## Activación manual
 
 Desarrollo en Linux/macOS:
 
@@ -53,10 +71,10 @@ Producción requiere `SPRING_PROFILES_ACTIVE=prod` además de todas las variable
 | `APP_TIME_ZONE` | `America/Lima` | `America/Lima` | `America/Lima` | Zona de Jackson y JDBC/Hibernate |
 | `STATIC_LOCATIONS` | Classpath y build Angular local | Solo classpath | Solo classpath | Ubicaciones de recursos, separadas por coma |
 | `PREPROCESSING_SERVICE_BASE_URL` | `http://localhost:8090` si no se define | No aplica; se usa `http://preprocessing-service.test` | Obligatoria | URL base del servicio Python consumido internamente por Java |
-| `IDENTIPAT_AI_ENABLED` | `false` | `false` | Obligatoria | Activa la creación del adapter LLM |
+| `IDENTIPAT_AI_ENABLED` | `true` | `false` | Obligatoria | Activa la creación del adapter LLM |
 | `IDENTIPAT_AI_PROVIDER` | `openai` | `openai` | Obligatoria | Selecciona el provider; F1.2 admite `openai` |
 | `OPENAI_API_KEY` | Sin default efectivo | Vacía con IA deshabilitada | Obligatoria al habilitar OpenAI | Secreto del SDK oficial |
-| `OPENAI_MODEL` | Sin default efectivo | Vacío con IA deshabilitada | Obligatoria al habilitar OpenAI | Modelo Responses configurado externamente |
+| `OPENAI_MODEL` | `gpt-5-mini` | Vacío con IA deshabilitada | Obligatoria al habilitar OpenAI | Modelo Responses configurable |
 | `OPENAI_TIMEOUT` | `60s` | `60s` | Obligatoria al habilitar OpenAI | Timeout total positivo |
 | `ANALYSIS_TEXT_MIN_LENGTH` | `20` | `20` | Configurable | Límite técnico mínimo aplicado al texto normalizado |
 | `ANALYSIS_TEXT_MAX_LENGTH` | `20000` | `20000` | Configurable | Límite técnico máximo aplicado al texto normalizado |
@@ -83,16 +101,16 @@ consulta el health del servicio al iniciar. Consulta [preprocessing-service.md](
 
 ## IA generativa y OpenAI
 
-`IDENTIPAT_AI_ENABLED` activa la capa LLM y `IDENTIPAT_AI_PROVIDER` selecciona su adapter. DEV y
-TEST usan `false` y `openai` como defaults; por ello el backend arranca y ejecuta la suite normal sin
-credenciales ni tráfico externo. PROD exige ambos valores explícitos.
+`IDENTIPAT_AI_ENABLED` activa la capa LLM y `IDENTIPAT_AI_PROVIDER` selecciona su adapter. DEV usa
+`true` y `openai`; el launcher exige la API key local antes del arranque. TEST conserva `false` y no
+realiza tráfico externo. PROD exige ambos valores explícitos.
 
 Cuando `IDENTIPAT_AI_ENABLED=true` y `IDENTIPAT_AI_PROVIDER=openai`, son obligatorios:
 
 | Variable | Uso |
 | --- | --- |
 | `OPENAI_API_KEY` | Secreto de autenticación; nunca se registra ni se versiona. |
-| `OPENAI_MODEL` | Modelo Responses compatible; no existe valor por defecto. |
+| `OPENAI_MODEL` | Modelo Responses compatible; DEV usa `gpt-5-mini` si no se reemplaza. |
 | `OPENAI_TIMEOUT` | Timeout total de la llamada. DEV/TEST usan `60s`; PROD no tiene fallback. |
 
 OpenAI no se contacta durante el arranque ni desde health checks. Los retries internos están
@@ -123,4 +141,8 @@ Los perfiles `dev` y `test` habilitan `springdoc.api-docs` y `springdoc.swagger-
 
 ## Archivos `.env`
 
-`.env` permanece ignorado por Git y `.env.example` contiene únicamente ejemplos locales. Docker Compose sí puede leer `.env` desde la raíz, pero Maven y Spring Boot no lo cargan automáticamente. Para el backend, exporta las variables en el proceso, configúralas en el IDE o proporciónalas mediante el contenedor/plataforma de despliegue. No se incorpora ninguna dependencia dotenv.
+`.env` permanece ignorado por Git y `.env.example` contiene una plantilla local completa sin
+secretos reales. Docker Compose lo lee desde la raíz; Maven y Spring Boot no lo cargan
+automáticamente. El launcher DEV lo carga como variables del proceso. Para otros mecanismos de
+arranque, exporta las variables, configúralas en el IDE o proporciónalas mediante la plataforma de
+despliegue. No se incorpora ninguna dependencia dotenv.

@@ -13,8 +13,8 @@ Repositorio del sistema IDENTIPAT-IA, organizado como una aplicación web con ba
 - `codex-prompts/`: instrucciones locales para Codex; su contenido no se versiona.
 
 El backend contiene una capa de IA generativa agnóstica al proveedor. OpenAI es el adapter inicial
-mediante Responses API; la aplicación arranca sin credenciales externas mientras
-`IDENTIPAT_AI_ENABLED=false`. Consulta la
+mediante Responses API; el launcher DEV habilita esta integración y requiere una API key local.
+Otros entornos pueden arrancar sin credenciales externas mientras `IDENTIPAT_AI_ENABLED=false`. Consulta la
 [guía de integración de IA generativa](docs/development/generative-ai-integration.md).
 
 El flujo de texto persiste la consulta antes de responder `202`, la procesa mediante un worker
@@ -30,21 +30,27 @@ la [guía del flujo de análisis de texto](docs/development/text-analysis-flow.m
 
 El backend se construye con el Maven Wrapper incluido; no requiere una instalación global de Maven.
 
-## Ejecución local (perfil DEV)
+## Backend DEV — inicio rápido
 
-1. Usa `.env.example` como referencia para configurar PostgreSQL y pgAdmin. `.env` está ignorado por Git.
-2. Inicia PostgreSQL y pgAdmin con `docker compose up -d` desde la raíz.
-3. Selecciona explícitamente el perfil `dev` y ejecuta el backend.
-
-Windows PowerShell:
+Desde la raíz del repositorio, crea una vez la configuración local, completa los valores privados
+necesarios —en especial `OPENAI_API_KEY`— y usa el launcher:
 
 ```powershell
-$env:SPRING_PROFILES_ACTIVE="dev"
-cd backend
-.\mvnw.cmd spring-boot:run
+Copy-Item .env.example .env
+# Edita .env y completa los valores locales/secretos necesarios.
+.\scripts\run-backend-dev.ps1
 ```
 
-Linux/macOS:
+El script carga `.env` únicamente en el entorno de su proceso, fuerza
+`SPRING_PROFILES_ACTIVE=dev`, asegura el servicio Compose `db` y ejecuta el Maven Wrapper. No levanta
+pgAdmin. Puede invocarse desde otra ubicación porque resuelve el repositorio mediante su propia ruta.
+
+Spring Boot no carga `.env` automáticamente. Docker Compose sí usa el `.env` local de la raíz y el
+launcher lo carga además para Spring Boot. `application-dev.yml` aporta defaults DEV no sensibles;
+`.env` es la configuración local completa y puede contener secretos. `.env.example` es la plantilla
+versionada sin secretos reales y `.env` nunca debe versionarse.
+
+Para el arranque manual en Linux/macOS, exporta las variables requeridas y activa el perfil:
 
 ```bash
 export SPRING_PROFILES_ACTIVE=dev
@@ -52,7 +58,7 @@ cd backend
 ./mvnw spring-boot:run
 ```
 
-4. Ejecuta el frontend desde `frontend/` con `npm start`.
+Ejecuta el frontend por separado desde `frontend/` con `npm start`.
 
 La API se publica bajo `http://localhost:8082/identipat-ia` y el frontend de desarrollo utiliza su proxy local `/api`.
 
@@ -111,12 +117,14 @@ El perfil se selecciona con `SPRING_PROFILES_ACTIVE`; no hay un perfil activo po
 
 PROD exige `SPRING_PROFILES_ACTIVE=prod` y valores externos para `DB_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`, `STANDARD_SESSION_PEPPER`, `CONSENT_CURRENT_VERSION`, `CONSENT_DOCUMENT_SHA256` y `CORS_ALLOWED_ORIGINS`. No existen fallbacks productivos para secretos, credenciales ni evidencia legal versionada.
 
-La IA se controla con `IDENTIPAT_AI_ENABLED` y `IDENTIPAT_AI_PROVIDER`. Al habilitar OpenAI se
-requieren `OPENAI_API_KEY`, `OPENAI_MODEL` y `OPENAI_TIMEOUT`; no hay un modelo hardcodeado.
+La IA se controla con `IDENTIPAT_AI_ENABLED` y `IDENTIPAT_AI_PROVIDER`. DEV habilita OpenAI por
+defecto, usa `gpt-5-mini` y `60s` como defaults reemplazables, y exige `OPENAI_API_KEY` local.
+PROD continúa requiriendo `OPENAI_API_KEY`, `OPENAI_MODEL` y `OPENAI_TIMEOUT` explícitos.
 
 La sesión STANDARD es server-side y usa `IDENTIPAT_STANDARD_SESSION` HttpOnly; no es login ni JWT. Las mutaciones de sesión/consentimiento requieren `XSRF-TOKEN` y `X-XSRF-TOKEN`. El backend no devuelve PII, IDs internos ni el token de sesión en esos contratos.
 
 El análisis de texto usa las variables `ANALYSIS_*` para límites y worker. Sus valores predeterminados
 son técnicos para DEV/TEST y todos pueden sobrescribirse por ambiente.
 
-Spring Boot y Maven no cargan automáticamente un archivo `.env`; este sirve como referencia y para Docker Compose. Consulta [la guía de configuración](docs/development/configuration.md) y [.env.example](.env.example) para conocer todas las variables.
+Spring Boot y Maven no cargan automáticamente un archivo `.env`; el launcher PowerShell lo carga en
+el proceso para DEV y Docker Compose lo lee desde la raíz. Consulta [la guía de configuración](docs/development/configuration.md) y [.env.example](.env.example) para conocer todas las variables.

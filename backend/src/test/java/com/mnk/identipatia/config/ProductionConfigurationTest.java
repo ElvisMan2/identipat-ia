@@ -46,6 +46,19 @@ class ProductionConfigurationTest {
     }
 
     @Test
+    void developmentEnablesOpenAiWithSafeNonSecretDefaults() throws IOException {
+        String yaml = readClasspathResource("application-dev.yml");
+
+        assertThat(yaml)
+                .contains("enabled: ${IDENTIPAT_AI_ENABLED:true}")
+                .contains("provider: ${IDENTIPAT_AI_PROVIDER:openai}")
+                .contains("api-key: ${OPENAI_API_KEY:}")
+                .contains("model: ${OPENAI_MODEL:gpt-5-mini}")
+                .contains("timeout: ${OPENAI_TIMEOUT:60s}")
+                .doesNotContain("api-key: sk-");
+    }
+
+    @Test
     void productionSecretsHaveMandatoryPlaceholdersWithoutFallbacks() throws IOException {
         String yaml = readClasspathResource("application-prod.yml");
 

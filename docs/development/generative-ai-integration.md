@@ -142,17 +142,21 @@ proporcionarlo. No hay circuit breaker en F1.2.
 
 ## Configuración y arranque
 
-| Variable | DEV/TEST | PROD |
-| --- | --- | --- |
-| `IDENTIPAT_AI_ENABLED` | `false` | obligatoria |
-| `IDENTIPAT_AI_PROVIDER` | `openai` | obligatoria |
-| `OPENAI_API_KEY` | requerida solo al habilitar | requerida con OpenAI habilitado |
-| `OPENAI_MODEL` | requerida solo al habilitar | requerida con OpenAI habilitado |
-| `OPENAI_TIMEOUT` | `60s` | requerida con OpenAI habilitado |
+| Variable | DEV | TEST | PROD |
+| --- | --- | --- | --- |
+| `IDENTIPAT_AI_ENABLED` | `true` | `false` | obligatoria |
+| `IDENTIPAT_AI_PROVIDER` | `openai` | `openai` | obligatoria |
+| `OPENAI_API_KEY` | requerida | vacía con IA deshabilitada | requerida con OpenAI habilitado |
+| `OPENAI_MODEL` | `gpt-5-mini` | vacío con IA deshabilitada | requerida con OpenAI habilitado |
+| `OPENAI_TIMEOUT` | `60s` | `60s` | requerida con OpenAI habilitado |
 
 Con IA deshabilitada no se crea el cliente ni el provider y el backend arranca sin key/model. Con IA
 habilitada, un provider desconocido, credencial/modelo ausentes o timeout no positivo impiden el
-arranque. No se usa `fromEnv()`, no hay modelo por defecto y no se realizan llamadas en startup.
+arranque. DEV aporta `gpt-5-mini` como default reemplazable; PROD no tiene default de modelo. No se
+usa `fromEnv()` ni se realizan llamadas en startup.
+
+El inicio recomendado de DEV es `.\scripts\run-backend-dev.ps1` desde la raíz; carga el `.env`
+local, fuerza el perfil `dev`, valida la API key y asegura PostgreSQL antes de iniciar Spring Boot.
 
 ## Pruebas y smoke real
 
@@ -185,7 +189,7 @@ cd backend
 
 ## Seguridad y extensión futura
 
-La API key solo llega desde configuración externa. `.env.example` contiene placeholders. La capa no
+La API key solo llega desde configuración externa. `.env.example` deja la key vacía. La capa no
 registra prompts, snapshots, entrada, structured output, raw response, cookies, tokens STANDARD ni
 PII. Los errores tienen mensajes saneados y conservan la causa solo para manejo interno.
 
