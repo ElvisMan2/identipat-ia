@@ -1,145 +1,136 @@
 # Roadmap funcional — IDENTIPAT-IA
 
-**Estado:** Fase F0 completada  
-**Versión del roadmap:** 1.0  
-**Objetivo:** definir la secuencia de implementación funcional posterior a la estabilización técnica del proyecto.
+**Estado:** F0 y F1.0 completadas; F1.1–F1.3 implementadas; F1.4 es la siguiente fase  
+**Versión del roadmap:** 1.1  
+**Última actualización:** 16 de septiembre de 2026  
+**Objetivo:** mantener una visión vigente de la secuencia funcional del producto, diferenciando lo ya materializado de las fases pendientes.
 
 ---
 
 # 1. Estado actual
 
-La fase de estabilización técnica **F0** está completada.
-
-## F0 cerrada
+La estabilización técnica F0 está completada. El backend también materializa el diseño de dominio F1.0 y las verticales F1.1–F1.3.
 
 | Fase | Alcance | Estado |
 |---|---|---|
-| F0.1 | Reorganización del repositorio | ✅ |
-| F0.2 | Maven Wrapper y build reproducible | ✅ |
-| F0.2A | Alineamiento arquitectónico y funcional | ✅ |
-| F0.3 | Seguridad y modelo de acceso | ✅ |
-| F0.4 | Configuración por ambientes y secretos | ✅ |
-| F0.5 | Flyway + Testcontainers | ✅ |
-| F0.6 | OpenAPI + Postman | ✅ |
-| F0.7 | Bootstrap `preprocessing-service` | ✅ |
-| F0.8 | CI con GitHub Actions | ✅ |
+| F0.1 | Reorganización del repositorio | ✅ Completada |
+| F0.2 | Maven Wrapper y build reproducible | ✅ Completada |
+| F0.2A | Alineamiento arquitectónico y funcional | ✅ Completada |
+| F0.3 | Seguridad y modelo de acceso | ✅ Completada |
+| F0.4 | Configuración por ambientes y secretos | ✅ Completada |
+| F0.5 | Flyway + Testcontainers | ✅ Completada |
+| F0.6 | OpenAPI + Postman | ✅ Completada |
+| F0.7 | Bootstrap de `preprocessing-service` | ✅ Completada |
+| F0.8 | CI con GitHub Actions | ✅ Completada |
+| F1.0 | Diseño del dominio de análisis | ✅ Completada |
+| F1.1 | Sesión STANDARD + consentimiento | ✅ Implementada |
+| F1.2 | Capa de IA generativa en Java | ✅ Implementada |
+| F1.3 | Análisis end-to-end desde texto | ✅ Implementada |
+| F1.4 | Diagnóstico de propiedad intelectual | ⏭️ Siguiente fase |
+| F1.5–F1.9 | PDF, audio, reporte, recursos y E2E | ⏳ Pendientes |
+| F2 | Preparación para piloto y producción | ⏳ Pendiente |
 
-La base técnica actual incluye:
+Los estados **implementada** indican que el alcance técnico existe en el backend y está cubierto por pruebas. No sustituyen la revisión funcional, jurídica, de seguridad o de aceptación que corresponda antes del piloto.
 
-- backend Java / Spring Boot;
-- PostgreSQL;
-- Flyway;
-- Testcontainers;
-- OpenAPI / Swagger;
-- colección Postman alineada;
+La base actual incluye:
+
+- backend Java 21 / Spring Boot;
+- PostgreSQL y migraciones Flyway;
+- pruebas de integración con Testcontainers;
+- OpenAPI / Swagger y colección Postman;
 - `preprocessing-service` Python / FastAPI;
-- CI automático en GitHub;
-- separación clara de responsabilidades Java / Python;
+- CI con GitHub Actions;
 - autenticación ADMIN mediante JWT;
-- identificación y registro STANDARD sin login.
+- identificación STANDARD sin login;
+- sesión STANDARD temporal mediante cookie segura y estado server-side;
+- protección CSRF para las mutaciones STANDARD implementadas;
+- consentimiento versionado con evidencia persistente;
+- análisis de texto asíncrono y durable;
+- abstracción `GenerativeAiProvider` con OpenAI como adapter actual;
+- prompts y JSON Schemas versionados;
+- persistencia de intentos, resultados y metadata técnica;
+- lease, retry y recuperación de trabajos interrumpidos.
 
 ---
 
 # 2. Decisiones funcionales confirmadas
 
-Estas decisiones deben considerarse **vigentes y obligatorias** para las siguientes fases.
+Estas decisiones son vigentes y obligatorias para las siguientes fases.
 
 ## 2.1 Sesión temporal para usuarios STANDARD
 
 Los usuarios STANDARD:
 
-- no tendrán login;
-- no tendrán password;
-- no recibirán JWT de autenticación;
-- serán reconocidos mediante DNI o Carné de Extranjería;
-- tendrán una **sesión temporal** durante el uso de la herramienta;
-- no tendrán un panel visible de historial de consultas.
+- no tienen login ni contraseña;
+- no reciben un JWT de autenticación;
+- son reconocidos mediante DNI o Carné de Extranjería;
+- disponen de una sesión temporal durante el uso de la herramienta;
+- no tienen un panel visible de historial de consultas.
 
-La sesión temporal permitirá asociar de manera controlada las ejecuciones realizadas durante una misma experiencia de uso.
+La solución vigente utiliza una sesión server-side. El navegador recibe un token aleatorio en una cookie `HttpOnly`; PostgreSQL conserva únicamente su representación HMAC. La sesión aplica TTL de inactividad y TTL absoluto, ambos configurables.
 
-La implementación técnica exacta de la sesión debe definirse en F1.0/F1.1.
+El DNI/CE sirve para identificación y deduplicación funcional. No autentica ni verifica criptográfica o presencialmente la identidad real de quien opera el navegador.
 
----
+## 2.2 Consentimiento y disclaimer
 
-## 2.2 Persistencia amplia de las consultas
+Son conceptos distintos:
 
-Se persistirá toda la información **funcional y técnicamente relevante** de cada consulta para permitir:
+```text
+Consentimiento
+→ tratamiento de datos personales
 
-- trazabilidad;
+Disclaimer
+→ naturaleza orientativa del resultado generado con IA
+```
+
+El consentimiento vigente:
+
+- se registra mediante eventos inmutables;
+- queda asociado al usuario y a la sesión STANDARD;
+- conserva versión y hash del documento aceptado;
+- se valida antes de admitir un análisis.
+
+El disclaimer se incorporará como contenido institucional controlado por la aplicación en F1.7. No debe confundirse con `AnalysisResult.warnings[]` ni generarse libremente por el modelo.
+
+Debe confirmarse con el responsable funcional/legal el momento exacto del consentimiento respecto al registro inicial de datos personales.
+
+## 2.3 Persistencia amplia de las consultas
+
+Durante el desarrollo se conserva la información funcional y técnicamente relevante de cada consulta para permitir:
+
+- trazabilidad y auditoría técnica;
 - evaluación de calidad;
 - análisis de errores;
-- mejora futura del sistema;
-- auditoría técnica;
-- comparación entre versiones de prompts/modelos;
+- comparación de prompts y modelos;
 - métricas;
+- evolución del sistema;
 - reproducibilidad razonable del resultado.
 
-Como mínimo se deberá evaluar persistir:
+La persistencia interna no implica que el usuario STANDARD disponga de un historial visible.
 
-- usuario STANDARD asociado;
-- sesión;
-- fecha/hora;
-- tipo de entrada;
-- texto original ingresado;
-- texto extraído o transcrito cuando corresponda;
-- estado de la ejecución;
-- proveedor/modelo IA utilizado;
-- versión del prompt;
-- parámetros relevantes del modelo;
-- resultado estructurado;
-- explicación generada;
-- clasificación propuesta;
-- errores;
-- tiempos de procesamiento;
-- metadatos técnicos necesarios para trazabilidad.
+La política definitiva de retención, minimización, anonimización, cifrado, borrado, acceso administrativo y tratamiento de información sensible debe cerrarse antes de producción en F2.1.
 
-La política definitiva de:
+## 2.4 IA generativa como motor principal
 
-- retención;
-- minimización;
-- anonimización;
-- almacenamiento de archivos originales;
-- borrado;
-- tratamiento de información sensible;
+Por decisión acordada con INDECOPI, el análisis funcional utiliza IA generativa.
 
-deberá cerrarse antes de producción.
+No se implementará como requisito funcional un pipeline independiente de PLN/NLP o ML clásico basado en embeddings, features, reglas o clasificadores intermedios.
 
-**Persistencia interna no implica historial visible para STANDARD.**
-
----
-
-## 2.3 IA generativa como motor principal
-
-Por decisión acordada con INDECOPI, el análisis funcional utilizará **IA generativa**.
-
-Por tanto:
-
-> No se implementará un pipeline independiente de PLN/NLP o ML clásico como etapa funcional del análisis.
-
-No se desarrollarán como componentes separados:
-
-- tokenización semántica;
-- embeddings para clasificación;
-- clasificadores ML tradicionales;
-- extracción de features NLP;
-- reglas NLP;
-- pipelines de similitud semántica como requisito del diagnóstico.
-
-Sí pueden existir transformaciones técnicas necesarias para preparar una entrada, por ejemplo:
+Sí se permiten transformaciones técnicas necesarias para preparar la entrada:
 
 - extracción de texto desde PDF;
 - transcripción de audio;
 - validación de longitud;
-- limpieza técnica mínima de encoding;
-- normalización de espacios/caracteres.
+- limpieza mínima de encoding;
+- normalización de espacios y caracteres.
 
-Estas transformaciones **no constituyen un motor PLN de análisis**.
-
-El razonamiento funcional y la clasificación serán responsabilidad de la IA generativa.
+Estas transformaciones no constituyen un motor separado de análisis. El razonamiento funcional y la clasificación corresponden al proveedor de IA generativa mediante una salida estructurada y validada.
 
 ---
 
-# 3. Arquitectura funcional objetivo
+# 3. Arquitectura funcional vigente y objetivo
+
+## 3.1 Flujo vigente para texto
 
 ```text
 Usuario STANDARD
@@ -148,43 +139,62 @@ Identificación DNI / CE
       ↓
 Registro si no existe
       ↓
-Consentimiento
+Sesión temporal + consentimiento vigente
       ↓
-Sesión temporal
+POST /analyses/text
       ↓
-Entrada
+Analysis + AnalysisInput (RECEIVED)
+      ↓
+worker asíncrono con lease
+      ↓
+GenerativeAiProvider
+      ↓
+OpenAiGenerativeAiProvider
+      ↓
+validación de structured output
+      ↓
+AiInvocation + AnalysisResult
+      ↓
+Analysis (COMPLETED o FAILED)
+```
+
+El request HTTP no permanece abierto durante la inferencia. La creación devuelve `202 Accepted` y el resultado se consulta posteriormente mediante el identificador del análisis.
+
+## 3.2 Flujo objetivo multiformato
+
+```text
+Entrada de usuario
  ┌────┼────────┐
  │    │        │
 Texto PDF    Audio
  │    │        │
  │    └──→ preprocessing-service
  │             ↓
- │        texto extraído /
+ │        texto extraído o
  │        transcripción
  │             ↓
  └─────────────┴─────→ Java
                        ↓
-                 GenerativeAiProvider
+                    Analysis
                        ↓
-                 GeminiProvider
+              GenerativeAiProvider
                        ↓
-               resultado estructurado
+        OpenAI actual / adapters futuros
                        ↓
-                  persistencia
+              resultado estructurado
                        ↓
-               respuesta / reporte
+             persistencia y reporte
 ```
 
 Principios:
 
-- Angular solo consume Java.
-- Java es dueño de los casos de uso.
-- Java orquesta la IA generativa.
-- Java persiste estado y resultados.
-- Python solo realiza preprocesamiento técnico especializado.
-- Python no accede a PostgreSQL.
-- Python no integra Gemini.
-- La integración IA debe ser reemplazable por proveedor.
+- Angular consume únicamente el backend Java.
+- Java es dueño de los casos de uso, la inferencia generativa y la persistencia.
+- Python realiza preprocesamiento técnico especializado para PDF y audio.
+- Python no accede a PostgreSQL ni ejecuta el diagnóstico de propiedad intelectual.
+- El código de negocio depende de `GenerativeAiProvider`, no del SDK de un proveedor concreto.
+- `OpenAiGenerativeAiProvider` es el adapter vigente.
+- Gemini u otros proveedores podrán añadirse como adapters futuros sin cambiar el contrato central.
 
 ---
 
@@ -192,448 +202,292 @@ Principios:
 
 # F1.0 — Diseño del dominio de análisis
 
-## Objetivo
+**Estado:** completada y materializada posteriormente en F1.1–F1.3.
 
-Cerrar el modelo funcional central antes de implementar el análisis.
+## Resultado alcanzado
 
-## Definir
+Se definieron y materializaron:
 
-### Sesión STANDARD
+- sesión temporal STANDARD;
+- evidencia versionada de consentimiento;
+- entidades `Analysis`, `AnalysisInput`, `AiInvocation` y `AnalysisResult`;
+- lifecycle y estados del análisis;
+- persistencia de entradas, intentos y resultados;
+- contrato estructurado `AnalysisResult`;
+- metadata de trazabilidad de IA;
+- separación entre consentimiento y disclaimer.
 
-- identificador de sesión;
-- duración;
-- expiración;
-- mecanismo técnico;
-- asociación con usuario STANDARD;
-- comportamiento al cerrar/reabrir navegador;
-- creación y finalización.
-
-### Ejecución de análisis
-
-Definir la entidad conceptual `Analysis` o equivalente.
-
-Debe contemplar, como mínimo:
-
-```text
-id
-standardUserId
-sessionId
-inputType
-originalInput
-processedText
-status
-provider
-model
-promptVersion
-result
-error
-startedAt
-completedAt
-createdAt
-```
-
-### Estados
-
-Ejemplo conceptual:
-
-```text
-CREATED
-PROCESSING
-COMPLETED
-FAILED
-```
-
-### Resultado estructurado
-
-Definir el contrato JSON que será producido por la IA.
-
-Debe permitir representar, como mínimo:
-
-- evaluación de patentabilidad;
-- criterios considerados;
-- clasificación de modalidad de propiedad intelectual;
-- explicación;
-- advertencias;
-- información que luego alimentará el reporte.
-
-## Entregables
-
-- especificación funcional;
-- modelo de dominio;
-- estados;
-- esquema de persistencia propuesto;
-- contrato `AnalysisResult`;
-- decisiones pendientes cerradas;
-- migraciones planificadas, pero no necesariamente implementadas todavía.
+El modelo implementado incorpora además control de concurrencia mediante lease, planificación del siguiente intento y datos de fallo.
 
 ---
 
 # F1.1 — Sesión STANDARD + consentimiento
 
-**Estado:** implementada; pendiente de revisión humana.
+**Estado:** implementada; sujeta a revisión funcional/legal antes del piloto.
 
-## Objetivo
+## Alcance implementado
 
-Completar el flujo previo al análisis.
+- creación y cierre de sesiones temporales STANDARD;
+- asociación con el usuario reconocido o registrado;
+- token aleatorio conservado en cookie `HttpOnly`;
+- persistencia del token únicamente mediante HMAC;
+- TTL de inactividad y absoluto;
+- invalidación por expiración o usuario inactivo;
+- eventos inmutables de consentimiento;
+- versión y hash del documento de consentimiento;
+- bloqueo del análisis sin aceptación vigente;
+- protección CSRF con `CookieCsrfTokenRepository` y patrón SPA de Spring Security;
+- separación entre sesión STANDARD y autenticación ADMIN con JWT Bearer.
 
-## Alcance
+La mutación `POST /analyses/text` ya está incluida en la estrategia CSRF. Las futuras mutaciones PDF/audio deberán quedar igualmente cubiertas, preferiblemente mediante una regla general aplicable a `/analyses/**`.
 
-- crear sesión temporal STANDARD;
-- asociarla al usuario reconocido/registrado;
-- implementar consentimiento explícito de tratamiento de datos;
-- registrar evidencia del consentimiento;
-- impedir uso del análisis si el consentimiento requerido no fue aceptado;
-- persistir timestamps y versión del consentimiento.
-- definir e implementar una estrategia CSRF explícita para todas las rutas STANDARD mutables basadas en la cookie temporal.
+## Pendiente funcional/legal
 
-## Importante
-
-Consentimiento y disclaimer son conceptos diferentes:
-
-```text
-Consentimiento
-→ tratamiento de datos personales
-
-Disclaimer
-→ naturaleza orientativa del resultado de IA
-```
-
-No deben mezclarse.
-
-La evidencia de consentimiento se asocia a la sesión temporal y al registro STANDARD, pero DNI/CE no
-autentica ni verifica criptográfica o presencialmente la identidad real de quien opera el navegador.
-`SameSite` y CORS no sustituyen CSRF: F1.1 debe seleccionar un mecanismo compatible con
-Angular/Spring Security. ADMIN mantiene JWT Bearer separado.
-
-Implementación seleccionada: sesión server-side con cookie HttpOnly y HMAC, TTL de inactividad/absoluto configurables, eventos de consentimiento inmutables y `CookieCsrfTokenRepository` con patrón SPA Spring Security 6.2. F1.3 extenderá CSRF a las mutaciones de análisis.
+Confirmar si el consentimiento debe producirse antes de persistir los datos personales del registro inicial y, de ser necesario, ajustar el flujo.
 
 ---
 
 # F1.2 — Capa de IA generativa en Java
 
-**Estado:** implementada con OpenAI como adapter inicial; pendiente de revisión humana y smoke real con credenciales.
+**Estado:** implementada con OpenAI como adapter inicial; integración real validada.
 
-## Objetivo
-
-Crear la abstracción de proveedor de IA generativa.
-
-## Arquitectura
+## Arquitectura vigente
 
 ```text
+AnalysisWorker
+      ↓
 GenerativeAiProvider
-        ↑
+      ↑
 OpenAiGenerativeAiProvider
 ```
 
-El resto de la aplicación depende de la interfaz, no directamente de OpenAI. Gemini se incorporará
-como adapter futuro cuando existan credenciales, sin modificar el contrato común.
+## Alcance implementado
 
-## Alcance
+- interfaz agnóstica de proveedor;
+- integración OpenAI mediante Responses API y SDK oficial;
+- prompts versionados;
+- JSON Schemas versionados;
+- structured output estricto;
+- validación local del resultado contra el schema;
+- configuración por ambiente y API key externalizada;
+- timeout y errores controlados;
+- retries del SDK deshabilitados para que la aplicación controle los intentos;
+- `store(false)` en las solicitudes al proveedor;
+- tests con proveedor simulado;
+- persistencia de proveedor, modelo, tokens, latencia y metadata disponible;
+- aislamiento de las clases del SDK dentro del adapter OpenAI.
 
-- interfaz del proveedor;
-- implementación OpenAI inicial mediante Responses API y SDK oficial directo;
-- prompts y JSON Schemas versionados;
-- structured output estricto con validación local;
-- configuración por ambiente;
-- secreto/API key externalizado;
-- timeout;
-- errores controlados;
-- request/response interno;
-- structured output;
-- tests con provider simulado;
-- observabilidad técnica básica;
-- registro de proveedor/modelo usado.
+Gemini queda reservado como adapter futuro y no forma parte de la implementación vigente.
 
-## No incluir
+## Mejoras técnicas identificadas
 
-- lógica PDF;
-- lógica audio;
-- prompts finales sin versionado;
-- dependencia de Gemini en controllers;
-- llamadas directas desde Angular.
+- conservar metadata útil cuando OpenAI devuelve una respuesta `incomplete` o contenido inválido;
+- validar al iniciar que la duración del lease sea mayor que el timeout del proveedor más un margen operativo;
+- fortalecer la arbitrariedad de la transición terminal alrededor del vencimiento del lease.
 
 ---
 
 # F1.3 — Análisis end-to-end desde texto
 
-**Estado:** implementado en backend; pendiente revisión del reporte y validación HTTP manual.
+**Estado:** implementado y validado en backend mediante pruebas de integración y ejecución real contra OpenAI.
 
-## Objetivo
-
-Construir la primera vertical funcional completa del producto.
-
-## Flujo
+## Flujo implementado
 
 ```text
-STANDARD
-   ↓
-sesión válida
-   ↓
-texto
-   ↓
-validación técnica
-   ↓
-crear Analysis
-   ↓
-persistir input
-   ↓
-IA generativa
-   ↓
-validar structured output
-   ↓
-persistir resultado
-   ↓
-devolver resultado
+POST /analyses/text
+      ↓
+validar sesión, CSRF, consentimiento y longitud
+      ↓
+persistir Analysis(RECEIVED) + AnalysisInput(TEXT)
+      ↓
+202 Accepted
+      ↓
+worker reclama trabajo con FOR UPDATE SKIP LOCKED
+      ↓
+crear AiInvocation(STARTED)
+      ↓
+llamar al proveedor fuera de una transacción de base de datos
+      ↓
+validar y persistir resultado
+      ↓
+Analysis(COMPLETED) o retry/FAILED
 ```
 
-## Alcance
+## Alcance implementado
 
-- endpoint de análisis por texto;
-- longitud mínima;
-- longitud máxima razonable;
-- creación de ejecución;
-- estados;
-- llamada al provider;
-- persistencia completa;
-- manejo de errores;
-- idempotencia si resulta necesaria;
-- respuesta estructurada.
+- `POST /analyses/text`;
+- `GET /analyses/{analysisId}`;
+- validación de longitud mínima y máxima;
+- normalización técnica conservando texto original y procesado;
+- aislamiento de análisis por sesión;
+- procesamiento asíncrono durable;
+- claim concurrente con `FOR UPDATE SKIP LOCKED`;
+- lease con propietario y vencimiento;
+- intentos persistidos antes de llamar al proveedor;
+- retry sin bloquear threads mediante `next_attempt_at`;
+- recuperación de ejecuciones abandonadas;
+- límite de intentos y estados terminales;
+- atomicidad entre persistencia del resultado y transición a `COMPLETED`;
+- respuesta pública sin metadata interna del proveedor.
 
-## No habrá
-
-- pipeline NLP;
-- embeddings;
-- modelo ML intermedio;
-- clasificación fuera del LLM.
+La vertical de texto ya constituye la base reutilizable para PDF y audio.
 
 ---
 
 # F1.4 — Diagnóstico de propiedad intelectual
 
+**Estado:** siguiente fase.
+
 ## Objetivo
 
-Estabilizar el contenido funcional que debe producir la IA.
+Estabilizar el contrato jurídico-funcional que debe producir la IA y alinearlo con el diagnóstico requerido por el proyecto. Esta fase no debe limitarse a ampliar el prompt.
 
-## Debe contemplar
+## Trabajo requerido
 
-### Patentabilidad
+1. Definir los criterios jurídicos que el resultado debe representar explícitamente.
+2. Alinear la evaluación de materia patentable y exclusiones con el marco aprobado para el proyecto, incluidos los artículos 15 y 20 de la Decisión 486 cuando corresponda.
+3. Definir las modalidades de protección y su alcance:
+   - patente de invención;
+   - modelo de utilidad;
+   - diseño industrial;
+   - signos distintivos;
+   - derecho de autor;
+   - otras alternativas controladas.
+4. Evolucionar el contrato `AnalysisResult` y su JSON Schema con versionado compatible.
+5. Diseñar y versionar el prompt jurídico-funcional.
+6. Preparar casos de prueba revisables por especialistas.
+7. Definir qué referencias legales y explicaciones son controladas por la aplicación y cuáles puede generar el modelo.
 
-Evaluación orientativa respecto de materia patentable y exclusiones aplicables según el marco definido para el proyecto.
+## Resultado esperado
 
-### Clasificación probable
-
-Como mínimo:
-
-- patente de invención;
-- modelo de utilidad;
-- diseño industrial;
-- signos distintivos;
-- derecho de autor;
-- otras alternativas cuando corresponda.
-
-## Resultado
-
-La IA debe responder mediante **structured output**, no mediante texto libre sin contrato.
+La IA debe responder mediante structured output, no como texto libre sin contrato.
 
 Java debe:
 
 - validar el schema;
 - rechazar respuestas inválidas;
-- persistir el JSON estructurado;
-- conservar explicación legible;
-- registrar versión de prompt/modelo.
-
-## Prompts
-
-Los prompts deben ser:
-
-- versionados;
-- testeables;
-- independientes del controller;
-- trazables por ejecución.
+- persistir el JSON estructurado y la explicación legible;
+- registrar prompt, schema, proveedor y modelo utilizados;
+- mantener trazabilidad por ejecución.
 
 ---
 
 # F1.5 — Entrada mediante PDF
 
+**Estado:** pendiente.
+
 ## Objetivo
 
-Agregar PDF reutilizando exactamente el mismo pipeline de análisis existente.
-
-## Flujo
+Agregar PDF reutilizando el pipeline de análisis existente.
 
 ```text
-PDF
- ↓
-Java
- ↓
-preprocessing-service
- ↓
-extracción técnica de texto
- ↓
-Java
- ↓
-Analysis existente
- ↓
-IA generativa
+PDF → Java → preprocessing-service → texto extraído → Analysis existente
 ```
 
-## Definir
+## Definir e implementar
 
-- formatos aceptados;
-- tamaño máximo;
-- páginas máximas si aplica;
-- PDF corrupto;
-- PDF protegido;
-- PDF sin texto;
-- PDF escaneado;
-- política inicial sobre OCR;
-- almacenamiento temporal o persistente del archivo.
+- formatos y MIME aceptados;
+- tamaño y páginas máximas;
+- manejo de PDF corrupto o protegido;
+- PDF sin texto o escaneado;
+- política inicial de OCR;
+- almacenamiento temporal o persistente del archivo;
+- extensión de CSRF y autorización al nuevo endpoint;
+- pruebas de aislamiento y errores.
 
 ---
 
 # F1.6 — Entrada mediante audio
 
+**Estado:** pendiente.
+
 ## Objetivo
 
-Agregar entrada de voz reutilizando el pipeline central.
-
-## Flujo
+Agregar voz reutilizando el pipeline central.
 
 ```text
-Audio
- ↓
-Java
- ↓
-preprocessing-service
- ↓
-transcripción
- ↓
-Java
- ↓
-Analysis existente
- ↓
-IA generativa
+Audio → Java → preprocessing-service → transcripción → Analysis existente
 ```
 
-## Definir
+## Definir e implementar
 
 - tecnología speech-to-text;
-- formatos;
-- tamaño;
-- duración máxima;
+- formatos y MIME;
+- tamaño y duración máxima;
 - idioma;
-- audio inválido;
-- errores de transcripción;
+- manejo de audio inválido y errores de transcripción;
 - almacenamiento temporal;
-- persistencia de transcripción.
-
-La transcripción debe persistirse como parte relevante de la consulta.
+- persistencia de la transcripción;
+- extensión de CSRF y autorización al nuevo endpoint.
 
 ---
 
 # F1.7 — Reporte web + PDF + disclaimer
 
+**Estado:** pendiente.
+
 ## Objetivo
 
-Construir la salida formal del diagnóstico.
+Construir la salida formal del diagnóstico a partir del mismo `AnalysisResult`.
 
-## Resultado web
-
-Mostrar de forma comprensible:
+El resultado web y el PDF deben presentar de forma comprensible:
 
 - resumen;
 - evaluación;
-- modalidad/es sugeridas;
+- modalidades sugeridas;
 - explicación;
 - recomendaciones;
 - advertencias.
 
-## PDF
+El disclaimer institucional debe indicar que el análisis es orientativo, que la IA es complementaria, que no sustituye una evaluación especializada y que no constituye una decisión oficial.
 
-Generar un reporte descargable basado en el mismo `AnalysisResult`.
-
-No crear una segunda lógica de diagnóstico para PDF.
-
-## Disclaimer
-
-Debe indicar claramente que:
-
-- el análisis es orientativo;
-- la IA es una herramienta complementaria;
-- no reemplaza evaluación especializada;
-- no constituye una decisión oficial.
-
-El disclaimer debe ser versionable.
-
-Es contenido institucional controlado por la aplicación, independiente de Gemini y de
-`AnalysisResult.warnings[]`; no se genera ni se persiste como advertencia diagnóstica por defecto.
+El disclaimer debe ser controlado y versionable. No debe existir una segunda lógica de diagnóstico exclusiva para el PDF.
 
 ---
 
 # F1.8 — Orientación y recursos asociados
 
+**Estado:** pendiente.
+
 ## Objetivo
 
-Complementar el diagnóstico con información útil para el siguiente paso del usuario.
+Complementar el diagnóstico con requisitos, pasos, formularios, tutoriales, enlaces oficiales y servicios relacionados según la modalidad sugerida.
 
-## Contenido
-
-Según modalidad recomendada:
-
-- requisitos;
-- pasos;
-- formularios;
-- tutoriales;
-- enlaces oficiales;
-- servicios relacionados.
-
-## Recomendación arquitectónica
-
-No confiar exclusivamente en generación libre del LLM para esta información.
-
-Preferir un catálogo controlado/versionado que Java pueda asociar a la clasificación obtenida.
+Esta información debe provenir preferentemente de un catálogo institucional controlado y versionado que Java asocie al resultado. No se debe confiar exclusivamente en generación libre del LLM.
 
 ---
 
 # F1.9 — Integración frontend y E2E
 
+**Estado:** pendiente.
+
 ## Objetivo
 
-Integrar el flujo completo desde Angular.
-
-## Flujo esperado
+Integrar en Angular el flujo completo:
 
 ```text
 DNI / CE
    ↓
-reconocimiento
+reconocimiento o registro
    ↓
-registro si aplica
-   ↓
-consentimiento
-   ↓
-sesión temporal
+consentimiento y sesión temporal
    ↓
 texto / PDF / audio
    ↓
-procesamiento
+procesamiento asíncrono
    ↓
-resultado
-   ↓
-reporte
+resultado y reporte
 ```
 
 ## Alcance
 
-- integración con contratos backend;
-- UX de estados de procesamiento;
-- errores;
+- integración con los contratos backend;
+- UX de espera, polling y estados terminales;
+- manejo de errores;
 - carga de PDF/audio;
 - presentación del diagnóstico;
-- descarga de reporte;
-- pruebas E2E;
-- revisión de accesibilidad;
+- descarga del reporte;
+- pruebas E2E y accesibilidad;
 - incorporación del frontend al CI.
 
 ---
@@ -644,55 +498,46 @@ reporte
 
 - dataset de casos de prueba;
 - evaluación experta;
-- métricas;
-- consistencia;
-- regresión de prompts;
-- comparación entre versiones de modelo;
-- detección de respuestas inválidas/alucinaciones;
-- criterios mínimos de aceptación.
+- métricas y criterios mínimos de aceptación;
+- consistencia y regresión de prompts;
+- comparación de versiones de modelo;
+- detección de respuestas inválidas y alucinaciones.
 
 # F2.1 — Privacidad, retención y gobierno de datos
 
 Cerrar definitivamente:
 
-- retención de consultas;
-- archivos PDF/audio originales;
-- transcripciones;
-- inputs;
-- resultados;
-- logs;
-- anonimización;
-- derecho de eliminación;
-- condiciones de borrado físico y adaptación futura del endpoint ADMIN de eliminación;
-- acceso administrativo;
-- minimización;
-- tratamiento de información confidencial.
+- retención de consultas, archivos, transcripciones y resultados;
+- conservación de prompts renderizados y respuestas crudas;
+- cifrado y control de acceso;
+- logs y minimización;
+- anonimización y derecho de eliminación;
+- borrado físico y adaptación del endpoint ADMIN correspondiente;
+- tratamiento de información confidencial;
+- prohibición de usar casos reales reservados con proveedores externos sin política aprobada.
 
 # F2.2 — Hardening y operación
 
 - rate limiting;
-- límites de archivos;
-- validación MIME;
-- timeouts;
-- circuit breakers si resultan necesarios;
-- observabilidad;
-- métricas;
-- trazabilidad;
-- health/readiness;
+- límites y validación MIME de archivos;
+- timeouts y circuit breakers cuando correspondan;
+- validación de la relación entre timeout y lease;
+- logging estructurado y correlation ID sin PII ni contenido sensible;
+- métricas, health y readiness;
 - aprovisionamiento inicial ADMIN;
-- backups;
-- recuperación;
-- manejo de degradación del proveedor IA.
+- backups y recuperación;
+- manejo de degradación del proveedor;
+- fortalecimiento de concurrencia en transiciones terminales.
 
 # F2.3 — Despliegue y aceptación
 
 - ambientes definitivos;
-- Docker/deployment;
+- Docker y estrategia de despliegue;
+- empaquetado frontend/backend;
 - secrets productivos;
-- CI/CD cuando se decida;
+- CI/CD cuando se acuerde;
 - pruebas de aceptación;
-- guía de pase;
-- manuales;
+- guía de pase y manuales;
 - capacitación;
 - checklist de producción;
 - aceptación con INDECOPI.
@@ -702,30 +547,24 @@ Cerrar definitivamente:
 # 6. Dependencias entre fases
 
 ```text
-F1.0
- ↓
-F1.1
- ↓
-F1.2
- ↓
-F1.3
- ↓
-F1.4
- ├─────────────┐
- ↓             ↓
-F1.5          F1.6
- └──────┬──────┘
-        ↓
-      F1.7
-        ↓
-      F1.8
-        ↓
-      F1.9
-        ↓
-       F2
+F0 + F1.0 + F1.1 + F1.2 + F1.3
+                  ↓
+                F1.4
+          ┌───────┴───────┐
+          ↓               ↓
+        F1.5            F1.6
+          └───────┬───────┘
+                  ↓
+                F1.7
+                  ↓
+                F1.8
+                  ↓
+                F1.9
+                  ↓
+                  F2
 ```
 
-PDF y audio no deben implementarse antes de que el análisis por texto esté estable.
+PDF y audio deben reutilizar el flujo central ya implementado. El contrato jurídico-funcional de F1.4 debe estabilizarse antes de cerrar la presentación formal del diagnóstico.
 
 ---
 
@@ -733,102 +572,78 @@ PDF y audio no deben implementarse antes de que el análisis por texto esté est
 
 ## Vertical antes que amplitud
 
-Primero:
+La vertical de texto ya está implementada:
 
 ```text
-texto → IA → resultado
+texto → Analysis → IA → resultado persistido
 ```
 
-Después:
+Las nuevas entradas deben converger al mismo núcleo:
 
 ```text
-PDF → texto → mismo análisis
-audio → texto → mismo análisis
+PDF → texto ─┐
+             ├→ Analysis → GenerativeAiProvider
+audio → texto┘
 ```
 
 ## Una sola lógica de análisis
 
-Todos los tipos de entrada convergen a:
-
-```text
-texto utilizable
-      ↓
-Analysis
-      ↓
-GenerativeAiProvider
-```
+No duplicar reglas de diagnóstico por tipo de entrada, reporte o canal.
 
 ## IA sustituible
 
-Siempre:
-
 ```text
-Use Case
-   ↓
+Caso de uso
+     ↓
 GenerativeAiProvider
-   ↓
-GeminiProvider
+     ├── OpenAiGenerativeAiProvider (actual)
+     └── otros adapters (futuro)
 ```
 
 ## Structured output
 
-Evitar:
-
-```text
-String resultadoLibre
-```
-
-como modelo principal.
-
-Preferir objetos estructurados y validados.
+El modelo principal del resultado debe ser un objeto estructurado, versionado y validado, no un `String` libre.
 
 ## Persistencia trazable
 
-Cada ejecución debe permitir responder:
+Cada ejecución debe permitir determinar:
 
-```text
-¿quién hizo la consulta?
-¿en qué sesión?
-¿qué entrada se procesó?
-¿qué texto llegó al modelo?
-¿qué prompt se usó?
-¿qué proveedor/modelo?
-¿qué resultado devolvió?
-¿cuánto tardó?
-¿falló?
-¿por qué?
-```
+- quién realizó la consulta y en qué sesión;
+- qué consentimiento vigente la habilitó;
+- qué entrada y texto se procesaron;
+- qué prompt, schema, proveedor y modelo se usaron;
+- qué intentos ocurrieron;
+- qué resultado se aceptó;
+- cuánto tardó;
+- si falló y por qué.
 
-## No NLP separado
+## Privacidad desde el diseño
 
-No introducir por iniciativa técnica:
+La trazabilidad amplia de desarrollo debe evolucionar hacia una política productiva explícita de minimización, acceso, retención y borrado.
 
-- embeddings;
-- clasificadores;
-- pipelines NLP;
-- modelos ML auxiliares;
+## Sin pipeline NLP separado
 
-salvo una decisión funcional posterior explícita.
+No introducir embeddings, clasificadores o pipelines NLP auxiliares salvo decisión funcional posterior explícita.
 
 ---
 
 # 8. Próximo paso inmediato
 
-La siguiente fase recomendada es:
+La siguiente fase es:
 
 ```text
-F1.0 — Diseño del dominio de análisis
+F1.4 — Diagnóstico de propiedad intelectual
 ```
 
-Antes de pedir a Codex que implemente funcionalidades, F1.0 debe cerrar especialmente:
+Antes de modificar el prompt productivo, F1.4 debe cerrar:
 
-1. mecanismo de sesión temporal STANDARD;
-2. modelo de persistencia de consultas;
-3. entidades/tablas iniciales;
-4. lifecycle/status del análisis;
-5. contrato estructurado del resultado;
-6. metadata de trazabilidad IA;
-7. política inicial para almacenar input/output;
-8. separación entre consentimiento y disclaimer.
+1. criterios jurídicos explícitos del diagnóstico;
+2. alcance y representación de los artículos 15 y 20 de la Decisión 486;
+3. modalidades de protección y taxonomía controlada;
+4. evolución versionada de `AnalysisResult` y su JSON Schema;
+5. prompt jurídico-funcional versionado;
+6. casos de prueba y criterios de aceptación experta;
+7. compatibilidad con los consumidores actuales del contrato;
+8. separación entre contenido generado, referencias controladas y disclaimer institucional.
 
-Una vez cerrado F1.0, se podrá elaborar una especificación técnica precisa para F1.1 y las fases siguientes.
+En paralelo, sin bloquear el diseño funcional, conviene planificar las mejoras técnicas identificadas: invariantes de roles ADMIN/STANDARD, validación timeout/lease, logging estructurado y conservación de metadata de respuestas `incomplete`.
