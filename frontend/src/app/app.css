@@ -62,9 +62,38 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .analysis-heading p:last-child { max-width: 650px; margin: 1.25rem 0 2rem; color: var(--muted); font-size: 1.05rem; line-height: 1.7; }
 .analysis-form { padding: clamp(1.25rem, 4vw, 2rem); border-left: 4px solid var(--coral); background: #fff; box-shadow: 0 18px 50px rgb(24 51 47 / .1); }
 .analysis-form label { margin-bottom: .45rem; font-size: .9rem; }
+.consent-check { display: flex; grid-template-columns: auto 1fr; align-items: start; gap: .55rem; margin-top: .8rem; font-weight: 400; }
+.consent-check input { width: 1rem; min-height: 1rem; margin-top: .15rem; accent-color: var(--teal); }
+.consent-check span { color: var(--muted); line-height: 1.45; }
 .analysis-actions { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1rem; }
 .analysis-actions span { color: var(--muted); font-size: .8rem; }
 .analysis-actions .primary-button { width: auto; min-width: 160px; margin-top: 0; }
+.analysis-progress { display: flex; align-items: center; gap: 1rem; margin-top: 1.25rem; padding: 1.25rem; border: 1px solid var(--line); background: #fff; box-shadow: 0 10px 25px rgb(24 51 47 / .06); }
+.analysis-spinner { width: 2rem; height: 2rem; flex: 0 0 auto; border: 3px solid var(--mint); border-top-color: var(--teal); border-radius: 50%; animation: analysis-spin .8s linear infinite; }
+.analysis-progress h2, .analysis-failure h2 { margin: 0; font-size: 1.15rem; }
+.analysis-progress p { margin: .3rem 0 0; color: var(--muted); line-height: 1.5; }
+@keyframes analysis-spin { to { transform: rotate(360deg); } }
+.analysis-result { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--line); }
+.result-heading { display: flex; align-items: end; flex-wrap: wrap; justify-content: space-between; gap: .75rem; }
+.result-heading h1 { margin: 0; font-size: clamp(1.7rem, 4vw, 2.6rem); }
+.result-status { padding: .35rem .6rem; color: #17643a; background: #dff3e6; font-size: .78rem; font-weight: 700; }
+.result-section { margin-top: 1.25rem; padding: 1.25rem; border: 1px solid var(--line); background: #fff; }
+.result-section h2 { margin: 0 0 .65rem; font-size: 1.05rem; }
+.result-section p { margin: 0; color: var(--muted); line-height: 1.65; }
+.result-outcome { display: inline-block; margin-bottom: .65rem !important; color: var(--teal-dark) !important; font-weight: 700; }
+.protection-options { display: grid; gap: .75rem; }
+.protection-option { padding: 1rem; background: #f4f7f6; }
+.option-heading { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.option-heading h3 { margin: 0; font-size: .95rem; }
+.option-heading span { padding: .25rem .45rem; color: #36524d; background: #e6eeec; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+.option-heading span[data-applicability='POSSIBLE'] { color: #17643a; background: #dff3e6; }
+.option-heading span[data-applicability='UNLIKELY'] { color: #765018; background: #fff0cf; }
+.protection-option p { margin-top: .5rem; font-size: .9rem; }
+.result-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
+.result-section ul { display: grid; gap: .7rem; margin: 0; padding-left: 1.15rem; color: var(--muted); line-height: 1.55; }
+.warning-section { border-color: #ead6a7; background: #fffaf0; }
+.analysis-failure { margin-top: 1.25rem; padding: 1.25rem; color: #7a2424; background: #fff0ee; }
+.analysis-failure p { margin: .45rem 0 0; line-height: 1.5; }
 
 .admin-page { min-height: 100dvh; padding-bottom: 3rem; background: #f4f7f6; }
 .admin-bar { background: #fff; }
@@ -131,6 +160,8 @@ tr.editing { background: #eef8f5; }
   .analysis-shell { width: min(100% - 2rem, 860px); padding-top: 2.5rem; }
   .analysis-actions { align-items: stretch; flex-direction: column; }
   .analysis-actions .primary-button { width: 100%; }
+  .result-columns { grid-template-columns: 1fr; }
+  .option-heading { align-items: start; flex-direction: column; }
   .trust-strip { grid-template-columns: 1fr; padding: 0 1rem; }
   .trust-strip div, .trust-strip div:first-child { padding: 1rem 0; border-right: 0; border-bottom: 1px solid rgb(255 255 255 / .18); }
 }

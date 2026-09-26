@@ -6,6 +6,7 @@ import { Observable } from 'rxjs';
 import { StandardUserRegistrationRequest, UserService } from './services/user.service';
 import { User } from './models/user.model';
 import { AdminAnalysis, AnalysisStatus } from './services/admin-analysis.service';
+import { AnalysisResponse, StandardAnalysisService } from './services/standard-analysis.service';
 
 @Component({
   selector: 'app-root',
@@ -17,6 +18,7 @@ export class App {
   private readonly fb = inject(FormBuilder);
   private readonly document = inject(DOCUMENT);
   private readonly userService = inject(UserService);
+  private readonly standardAnalysisService = inject(StandardAnalysisService);
 
   readonly users = signal<User[]>([]);
   readonly analyses = signal<AdminAnalysis[]>([]);
@@ -29,12 +31,15 @@ export class App {
   readonly editingUserType = signal('STANDARD');
   readonly showEditModal = signal(false);
   readonly adminSection = signal<'users' | 'predictions' | 'profile'>('users');
-  readonly view = signal<'home' | 'registration' | 'standard-analysis' | 'admin-login' | 'admin'>('home');
+  readonly view = signal<'home' | 'registration' | 'standard-analysis' | 'standard-result' | 'admin-login' | 'admin'>('home');
   readonly checkingDocument = signal(false);
   readonly authenticating = signal(false);
   readonly accessMessage = signal('');
   readonly savingProfile = signal(false);
   readonly profileMessage = signal('');
+  readonly submittingAnalysis = signal(false);
+  readonly analysisMessage = signal('');
+  readonly analysisResult = signal<AnalysisResponse | null>(null);
 
   readonly currentAdmin = computed<User | null>(() => {
     const { doi, doiType } = this.accessForm.getRawValue();
@@ -82,7 +87,8 @@ export class App {
   });
 
   readonly analysisForm = this.fb.nonNullable.group({
-    description: ['']
+    description: ['', [Validators.required, Validators.minLength(20), Validators.maxLength(20000)]],
+    consentAccepted: [false, [Validators.requiredTrue]]
   });
 
   identifyDocument(): void {
@@ -101,10 +107,10 @@ export class App {
           this.loginForm.reset({ password: '' });
         } else if (!registered) {
           this.cancelEdit();
-          this.userForm.patchValue({ doi, doiType });
           this.view.set('registration');
         } else {
           this.analysisForm.reset({ description: '' });
+          this.analysisMessage.set('');
           this.view.set('standard-analysis');
         }
         this.checkingDocument.set(false);
@@ -120,6 +126,13 @@ export class App {
     this.view.set('home');
     this.accessMessage.set('');
     this.loginForm.reset({ password: '' });
+  }
+
+  startNewAnalysis(): void {
+    this.analysisForm.reset({ description: '', consentAccepted: false });
+    this.analysisMessage.set('');
+    this.analysisResult.set(null);
+    this.view.set('standard-analysis');
   }
 
   cancelRegistration(): void {
@@ -268,6 +281,7 @@ export class App {
         this.saving.set(false);
         this.cancelEdit();
         this.analysisForm.reset({ description: '' });
+        this.analysisMessage.set('');
         this.view.set('standard-analysis');
       },
       error: () => {
@@ -275,6 +289,88 @@ export class App {
         this.accessMessage.set('No se pudo completar el registro. Verifica los datos e inténtalo nuevamente.');
       }
     });
+  }
+
+  submitAnalysis(): void {
+    if (this.analysisForm.invalid) {
+      this.analysisForm.markAllAsTouched();
+      return;
+    }
+
+    const { doi, doiType } = this.accessForm.getRawValue();
+    const { description } = this.analysisForm.getRawValue();
+    this.submittingAnalysis.set(true);
+    this.analysisMessage.set('');
+    this.analysisResult.set(null);
+
+    this.standardAnalysisService.createTextAnalysis(doi, doiType, description).subscribe({
+      next: ({ analysisId }) => {
+        this.analysisMessage.set(`Análisis recibido. Código: ${analysisId}`);
+        this.pollAnalysis(analysisId);
+      },
+      error: () => {
+        this.submittingAnalysis.set(false);
+        this.analysisMessage.set('No se pudo iniciar el análisis. Verifica tu sesión, consentimiento e intenta nuevamente.');
+      }
+    });
+  }
+
+  private downloadAnalysisJson(analysisId: string, analysis: unknown): void {
+    const link = this.document.createElement('a');
+    const url = URL.createObjectURL(new Blob([
+      JSON.stringify(analysis, null, 2)
+    ], { type: 'application/json;charset=utf-8' }));
+
+    link.href = url;
+    link.download = `analysis-${analysisId}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  private pollAnalysis(analysisId: string): void {
+    this.standardAnalysisService.getAnalysis(analysisId).subscribe({
+      next: (analysis) => {
+        this.analysisResult.set(analysis);
+        console.log('JSON del análisis:', analysis);
+        if (analysis.status === 'COMPLETED' || analysis.status === 'FAILED') {
+          this.submittingAnalysis.set(false);
+          this.analysisMessage.set(analysis.status === 'COMPLETED'
+            ? 'Análisis completado.'
+            : 'El análisis no pudo completarse.');
+          this.downloadAnalysisJson(analysisId, analysis);
+          this.view.set('standard-result');
+          return;
+        }
+
+        this.analysisMessage.set('Análisis en curso.');
+        window.setTimeout(() => this.pollAnalysis(analysisId), 2000);
+      },
+      error: (error) => {
+        this.submittingAnalysis.set(false);
+        this.analysisMessage.set('No se pudo consultar el resultado del análisis.');
+        console.error('No se pudo consultar el análisis:', error);
+      }
+    });
+  }
+
+  protectionTypeLabel(type: string): string {
+    const labels: Record<string, string> = {
+      INVENTION_PATENT: 'Patente de invención',
+      UTILITY_MODEL: 'Modelo de utilidad',
+      INDUSTRIAL_DESIGN: 'Diseño industrial',
+      DISTINCTIVE_SIGN: 'Signo distintivo',
+      COPYRIGHT: 'Derechos de autor',
+      OTHER: 'Otra modalidad'
+    };
+    return labels[type] ?? type;
+  }
+
+  applicabilityLabel(applicability: string): string {
+    const labels: Record<string, string> = {
+      POSSIBLE: 'Posible',
+      UNLIKELY: 'Poco probable'
+    };
+    return labels[applicability] ?? applicability;
   }
 
   submit(): void {

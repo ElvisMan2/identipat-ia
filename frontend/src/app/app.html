@@ -174,18 +174,108 @@
         <p>Describe tu creación con el mayor detalle posible. Esta información será la base para orientarte sobre sus alternativas de protección.</p>
       </div>
 
-      <form [formGroup]="analysisForm" class="analysis-form">
+      <form [formGroup]="analysisForm" (ngSubmit)="submitAnalysis()" class="analysis-form">
         <label for="description">Descripción de la creación</label>
         <textarea id="description" formControlName="description" rows="10" placeholder="Escribe aquí la descripción de tu creación..."></textarea>
+        @if (analysisForm.controls.description.touched && analysisForm.controls.description.invalid) {
+          <p class="field-error">La descripción debe tener entre 20 y 20 000 caracteres.</p>
+        }
         <div class="input-actions">
           <button class="voice-button" type="button" aria-label="Grabar descripción por voz">Grabar voz</button>
           <button class="pdf-button" type="button" aria-label="Adjuntar archivo PDF">Adjuntar PDF</button>
         </div>
+        <label class="consent-check">
+          <input type="checkbox" formControlName="consentAccepted" />
+          <span>Acepto el tratamiento de la información enviada para realizar este análisis.</span>
+        </label>
+        @if (analysisForm.controls.consentAccepted.touched && analysisForm.controls.consentAccepted.invalid) {
+          <p class="field-error">Debes aceptar el consentimiento para continuar.</p>
+        }
         <div class="analysis-actions">
-          <span>El análisis estará disponible próximamente.</span>
-          <button class="primary-button" type="button" disabled>Iniciar análisis</button>
+          <span [class.success-message]="analysisMessage().startsWith('Análisis recibido')" [class.error]="analysisMessage().startsWith('No se pudo')">{{ analysisMessage() }}</span>
+          <button class="primary-button" type="submit" [disabled]="submittingAnalysis()">{{ submittingAnalysis() ? 'Enviando...' : 'Iniciar análisis' }}</button>
         </div>
       </form>
+
+      @if (submittingAnalysis()) {
+        <section class="analysis-progress" role="status" aria-live="polite">
+          <span class="analysis-spinner" aria-hidden="true"></span>
+          <div>
+            <h2>Analizando con IA</h2>
+            <p>Estamos revisando la información de tu creación. Este proceso puede tardar unos segundos.</p>
+          </div>
+        </section>
+      }
+    </section>
+  </main>
+} @else if (view() === 'standard-result') {
+  <main class="analysis-page result-page">
+    <header class="topbar">
+      <a class="brand" href="/" (click)="$event.preventDefault(); backHome()">IDENTIPAT IA</a>
+      <button class="outline-button" type="button" (click)="startNewAnalysis()">Nuevo análisis</button>
+    </header>
+
+    <section class="analysis-shell">
+      @if (analysisResult()?.status === 'COMPLETED' && analysisResult()?.result; as result) {
+        <section class="analysis-result" aria-live="polite">
+          <div class="result-heading">
+            <div>
+              <p class="eyebrow">Resultado del análisis</p>
+              <h1>Orientación sobre tu creación</h1>
+            </div>
+            <span class="result-status">Análisis completado</span>
+          </div>
+
+          <article class="result-section result-summary">
+            <h2>Resumen</h2>
+            <p>{{ result.summary }}</p>
+          </article>
+
+          <article class="result-section">
+            <h2>Evaluación de patentabilidad</h2>
+            <p class="result-outcome">{{ result.patentabilityAssessment.outcome }}</p>
+            <p>{{ result.patentabilityAssessment.rationale }}</p>
+          </article>
+
+          <article class="result-section">
+            <h2>Modalidades de protección</h2>
+            <div class="protection-options">
+              @for (option of result.protectionOptions; track option.type) {
+                <div class="protection-option">
+                  <div class="option-heading">
+                    <h3>{{ protectionTypeLabel(option.type) }}</h3>
+                    <span [attr.data-applicability]="option.applicability">{{ applicabilityLabel(option.applicability) }}</span>
+                  </div>
+                  <p>{{ option.rationale }}</p>
+                </div>
+              }
+            </div>
+          </article>
+
+          <div class="result-columns">
+            <article class="result-section">
+              <h2>Observaciones</h2>
+              <ul>
+                @for (observation of result.observations; track observation) { <li>{{ observation }}</li> }
+              </ul>
+            </article>
+            <article class="result-section warning-section">
+              <h2>Advertencias</h2>
+              <ul>
+                @for (warning of result.warnings; track warning) { <li>{{ warning }}</li> }
+              </ul>
+            </article>
+          </div>
+        </section>
+      }
+
+      @if (analysisResult()?.status === 'FAILED' && analysisResult()?.failure; as failure) {
+        <section class="analysis-failure" role="alert">
+          <p class="eyebrow">Resultado del análisis</p>
+          <h1>No se pudo completar el análisis</h1>
+          <p>{{ failure.message }}</p>
+        </section>
+      }
     </section>
   </main>
 } @else {
