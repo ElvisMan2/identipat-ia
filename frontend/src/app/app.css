@@ -60,8 +60,7 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .admin-title { padding: 2rem 0 1.25rem; }
 .admin-title h1 { margin: 0; font-size: clamp(1.9rem, 4vw, 2.8rem); }
 .admin-title > p:last-child { margin: .35rem 0 0; color: var(--muted); }
-.layout { display: grid; grid-template-columns: minmax(280px, 350px) minmax(0, 1fr); gap: 1rem; }
-.admin-tools { display: grid; align-content: start; gap: 1rem; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
 .panel { border: 1px solid var(--line); border-radius: 7px; padding: 1rem; background: #fff; box-shadow: 0 10px 25px rgb(24 51 47 / .06); }
 .panel h2 { margin-top: 0; font-size: 1.2rem; }
 .form-grid { display: grid; gap: .75rem; }
@@ -73,6 +72,8 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .ghost { color: var(--teal-dark); background: var(--mint); }
 .danger { color: var(--danger); background: #f9dfdc; }
 .activate { color: #17643a; background: #dff3e6; }
+.modal-backdrop { position: fixed; inset: 0; background: rgb(15 26 24 / .55); display: grid; place-items: center; padding: 1rem; z-index: 20; }
+.modal-panel { width: min(560px, 100%); max-height: 90vh; overflow-y: auto; }
 .promote { color: #fff; background: #365a8c; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }

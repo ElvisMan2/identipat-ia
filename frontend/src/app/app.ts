@@ -21,12 +21,11 @@ export class App {
   readonly errorMessage = signal('');
   readonly editingUserId = signal<number | null>(null);
   readonly editingUserType = signal('STANDARD');
+  readonly showEditModal = signal(false);
   readonly view = signal<'home' | 'registration' | 'admin-login' | 'admin'>('home');
   readonly checkingDocument = signal(false);
   readonly authenticating = signal(false);
   readonly accessMessage = signal('');
-  readonly changingPassword = signal(false);
-  readonly passwordMessage = signal('');
 
   readonly accessForm = this.fb.nonNullable.group({
     doiType: ['DNI', [Validators.required]],
@@ -35,11 +34,6 @@ export class App {
 
   readonly loginForm = this.fb.nonNullable.group({
     password: ['', [Validators.required]]
-  });
-
-  readonly passwordForm = this.fb.nonNullable.group({
-    newPassword: ['', [Validators.required, Validators.minLength(8)]],
-    confirmPassword: ['', [Validators.required]]
   });
 
   readonly userForm = this.fb.nonNullable.group({
@@ -126,48 +120,8 @@ export class App {
   logout(): void {
     this.userService.clearAccessToken();
     this.users.set([]);
-    this.passwordForm.reset({ newPassword: '', confirmPassword: '' });
-    this.passwordMessage.set('');
     this.cancelEdit();
     this.backHome();
-  }
-
-  changeAdminPassword(): void {
-    if (this.passwordForm.invalid) {
-      this.passwordForm.markAllAsTouched();
-      return;
-    }
-
-    const { newPassword, confirmPassword } = this.passwordForm.getRawValue();
-    if (newPassword !== confirmPassword) {
-      this.passwordMessage.set('Las contraseñas no coinciden.');
-      return;
-    }
-
-    const { doi, doiType } = this.accessForm.getRawValue();
-    const admin = this.users().find(user =>
-      user.userType?.toUpperCase() === 'ADMIN'
-      && user.doi === doi
-      && user.doiType === doiType
-    );
-    if (!admin?.userId) {
-      this.passwordMessage.set('No se pudo identificar al administrador autenticado.');
-      return;
-    }
-
-    this.changingPassword.set(true);
-    this.passwordMessage.set('');
-    this.userService.update(admin.userId, { ...admin, password: newPassword }).subscribe({
-      next: () => {
-        this.changingPassword.set(false);
-        this.passwordForm.reset({ newPassword: '', confirmPassword: '' });
-        this.passwordMessage.set('Contraseña actualizada correctamente.');
-      },
-      error: () => {
-        this.changingPassword.set(false);
-        this.passwordMessage.set('No se pudo actualizar la contraseña.');
-      }
-    });
   }
 
   loadUsers(): void {
@@ -210,6 +164,11 @@ export class App {
   }
 
   submit(): void {
+    const userId = this.editingUserId();
+    if (userId === null) {
+      return;
+    }
+
     if (this.userForm.invalid) {
       this.userForm.markAllAsTouched();
       this.errorMessage.set('Completa correctamente todos los campos obligatorios.');
@@ -222,14 +181,11 @@ export class App {
     this.saving.set(true);
     this.errorMessage.set('');
 
-    const userId = this.editingUserId();
-    const request$: Observable<unknown> = userId === null
-      ? this.userService.create(registrationPayload)
-      : this.userService.update(userId, {
-          ...registrationPayload,
-          userType: this.editingUserType(),
-          password: formValue.password || undefined
-        });
+    const request$: Observable<unknown> = this.userService.update(userId, {
+      ...registrationPayload,
+      userType: this.editingUserType(),
+      password: formValue.password || undefined
+    });
 
     request$.subscribe({
       next: () => {
@@ -272,11 +228,13 @@ export class App {
       profession: user.profession,
       password: ''
     });
+    this.showEditModal.set(true);
   }
 
   cancelEdit(): void {
     this.editingUserId.set(null);
     this.editingUserType.set('STANDARD');
+    this.showEditModal.set(false);
     this.userForm.controls.password.clearValidators();
     this.userForm.controls.password.updateValueAndValidity({ emitEvent: false });
     this.userForm.reset({
