@@ -29,7 +29,7 @@ export class App {
   readonly editingUserType = signal('STANDARD');
   readonly showEditModal = signal(false);
   readonly adminSection = signal<'users' | 'predictions' | 'profile'>('users');
-  readonly view = signal<'home' | 'registration' | 'admin-login' | 'admin'>('home');
+  readonly view = signal<'home' | 'registration' | 'standard-analysis' | 'admin-login' | 'admin'>('home');
   readonly checkingDocument = signal(false);
   readonly authenticating = signal(false);
   readonly accessMessage = signal('');
@@ -81,6 +81,10 @@ export class App {
     profession: ['', [Validators.required]]
   });
 
+  readonly analysisForm = this.fb.nonNullable.group({
+    description: ['']
+  });
+
   identifyDocument(): void {
     if (this.accessForm.invalid) {
       this.accessForm.markAllAsTouched();
@@ -100,7 +104,8 @@ export class App {
           this.userForm.patchValue({ doi, doiType });
           this.view.set('registration');
         } else {
-          this.accessMessage.set('Documento reconocido. Ya puedes continuar con tu análisis.');
+          this.analysisForm.reset({ description: '' });
+          this.view.set('standard-analysis');
         }
         this.checkingDocument.set(false);
       },
@@ -262,8 +267,8 @@ export class App {
       next: () => {
         this.saving.set(false);
         this.cancelEdit();
-        this.view.set('home');
-        this.accessMessage.set('Registro completado. Ya puedes continuar con tu análisis.');
+        this.analysisForm.reset({ description: '' });
+        this.view.set('standard-analysis');
       },
       error: () => {
         this.saving.set(false);

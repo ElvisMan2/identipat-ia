@@ -160,6 +160,34 @@
       </div>
     }
   </main>
+} @else if (view() === 'standard-analysis') {
+  <main class="analysis-page">
+    <header class="topbar">
+      <a class="brand" href="/" (click)="$event.preventDefault(); backHome()">IDENTIPAT IA</a>
+      <button class="outline-button" type="button" (click)="backHome()">Volver</button>
+    </header>
+
+    <section class="analysis-shell">
+      <div class="analysis-heading">
+        <p class="eyebrow">Análisis de tu creación</p>
+        <h1>Cuéntanos qué quieres proteger</h1>
+        <p>Describe tu creación con el mayor detalle posible. Esta información será la base para orientarte sobre sus alternativas de protección.</p>
+      </div>
+
+      <form [formGroup]="analysisForm" class="analysis-form">
+        <label for="description">Descripción de la creación</label>
+        <textarea id="description" formControlName="description" rows="10" placeholder="Escribe aquí la descripción de tu creación..."></textarea>
+        <div class="input-actions">
+          <button class="voice-button" type="button" aria-label="Grabar descripción por voz">Grabar voz</button>
+          <button class="pdf-button" type="button" aria-label="Adjuntar archivo PDF">Adjuntar PDF</button>
+        </div>
+        <div class="analysis-actions">
+          <span>El análisis estará disponible próximamente.</span>
+          <button class="primary-button" type="button" disabled>Iniciar análisis</button>
+        </div>
+      </form>
+    </section>
+  </main>
 } @else {
   <main class="home-page">
     <header class="topbar">
