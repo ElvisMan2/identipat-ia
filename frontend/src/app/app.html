@@ -69,8 +69,35 @@
     @if (adminSection() === 'profile') {
     <section class="layout">
       <article class="panel">
-        <h2>Datos del administrador</h2>
-        <p class="empty-state">Esta sección estará disponible próximamente. Aquí podrás consultar y actualizar tu información de perfil y contraseña.</p>
+        <h2>Mi perfil</h2>
+        @if (!currentAdmin()) {
+          <p class="empty-state">No se pudo cargar tu información. Refresca la sección de usuarios e inténtalo nuevamente.</p>
+        } @else {
+          <div class="profile-readonly">
+            <p><strong>Documento:</strong> {{ currentAdmin()?.doiType }} {{ currentAdmin()?.doi }}</p>
+            <p><strong>Tipo de usuario:</strong> Administrador</p>
+            <p><strong>Estado:</strong> {{ isInactive(currentAdmin()!) ? 'Inactivo' : 'Activo' }}</p>
+          </div>
+          <form [formGroup]="profileForm" (ngSubmit)="updateProfile()" class="form-grid">
+            <label>Nombres <input type="text" formControlName="firstName" /></label>
+            <label>Apellido paterno <input type="text" formControlName="paternalLastName" /></label>
+            <label>Apellido materno <input type="text" formControlName="maternalLastName" /></label>
+            <label>Fecha de nacimiento <input type="text" formControlName="birthDate" placeholder="17/10/1991" /></label>
+            <label>Género
+              <select formControlName="gender"><option value="" disabled>Seleccione</option><option value="MALE">Masculino</option><option value="FEMALE">Femenino</option><option value="OTHER">Otro</option></select>
+            </label>
+            <label>Correo electrónico <input type="email" formControlName="email" /></label>
+            <label>Teléfono <input type="text" formControlName="phone" /></label>
+            <label>Celular <input type="text" formControlName="mobilePhone" /></label>
+            <label>Profesión <input type="text" formControlName="profession" /></label>
+            @if (profileMessage()) {
+              <p [class]="profileMessage().includes('correctamente') ? 'success-message' : 'error'" role="status">{{ profileMessage() }}</p>
+            }
+            <div class="actions">
+              <button type="submit" [disabled]="savingProfile()">{{ savingProfile() ? 'Guardando...' : 'Actualizar mis datos' }}</button>
+            </div>
+          </form>
+        }
       </article>
     </section>
     }

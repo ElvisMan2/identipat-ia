@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { StandardUserRegistrationRequest, UserService } from './services/user.service';
@@ -27,6 +27,17 @@ export class App {
   readonly checkingDocument = signal(false);
   readonly authenticating = signal(false);
   readonly accessMessage = signal('');
+  readonly savingProfile = signal(false);
+  readonly profileMessage = signal('');
+
+  readonly currentAdmin = computed<User | null>(() => {
+    const { doi, doiType } = this.accessForm.getRawValue();
+    return this.users().find(user =>
+      user.userType?.toUpperCase() === 'ADMIN'
+      && user.doi === doi
+      && user.doiType === doiType
+    ) ?? null;
+  });
 
   readonly accessForm = this.fb.nonNullable.group({
     doiType: ['DNI', [Validators.required]],
@@ -50,6 +61,18 @@ export class App {
     mobilePhone: ['', [Validators.required]],
     profession: ['', [Validators.required]],
     password: ['']
+  });
+
+  readonly profileForm = this.fb.nonNullable.group({
+    firstName: ['', [Validators.required]],
+    paternalLastName: ['', [Validators.required]],
+    maternalLastName: ['', [Validators.required]],
+    birthDate: ['', [Validators.required, Validators.pattern(/^\d{2}\/\d{2}\/\d{4}$/)]],
+    gender: ['', [Validators.required]],
+    email: ['', [Validators.required, Validators.email]],
+    phone: ['', [Validators.required]],
+    mobilePhone: ['', [Validators.required]],
+    profession: ['', [Validators.required]]
   });
 
   identifyDocument(): void {
@@ -123,11 +146,15 @@ export class App {
     this.users.set([]);
     this.cancelEdit();
     this.adminSection.set('users');
+    this.profileMessage.set('');
     this.backHome();
   }
 
   setAdminSection(section: 'users' | 'predictions' | 'profile'): void {
     this.adminSection.set(section);
+    if (section === 'profile') {
+      this.loadProfileForm();
+    }
   }
 
   loadUsers(): void {
@@ -309,6 +336,62 @@ export class App {
 
   isEditing(user: User): boolean {
     return this.editingUserId() === user.userId;
+  }
+
+  private loadProfileForm(): void {
+    this.profileMessage.set('');
+    const admin = this.currentAdmin();
+    if (!admin) {
+      return;
+    }
+
+    this.profileForm.setValue({
+      firstName: admin.firstName,
+      paternalLastName: admin.paternalLastName,
+      maternalLastName: admin.maternalLastName,
+      birthDate: admin.birthDate,
+      gender: admin.gender,
+      email: admin.email,
+      phone: admin.phone,
+      mobilePhone: admin.mobilePhone,
+      profession: admin.profession
+    });
+  }
+
+  updateProfile(): void {
+    const admin = this.currentAdmin();
+    if (!admin?.userId) {
+      this.profileMessage.set('No se pudo identificar al administrador autenticado.');
+      return;
+    }
+
+    if (this.profileForm.invalid) {
+      this.profileForm.markAllAsTouched();
+      this.profileMessage.set('Completa correctamente todos los campos obligatorios.');
+      return;
+    }
+
+    this.savingProfile.set(true);
+    this.profileMessage.set('');
+    this.userService.updateProfile(admin.userId, {
+      userId: admin.userId,
+      ...admin,
+      ...this.profileForm.getRawValue(),
+      doi: admin.doi,
+      doiType: admin.doiType,
+      userType: admin.userType,
+      status: admin.status
+    }).subscribe({
+      next: () => {
+        this.savingProfile.set(false);
+        this.profileMessage.set('Tus datos se actualizaron correctamente.');
+        this.loadUsers();
+      },
+      error: () => {
+        this.savingProfile.set(false);
+        this.profileMessage.set('No se pudo actualizar tu información.');
+      }
+    });
   }
 
   private registrationPayload(): StandardUserRegistrationRequest {

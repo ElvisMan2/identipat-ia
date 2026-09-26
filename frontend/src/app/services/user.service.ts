@@ -75,4 +75,8 @@ export class UserService {
   update(userId: number, user: User): Observable<User> {
     return this.http.put<User>(`${this.endpoint}/admin/${userId}`, user, this.authenticatedOptions);
   }
+
+  updateProfile(userId: number, user: User): Observable<User> {
+    return this.http.put<User>(`${this.endpoint}/${userId}`, user, this.authenticatedOptions);
+  }
 }
