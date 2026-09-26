@@ -7,10 +7,33 @@
 
     <section class="admin-title">
       <p class="eyebrow">Administración</p>
-      <h1>Gestión de usuarios</h1>
-      <p>Consulta, registra y actualiza la información de los usuarios.</p>
+      <h1>{{ adminSection() === 'users' ? 'Gestión de usuarios' : adminSection() === 'predictions' ? 'Predicciones' : 'Perfil' }}</h1>
+      <p>
+        @if (adminSection() === 'users') { Consulta, registra y actualiza la información de los usuarios. }
+        @else if (adminSection() === 'predictions') { Consulta el historial de predicciones realizadas en el sistema. }
+        @else { Revisa y actualiza tu información de administrador. }
+      </p>
     </section>
 
+    <nav class="admin-tabs" aria-label="Secciones del panel administrativo">
+      <button type="button" [class.active]="adminSection() === 'predictions'" (click)="setAdminSection('predictions')">Predicciones</button>
+      <button type="button" [class.active]="adminSection() === 'users'" (click)="setAdminSection('users')">Gestión de usuarios</button>
+      <button type="button" [class.active]="adminSection() === 'profile'" (click)="setAdminSection('profile')">Perfil</button>
+    </nav>
+
+    @if (adminSection() === 'predictions') {
+    <section class="layout">
+      <article class="panel table-panel">
+        <div class="table-head">
+          <h2>Historial de predicciones</h2>
+          <button class="ghost" type="button" disabled>Refrescar</button>
+        </div>
+        <p class="empty-state">Esta sección estará disponible próximamente. Aquí se listarán las predicciones realizadas por los usuarios, con filtros por rango de fechas y descarga de reportes.</p>
+      </article>
+    </section>
+    }
+
+    @if (adminSection() === 'users') {
     <section class="layout">
       <article class="panel table-panel">
         <div class="table-head">
@@ -41,6 +64,16 @@
         </div>
       </article>
     </section>
+    }
+
+    @if (adminSection() === 'profile') {
+    <section class="layout">
+      <article class="panel">
+        <h2>Datos del administrador</h2>
+        <p class="empty-state">Esta sección estará disponible próximamente. Aquí podrás consultar y actualizar tu información de perfil y contraseña.</p>
+      </article>
+    </section>
+    }
 
     @if (showEditModal()) {
       <div class="modal-backdrop" (click)="cancelEdit()">

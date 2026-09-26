@@ -56,13 +56,17 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .admin-bar { background: #fff; }
 .admin-bar div { display: grid; }
 .admin-bar span { color: var(--muted); font-size: .72rem; }
-.admin-title, .layout { width: min(1380px, calc(100% - 2rem)); margin-inline: auto; }
+.admin-title, .layout, .admin-tabs { width: min(1380px, calc(100% - 2rem)); margin-inline: auto; }
 .admin-title { padding: 2rem 0 1.25rem; }
 .admin-title h1 { margin: 0; font-size: clamp(1.9rem, 4vw, 2.8rem); }
 .admin-title > p:last-child { margin: .35rem 0 0; color: var(--muted); }
+.admin-tabs { display: flex; gap: .5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--line); }
+.admin-tabs button { border: 0; background: none; padding: .75rem 1rem; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; }
+.admin-tabs button.active { color: var(--teal-dark); border-bottom-color: var(--teal); }
 .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
 .panel { border: 1px solid var(--line); border-radius: 7px; padding: 1rem; background: #fff; box-shadow: 0 10px 25px rgb(24 51 47 / .06); }
 .panel h2 { margin-top: 0; font-size: 1.2rem; }
+.empty-state { color: var(--muted); }
 .form-grid { display: grid; gap: .75rem; }
 .actions, .row-actions, .table-head { display: flex; align-items: center; gap: .55rem; }
 .actions { margin-top: .4rem; }

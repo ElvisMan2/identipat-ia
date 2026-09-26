@@ -22,6 +22,7 @@ export class App {
   readonly editingUserId = signal<number | null>(null);
   readonly editingUserType = signal('STANDARD');
   readonly showEditModal = signal(false);
+  readonly adminSection = signal<'users' | 'predictions' | 'profile'>('users');
   readonly view = signal<'home' | 'registration' | 'admin-login' | 'admin'>('home');
   readonly checkingDocument = signal(false);
   readonly authenticating = signal(false);
@@ -121,7 +122,12 @@ export class App {
     this.userService.clearAccessToken();
     this.users.set([]);
     this.cancelEdit();
+    this.adminSection.set('users');
     this.backHome();
+  }
+
+  setAdminSection(section: 'users' | 'predictions' | 'profile'): void {
+    this.adminSection.set(section);
   }
 
   loadUsers(): void {
