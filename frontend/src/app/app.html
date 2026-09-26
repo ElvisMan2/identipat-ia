@@ -26,7 +26,10 @@
       <article class="panel table-panel">
         <div class="table-head">
           <h2>Historial de predicciones</h2>
-          <button class="ghost" type="button" (click)="loadAnalyses()" [disabled]="analysesLoading()">{{ analysesLoading() ? 'Cargando...' : 'Refrescar' }}</button>
+          <div class="table-actions">
+            <button class="ghost" type="button" (click)="downloadAnalysesCsv()" [disabled]="!analyses().length">Descargar CSV</button>
+            <button class="ghost" type="button" (click)="loadAnalyses()" [disabled]="analysesLoading()">{{ analysesLoading() ? 'Cargando...' : 'Refrescar' }}</button>
+          </div>
         </div>
         @if (analysesError()) { <p class="error" role="alert">{{ analysesError() }}</p> }
         <div class="table-wrap">
@@ -58,7 +61,10 @@
       <article class="panel table-panel">
         <div class="table-head">
           <h2>Usuarios registrados</h2>
-          <button class="ghost" type="button" (click)="loadUsers()" [disabled]="loading()">{{ loading() ? 'Cargando...' : 'Refrescar' }}</button>
+          <div class="table-actions">
+            <button class="ghost" type="button" (click)="downloadUsersCsv()" [disabled]="!users().length">Descargar CSV</button>
+            <button class="ghost" type="button" (click)="loadUsers()" [disabled]="loading()">{{ loading() ? 'Cargando...' : 'Refrescar' }}</button>
+          </div>
         </div>
         @if (errorMessage()) { <p class="error" role="alert">{{ errorMessage() }}</p> }
         <div class="table-wrap">
@@ -163,8 +169,8 @@
     <section class="hero">
       <div class="hero-copy">
         <p class="eyebrow">Orientación en propiedad intelectual</p>
-        <h1>Descubre si tu creación puede protegerse como propiedad intelectual.</h1>
-        <p class="intro">IDENTIPAT IA analiza la descripción de tu invención o creación con inteligencia artificial para orientarte sobre su potencial de protección y la modalidad más adecuada: patente, modelo de utilidad, diseño industrial, signo distintivo o derechos de autor.</p>
+        <h1>Descubre cómo proteger la propiedad intelectual de tu creación</h1>
+        <p class="intro">IDENTIPAT IA analiza la descripción de tu invención con inteligencia artificial para orientarte sobre su potencial de protección y la modalidad más adecuada: patente, modelo de utilidad, diseño industrial, signo distintivo o derechos de autor.</p>
 
         <div class="access-block">
           @if (view() === 'registration') {

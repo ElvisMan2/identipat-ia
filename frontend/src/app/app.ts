@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { DOCUMENT } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Observable } from 'rxjs';
@@ -14,6 +15,7 @@ import { AdminAnalysis, AnalysisStatus } from './services/admin-analysis.service
 })
 export class App {
   private readonly fb = inject(FormBuilder);
+  private readonly document = inject(DOCUMENT);
   private readonly userService = inject(UserService);
 
   readonly users = signal<User[]>([]);
@@ -166,6 +168,58 @@ export class App {
 
   loadAnalyses(): void {
     this.analysesError.set('');
+  }
+
+  downloadAnalysesCsv(): void {
+    const headers = ['Fecha', 'Usuario', 'Estado', 'Predicción'];
+    const rows = this.analyses().map(analysis => [
+      analysis.requestedAt,
+      `${analysis.firstName} ${analysis.paternalLastName} ${analysis.maternalLastName} (Usuario #${analysis.userId})`,
+      this.analysisStatusLabel(analysis.status),
+      analysis.summary || 'Resultado aún no disponible.'
+    ]);
+    const csv = '\uFEFF' + [headers, ...rows]
+      .map(row => row.map(value => this.csvCell(value)).join(','))
+      .join('\r\n');
+    const link = this.document.createElement('a');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+
+    link.href = url;
+    link.download = `predicciones-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  downloadUsersCsv(): void {
+    const headers = ['ID', 'Nombre completo', 'Documento', 'Nacimiento', 'Género', 'Correo', 'Teléfono', 'Celular', 'Tipo', 'Profesión', 'Estado'];
+    const rows = this.users().map(user => [
+      String(user.userId ?? ''),
+      `${user.firstName} ${user.paternalLastName} ${user.maternalLastName}`,
+      `${user.doiType} ${user.doi}`,
+      user.birthDate,
+      user.gender,
+      user.email,
+      user.phone,
+      user.mobilePhone,
+      user.userType,
+      user.profession,
+      user.status ?? ''
+    ]);
+    const csv = '\uFEFF' + [headers, ...rows]
+      .map(row => row.map(value => this.csvCell(value)).join(','))
+      .join('\r\n');
+    const link = this.document.createElement('a');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+
+    link.href = url;
+    link.download = `usuarios-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  private csvCell(value: string): string {
+    const safeValue = /^[=+\-@]/.test(value) ? `'${value}` : value;
+    return `"${safeValue.replace(/"/g, '""')}"`;
   }
 
   analysisStatusLabel(status: AnalysisStatus): string {
