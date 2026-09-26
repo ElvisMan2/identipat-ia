@@ -76,7 +76,7 @@ export class App {
           this.userForm.patchValue({ doi, doiType });
           this.view.set('registration');
         } else {
-          this.accessMessage.set('Documento reconocido. Ya puedes continuar con tu evaluación.');
+          this.accessMessage.set('Documento reconocido. Ya puedes continuar con tu análisis.');
         }
         this.checkingDocument.set(false);
       },
@@ -200,7 +200,7 @@ export class App {
         this.saving.set(false);
         this.cancelEdit();
         this.view.set('home');
-        this.accessMessage.set('Registro completado. Ya puedes continuar con tu evaluación.');
+        this.accessMessage.set('Registro completado. Ya puedes continuar con tu análisis.');
       },
       error: () => {
         this.saving.set(false);
