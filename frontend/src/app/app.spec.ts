@@ -124,6 +124,19 @@ describe('App', () => {
     expect(fixture.nativeElement.textContent).toContain('Usuarios registrados');
   });
 
+  it('should show the predictions section without requesting the pending endpoint', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.view.set('admin');
+    app.setAdminSection('predictions');
+    fixture.detectChanges();
+
+    httpTesting.expectNone(`${environment.apiBaseUrl}/admin/analyses`);
+    expect(fixture.nativeElement.textContent).toContain('Historial de predicciones');
+    expect(fixture.nativeElement.textContent).toContain('No hay predicciones registradas.');
+  });
+
   it('should create only a standard user through the registration contract', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;

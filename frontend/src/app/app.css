@@ -89,6 +89,15 @@ tr.editing { background: #eef8f5; }
 .empty { padding: 2rem; color: var(--muted); text-align: center; }
 .error { padding: .65rem; color: #7a2424; background: #fff0ee; }
 .success-message { margin: 0; padding: .65rem; color: var(--teal-dark); background: var(--mint); }
+.predictions-table { min-width: 760px; }
+.predictions-table strong, .user-reference { display: block; }
+.prediction-date { white-space: nowrap; }
+.user-reference { margin-top: .18rem; color: var(--muted); font-size: .75rem; }
+.prediction-summary { min-width: 280px; line-height: 1.45; }
+.status-badge { display: inline-block; border-radius: 999px; padding: .3rem .55rem; color: #36524d; background: #e6eeec; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+.status-badge[data-status='COMPLETED'] { color: #17643a; background: #dff3e6; }
+.status-badge[data-status='FAILED'] { color: var(--danger); background: #f9dfdc; }
+.status-badge[data-status='ANALYZING'], .status-badge[data-status='PREPROCESSING'] { color: #765018; background: #fff0cf; }
 
 @media (max-width: 920px) {
   .hero { grid-template-columns: 1fr; padding-top: 2.5rem; }

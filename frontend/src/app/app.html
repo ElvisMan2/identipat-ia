@@ -26,9 +26,29 @@
       <article class="panel table-panel">
         <div class="table-head">
           <h2>Historial de predicciones</h2>
-          <button class="ghost" type="button" disabled>Refrescar</button>
+          <button class="ghost" type="button" (click)="loadAnalyses()" [disabled]="analysesLoading()">{{ analysesLoading() ? 'Cargando...' : 'Refrescar' }}</button>
         </div>
-        <p class="empty-state">Esta sección estará disponible próximamente. Aquí se listarán las predicciones realizadas por los usuarios, con filtros por rango de fechas y descarga de reportes.</p>
+        @if (analysesError()) { <p class="error" role="alert">{{ analysesError() }}</p> }
+        <div class="table-wrap">
+          <table class="predictions-table">
+            <thead><tr><th>Fecha</th><th>Usuario</th><th>Estado</th><th>Predicción</th></tr></thead>
+            <tbody>
+              @for (analysis of analyses(); track analysis.analysisId) {
+                <tr>
+                  <td class="prediction-date">{{ analysis.requestedAt | date:'dd/MM/yyyy, HH:mm' }}</td>
+                  <td>
+                    <strong>{{ analysis.firstName }} {{ analysis.paternalLastName }} {{ analysis.maternalLastName }}</strong>
+                    <span class="user-reference">Usuario #{{ analysis.userId }}</span>
+                  </td>
+                  <td><span class="status-badge" [attr.data-status]="analysis.status">{{ analysisStatusLabel(analysis.status) }}</span></td>
+                  <td class="prediction-summary">{{ analysis.summary || 'Resultado aún no disponible.' }}</td>
+                </tr>
+              } @empty {
+                @if (!analysesLoading()) { <tr><td colspan="4" class="empty">No hay predicciones registradas.</td></tr> }
+              }
+            </tbody>
+          </table>
+        </div>
       </article>
     </section>
     }

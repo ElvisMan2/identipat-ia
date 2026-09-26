@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { StandardUserRegistrationRequest, UserService } from './services/user.service';
 import { User } from './models/user.model';
+import { AdminAnalysis, AnalysisStatus } from './services/admin-analysis.service';
 
 @Component({
   selector: 'app-root',
@@ -16,9 +17,12 @@ export class App {
   private readonly userService = inject(UserService);
 
   readonly users = signal<User[]>([]);
+  readonly analyses = signal<AdminAnalysis[]>([]);
   readonly loading = signal(false);
+  readonly analysesLoading = signal(false);
   readonly saving = signal(false);
   readonly errorMessage = signal('');
+  readonly analysesError = signal('');
   readonly editingUserId = signal<number | null>(null);
   readonly editingUserType = signal('STANDARD');
   readonly showEditModal = signal(false);
@@ -144,6 +148,7 @@ export class App {
   logout(): void {
     this.userService.clearAccessToken();
     this.users.set([]);
+    this.analyses.set([]);
     this.cancelEdit();
     this.adminSection.set('users');
     this.profileMessage.set('');
@@ -152,9 +157,26 @@ export class App {
 
   setAdminSection(section: 'users' | 'predictions' | 'profile'): void {
     this.adminSection.set(section);
-    if (section === 'profile') {
+    if (section === 'predictions') {
+      this.loadAnalyses();
+    } else if (section === 'profile') {
       this.loadProfileForm();
     }
+  }
+
+  loadAnalyses(): void {
+    this.analysesError.set('');
+  }
+
+  analysisStatusLabel(status: AnalysisStatus): string {
+    const labels: Record<AnalysisStatus, string> = {
+      RECEIVED: 'Recibida',
+      PREPROCESSING: 'Procesando',
+      ANALYZING: 'Analizando',
+      COMPLETED: 'Completada',
+      FAILED: 'Fallida'
+    };
+    return labels[status];
   }
 
   loadUsers(): void {
