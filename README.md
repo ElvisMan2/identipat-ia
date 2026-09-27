@@ -21,6 +21,13 @@ El flujo de texto persiste la consulta antes de responder `202`, la procesa medi
 PostgreSQL claim/lease y permite consultar el resultado solo desde la misma sesión STANDARD. Consulta
 la [guía del flujo de análisis de texto](docs/development/text-analysis-flow.md).
 
+Los análisis nuevos usan el contrato jurídico-funcional `analysis-result/2.0` y el prompt
+`intellectual-property-analysis/0.2`: admiten protecciones concurrentes, screening limitado de los
+artículos 15 y 20 de la Decisión 486 y alerta de recursos genéticos. Los resultados históricos 1.0
+conservan su versión y siguen siendo legibles; el análisis no evalúa novedad, nivel inventivo,
+aplicación industrial ni ventaja técnica. Las [reglas F1.4](docs/design/f1.4-legal-classification-rules.md)
+y el [golden set J01–J18](docs/design/f1.4-legal-evaluation-cases.md) documentan el alcance.
+
 ## Requisitos
 
 - JDK 21 (versión oficial del proyecto).

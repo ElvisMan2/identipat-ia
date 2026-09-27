@@ -38,9 +38,9 @@ import java.util.UUID;
 
 @Service
 public class AnalysisAttemptService {
-    static final PromptReference PROMPT = new PromptReference("intellectual-property-analysis", "0.1");
+    static final PromptReference PROMPT = new PromptReference("intellectual-property-analysis", "0.2");
     static final String SCHEMA_ID = "analysis-result";
-    static final String SCHEMA_VERSION = "1.0";
+    static final String SCHEMA_VERSION = "2.0";
     private static final String WORKER_LEASE_LOST = "WORKER_LEASE_LOST";
     private static final String WORKER_LEASE_LOST_MESSAGE = "The previous worker lease expired before completion";
     private static final String MAX_ATTEMPTS_MESSAGE = "The analysis could not be completed within the configured attempt limit";

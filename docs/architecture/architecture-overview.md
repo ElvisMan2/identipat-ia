@@ -1,16 +1,16 @@
 # Arquitectura de referencia de IDENTIPAT-IA
 
-**Estado:** arquitectura vigente y materializada hasta F1.3  
-**Versión:** 1.1  
-**Última actualización:** 16 de septiembre de 2026
+**Estado:** arquitectura vigente y materializada hasta F1.4
+**Versión:** 1.2
+**Última actualización:** 20 de septiembre de 2026
 
 ## Contexto
 
 Este documento describe la arquitectura lógica, los límites de responsabilidad y el modelo de acceso vigentes de IDENTIPAT-IA.
 
-La arquitectura ya no representa una propuesta previa a F0.3: la estabilización F0, el diseño F1.0 y las capacidades F1.1–F1.3 se encuentran materializadas en el backend. Cuando exista una discrepancia con diagnósticos históricos, prevalecen este documento, el código vigente y las especificaciones especializadas enlazadas desde aquí.
+La arquitectura ya no representa una propuesta previa a F0.3: la estabilización F0, el diseño F1.0 y las capacidades F1.1–F1.4 se encuentran materializadas en el backend. Cuando exista una discrepancia con diagnósticos históricos, prevalecen este documento, el código vigente y las especificaciones especializadas enlazadas desde aquí.
 
-El diagnóstico funcional definitivo de propiedad intelectual, las entradas PDF/audio y el reporte formal continúan pendientes en F1.4–F1.7.
+Las entradas PDF/audio y el reporte formal continúan pendientes en F1.5–F1.7.
 
 ## Componentes y comunicación
 
@@ -257,7 +257,9 @@ AnalysisResult
 
 Los prompts y schemas se almacenan como recursos versionados. El adapter solicita structured output y Java valida localmente la respuesta antes de aceptar un `AnalysisResult`.
 
-El contrato actual permite la vertical técnica de F1.3, pero todavía no representa el diagnóstico jurídico definitivo exigido por F1.4. La siguiente evolución debe comenzar por el contrato de salida y los criterios jurídicos explícitos, no únicamente por ampliar el prompt.
+F1.4 publica `analysis-result/2.0` para clasificación concurrente, screening limitado de los artículos
+15 y 20 y alerta de recursos genéticos. El lector conserva `analysis-result/1.0` como contrato histórico
+sin reinterpretarlo; la columna y el campo de versión deben coincidir.
 
 La aplicación no interpreta la salida del LLM como una probabilidad calibrada. Cuando el contrato utilice niveles o categorías de evaluación, estos deben considerarse clasificaciones controladas, no porcentajes de confianza.
 
@@ -307,7 +309,7 @@ También conviene reforzar la transición terminal mediante una actualización c
 13. La retención amplia es provisional durante el desarrollo y debe minimizarse antes de producción.
 14. Los tipos de entrada futuros convergen al mismo núcleo `Analysis`.
 
-## Estado materializado hasta F1.3
+## Estado materializado hasta F1.4
 
 F1.0 cerró el diseño conceptual de:
 
@@ -324,6 +326,9 @@ F1.2 materializó `GenerativeAiProvider`, el adapter OpenAI, prompts y JSON Sche
 
 F1.3 materializó el análisis de texto durable mediante `POST /analyses/text`, worker con claim/lease/retry y consulta aislada por sesión mediante `GET /analyses/{analysisId}`.
 
+F1.4 materializó el prompt 0.2, schema 2.0, modelos Java versionados, siete modalidades de protección,
+screening de patente, alerta de recursos genéticos y compatibilidad de lectura 1.0.
+
 Las especificaciones detalladas se encuentran en:
 
 - [dominio de análisis](../design/analysis-domain.md);
@@ -336,8 +341,6 @@ Las especificaciones detalladas se encuentran en:
 
 Permanecen abiertas y deben cerrarse en las fases correspondientes:
 
-- contrato jurídico-funcional definitivo del diagnóstico y criterios de F1.4;
-- evolución versionada de `AnalysisResult`;
 - tecnología y límites de extracción PDF;
 - política de OCR;
 - tecnología y límites de transcripción de audio;
@@ -363,6 +366,6 @@ Cuando un usuario ya tenga sesiones, consentimientos, análisis u otra evidencia
 | F1.1 | Sesión STANDARD + consentimiento | Implementada |
 | F1.2 | Capa de IA generativa en Java | Implementada |
 | F1.3 | Análisis end-to-end desde texto | Implementada |
-| F1.4 | Diagnóstico de propiedad intelectual | Siguiente fase |
+| F1.4 | Diagnóstico de propiedad intelectual | Implementada |
 | F1.5–F1.9 | PDF, audio, reporte, recursos e integración E2E | Pendientes |
 | F2 | Preparación para piloto y producción | Pendiente |

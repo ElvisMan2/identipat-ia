@@ -1,0 +1,195 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "summary",
+    "protectionOptions",
+    "patentScreening",
+    "geneticResourceAccess",
+    "observations",
+    "warnings"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "enum": ["analysis-result/2.0"]
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "protectionOptions": {
+      "type": "array",
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "applicability", "protectedSubjectMatter", "rationale", "legalBasis"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "INVENTION_PATENT",
+              "UTILITY_MODEL",
+              "INDUSTRIAL_DESIGN",
+              "COPYRIGHT",
+              "DISTINCTIVE_SIGN",
+              "PLANT_BREEDER_CERTIFICATE",
+              "TRADE_SECRET"
+            ]
+          },
+          "applicability": {
+            "type": "string",
+            "enum": ["LIKELY", "POSSIBLE", "UNLIKELY"]
+          },
+          "protectedSubjectMatter": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1
+          },
+          "legalBasis": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["instrument", "articles"],
+              "properties": {
+                "instrument": {
+                  "type": "string",
+                  "enum": ["DECISION_345", "DECISION_351", "DECISION_391", "DECISION_486"]
+                },
+                "articles": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "patentScreening": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applicable", "article15", "article20"],
+      "properties": {
+        "applicable": {
+          "type": "boolean"
+        },
+        "article15": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["assessment", "rationale", "matches"],
+          "properties": {
+            "assessment": {
+              "type": "string",
+              "enum": ["NO_POTENTIAL_MATCH", "POTENTIAL_MATCH", "INSUFFICIENT_INFORMATION"]
+            },
+            "rationale": {
+              "type": "string",
+              "minLength": 1
+            },
+            "matches": {
+              "type": "array",
+              "maxItems": 6,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["literal", "rationale"],
+                "properties": {
+                  "literal": {
+                    "type": "string",
+                    "enum": ["a", "b", "c", "d", "e", "f"]
+                  },
+                  "rationale": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "article20": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["assessment", "rationale", "matches"],
+          "properties": {
+            "assessment": {
+              "type": "string",
+              "enum": ["NO_POTENTIAL_MATCH", "POTENTIAL_MATCH", "INSUFFICIENT_INFORMATION"]
+            },
+            "rationale": {
+              "type": "string",
+              "minLength": 1
+            },
+            "matches": {
+              "type": "array",
+              "maxItems": 4,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["literal", "rationale"],
+                "properties": {
+                  "literal": {
+                    "type": "string",
+                    "enum": ["a", "b", "c", "d"]
+                  },
+                  "rationale": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "geneticResourceAccess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assessment", "rationale", "missingInformation"],
+      "properties": {
+        "assessment": {
+          "type": "string",
+          "enum": ["NOT_INDICATED", "POTENTIALLY_REQUIRED", "INSUFFICIENT_INFORMATION"]
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "missingInformation": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

@@ -1,0 +1,155 @@
+{
+  "schemaVersion": "f1.4-golden-set/1.0",
+  "globalMustNotHave": [
+    "evaluar novedad, nivel inventivo, actividad inventiva, aplicación industrial o ventaja técnica",
+    "predecir concesión o rechazo",
+    "afirmar registrabilidad definitiva o búsquedas no realizadas",
+    "inventar hechos ausentes de la entrada"
+  ],
+  "cases": [
+    {
+      "id": "J01",
+      "title": "Software como tal",
+      "input": "He creado una aplicación que permite registrar tareas, establecer prioridades y reorganizarlas automáticamente según reglas configuradas por el usuario. La solución descrita consiste en el programa y sus reglas de funcionamiento.",
+      "mustHave": ["COPYRIGHT LIKELY|POSSIBLE", "patentScreening.applicable=true", "article15 POTENTIAL_MATCH literal e solamente"],
+      "mustNotHave": ["INVENTION_PATENT", "TRADE_SECRET", "article15 literal c", "article15 literal d", "manuales inventados", "ilustraciones inventadas", "datos de entrenamiento inventados", "optimización inventada"],
+      "conditional": ["DISTINCTIVE_SIGN solo con nombre o logotipo"]
+    },
+    {
+      "id": "J02",
+      "title": "Método económico-comercial confidencial",
+      "input": "Nuestra empresa utiliza de manera confidencial un método para calcular descuentos según frecuencia de compra, nivel de gasto y antigüedad de cada cliente. Las reglas solo son conocidas por personal autorizado.",
+      "mustHave": ["TRADE_SECRET LIKELY|POSSIBLE", "patentScreening.applicable=true", "article15 POTENTIAL_MATCH literal d"],
+      "mustNotHave": ["tratar el método como patente concedible sin artículo 15(d)"],
+      "conditional": []
+    },
+    {
+      "id": "J03",
+      "title": "Configuración física de un mecanismo",
+      "input": "Modificamos la disposición de pestañas, resortes y topes de una tapa reutilizable para que pueda abrirse y cerrarse mediante un solo movimiento.",
+      "mustHave": ["UTILITY_MODEL LIKELY", "patentScreening.applicable=true", "article15 NO_POTENTIAL_MATCH", "article20 NO_POTENTIAL_MATCH"],
+      "mustNotHave": ["INVENTION_PATENT LIKELY", "novedad", "nivel inventivo", "actividad inventiva", "aplicación industrial", "ventaja técnica", "INVENTION_PATENT con DECISION_486 artículos 1, 15 o 20"],
+      "conditional": ["INVENTION_PATENT POSSIBLE solo con elementos tecnológicos adicionales expresamente descritos"]
+    },
+    {
+      "id": "J04",
+      "title": "Procedimiento tecnológico",
+      "input": "Desarrollamos un procedimiento de fabricación en el que dos materiales son sometidos a etapas controladas de presión y temperatura para producir un recubrimiento funcional.",
+      "mustHave": ["INVENTION_PATENT LIKELY|POSSIBLE", "patentScreening.applicable=true", "article15 NO_POTENTIAL_MATCH|INSUFFICIENT_INFORMATION", "article20 NO_POTENTIAL_MATCH|INSUFFICIENT_INFORMATION"],
+      "mustNotHave": ["afirmar que la invención es patentable"],
+      "conditional": ["TRADE_SECRET permitido"]
+    },
+    {
+      "id": "J05",
+      "title": "Apariencia de un producto",
+      "input": "Diseñé una lámpara cuya carcasa tiene una geometría ondulada particular, con una combinación específica de líneas, superficies y textura exterior.",
+      "mustHave": ["INDUSTRIAL_DESIGN LIKELY|POSSIBLE"],
+      "mustNotHave": ["afirmar diseño nuevo o registrable", "examinar diseños anteriores"],
+      "conditional": ["COPYRIGHT permitido"]
+    },
+    {
+      "id": "J06",
+      "title": "Nombre y logotipo",
+      "input": "Creamos el nombre NUBIA y un logotipo compuesto por una figura gráfica para identificar una nueva cadena de cafeterías.",
+      "mustHave": ["DISTINCTIVE_SIGN LIKELY|POSSIBLE"],
+      "mustNotHave": ["afirmar disponibilidad", "afirmar ausencia de marcas similares", "realizar confundibilidad o concluir registrabilidad"],
+      "conditional": ["COPYRIGHT solo para la expresión gráfica del logotipo"]
+    },
+    {
+      "id": "J07",
+      "title": "Libro ilustrado",
+      "input": "Escribí un libro infantil con historias, personajes propios e ilustraciones creadas para acompañar cada capítulo.",
+      "mustHave": ["COPYRIGHT LIKELY|POSSIBLE"],
+      "mustNotHave": ["exigir registro", "concluir originalidad jurídica definitiva", "activar patente sin justificación"],
+      "conditional": []
+    },
+    {
+      "id": "J08",
+      "title": "Variedad vegetal obtenida mediante mejoramiento",
+      "input": "Mediante varios ciclos de cruzamiento y selección desarrollamos una variedad de tomate con características heredables diferenciadas.",
+      "mustHave": ["PLANT_BREEDER_CERTIFICATE LIKELY", "article20 POTENTIAL_MATCH literal c", "geneticResourceAccess INSUFFICIENT_INFORMATION", "missingInformation no vacío"],
+      "mustNotHave": ["DISTINCTIVE_SIGN", "TRADE_SECRET", "evaluar distinguibilidad, homogeneidad o estabilidad", "afirmar que se otorgará el certificado"],
+      "conditional": []
+    },
+    {
+      "id": "J09",
+      "title": "Recurso genético de origen peruano",
+      "input": "Recolectamos una especie vegetal nativa del Perú. A partir de material de la planta obtuvimos un extracto y lo utilizamos como insumo para desarrollar, mediante transformación posterior, un compuesto destinado a un proceso industrial.",
+      "mustHave": ["geneticResourceAccess POTENTIALLY_REQUIRED", "rationale vincula recurso, origen peruano y uso industrial", "patentScreening.applicable=true", "article15 NO_POTENTIAL_MATCH", "article20 NO_POTENTIAL_MATCH"],
+      "mustNotHave": ["COPYRIGHT", "PLANT_BREEDER_CERTIFICATE", "TRADE_SECRET", "afirmar categóricamente que el contrato es obligatorio", "INVENTION_PATENT con DECISION_486 artículos 1, 15 o 20"],
+      "conditional": ["INVENTION_PATENT con DECISION_486 artículo 14"]
+    },
+    {
+      "id": "J10",
+      "title": "Método quirúrgico",
+      "input": "Desarrollamos un método quirúrgico para tratar una lesión humana mediante una secuencia específica de intervenciones realizadas durante la operación.",
+      "mustHave": ["patentScreening.applicable=true", "article20 POTENTIAL_MATCH literal d"],
+      "mustNotHave": ["COPYRIGHT", "TRADE_SECRET", "novedad", "nivel inventivo", "aplicación industrial", "emitir decisión oficial de patentabilidad"],
+      "conditional": ["INVENTION_PATENT UNLIKELY solo para explicar article20 literal d"]
+    },
+    {
+      "id": "J11",
+      "title": "Descubrimiento natural",
+      "input": "Encontramos que una planta amazónica contiene naturalmente una molécula determinada. La molécula existe en la planta y nuestra descripción se limita al descubrimiento de su presencia natural.",
+      "mustHave": ["patentScreening.applicable=true", "article15 POTENTIAL_MATCH literal a|b", "diferenciar descubrimiento de creación tecnológica"],
+      "mustNotHave": ["convertir el descubrimiento en invención"],
+      "conditional": ["geneticResourceAccess POTENTIALLY_REQUIRED|INSUFFICIENT_INFORMATION"]
+    },
+    {
+      "id": "J12",
+      "title": "Know-how confidencial",
+      "input": "La empresa utiliza una fórmula propia y parámetros de fabricación que no se publican. El acceso está restringido a determinados empleados y existen acuerdos de confidencialidad.",
+      "mustHave": ["TRADE_SECRET LIKELY|POSSIBLE"],
+      "mustNotHave": ["afirmar constitución jurídica definitiva", "inventar medidas de confidencialidad"],
+      "conditional": ["INVENTION_PATENT permitido"]
+    },
+    {
+      "id": "J13",
+      "title": "Descripción vaga",
+      "input": "Desarrollé una solución innovadora para mejorar procesos en empresas.",
+      "mustHave": ["pedir información sobre función, naturaleza y elementos creados"],
+      "mustNotHave": ["inventar mecanismo técnico", "usar LIKELY sin sustento", "afirmar que es patente"],
+      "conditional": ["POSSIBLE solo con incertidumbre explícita"]
+    },
+    {
+      "id": "J14",
+      "title": "Material biológico sin procedencia suficiente",
+      "input": "Desarrollamos un producto utilizando material biológico obtenido para nuestro proyecto de investigación, pero no se especifica su origen ni la forma exacta en que fue utilizado.",
+      "mustHave": ["geneticResourceAccess INSUFFICIENT_INFORMATION", "missingInformation no vacío", "article15 INSUFFICIENT_INFORMATION", "article15 matches vacío"],
+      "mustNotHave": ["TRADE_SECRET", "usar NOT_INDICATED", "afirmar obligación definitiva"],
+      "conditional": []
+    },
+    {
+      "id": "J15",
+      "title": "Planta sin suficiente detalle",
+      "input": "Creé una nueva planta con mejores características.",
+      "mustHave": ["reconocer falta de información sobre mejoramiento heredable"],
+      "mustNotHave": ["asumir variedad protegible", "afirmar que se obtendrá certificado"],
+      "conditional": ["PLANT_BREEDER_CERTIFICATE POSSIBLE", "article20 literal c con justificación"]
+    },
+    {
+      "id": "J16",
+      "title": "Protección concurrente",
+      "input": "Desarrollamos un dispensador físico con una nueva configuración interna de piezas. También diseñamos una carcasa con una apariencia propia y creamos el nombre y logotipo FLUXA para comercializarlo. El método de calibración interno se mantiene confidencial y solo está disponible para personal autorizado.",
+      "mustHave": ["UTILITY_MODEL LIKELY|POSSIBLE para configuración interna", "INDUSTRIAL_DESIGN LIKELY|POSSIBLE para carcasa", "DISTINCTIVE_SIGN LIKELY|POSSIBLE para nombre o logotipo", "TRADE_SECRET LIKELY|POSSIBLE para calibración confidencial"],
+      "mustNotHave": ["escoger una sola modalidad", "atribuir el mismo objeto protegido a todas", "manuales inventados", "fichas técnicas inventadas", "confirmar la originalidad", "evaluar la originalidad", "INVENTION_PATENT con DECISION_486 artículos 1, 15 o 20"],
+      "conditional": ["INVENTION_PATENT POSSIBLE con DECISION_486 artículo 14", "COPYRIGHT POSSIBLE solo para expresión descrita"]
+    },
+    {
+      "id": "J17",
+      "title": "Obra artística frente al artículo 15(c)",
+      "input": "La creación consiste en un conjunto de ilustraciones artísticas destinadas a una publicación. No se describe ningún mecanismo, proceso técnico o producto funcional.",
+      "mustHave": ["COPYRIGHT LIKELY|POSSIBLE"],
+      "mustNotHave": ["recomendar patente"],
+      "conditional": ["screening no aplicable o article15 POTENTIAL_MATCH literal c"]
+    },
+    {
+      "id": "J18",
+      "title": "Método de diagnóstico aplicado a humanos",
+      "input": "Diseñamos un método de diagnóstico que se aplica directamente a pacientes humanos y determina una condición clínica a partir de una secuencia de mediciones.",
+      "mustHave": ["patentScreening.applicable=true", "article20 POTENTIAL_MATCH literal d"],
+      "mustNotHave": ["omitir artículo 20(d) si propone vía patentaria"],
+      "conditional": []
+    }
+  ]
+}

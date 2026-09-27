@@ -1,15 +1,15 @@
 # Roadmap funcional — IDENTIPAT-IA
 
-**Estado:** F0 y F1.0 completadas; F1.1–F1.3 implementadas; F1.4 es la siguiente fase  
-**Versión del roadmap:** 1.1  
-**Última actualización:** 16 de septiembre de 2026  
+**Estado:** F0 y F1.0 completadas; F1.1–F1.4 implementadas; F1.5 es la siguiente fase
+**Versión del roadmap:** 1.2
+**Última actualización:** 20 de septiembre de 2026
 **Objetivo:** mantener una visión vigente de la secuencia funcional del producto, diferenciando lo ya materializado de las fases pendientes.
 
 ---
 
 # 1. Estado actual
 
-La estabilización técnica F0 está completada. El backend también materializa el diseño de dominio F1.0 y las verticales F1.1–F1.3.
+La estabilización técnica F0 está completada. El backend también materializa el diseño de dominio F1.0 y las verticales F1.1–F1.4.
 
 | Fase | Alcance | Estado |
 |---|---|---|
@@ -26,7 +26,7 @@ La estabilización técnica F0 está completada. El backend también materializa
 | F1.1 | Sesión STANDARD + consentimiento | ✅ Implementada |
 | F1.2 | Capa de IA generativa en Java | ✅ Implementada |
 | F1.3 | Análisis end-to-end desde texto | ✅ Implementada |
-| F1.4 | Diagnóstico de propiedad intelectual | ⏭️ Siguiente fase |
+| F1.4 | Diagnóstico de propiedad intelectual | ✅ Implementada |
 | F1.5–F1.9 | PDF, audio, reporte, recursos y E2E | ⏳ Pendientes |
 | F2 | Preparación para piloto y producción | ⏳ Pendiente |
 
@@ -336,31 +336,32 @@ La vertical de texto ya constituye la base reutilizable para PDF y audio.
 
 # F1.4 — Diagnóstico de propiedad intelectual
 
-**Estado:** siguiente fase.
+**Estado:** implementada.
 
 ## Objetivo
 
 Estabilizar el contrato jurídico-funcional que debe producir la IA y alinearlo con el diagnóstico requerido por el proyecto. Esta fase no debe limitarse a ampliar el prompt.
 
-## Trabajo requerido
+## Alcance implementado
 
-1. Definir los criterios jurídicos que el resultado debe representar explícitamente.
-2. Alinear la evaluación de materia patentable y exclusiones con el marco aprobado para el proyecto, incluidos los artículos 15 y 20 de la Decisión 486 cuando corresponda.
-3. Definir las modalidades de protección y su alcance:
+1. Criterios jurídico-funcionales documentados y golden set J01–J18.
+2. Screening limitado de los artículos 15 y 20 de la Decisión 486, sin examen completo de patentabilidad.
+3. Siete modalidades controladas y concurrentes:
    - patente de invención;
    - modelo de utilidad;
    - diseño industrial;
    - signos distintivos;
    - derecho de autor;
-   - otras alternativas controladas.
-4. Evolucionar el contrato `AnalysisResult` y su JSON Schema con versionado compatible.
-5. Diseñar y versionar el prompt jurídico-funcional.
-6. Preparar casos de prueba revisables por especialistas.
-7. Definir qué referencias legales y explicaciones son controladas por la aplicación y cuáles puede generar el modelo.
+   - certificado de obtentor;
+   - secreto empresarial.
+4. `AnalysisResult` y JSON Schema 2.0 con lectura histórica 1.0.
+5. Prompt jurídico-funcional `intellectual-property-analysis/0.2`.
+6. Alerta separada de acceso a recursos genéticos.
+7. Validaciones de schema, dominio, fake provider e integración PostgreSQL.
 
-## Resultado esperado
+## Resultado alcanzado
 
-La IA debe responder mediante structured output, no como texto libre sin contrato.
+La IA responde mediante structured output `analysis-result/2.0`, no como texto libre sin contrato.
 
 Java debe:
 
