@@ -11,6 +11,7 @@ import com.mnk.identipatia.analysis.config.AnalysisProperties;
 import com.mnk.identipatia.analysis.model.AiInvocationStatus;
 import com.mnk.identipatia.analysis.model.AnalysisFailureCode;
 import com.mnk.identipatia.analysis.result.AnalysisResult;
+import com.mnk.identipatia.analysis.result.AnalysisResultReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -116,7 +117,7 @@ public class AnalysisWorker {
         try {
             GenerativeAiResponse response = provider.generate(attempt.request());
             validator.validate(attempt.request().output(), response.structuredOutput(), provider.providerId());
-            AnalysisResult result = objectMapper.treeToValue(response.structuredOutput(), AnalysisResult.class);
+            AnalysisResult result = new AnalysisResultReader(objectMapper).readCurrent(response.structuredOutput());
             attemptService.succeed(analysisId, attempt.invocationId(), workerId, response, result);
         } catch (GenerativeAiException exception) {
             completeProviderFailure(analysisId, attempt, exception);

@@ -1,10 +1,11 @@
 # Flujo E2E de análisis de texto
 
-## Alcance F1.3
+## Alcance F1.3–F1.4
 
-F1.3 implementa la primera vertical funcional de análisis. Angular continúa comunicándose solo con
-Java y el proveedor se consume exclusivamente mediante `GenerativeAiProvider`. PDF, audio, RAG,
-Gemini, disclaimer institucional y lógica jurídica definitiva permanecen fuera de alcance.
+F1.3 implementó la vertical durable de texto y F1.4 incorporó la clasificación jurídico-funcional.
+Angular continúa comunicándose solo con Java y el proveedor se consume exclusivamente mediante
+`GenerativeAiProvider`. PDF, audio, RAG, Gemini, examen jurídico completo y disclaimer institucional
+permanecen fuera de alcance.
 
 ## Contrato HTTP
 
@@ -73,16 +74,19 @@ exactly-once.
 
 ## Prompt, schema y resultado
 
-El worker renderiza `intellectual-property-analysis/0.1`, carga `analysis-result/1.0` y usa
+El worker renderiza `intellectual-property-analysis/0.2`, carga `analysis-result/2.0` y usa
 `GenerationOptions(maxOutputTokens=ANALYSIS_AI_MAX_OUTPUT_TOKENS, temperature=null)`, con default
-`4000`. La descripción es la única variable del user prompt. El schema estricto exige
-`additionalProperties=false` y el modelo Java canónico valida enums, campos y colecciones después de
-Jackson.
+`6000`. La descripción es la única variable del user prompt. El schema estricto exige
+`additionalProperties=false`. El modelo Java 2.0 valida además duplicados e invariantes condicionales
+de screening y recursos genéticos después de Jackson.
 
-La validación real mostró que `1500` finalizaba como `status=incomplete` por `max_output_tokens`: los
-tokens de razonamiento consumían parte del presupuesto y no quedaba margen suficiente para completar
-el JSON estructurado. Con `4000`, la misma solicitud terminó como `completed` y produjo un resultado
-válido `analysis-result/1.0`; por ello `4000` es el default técnico actual.
+La evaluación live posterior mostró que J16 con `4000` terminaba con JSON truncado e
+`INVALID_RESPONSE`, mientras que con `6000` pasó y reportó `4291` tokens de salida. Por ello F1.4
+usa `6000` como default para nuevas invocaciones.
+
+Los resultados 1.0 ya persistidos siguen leyéndose con su tipo histórico. La consulta compara
+`analysis_results.schema_version` con el `schemaVersion` del JSON y despacha explícitamente a 1.0 o
+2.0; una versión desconocida o discordante falla de forma controlada. No existe migración V4.
 
 Durante desarrollo se persisten snapshot/hashes de prompt, respuesta raw/structured, usage, tokens,
 latencia y finish reason. Esos datos no se escriben en logs ni se exponen a STANDARD.
@@ -102,15 +106,16 @@ variables `ANALYSIS_*`. `ANALYSIS_WORKER_ENABLED=false` deshabilita el scheduler
 
 La suite usa un fake `GenerativeAiProvider` y PostgreSQL 16 Testcontainers, sin Internet. Cubre el
 flujo HTTP completo, CSRF/sesión/consentimiento, normalización/límites, aislamiento, claim concurrente,
-lease, retry, máximo de intentos, recuperación `ABANDONED`, prompt/schema y no exposición técnica.
+lease, retry, máximo de intentos, recuperación `ABANDONED`, prompt/schema 2.0, invariantes del modelo
+y lectura histórica 1.0 sin reinterpretación.
 
 El flujo manual real también quedó validado contra OpenAI: el POST respondió `202` y la consulta
 progresó `RECEIVED → ANALYZING → COMPLETED`, con una `AiInvocation SUCCEEDED` y resultado persistido.
 
 ## Pendientes explícitos
 
-Quedan pendientes retención/minimización final, idempotency key, heartbeat de lease, prompt jurídico
-definitivo, disclaimer, PDF/audio, RAG, Gemini, observabilidad avanzada y exactly-once externo. En
+Quedan pendientes retención/minimización final, idempotency key, heartbeat de lease, disclaimer,
+PDF/audio, RAG, Gemini, observabilidad avanzada y exactly-once externo. En
 particular, debe mejorarse la observabilidad de respuestas OpenAI `status=incomplete`: el adapter
 actual intenta extraer y validar `output_text` antes de preservar model, usage, latencia e
 `incomplete_details` en la invocación.

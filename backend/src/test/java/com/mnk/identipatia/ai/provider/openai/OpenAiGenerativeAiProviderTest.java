@@ -216,20 +216,22 @@ class OpenAiGenerativeAiProviderTest {
     void mapsTimeoutAndPerformsOnlyOneHttpAttempt() {
         responsePlan = exchange -> {
             try {
-                Thread.sleep(500);
+                Thread.sleep(2000);
                 reply(exchange, 200, successfulResponse(validOutput()));
             } catch (InterruptedException exception) {
                 Thread.currentThread().interrupt();
             }
         };
 
-        assertThatThrownBy(() -> provider(Duration.ofMillis(50)).generate(request(GenerationOptions.defaults())))
+        assertThatThrownBy(() -> provider(Duration.ofMillis(500))
+                .generate(request(GenerationOptions.defaults())))
                 .isExactlyInstanceOf(GenerativeAiException.class)
                 .satisfies(error -> {
                     GenerativeAiException exception = (GenerativeAiException) error;
                     assertThat(exception.type()).isEqualTo(GenerativeAiErrorType.TIMEOUT);
                     assertThat(exception.retryable()).isTrue();
                 });
+
         assertThat(requestCount).hasValue(1);
     }
 

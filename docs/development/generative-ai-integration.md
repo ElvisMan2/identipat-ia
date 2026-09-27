@@ -137,24 +137,30 @@ backend/src/main/resources/prompts/
 ├── intellectual-property-analysis/v0.1/
 │   ├── system.md
 │   └── user.md
+├── intellectual-property-analysis/v0.2/
+│   ├── system.md
+│   └── user.md
 └── provider-smoke-test/v1.0/
     ├── system.md
     └── user.md
 ```
 
-`provider-smoke-test/1.0` es técnico y sintético. `intellectual-property-analysis/0.1` es el prompt utilizado actualmente por el worker F1.3.
+`provider-smoke-test/1.0` es técnico y sintético. El worker usa
+`intellectual-property-analysis/0.2`; 0.1 se conserva para trazabilidad histórica.
 
 El prompt funcional actual:
 
-- solicita una evaluación preliminar de propiedad intelectual;
-- exige el schema `analysis-result/1.0`;
+- identifica una o varias modalidades y el objeto protegido por cada una;
+- exige el schema `analysis-result/2.0`;
+- ejecuta screening limitado de los artículos 15 y 20 y alerta de recursos genéticos;
+- prohíbe evaluar novedad, nivel inventivo, aplicación industrial y ventaja técnica;
 - prohíbe presentar el resultado como decisión oficial;
 - no afirma haber realizado búsquedas de antecedentes;
 - no permite inventar hechos, legislación o información ausente;
 - prohíbe confianza numérica;
 - mantiene el disclaimer institucional fuera de `warnings`.
 
-Todavía no constituye el diagnóstico jurídico definitivo requerido por F1.4.
+No constituye un examen completo de patentabilidad o registrabilidad.
 
 ### 4.2 Registry y renderizado
 
@@ -209,15 +215,17 @@ El snapshot renderizado se persiste en `AiInvocation`. Puede contener informaci�
 ```text
 backend/src/main/resources/ai-schemas/
 ├── analysis-result/v1.0/schema.json
+├── analysis-result/v2.0/schema.json
 └── provider-smoke-result/v1.0/schema.json
 ```
 
-`analysis-result/1.0` es el contrato utilizado por el worker. Exige:
+`analysis-result/2.0` es el contrato utilizado por el worker. Exige:
 
 - `schemaVersion`;
 - `summary`;
-- `patentabilityAssessment`;
 - `protectionOptions`;
+- `patentScreening`;
+- `geneticResourceAccess`;
 - `observations`;
 - `warnings`.
 
@@ -313,8 +321,8 @@ La latencia se mide alrededor de la llamada síncrona mediante reloj monotónico
 2. marca como `ABANDONED` una invocación `STARTED` obsoleta si corresponde;
 3. verifica el límite de intentos;
 4. carga `AnalysisInput.processedText`;
-5. renderiza `intellectual-property-analysis/0.1`;
-6. carga `analysis-result/1.0`;
+5. renderiza `intellectual-property-analysis/0.2`;
+6. carga `analysis-result/2.0`;
 7. construye `GenerationOptions`;
 8. persiste `AiInvocation(STARTED)` antes de llamar al provider.
 
@@ -493,7 +501,7 @@ Con IA habilitada, un provider desconocido, key/model ausentes o timeout no posi
 | `ANALYSIS_LEASE_DURATION` | `120s` |
 | `ANALYSIS_MAX_ATTEMPTS` | `2` |
 | `ANALYSIS_RETRY_DELAY` | `5s` |
-| `ANALYSIS_AI_MAX_OUTPUT_TOKENS` | `4000` |
+| `ANALYSIS_AI_MAX_OUTPUT_TOKENS` | `6000` |
 
 En TEST el worker está deshabilitado para que las pruebas controlen explícitamente el procesamiento.
 
@@ -624,7 +632,8 @@ Debe refactorizarse el adapter para capturar primero metadata técnica segura y 
 
 ### 14.4 Contrato jurídico
 
-El prompt `0.1` es deliberadamente preliminar. F1.4 debe comenzar por evolucionar el contrato jurídico de salida y después alinear prompt, schema, DTOs y casos de prueba.
+F1.4 mantiene prompt/schema 0.1/1.0 para historia y utiliza 0.2/2.0 en análisis nuevos. La revisión
+semántica del golden set por especialistas sigue siendo necesaria antes de piloto.
 
 ## 15. Extensión futura
 

@@ -40,7 +40,7 @@ app:
     lease-duration: ${ANALYSIS_LEASE_DURATION:120s}
     max-attempts: ${ANALYSIS_MAX_ATTEMPTS:2}
     retry-delay: ${ANALYSIS_RETRY_DELAY:5s}
-    ai-max-output-tokens: ${ANALYSIS_AI_MAX_OUTPUT_TOKENS:4000}
+    ai-max-output-tokens: ${ANALYSIS_AI_MAX_OUTPUT_TOKENS:6000}
   preprocessing:
     base-url: ${PREPROCESSING_SERVICE_BASE_URL:http://localhost:8090}
     timeout: 5s

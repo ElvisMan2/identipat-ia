@@ -23,7 +23,7 @@ identipat-ia/
 │   │   │   │   │   ├── dto/         # Contratos HTTP estables
 │   │   │   │   │   ├── model/       # Analysis/Input/Invocation/resultado persistido
 │   │   │   │   │   ├── repository/  # Persistencia del aggregate
-│   │   │   │   │   ├── result/      # AnalysisResult canónico y enums
+│   │   │   │   │   ├── result/      # AnalysisResult 1.0/2.0, lector versionado y enums
 │   │   │   │   │   ├── service/     # Creación, consulta y normalización
 │   │   │   │   │   └── worker/      # Claim/lease, intentos, retry y recovery
 │   │   │   │   ├── ai/
@@ -88,11 +88,15 @@ identipat-ia/
 │   │   │       ├── prompts/intellectual-property-analysis/v0.1/
 │   │   │       │   ├── system.md
 │   │   │       │   └── user.md
+│   │   │       ├── prompts/intellectual-property-analysis/v0.2/
+│   │   │       │   ├── system.md
+│   │   │       │   └── user.md
 │   │   │       ├── prompts/provider-smoke-test/v1.0/
 │   │   │       │   ├── system.md
 │   │   │       │   └── user.md
 │   │   │       ├── ai-schemas/provider-smoke-result/v1.0/schema.json
 │   │   │       ├── ai-schemas/analysis-result/v1.0/schema.json
+│   │   │       ├── ai-schemas/analysis-result/v2.0/schema.json
 │   │   │       ├── application.yml
 │   │   │       ├── application-dev.yml
 │   │   │       ├── application-test.yml

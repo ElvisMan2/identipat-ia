@@ -352,51 +352,53 @@ La implementación debe evolucionar para conservar toda metadata técnica segura
 
 Solo puede existir un resultado canónico por análisis. Una vez completado, no se sobrescribe para simular una regeneración; una nueva solicitud crea otra `Analysis`.
 
-### 9.1 Envelope vigente
+### 9.1 Envelopes versionados
 
 ```text
 AnalysisResult
 ├── schemaVersion
 ├── summary
-├── patentabilityAssessment
-│   ├── outcome
-│   └── rationale
 ├── protectionOptions[]
 │   ├── type
 │   ├── applicability
-│   └── rationale
+│   ├── protectedSubjectMatter
+│   ├── rationale
+│   └── legalBasis[]
+├── patentScreening
+│   ├── applicable
+│   ├── article15
+│   └── article20
+├── geneticResourceAccess
+│   ├── assessment
+│   ├── rationale
+│   └── missingInformation[]
 ├── observations[]
 └── warnings[]
 ```
 
-`patentabilityAssessment.outcome` utiliza:
-
-- `POTENTIALLY_PATENTABLE`;
-- `POTENTIALLY_NOT_PATENTABLE`;
-- `INSUFFICIENT_INFORMATION`.
-
-Es una conclusión orientativa, no una decisión oficial ni una probabilidad calibrada. No se incluye un porcentaje de confianza.
-
-`protectionOptions[].type` admite:
+Este envelope corresponde a `analysis-result/2.0`. `protectionOptions[].type` admite exactamente:
 
 - `INVENTION_PATENT`;
 - `UTILITY_MODEL`;
 - `INDUSTRIAL_DESIGN`;
-- `DISTINCTIVE_SIGN`;
 - `COPYRIGHT`;
-- `OTHER`.
+- `DISTINCTIVE_SIGN`;
+- `PLANT_BREEDER_CERTIFICATE`;
+- `TRADE_SECRET`.
 
-`applicability` utiliza `LIKELY`, `POSSIBLE` o `UNLIKELY`.
+`applicability` utiliza `LIKELY`, `POSSIBLE` o `UNLIKELY`, sin porcentaje ni score. Las modalidades pueden coexistir y no se repiten. El screening de patentes solo detecta coincidencias potenciales con los artículos 15 y 20 de la Decisión 486; la alerta de recursos genéticos se modela por separado.
+
+El tipo histórico `AnalysisResultV1` conserva el envelope `analysis-result/1.0`, incluido `patentabilityAssessment` y `OTHER`, exclusivamente para recuperar resultados existentes.
 
 `warnings[]` contiene advertencias derivadas de la entrada o del diagnóstico; no contiene por defecto el disclaimer institucional.
 
-### 9.2 Versionado
+### 9.2 Versionado y despacho de lectura
 
-El contrato vigente usa una versión lógica como `analysis-result/1.0`. `schema_version` se conserva como columna y `schemaVersion` dentro del JSON; Java valida su coherencia.
+Los análisis nuevos usan `analysis-result/2.0`; `schema_version` y `schemaVersion` deben coincidir. Un lector versionado selecciona `AnalysisResultV1` o `AnalysisResultV2` y rechaza versiones desconocidas. El cambio es major porque elimina el concepto general `patentabilityAssessment` y lo sustituye por estructuras de clasificación, screening y recursos genéticos.
 
-Una evolución compatible incrementa la versión menor. Un cambio de significado, obligatoriedad o estructura requiere una versión mayor y adaptación explícita de consumidores. Los resultados históricos no se reescriben para aparentar que fueron generados con un contrato posterior.
+No se reescriben resultados 1.0 ni se añade una migración Flyway: V3 ya proporciona la columna de versión y el JSONB necesarios. Prompt/schema reales siguen registrados por cada `AiInvocation`.
 
-F1.4 debe evolucionar el contrato jurídico-funcional antes de modificar sustancialmente el prompt. El envelope actual es suficiente para la vertical técnica, pero todavía no representa explícitamente todos los criterios jurídicos del diagnóstico definitivo.
+F1.4 no realiza un examen completo de patentabilidad o registrabilidad. Queda prohibido evaluar positiva o negativamente novedad, nivel inventivo, aplicación industrial y ventaja técnica frente al estado de la técnica.
 
 ## 10. Lifecycle de Analysis
 
@@ -595,7 +597,7 @@ Las decisiones definitivas de cifrado, retención, minimización, anonimización
 | Retry | `next_attempt_at`, sin `sleep` bloqueante | Implementada F1.3 |
 | Recuperación | Lease vencido + invocación `ABANDONED` | Implementada F1.3 |
 | Endpoints | Rutas por tipo con núcleo interno común | Texto implementado; PDF/audio pendientes |
-| Prompt | ID/versión + hashes + snapshot renderizado | Implementada F1.2/F1.3 |
+| Prompt | ID/versión + hashes + snapshot renderizado | Implementada F1.2–F1.4 |
 | Respuesta cruda | JSONB por invocación | Implementada F1.3 |
 | Tokens | Columnas normalizadas + JSONB de detalle | Implementada F1.3 |
 | Archivos originales | Diferir storage y retención | Pendiente F1.5/F1.6/F2.1 |
@@ -603,14 +605,9 @@ Las decisiones definitivas de cifrado, retención, minimización, anonimización
 
 ## 15. Decisiones pendientes
 
-### F1.4 — Diagnóstico funcional
-
-- criterios jurídicos explícitos;
-- representación de los artículos 15 y 20 de la Decisión 486;
-- taxonomía final de conclusiones y modalidades;
-- evolución versionada de `AnalysisResult`;
-- referencias controladas y contenido generado;
-- casos de prueba y evaluación experta.
+F1.4 cerró los criterios jurídicos explícitos, la representación de los artículos 15 y 20, las siete
+modalidades, el versionado 1.0/2.0 y el golden set. La revisión cualitativa por especialistas sigue
+siendo una actividad de aceptación, no una ampliación automática del alcance del modelo.
 
 ### F1.5/F1.6 — PDF y audio
 

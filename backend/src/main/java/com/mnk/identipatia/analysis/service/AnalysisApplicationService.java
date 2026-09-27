@@ -18,6 +18,7 @@ import com.mnk.identipatia.analysis.repository.AnalysisInputRepository;
 import com.mnk.identipatia.analysis.repository.AnalysisRepository;
 import com.mnk.identipatia.analysis.repository.StoredAnalysisResultRepository;
 import com.mnk.identipatia.analysis.result.AnalysisResult;
+import com.mnk.identipatia.analysis.result.AnalysisResultReader;
 import com.mnk.identipatia.config.StandardSessionProperties;
 import com.mnk.identipatia.exception.ApiException;
 import com.mnk.identipatia.exception.StandardSessionRequiredException;
@@ -134,7 +135,8 @@ public class AnalysisApplicationService {
             StoredAnalysisResult stored = resultRepository.findById(analysisId)
                     .orElseThrow(() -> new IllegalStateException("Completed analysis has no result"));
             try {
-                result = objectMapper.treeToValue(stored.getResultJson(), AnalysisResult.class);
+                result = new AnalysisResultReader(objectMapper)
+                        .read(stored.getSchemaVersion(), stored.getResultJson());
             } catch (JsonProcessingException | IllegalArgumentException exception) {
                 throw new IllegalStateException("Stored analysis result is invalid", exception);
             }

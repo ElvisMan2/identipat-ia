@@ -13,6 +13,7 @@ import com.mnk.identipatia.analysis.model.AiInvocation;
 import com.mnk.identipatia.analysis.model.AiInvocationStatus;
 import com.mnk.identipatia.analysis.model.Analysis;
 import com.mnk.identipatia.analysis.model.AnalysisStatus;
+import com.mnk.identipatia.analysis.model.StoredAnalysisResult;
 import com.mnk.identipatia.analysis.repository.AiInvocationRepository;
 import com.mnk.identipatia.analysis.repository.AnalysisInputRepository;
 import com.mnk.identipatia.analysis.repository.AnalysisRepository;
@@ -158,11 +159,11 @@ class TextAnalysisIntegrationTest {
         assertThat(invocation.getStatus()).isEqualTo(AiInvocationStatus.SUCCEEDED);
         assertThat(invocation.getAttemptNumber()).isEqualTo(1);
         assertThat(invocation.getPromptId()).isEqualTo("intellectual-property-analysis");
-        assertThat(invocation.getPromptVersion()).isEqualTo("0.1");
+        assertThat(invocation.getPromptVersion()).isEqualTo("0.2");
         assertThat(invocation.getOutputSchemaId()).isEqualTo("analysis-result");
-        assertThat(invocation.getOutputSchemaVersion()).isEqualTo("1.0");
+        assertThat(invocation.getOutputSchemaVersion()).isEqualTo("2.0");
         assertThat(invocation.getRenderedPromptSnapshot()).contains("Mecanismo eléctrico");
-        assertThat(invocation.getRequestParameters().path("maxOutputTokens").asInt()).isEqualTo(4000);
+        assertThat(invocation.getRequestParameters().path("maxOutputTokens").asInt()).isEqualTo(6000);
         assertThat(invocation.getRawProviderResponse().path("response").asText()).isEqualTo("raw");
         assertThat(invocation.getTotalTokens()).isEqualTo(15);
 
@@ -170,9 +171,10 @@ class TextAnalysisIntegrationTest {
         getAnalysis(browser, analysisId)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("COMPLETED"))
-                .andExpect(jsonPath("$.result.schemaVersion").value("analysis-result/1.0"))
-                .andExpect(jsonPath("$.result.patentabilityAssessment.outcome")
-                        .value("POTENTIALLY_PATENTABLE"))
+                .andExpect(jsonPath("$.result.schemaVersion").value("analysis-result/2.0"))
+                .andExpect(jsonPath("$.result.patentabilityAssessment").doesNotExist())
+                .andExpect(jsonPath("$.result.patentScreening.applicable").value(true))
+                .andExpect(jsonPath("$.result.protectionOptions[0].protectedSubjectMatter").exists())
                 .andExpect(jsonPath("$.provider").doesNotExist())
                 .andExpect(jsonPath("$.invocations").doesNotExist());
     }
@@ -225,6 +227,42 @@ class TextAnalysisIntegrationTest {
         session.setExpiresAt(session.getCreatedAt().plusMillis(1));
         sessionRepository.saveAndFlush(session);
         getAnalysis(owner, analysisId).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getPreservesHistoricalV10ResultWithoutReinterpretingIt() throws Exception {
+        Browser browser = acceptedBrowser();
+        UUID analysisId = id(postAnalysis(browser,
+                "Descripción técnica suficientemente extensa para resultado histórico.").andReturn());
+        Instant completedAt = Instant.now();
+        Analysis analysis = analysisRepository.findById(analysisId).orElseThrow();
+        analysis.setStatus(AnalysisStatus.COMPLETED);
+        analysis.setCompletedAt(completedAt);
+        analysis.setUpdatedAt(completedAt);
+        analysisRepository.saveAndFlush(analysis);
+
+        StoredAnalysisResult historical = new StoredAnalysisResult();
+        historical.setAnalysisId(analysisId);
+        historical.setSchemaVersion("analysis-result/1.0");
+        historical.setResultJson(objectMapper.readTree("""
+                {
+                  "schemaVersion":"analysis-result/1.0",
+                  "summary":"Resultado histórico",
+                  "patentabilityAssessment":{"outcome":"INSUFFICIENT_INFORMATION","rationale":"Faltan datos."},
+                  "protectionOptions":[],
+                  "observations":[],
+                  "warnings":[]
+                }
+                """));
+        historical.setCreatedAt(completedAt);
+        resultRepository.saveAndFlush(historical);
+
+        getAnalysis(browser, analysisId)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.schemaVersion").value("analysis-result/1.0"))
+                .andExpect(jsonPath("$.result.patentabilityAssessment.outcome")
+                        .value("INSUFFICIENT_INFORMATION"))
+                .andExpect(jsonPath("$.result.patentScreening").doesNotExist());
     }
 
     @Test
@@ -341,7 +379,7 @@ class TextAnalysisIntegrationTest {
                 valid.provider(), valid.structuredOutput(), valid.rawProviderResponse(), valid.tokenUsage(),
                 "x".repeat(300), valid.latencyMs());
         var canonical = objectMapper.treeToValue(valid.structuredOutput(),
-                com.mnk.identipatia.analysis.result.AnalysisResult.class);
+                com.mnk.identipatia.analysis.result.v2.AnalysisResultV2.class);
 
         assertThat(org.assertj.core.api.Assertions.catchThrowable(() ->
                 attemptService.succeed(analysisId, attempt.invocationId(), "atomic-worker",
@@ -413,17 +451,25 @@ class TextAnalysisIntegrationTest {
     private GenerativeAiResponse successResponse() throws Exception {
         JsonNode structured = objectMapper.readTree("""
                 {
-                  "schemaVersion":"analysis-result/1.0",
-                  "summary":"La descripción presenta una solución técnica preliminar.",
-                  "patentabilityAssessment":{
-                    "outcome":"POTENTIALLY_PATENTABLE",
-                    "rationale":"Podría existir una solución técnica, sujeta a evaluación posterior."
-                  },
+                  "schemaVersion":"analysis-result/2.0",
+                  "summary":"La descripción presenta una posible solución tecnológica.",
                   "protectionOptions":[{
                     "type":"INVENTION_PATENT",
                     "applicability":"POSSIBLE",
-                    "rationale":"La descripción plantea características técnicas."
+                    "protectedSubjectMatter":"El mecanismo eléctrico modular de control",
+                    "rationale":"La descripción plantea características técnicas.",
+                    "legalBasis":[{"instrument":"DECISION_486","articles":["14"]}]
                   }],
+                  "patentScreening":{
+                    "applicable":true,
+                    "article15":{"assessment":"NO_POTENTIAL_MATCH","rationale":"No se observan coincidencias.","matches":[]},
+                    "article20":{"assessment":"NO_POTENTIAL_MATCH","rationale":"No se observan coincidencias.","matches":[]}
+                  },
+                  "geneticResourceAccess":{
+                    "assessment":"NOT_INDICATED",
+                    "rationale":"La descripción no menciona recursos genéticos.",
+                    "missingInformation":[]
+                  },
                   "observations":[],
                   "warnings":["No se realizó una búsqueda de antecedentes."]
                 }

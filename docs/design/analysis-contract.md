@@ -1,8 +1,8 @@
 # Contrato de análisis — IDENTIPAT-IA
 
-**Estado:** contratos de sesión/consentimiento implementados en F1.1 y contrato de análisis de texto implementado en F1.3  
-**Versión:** 1.1  
-**Última actualización:** 16 de septiembre de 2026  
+**Estado:** contrato jurídico-funcional F1.4 implementado sobre el flujo de texto F1.3
+**Versión:** 2.0
+**Última actualización:** 20 de septiembre de 2026
 **Ámbito:** contratos HTTP consumidos por Angular exclusivamente a través de Java/Spring Boot y contrato canónico `AnalysisResult`.
 
 ## 1. Propósito
@@ -393,19 +393,27 @@ No requiere CSRF porque es una lectura, pero sí una sesión activa y pertenenci
   "completedAt": "2030-01-15T14:10:07Z",
   "failedAt": null,
   "result": {
-    "schemaVersion": "analysis-result/1.0",
+    "schemaVersion": "analysis-result/2.0",
     "summary": "La propuesta describe un sistema técnico de riego modular.",
-    "patentabilityAssessment": {
-      "outcome": "POTENTIALLY_PATENTABLE",
-      "rationale": "La información describe una posible solución técnica, sujeta a evaluación posterior."
-    },
     "protectionOptions": [
       {
         "type": "INVENTION_PATENT",
         "applicability": "POSSIBLE",
-        "rationale": "La descripción plantea una solución técnica que requiere evaluación especializada."
+        "protectedSubjectMatter": "El sistema técnico de control del riego",
+        "rationale": "La descripción plantea una posible solución tecnológica.",
+        "legalBasis": [{"instrument": "DECISION_486", "articles": ["14"]}]
       }
     ],
+    "patentScreening": {
+      "applicable": true,
+      "article15": {"assessment": "NO_POTENTIAL_MATCH", "rationale": "No se observan coincidencias.", "matches": []},
+      "article20": {"assessment": "NO_POTENTIAL_MATCH", "rationale": "No se observan coincidencias.", "matches": []}
+    },
+    "geneticResourceAccess": {
+      "assessment": "NOT_INDICATED",
+      "rationale": "La descripción no menciona recursos genéticos.",
+      "missingInformation": []
+    },
     "observations": [
       "Conviene documentar componentes, funcionamiento y diferencias frente a alternativas conocidas."
     ],
@@ -449,87 +457,46 @@ Los detalles técnicos quedan restringidos en `AiInvocation`. El cliente recibe 
 
 ## 9. Contrato `AnalysisResult`
 
-`AnalysisResult` es el resultado funcional aceptado por Java y persistido en `analysis_results.result_json`. No es la respuesta cruda del proveedor.
+`AnalysisResult` es una interfaz de dominio con implementaciones explícitas por major. Java persiste el JSON validado en `analysis_results.result_json` y su versión en `schema_version`; no es la respuesta cruda del proveedor.
 
-### 9.1 Reglas del schema vigente
+### 9.1 Versión vigente y compatibilidad
 
-Identificador:
+Los análisis nuevos usan `analysis-result/2.0`. `analysis-result/1.0` se conserva para lectura histórica y mantiene `patentabilityAssessment`; nunca se reinterpreta como 2.0. La lectura compara la columna y el campo `schemaVersion`, despacha al tipo Java correspondiente y falla de forma controlada ante discrepancias o versiones desconocidas. No se migran ni reescriben JSON históricos y F1.4 no requiere migración Flyway.
 
-```text
-analysis-result/1.0
-```
+### 9.2 Envelope 2.0
 
-El JSON Schema establece:
+| Campo | Regla |
+|---|---|
+| `schemaVersion` | Valor único `analysis-result/2.0`. |
+| `summary` | Texto obligatorio no vacío. |
+| `protectionOptions[]` | Cero o más modalidades no repetidas. |
+| `patentScreening` | Screening limitado de artículos 15 y 20 de la Decisión 486. |
+| `geneticResourceAccess` | Alerta separada sobre posible acceso a recursos genéticos. |
+| `observations[]`, `warnings[]` | Listas obligatorias de textos no vacíos; pueden estar vacías. |
 
-- objeto raíz;
-- `additionalProperties: false`;
-- todos los campos del envelope obligatorios;
-- enums cerrados;
-- objetos internos sin propiedades adicionales.
+El schema exige objetos estrictos, campos obligatorios y enums cerrados. Java agrega las invariantes condicionales y copias defensivas.
 
-Java vuelve a aplicar invariantes:
+### 9.3 Opciones de protección
 
-- `schemaVersion` debe coincidir exactamente con `analysis-result/1.0`;
-- `summary` y los textos de rationale no pueden estar vacíos;
-- las listas no pueden ser nulas ni contener valores nulos;
-- `observations` y `warnings` no pueden contener textos vacíos;
-- enums y objetos obligatorios no pueden ser nulos;
-- las listas se conservan como copias inmutables.
+Cada opción contiene `type`, `applicability`, `protectedSubjectMatter`, `rationale` y `legalBasis[]`. Se permiten concurrentemente `INVENTION_PATENT`, `UTILITY_MODEL`, `INDUSTRIAL_DESIGN`, `COPYRIGHT`, `DISTINCTIVE_SIGN`, `PLANT_BREEDER_CERTIFICATE` y `TRADE_SECRET`; `OTHER` solo pertenece al contrato histórico 1.0. `applicability` admite `LIKELY`, `POSSIBLE` y `UNLIKELY`, sin score numérico.
 
-### 9.2 Envelope
+`legalBasis[].instrument` admite únicamente `DECISION_345`, `DECISION_351`, `DECISION_391` y `DECISION_486`, con al menos una referencia breve en `articles[]`.
 
-| Campo | Tipo | Regla |
-|---|---|---|
-| `schemaVersion` | string | Obligatorio; valor único `analysis-result/1.0`. |
-| `summary` | string | Obligatorio y no vacío según Java. |
-| `patentabilityAssessment` | object | Obligatorio; contiene `outcome` y `rationale`. |
-| `protectionOptions` | array | Obligatorio; puede estar vacío. |
-| `observations` | array de strings | Obligatorio; puede estar vacío. |
-| `warnings` | array de strings | Obligatorio; puede estar vacío. |
+### 9.4 Screening de patentes
 
-### 9.3 Patentabilidad
+`article15` acepta únicamente literales `a`–`f` y `article20` únicamente `a`–`d`. Ambos usan `NO_POTENTIAL_MATCH`, `POTENTIAL_MATCH` o `INSUFFICIENT_INFORMATION`.
 
-```json
-{
-  "outcome": "POTENTIALLY_PATENTABLE",
-  "rationale": "Explicación orientativa no vacía."
-}
-```
+- `POTENTIAL_MATCH` exige `matches` no vacío.
+- Los otros estados exigen `matches` vacío.
+- `applicable=false` exige ambos artículos en `NO_POTENTIAL_MATCH`.
 
-Valores admitidos de `outcome`:
+Este screening no evalúa novedad, nivel inventivo, aplicación industrial ni ventaja técnica frente al estado de la técnica.
 
-- `POTENTIALLY_PATENTABLE`;
-- `POTENTIALLY_NOT_PATENTABLE`;
-- `INSUFFICIENT_INFORMATION`.
+### 9.5 Recursos genéticos
 
-### 9.4 Opciones de protección
+`geneticResourceAccess.assessment` admite `NOT_INDICATED`, `POTENTIALLY_REQUIRED` e `INSUFFICIENT_INFORMATION`. El último exige `missingInformation` no vacío. `NOT_INDICATED` significa ausencia de indicios en la descripción, no una determinación jurídica definitiva. No existen los estados `REQUIRED` ni `NOT_REQUIRED`.
 
-Cada elemento contiene exactamente:
-
-```json
-{
-  "type": "UTILITY_MODEL",
-  "applicability": "POSSIBLE",
-  "rationale": "Explicación orientativa no vacía."
-}
-```
-
-Valores de `type`:
-
-- `INVENTION_PATENT`;
-- `UTILITY_MODEL`;
-- `INDUSTRIAL_DESIGN`;
-- `DISTINCTIVE_SIGN`;
-- `COPYRIGHT`;
-- `OTHER`.
-
-Valores de `applicability`:
-
-- `LIKELY`;
-- `POSSIBLE`;
-- `UNLIKELY`.
-
-### 9.5 Observaciones, advertencias y disclaimer
+### 9.6 Observaciones, advertencias y disclaimer
 
 `observations[]` contiene hallazgos o recomendaciones derivados del análisis.
 
@@ -542,13 +509,9 @@ El disclaimer:
 - no se persiste por defecto como `warning`;
 - será contenido institucional controlado y versionado en F1.7.
 
-### 9.6 Versionado
+### 9.7 Límites jurídicos y versionado
 
-Los resultados históricos conservan su `schemaVersion`; no se sobrescriben para aparentar que utilizaron una versión posterior.
-
-Aunque el diseño inicial preveía extensiones compatibles dentro de `1.x`, el schema actual usa `additionalProperties: false`. Por tanto, cualquier campo nuevo exige publicar y consumir explícitamente un schema actualizado; no debe asumirse que los consumidores 1.0 tolerarán campos desconocidos.
-
-F1.4 debe decidir si la evolución jurídica puede expresarse mediante `analysis-result/1.1` o si requiere un cambio mayor. La decisión debe preceder a la modificación del prompt.
+F1.4 adopta el major 2.0 porque reemplaza `patentabilityAssessment` por `protectionOptions`, `patentScreening` y `geneticResourceAccess`. Además de los límites patentarios ya indicados, no ejecuta exámenes completos de registrabilidad, originalidad, titularidad, anterioridades, disponibilidad o confundibilidad. El disclaimer institucional continúa fuera del LLM y se implementará en F1.7.
 
 ## 10. Estados y tipos públicos
 
@@ -559,9 +522,11 @@ F1.4 debe decidir si la evolución jurídica puede expresarse mediante `analysis
 | `SessionStatus` | `ACTIVE`, `EXPIRED`, `CLOSED` |
 | `ConsentDecision` | `ACCEPTED`, `REJECTED` |
 | `AiInvocationStatus` interno | `STARTED`, `SUCCEEDED`, `FAILED`, `TIMED_OUT`, `INVALID_RESPONSE`, `ABANDONED` |
-| `PatentabilityOutcome` | `POTENTIALLY_PATENTABLE`, `POTENTIALLY_NOT_PATENTABLE`, `INSUFFICIENT_INFORMATION` |
-| `ProtectionType` | `INVENTION_PATENT`, `UTILITY_MODEL`, `INDUSTRIAL_DESIGN`, `DISTINCTIVE_SIGN`, `COPYRIGHT`, `OTHER` |
-| `ProtectionApplicability` | `LIKELY`, `POSSIBLE`, `UNLIKELY` |
+| `PatentabilityOutcome` histórico 1.0 | `POTENTIALLY_PATENTABLE`, `POTENTIALLY_NOT_PATENTABLE`, `INSUFFICIENT_INFORMATION` |
+| `ProtectionType` 2.0 | `INVENTION_PATENT`, `UTILITY_MODEL`, `INDUSTRIAL_DESIGN`, `COPYRIGHT`, `DISTINCTIVE_SIGN`, `PLANT_BREEDER_CERTIFICATE`, `TRADE_SECRET` |
+| `ProtectionApplicability` 2.0 | `LIKELY`, `POSSIBLE`, `UNLIKELY` |
+| `ScreeningAssessment` 2.0 | `NO_POTENTIAL_MATCH`, `POTENTIAL_MATCH`, `INSUFFICIENT_INFORMATION` |
+| `GeneticResourceAssessment` 2.0 | `NOT_INDICATED`, `POTENTIALLY_REQUIRED`, `INSUFFICIENT_INFORMATION` |
 
 `AiInvocationStatus` no se expone al usuario STANDARD. Los retries permanecen dentro de `ANALYZING` y se reflejan únicamente como intentos internos.
 

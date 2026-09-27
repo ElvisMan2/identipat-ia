@@ -85,7 +85,7 @@ Producción requiere `SPRING_PROFILES_ACTIVE=prod` además de todas las variable
 | `ANALYSIS_LEASE_DURATION` | `120s` | `120s` | Configurable | Duración positiva del lease PostgreSQL |
 | `ANALYSIS_MAX_ATTEMPTS` | `2` | `2` | Configurable | Máximo de invocaciones por análisis |
 | `ANALYSIS_RETRY_DELAY` | `5s` | `5s` | Configurable | Backoff durable mediante `next_attempt_at` |
-| `ANALYSIS_AI_MAX_OUTPUT_TOKENS` | `4000` | `4000` | Configurable | Límite enviado en `GenerationOptions`; evita truncar la salida estructurada validada |
+| `ANALYSIS_AI_MAX_OUTPUT_TOKENS` | `6000` | `6000` | Configurable | Límite enviado en `GenerationOptions`; evita truncar la salida estructurada validada |
 | `PGADMIN_EMAIL` | Sin default en Compose | No aplica | No aplica | Cuenta local de pgAdmin |
 | `PGADMIN_PASSWORD` | Sin default en Compose | No aplica | No aplica | Password local de pgAdmin |
 

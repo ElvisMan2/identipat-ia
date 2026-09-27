@@ -402,13 +402,19 @@ Espere al menos el número de segundos indicado en `Retry-After` —dos segundos
   "completedAt": "...",
   "failedAt": null,
   "result": {
-    "schemaVersion": "analysis-result/1.0",
+    "schemaVersion": "analysis-result/2.0",
     "summary": "...",
-    "patentabilityAssessment": {
-      "outcome": "POTENTIALLY_PATENTABLE",
-      "rationale": "..."
-    },
     "protectionOptions": [],
+    "patentScreening": {
+      "applicable": false,
+      "article15": {"assessment": "NO_POTENTIAL_MATCH", "rationale": "...", "matches": []},
+      "article20": {"assessment": "NO_POTENTIAL_MATCH", "rationale": "...", "matches": []}
+    },
+    "geneticResourceAccess": {
+      "assessment": "NOT_INDICATED",
+      "rationale": "...",
+      "missingInformation": []
+    },
     "observations": [],
     "warnings": []
   },
