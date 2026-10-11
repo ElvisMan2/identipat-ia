@@ -191,11 +191,13 @@
       </form>
 
       @if (submittingAnalysis()) {
-        <section class="analysis-progress" role="status" aria-live="polite">
-          <span class="analysis-spinner" aria-hidden="true"></span>
-          <div>
-            <h2>Analizando con IA</h2>
-            <p>Estamos revisando la información de tu creación. Este proceso puede tardar unos segundos.</p>
+        <section class="analysis-progress-modal" role="status" aria-live="polite">
+          <div class="analysis-progress">
+            <span class="analysis-spinner" aria-hidden="true"></span>
+            <div>
+              <h2>Analizando con IA</h2>
+              <p>Estamos revisando la información de tu creación. Este proceso puede tardar unos segundos.</p>
+            </div>
           </div>
         </section>
       }
