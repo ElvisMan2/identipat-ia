@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { DOCUMENT } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { StandardUserRegistrationRequest, UserService } from './services/user.service';
 import { User } from './models/user.model';
@@ -41,6 +41,11 @@ export class App {
   readonly analysisMessage = signal('');
   readonly analysisResult = signal<AnalysisResponse | null>(null);
 
+  constructor() {
+    this.accessForm.controls.doiType.valueChanges.subscribe(() => this.accessForm.controls.doi.updateValueAndValidity());
+    this.userForm.controls.doiType.valueChanges.subscribe(() => this.userForm.controls.doi.updateValueAndValidity());
+  }
+
   readonly currentAdmin = computed<User | null>(() => {
     const { doi, doiType } = this.accessForm.getRawValue();
     return this.users().find(user =>
@@ -52,7 +57,7 @@ export class App {
 
   readonly accessForm = this.fb.nonNullable.group({
     doiType: ['DNI', [Validators.required]],
-    doi: ['', [Validators.required, Validators.pattern(/^\d{8,12}$/)]]
+    doi: ['', [Validators.required, this.documentValidator.bind(this)]]
   });
 
   readonly loginForm = this.fb.nonNullable.group({
@@ -60,10 +65,10 @@ export class App {
   });
 
   readonly userForm = this.fb.nonNullable.group({
-    firstName: ['', [Validators.required]],
-    paternalLastName: ['', [Validators.required]],
-    maternalLastName: ['', [Validators.required]],
-    doi: ['', [Validators.required]],
+    firstName: ['', [Validators.required, Validators.maxLength(25)]],
+    paternalLastName: ['', [Validators.required, Validators.maxLength(25)]],
+    maternalLastName: ['', [Validators.required, Validators.maxLength(25)]],
+    doi: ['', [Validators.required, this.documentValidator.bind(this)]],
     doiType: ['', [Validators.required]],
     birthDate: ['', [Validators.required, Validators.pattern(/^\d{2}\/\d{2}\/\d{4}$/)]],
     gender: ['', [Validators.required]],
@@ -76,9 +81,9 @@ export class App {
   });
 
   readonly profileForm = this.fb.nonNullable.group({
-    firstName: ['', [Validators.required]],
-    paternalLastName: ['', [Validators.required]],
-    maternalLastName: ['', [Validators.required]],
+    firstName: ['', [Validators.required, Validators.maxLength(25)]],
+    paternalLastName: ['', [Validators.required, Validators.maxLength(25)]],
+    maternalLastName: ['', [Validators.required, Validators.maxLength(25)]],
     birthDate: ['', [Validators.required, Validators.pattern(/^\d{2}\/\d{2}\/\d{4}$/)]],
     gender: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.email]],
@@ -90,6 +95,16 @@ export class App {
   readonly analysisForm = this.fb.nonNullable.group({
     description: ['', [Validators.required, Validators.minLength(20), Validators.maxLength(20000)]]
   });
+
+  private documentValidator(control: AbstractControl): ValidationErrors | null {
+    if (!control.value) {
+      return null;
+    }
+
+    const doiType = control.parent?.get('doiType')?.value;
+    const pattern = doiType === 'DNI' ? /^\d{8}$/ : /^\d{6,11}$/;
+    return pattern.test(control.value) ? null : { doiFormat: true };
+  }
 
   identifyDocument(): void {
     if (this.accessForm.invalid) {

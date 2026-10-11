@@ -105,9 +105,9 @@
             <p><strong>Estado:</strong> {{ isInactive(currentAdmin()!) ? 'Inactivo' : 'Activo' }}</p>
           </div>
           <form [formGroup]="profileForm" (ngSubmit)="updateProfile()" class="form-grid">
-            <label>Nombres <input type="text" formControlName="firstName" /></label>
-            <label>Apellido paterno <input type="text" formControlName="paternalLastName" /></label>
-            <label>Apellido materno <input type="text" formControlName="maternalLastName" /></label>
+            <label>Nombres <input type="text" formControlName="firstName" maxlength="30" /></label>
+            <label>Apellido paterno <input type="text" formControlName="paternalLastName" maxlength="30" /></label>
+            <label>Apellido materno <input type="text" formControlName="maternalLastName" maxlength="30" /></label>
             <label>Fecha de nacimiento <input type="text" formControlName="birthDate" placeholder="17/10/1991" /></label>
             <label>Género
               <select formControlName="gender"><option value="" disabled>Seleccione</option><option value="MALE">Masculino</option><option value="FEMALE">Femenino</option><option value="OTHER">Otro</option></select>
@@ -133,13 +133,13 @@
         <article class="panel modal-panel" (click)="$event.stopPropagation()">
           <h2>Editar usuario</h2>
           <form [formGroup]="userForm" (ngSubmit)="submit()" class="form-grid">
-            <label>Nombres <input type="text" formControlName="firstName" placeholder="Juan" /></label>
-            <label>Apellido paterno <input type="text" formControlName="paternalLastName" placeholder="Pérez" /></label>
-            <label>Apellido materno <input type="text" formControlName="maternalLastName" placeholder="Gómez" /></label>
+            <label>Nombres <input type="text" formControlName="firstName" maxlength="30" placeholder="Juan" /></label>
+            <label>Apellido paterno <input type="text" formControlName="paternalLastName" maxlength="30" placeholder="Pérez" /></label>
+            <label>Apellido materno <input type="text" formControlName="maternalLastName" maxlength="30" placeholder="Gómez" /></label>
             <label>Tipo de documento
               <select formControlName="doiType"><option value="" disabled>Seleccione</option><option value="DNI">DNI</option><option value="CE">CE</option></select>
             </label>
-            <label>Número de documento <input type="text" formControlName="doi" placeholder="12345678" /></label>
+            <label>Número de documento <input type="text" formControlName="doi" [attr.maxlength]="userForm.controls.doiType.value === 'DNI' ? 8 : 11" placeholder="12345678" /></label>
             <label>Fecha de nacimiento <input type="text" formControlName="birthDate" placeholder="17/10/1991" /></label>
             <label>Género
               <select formControlName="gender"><option value="" disabled>Seleccione</option><option value="MALE">Masculino</option><option value="FEMALE">Femenino</option><option value="OTHER">Otro</option></select>
@@ -317,13 +317,13 @@
             <span class="section-label">Nuevo usuario</span>
             <h2>Completa tu registro</h2>
             <form [formGroup]="userForm" (ngSubmit)="registerStandard()" class="registration-form">
-              <label>Nombres <input type="text" formControlName="firstName" placeholder="Nombre de prueba" /></label>
-              <label>Apellido paterno <input type="text" formControlName="paternalLastName" placeholder="Apellido paterno" /></label>
-              <label>Apellido materno <input type="text" formControlName="maternalLastName" placeholder="Apellido materno" /></label>
+              <label>Nombres <input type="text" formControlName="firstName" maxlength="30" placeholder="Nombre de prueba" /></label>
+              <label>Apellido paterno <input type="text" formControlName="paternalLastName" maxlength="30" placeholder="Apellido paterno" /></label>
+              <label>Apellido materno <input type="text" formControlName="maternalLastName" maxlength="30" placeholder="Apellido materno" /></label>
               <label>Tipo de documento
                 <select formControlName="doiType"><option value="DNI">DNI</option><option value="CE">CE</option></select>
               </label>
-              <label>Número de documento <input type="text" formControlName="doi" inputmode="numeric" /></label>
+              <label>Número de documento <input type="text" formControlName="doi" inputmode="numeric" [attr.maxlength]="userForm.controls.doiType.value === 'DNI' ? 8 : 11" /></label>
               <label>Fecha de nacimiento <input type="text" formControlName="birthDate" placeholder="01/01/1990" /></label>
               <label>Género
                 <select formControlName="gender"><option value="" disabled>Seleccione</option><option value="MALE">Masculino</option><option value="FEMALE">Femenino</option><option value="OTHER">Otro</option></select>
@@ -350,10 +350,10 @@
                   <select formControlName="doiType" aria-label="Tipo de documento"><option value="DNI">DNI</option><option value="CE">CE</option></select>
                 </label>
                 <label>Número de documento
-                  <input type="text" inputmode="numeric" autocomplete="username" formControlName="doi" placeholder="Ingresa tu documento" />
+                  <input type="text" inputmode="numeric" autocomplete="username" formControlName="doi" [attr.maxlength]="accessForm.controls.doiType.value === 'DNI' ? 8 : 11" placeholder="Ingresa tu documento" />
                 </label>
               </div>
-              @if (accessForm.controls.doi.touched && accessForm.controls.doi.invalid) { <p class="field-error">Ingresa un documento válido de 8 a 12 dígitos.</p> }
+              @if (accessForm.controls.doi.touched && accessForm.controls.doi.invalid) { <p class="field-error">Para DNI ingresa 8 dígitos; para CE, entre 6 y 11.</p> }
               @if (view() === 'admin-login') {
                 <label class="password-field">Contraseña
                   <input type="password" autocomplete="current-password" [formControl]="loginForm.controls.password" placeholder="Ingresa tu contraseña" />
