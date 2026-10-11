@@ -71,7 +71,8 @@ export class App {
     phone: ['', [Validators.required]],
     mobilePhone: ['', [Validators.required]],
     profession: ['', [Validators.required]],
-    password: ['']
+    password: [''],
+    termsAccepted: [false, [Validators.requiredTrue]]
   });
 
   readonly profileForm = this.fb.nonNullable.group({
@@ -87,8 +88,7 @@ export class App {
   });
 
   readonly analysisForm = this.fb.nonNullable.group({
-    description: ['', [Validators.required, Validators.minLength(20), Validators.maxLength(20000)]],
-    consentAccepted: [false, [Validators.requiredTrue]]
+    description: ['', [Validators.required, Validators.minLength(20), Validators.maxLength(20000)]]
   });
 
   identifyDocument(): void {
@@ -134,7 +134,7 @@ export class App {
   }
 
   startNewAnalysis(): void {
-    this.analysisForm.reset({ description: '', consentAccepted: false });
+    this.analysisForm.reset({ description: '' });
     this.analysisMessage.set('');
     this.analysisResult.set(null);
     this.view.set('standard-analysis');
@@ -441,7 +441,8 @@ export class App {
       phone: user.phone,
       mobilePhone: user.mobilePhone,
       profession: user.profession,
-      password: ''
+      password: '',
+      termsAccepted: true
     });
     this.showEditModal.set(true);
   }
@@ -464,7 +465,8 @@ export class App {
       phone: '',
       mobilePhone: '',
       profession: '',
-      password: ''
+      password: '',
+      termsAccepted: false
     });
   }
 

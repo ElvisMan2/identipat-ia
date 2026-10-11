@@ -184,13 +184,6 @@
           <button class="voice-button" type="button" aria-label="Grabar descripción por voz">Grabar voz</button>
           <button class="pdf-button" type="button" aria-label="Adjuntar archivo PDF">Adjuntar PDF</button>
         </div>
-        <label class="consent-check">
-          <input type="checkbox" formControlName="consentAccepted" />
-          <span>Acepto el tratamiento de la información enviada para realizar este análisis.</span>
-        </label>
-        @if (analysisForm.controls.consentAccepted.touched && analysisForm.controls.consentAccepted.invalid) {
-          <p class="field-error">Debes aceptar el consentimiento para continuar.</p>
-        }
         <div class="analysis-actions">
           <span [class.success-message]="analysisMessage().startsWith('Análisis recibido')" [class.error]="analysisMessage().startsWith('No se pudo')">{{ analysisMessage() }}</span>
           <button class="primary-button" type="submit" [disabled]="submittingAnalysis()">{{ submittingAnalysis() ? 'Enviando...' : 'Iniciar análisis' }}</button>
@@ -310,6 +303,9 @@
               <label>Teléfono <input type="text" formControlName="phone" placeholder="016543210" /></label>
               <label>Celular <input type="text" formControlName="mobilePhone" placeholder="912345678" /></label>
               <label class="registration-wide">Profesión <input type="text" formControlName="profession" placeholder="Profesión de prueba" /></label>
+              <label class="registration-wide terms-checkbox">
+                <span><input type="checkbox" formControlName="termsAccepted" /> Acepto los <a href="https://www.patenta.pe/wp-content/uploads/2026/10/Identipat-IA-TyC.pdf" target="_blank" rel="noopener noreferrer">términos y condiciones</a></span>
+              </label>
               @if (accessMessage()) { <p class="access-message registration-wide" role="alert">{{ accessMessage() }}</p> }
               <div class="registration-actions registration-wide">
                 <button class="primary-button" type="submit" [disabled]="saving()">{{ saving() ? 'Registrando...' : 'Registrarme' }}</button>

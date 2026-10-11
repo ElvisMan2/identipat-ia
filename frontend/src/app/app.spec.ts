@@ -136,7 +136,8 @@ describe('App', () => {
       phone: '016543210',
       mobilePhone: '912345678',
       profession: 'Profesión de prueba',
-      password: ''
+      password: '',
+      termsAccepted: false
     });
 
     fixture.detectChanges();
