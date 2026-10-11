@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { DOCUMENT } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { StandardUserRegistrationRequest, UserService } from './services/user.service';
 import { User } from './models/user.model';
@@ -41,6 +41,11 @@ export class App {
   readonly analysisMessage = signal('');
   readonly analysisResult = signal<AnalysisResponse | null>(null);
 
+  constructor() {
+    this.accessForm.controls.doiType.valueChanges.subscribe(() => this.accessForm.controls.doi.updateValueAndValidity());
+    this.userForm.controls.doiType.valueChanges.subscribe(() => this.userForm.controls.doi.updateValueAndValidity());
+  }
+
   readonly currentAdmin = computed<User | null>(() => {
     const { doi, doiType } = this.accessForm.getRawValue();
     return this.users().find(user =>
@@ -52,7 +57,7 @@ export class App {
 
   readonly accessForm = this.fb.nonNullable.group({
     doiType: ['DNI', [Validators.required]],
-    doi: ['', [Validators.required, Validators.pattern(/^\d{8,12}$/)]]
+    doi: ['', [Validators.required, this.documentValidator.bind(this)]]
   });
 
   readonly loginForm = this.fb.nonNullable.group({
@@ -60,36 +65,100 @@ export class App {
   });
 
   readonly userForm = this.fb.nonNullable.group({
-    firstName: ['', [Validators.required]],
-    paternalLastName: ['', [Validators.required]],
-    maternalLastName: ['', [Validators.required]],
-    doi: ['', [Validators.required]],
+    firstName: ['', [Validators.required, Validators.maxLength(25)]],
+    paternalLastName: ['', [Validators.required, Validators.maxLength(25)]],
+    maternalLastName: ['', [Validators.required, Validators.maxLength(25)]],
+    doi: ['', [Validators.required, this.documentValidator.bind(this)]],
     doiType: ['', [Validators.required]],
-    birthDate: ['', [Validators.required, Validators.pattern(/^\d{2}\/\d{2}\/\d{4}$/)]],
+    birthDate: ['', [Validators.required, this.dateValidator]],
     gender: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.email]],
-    phone: ['', [Validators.required]],
-    mobilePhone: ['', [Validators.required]],
+    phone: ['', [Validators.required, Validators.maxLength(9), Validators.pattern(/^\d+$/)]],
+    mobilePhone: ['', [Validators.required, Validators.maxLength(15), this.mobilePhoneValidator]],
     profession: ['', [Validators.required]],
     password: [''],
     termsAccepted: [false, [Validators.requiredTrue]]
   });
 
   readonly profileForm = this.fb.nonNullable.group({
-    firstName: ['', [Validators.required]],
-    paternalLastName: ['', [Validators.required]],
-    maternalLastName: ['', [Validators.required]],
-    birthDate: ['', [Validators.required, Validators.pattern(/^\d{2}\/\d{2}\/\d{4}$/)]],
+    firstName: ['', [Validators.required, Validators.maxLength(25)]],
+    paternalLastName: ['', [Validators.required, Validators.maxLength(25)]],
+    maternalLastName: ['', [Validators.required, Validators.maxLength(25)]],
+    birthDate: ['', [Validators.required, this.dateValidator]],
     gender: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.email]],
-    phone: ['', [Validators.required]],
-    mobilePhone: ['', [Validators.required]],
+    phone: ['', [Validators.required, Validators.maxLength(9), Validators.pattern(/^\d+$/)]],
+    mobilePhone: ['', [Validators.required, Validators.maxLength(15), this.mobilePhoneValidator]],
     profession: ['', [Validators.required]]
   });
 
   readonly analysisForm = this.fb.nonNullable.group({
     description: ['', [Validators.required, Validators.minLength(20), Validators.maxLength(20000)]]
   });
+
+  private documentValidator(control: AbstractControl): ValidationErrors | null {
+    if (!control.value) {
+      return null;
+    }
+
+    const doiType = control.parent?.get('doiType')?.value;
+    const pattern = doiType === 'DNI' ? /^\d{8}$/ : /^\d{6,11}$/;
+    return pattern.test(control.value) ? null : { doiFormat: true };
+  }
+
+  private dateValidator(control: AbstractControl): ValidationErrors | null {
+    if (!control.value) {
+      return null;
+    }
+
+    return /^(?:\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})$/.test(control.value)
+      ? null
+      : { dateFormat: true };
+  }
+
+  private mobilePhoneValidator(control: AbstractControl): ValidationErrors | null {
+    if (!control.value) {
+      return null;
+    }
+
+    const normalized = String(control.value).replace(/\s/g, '');
+    const isValid = /^\d{9}$/.test(normalized)
+      || /^\+51\d{9}$/.test(normalized);
+    return isValid ? null : { mobilePhoneFormat: true };
+  }
+
+  sanitizeMobilePhone(event: Event, control: AbstractControl): void {
+    const input = event.target as HTMLInputElement;
+    const hasLeadingPlus = input.value.trimStart().startsWith('+');
+    const sanitized = `${hasLeadingPlus ? '+' : ''}${input.value
+      .replace(/\+/g, '')
+      .replace(/[^\d ]/g, '')
+      .trimStart()}`;
+
+    if (input.value !== sanitized) {
+      input.value = sanitized;
+      control.setValue(sanitized, { emitEvent: false });
+    }
+  }
+
+  sanitizePhone(event: Event, control: AbstractControl): void {
+    const input = event.target as HTMLInputElement;
+    const sanitized = input.value.replace(/\D/g, '').slice(0, 9);
+    if (input.value !== sanitized) {
+      input.value = sanitized;
+      control.setValue(sanitized, { emitEvent: false });
+    }
+  }
+
+  private toDateInputValue(date: string): string {
+    const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(date);
+    return match ? `${match[3]}-${match[2]}-${match[1]}` : date.slice(0, 10);
+  }
+
+  private toBackendDate(date: string): string {
+    const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+    return isoMatch ? `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]}` : date;
+  }
 
   identifyDocument(): void {
     if (this.accessForm.invalid) {
@@ -446,7 +515,7 @@ export class App {
       maternalLastName: user.maternalLastName,
       doi: user.doi,
       doiType: user.doiType,
-      birthDate: user.birthDate,
+      birthDate: this.toDateInputValue(user.birthDate),
       gender: user.gender,
       email: user.email,
       phone: user.phone,
@@ -544,7 +613,7 @@ export class App {
       firstName: admin.firstName,
       paternalLastName: admin.paternalLastName,
       maternalLastName: admin.maternalLastName,
-      birthDate: admin.birthDate,
+      birthDate: this.toDateInputValue(admin.birthDate),
       gender: admin.gender,
       email: admin.email,
       phone: admin.phone,
@@ -572,6 +641,7 @@ export class App {
       userId: admin.userId,
       ...admin,
       ...this.profileForm.getRawValue(),
+      birthDate: this.toBackendDate(this.profileForm.controls.birthDate.value),
       doi: admin.doi,
       doiType: admin.doiType,
       userType: admin.userType,
@@ -597,7 +667,7 @@ export class App {
       maternalLastName: formValue.maternalLastName,
       doi: formValue.doi,
       doiType: formValue.doiType,
-      birthDate: formValue.birthDate,
+      birthDate: this.toBackendDate(formValue.birthDate),
       gender: formValue.gender,
       email: formValue.email,
       phone: formValue.phone,
