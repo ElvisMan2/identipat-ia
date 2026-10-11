@@ -4,7 +4,7 @@ server:
 spring:
   web:
     resources:
-      static-locations: '${STATIC_LOCATIONS:file:../frontend/dist/identipat-ia/browser/}'
+      static-locations: classpath:/static/
   flyway:
     enabled: true
     baseline-on-migrate: false
