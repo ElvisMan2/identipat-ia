@@ -41,6 +41,7 @@ textarea:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgb(20 108 99 
 .password-field { margin-top: .8rem; }
 .primary-button { width: 100%; min-height: 48px; margin-top: 1rem; border: 0; border-radius: 5px; padding: .75rem 1rem; color: #fff; background: var(--teal); font-weight: 700; cursor: pointer; }
 .primary-button:hover { background: var(--teal-dark); }
+.access-register-button { width: 100%; margin-top: .65rem; }
 button:disabled { opacity: .62; cursor: not-allowed; }
 .field-error, .access-message { margin: .6rem 0 0; font-size: .86rem; }
 .field-error { color: var(--danger); }

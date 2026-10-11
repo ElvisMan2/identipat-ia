@@ -128,6 +128,12 @@ export class App {
     this.loginForm.reset({ password: '' });
   }
 
+  openRegistration(): void {
+    this.cancelEdit();
+    this.accessMessage.set('');
+    this.view.set('registration');
+  }
+
   startNewAnalysis(): void {
     this.analysisForm.reset({ description: '', consentAccepted: false });
     this.analysisMessage.set('');

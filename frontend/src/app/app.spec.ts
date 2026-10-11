@@ -97,6 +97,19 @@ describe('App', () => {
     expect(app.accessMessage()).toContain('Registro completado');
   });
 
+  it('should open registration directly from the access screen', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    fixture.detectChanges();
+
+    const registerButton = fixture.nativeElement.querySelector('.access-register-button') as HTMLButtonElement;
+    registerButton.click();
+    fixture.detectChanges();
+
+    expect(app.view()).toBe('registration');
+    expect(fixture.nativeElement.textContent).toContain('Completa tu registro');
+  });
+
   it('should show the user CRUD after a successful admin login', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;

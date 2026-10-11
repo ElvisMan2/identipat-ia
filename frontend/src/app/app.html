@@ -337,9 +337,12 @@
               @if (accessMessage()) { <p class="access-message" role="status">{{ accessMessage() }}</p> }
               <button class="primary-button" type="submit" [disabled]="checkingDocument() || authenticating()">
                 @if (view() === 'admin-login') { {{ authenticating() ? 'Verificando...' : 'Ingresar al panel' }} }
-                @else { {{ checkingDocument() ? 'Verificando...' : 'Continuar análisis' }} }
+                @else { {{ checkingDocument() ? 'Verificando...' : 'Ingresar' }} }
               </button>
             </form>
+            @if (view() !== 'admin-login') {
+              <button class="outline-button access-register-button" type="button" (click)="openRegistration()">Registrarme</button>
+            }
           }
         </div>
         <p class="privacy-note">Tu información se trata de forma confidencial y solo para los fines autorizados.</p>
