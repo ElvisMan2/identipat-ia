@@ -45,7 +45,7 @@ describe('App', () => {
     expect(fixture.nativeElement.querySelector('input[type="password"]')).not.toBeNull();
   });
 
-  it('should show registration for an unknown document and register the standard user', () => {
+  it('should show a message for an unknown document without opening registration', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     const httpTesting = TestBed.inject(HttpTestingController);
@@ -59,42 +59,9 @@ describe('App', () => {
     });
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Completa tu registro');
-    expect(app.userForm.controls.doi.value).toBe('12345678');
-    expect(app.userForm.controls.doiType.value).toBe('DNI');
-
-    app.userForm.patchValue({
-      firstName: 'Nombre de prueba',
-      paternalLastName: 'Apellido paterno',
-      maternalLastName: 'Apellido materno',
-      birthDate: '01/01/1990',
-      gender: 'FEMALE',
-      email: 'standard.placeholder@example.test',
-      phone: '016543210',
-      mobilePhone: '912345678',
-      profession: 'Profesión de prueba'
-    });
-    app.registerStandard();
-
-    const registrationRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users`);
-    expect(registrationRequest.request.method).toBe('POST');
-    expect(registrationRequest.request.body).toEqual({
-      firstName: 'Nombre de prueba',
-      paternalLastName: 'Apellido paterno',
-      maternalLastName: 'Apellido materno',
-      doi: '12345678',
-      doiType: 'DNI',
-      birthDate: '01/01/1990',
-      gender: 'FEMALE',
-      email: 'standard.placeholder@example.test',
-      phone: '016543210',
-      mobilePhone: '912345678',
-      profession: 'Profesión de prueba'
-    });
-    registrationRequest.flush({ registered: true });
-
     expect(app.view()).toBe('home');
-    expect(app.accessMessage()).toContain('Registro completado');
+    expect(app.accessMessage()).toBe('Usuario no registrado');
+    expect(fixture.nativeElement.textContent).toContain('Usuario no registrado');
   });
 
   it('should open registration directly from the access screen', () => {

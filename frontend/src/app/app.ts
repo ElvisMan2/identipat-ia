@@ -106,8 +106,7 @@ export class App {
           this.view.set('admin-login');
           this.loginForm.reset({ password: '' });
         } else if (!registered) {
-          this.cancelEdit();
-          this.view.set('registration');
+          this.accessMessage.set('Usuario no registrado');
         } else {
           this.analysisForm.reset({ description: '' });
           this.analysisMessage.set('');

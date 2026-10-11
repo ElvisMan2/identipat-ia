@@ -334,7 +334,7 @@
                   <input type="password" autocomplete="current-password" [formControl]="loginForm.controls.password" placeholder="Ingresa tu contraseña" />
                 </label>
               }
-              @if (accessMessage()) { <p class="access-message" role="status">{{ accessMessage() }}</p> }
+              @if (accessMessage()) { <p class="access-message" [class.access-error]="accessMessage() === 'Usuario no registrado'" role="status">{{ accessMessage() }}</p> }
               <button class="primary-button" type="submit" [disabled]="checkingDocument() || authenticating()">
                 @if (view() === 'admin-login') { {{ authenticating() ? 'Verificando...' : 'Ingresar al panel' }} }
                 @else { {{ checkingDocument() ? 'Verificando...' : 'Ingresar' }} }

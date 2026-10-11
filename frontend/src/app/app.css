@@ -46,6 +46,7 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .field-error, .access-message { margin: .6rem 0 0; font-size: .86rem; }
 .field-error { color: var(--danger); }
 .access-message { border-left: 3px solid var(--teal); padding: .55rem .75rem; color: var(--teal-dark); background: var(--mint); }
+.access-message.access-error { border-left-color: var(--danger); color: var(--danger); background: #fbe8e5; }
 .privacy-note { margin: .9rem 0 0; color: var(--muted); font-size: .78rem; }
 .hero-visual { position: relative; margin: 0; min-height: 610px; overflow: hidden; background: var(--mint); }
 .hero-visual::before { content: ''; position: absolute; inset: 18px; z-index: 1; border: 1px solid rgb(255 255 255 / .75); pointer-events: none; }
