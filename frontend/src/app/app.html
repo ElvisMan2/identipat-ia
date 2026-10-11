@@ -230,9 +230,32 @@
           </article>
 
           <article class="result-section">
-            <h2>Evaluación de patentabilidad</h2>
-            <p class="result-outcome">{{ result.patentabilityAssessment.outcome }}</p>
-            <p>{{ result.patentabilityAssessment.rationale }}</p>
+            <h2>Evaluación legal</h2>
+            <p>Screening de posibles restricciones conforme a la Decisión 486.</p>
+            <div class="legal-screening">
+              <div class="screening-item">
+                <h3>Artículo 15</h3>
+                <p class="result-outcome">{{ applicabilityLabel(result.patentScreening.article15.assessment) }}</p>
+                <p>{{ result.patentScreening.article15.rationale }}</p>
+              </div>
+              <div class="screening-item">
+                <h3>Artículo 20</h3>
+                <p class="result-outcome">{{ applicabilityLabel(result.patentScreening.article20.assessment) }}</p>
+                <p>{{ result.patentScreening.article20.rationale }}</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="result-section">
+            <h2>Acceso a recursos genéticos</h2>
+            <p class="result-outcome">{{ applicabilityLabel(result.geneticResourceAccess.assessment) }}</p>
+            <p>{{ result.geneticResourceAccess.rationale }}</p>
+            @if (result.geneticResourceAccess.missingInformation.length) {
+              <h3>Información faltante</h3>
+              <ul>
+                @for (item of result.geneticResourceAccess.missingInformation; track item) { <li>{{ item }}</li> }
+              </ul>
+            }
           </article>
 
           <article class="result-section">
@@ -244,6 +267,7 @@
                     <h3>{{ protectionTypeLabel(option.type) }}</h3>
                     <span [attr.data-applicability]="option.applicability">{{ applicabilityLabel(option.applicability) }}</span>
                   </div>
+                  <p class="protected-subject"><strong>Materia protegible:</strong> {{ option.protectedSubjectMatter }}</p>
                   <p>{{ option.rationale }}</p>
                 </div>
               }

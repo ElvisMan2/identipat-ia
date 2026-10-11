@@ -25,17 +25,34 @@ export interface AnalysisCreatedResponse {
 export interface AnalysisResult {
   schemaVersion: string;
   summary: string;
-  patentabilityAssessment: {
-    outcome: string;
-    rationale: string;
-  };
   protectionOptions: Array<{
     type: string;
     applicability: string;
+    protectedSubjectMatter: string;
     rationale: string;
+    legalBasis: Array<{
+      instrument: string;
+      articles: string[];
+    }>;
   }>;
+  patentScreening: {
+    applicable: boolean;
+    article15: LegalScreeningAssessment;
+    article20: LegalScreeningAssessment;
+  };
+  geneticResourceAccess: {
+    assessment: string;
+    rationale: string;
+    missingInformation: string[];
+  };
   observations: string[];
   warnings: string[];
+}
+
+export interface LegalScreeningAssessment {
+  assessment: string;
+  rationale: string;
+  matches: unknown[];
 }
 
 export interface AnalysisResponse {

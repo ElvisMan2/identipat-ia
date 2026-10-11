@@ -381,7 +381,10 @@ export class App {
   applicabilityLabel(applicability: string): string {
     const labels: Record<string, string> = {
       POSSIBLE: 'Posible',
-      UNLIKELY: 'Poco probable'
+      LIKELY: 'Probable',
+      UNLIKELY: 'Poco probable',
+      NO_POTENTIAL_MATCH: 'Sin coincidencia potencial',
+      INSUFFICIENT_INFORMATION: 'Información insuficiente'
     };
     return labels[applicability] ?? applicability;
   }
