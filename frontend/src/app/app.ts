@@ -127,6 +127,14 @@ export class App {
     this.loginForm.reset({ password: '' });
   }
 
+  exitSession(): void {
+    this.accessForm.reset({ doiType: 'DNI', doi: '' });
+    this.analysisForm.reset({ description: '' });
+    this.analysisMessage.set('');
+    this.analysisResult.set(null);
+    this.backHome();
+  }
+
   openRegistration(): void {
     this.cancelEdit();
     this.accessMessage.set('');

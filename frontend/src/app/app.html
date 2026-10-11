@@ -205,7 +205,10 @@
   <main class="analysis-page result-page">
     <header class="topbar">
       <a class="brand" href="/" (click)="$event.preventDefault(); backHome()">IDENTIPAT IA</a>
-      <button class="outline-button" type="button" (click)="startNewAnalysis()">Nuevo análisis</button>
+      <div class="result-actions">
+        <button class="outline-button" type="button" (click)="startNewAnalysis()">Nuevo análisis</button>
+        <button class="outline-button" type="button" (click)="exitSession()">Salir</button>
+      </div>
     </header>
 
     <section class="analysis-shell">

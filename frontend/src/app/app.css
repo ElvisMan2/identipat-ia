@@ -120,6 +120,7 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .profile-readonly p { margin: 0; }
 .form-grid { display: grid; gap: .75rem; }
 .actions, .row-actions, .table-head, .table-actions { display: flex; align-items: center; gap: .55rem; }
+.result-actions { display: flex; align-items: center; gap: .55rem; }
 .actions { margin-top: .4rem; }
 .table-head { justify-content: space-between; }
 .table-head h2 { margin-bottom: 0; }
