@@ -45,6 +45,26 @@ $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 $envFile = Join-Path $repoRoot ".env"
 $backendDir = Join-Path $repoRoot "backend"
 $mavenWrapper = Join-Path $backendDir "mvnw.cmd"
+$frontendBrowserDir = Join-Path $repoRoot "frontend\dist\identipat-ia\browser"
+$staticDir = Join-Path $backendDir "src\main\resources\static"
+
+Write-Host "Copying frontend static files..."
+
+if (-not (Test-Path -LiteralPath $frontendBrowserDir -PathType Container)) {
+    throw "Frontend build not found at frontend\dist\identipat-ia\browser. Run the Angular build first."
+}
+
+if (-not (Test-Path -LiteralPath $staticDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $staticDir -Force | Out-Null
+}
+
+Copy-Item `
+    -Path (Join-Path $frontendBrowserDir "*") `
+    -Destination $staticDir `
+    -Recurse `
+    -Force
+
+Write-Host "Frontend static files copied"
 
 Write-Host "IDENTIPAT-IA - Backend DEV (PowerShell 5.1)"
 
