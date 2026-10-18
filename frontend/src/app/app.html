@@ -426,6 +426,17 @@
             </div>
           </section>
         }
+        @if (checkingDocument() || authenticating()) {
+          <section class="access-progress-modal" role="status" aria-live="polite">
+            <div class="access-progress">
+              <span class="analysis-spinner" aria-hidden="true"></span>
+              <div>
+                <h2>Accediendo</h2>
+                <p>Estamos verificando tus datos. Este proceso puede tardar unos segundos.</p>
+              </div>
+            </div>
+          </section>
+        }
         @if (view() !== 'registration') {
           <p class="privacy-note">Al registrarte o acceder, aceptas los <a href="/terminos-y-privacidad" target="_blank" rel="noopener noreferrer">Términos de uso y Política de Privacidad de Identipat IA</a></p>
         }

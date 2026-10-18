@@ -171,27 +171,37 @@ export class App {
     }
 
     const { doi, doiType } = this.accessForm.getRawValue();
+    const accessStartedAt = Date.now();
     this.checkingDocument.set(true);
     this.accessMessage.set('');
     this.userService.identify(doi, doiType).subscribe({
       next: ({ registered, passwordRequired }) => {
-        if (passwordRequired) {
-          this.view.set('admin-login');
-          this.loginForm.reset({ password: '' });
-        } else if (!registered) {
-          this.accessMessage.set('Usuario no registrado');
-        } else {
-          this.analysisForm.reset({ description: '' });
-          this.analysisMessage.set('');
-          this.view.set('standard-analysis');
-        }
-        this.checkingDocument.set(false);
+        this.finishAccess(accessStartedAt, () => {
+          if (passwordRequired) {
+            this.view.set('admin-login');
+            this.loginForm.reset({ password: '' });
+          } else if (!registered) {
+            this.accessMessage.set('Usuario no registrado');
+          } else {
+            this.analysisForm.reset({ description: '' });
+            this.analysisMessage.set('');
+            this.view.set('standard-analysis');
+          }
+          this.checkingDocument.set(false);
+        });
       },
       error: () => {
-        this.accessMessage.set('No pudimos verificar el documento. Inténtalo nuevamente.');
-        this.checkingDocument.set(false);
+        this.finishAccess(accessStartedAt, () => {
+          this.accessMessage.set('No pudimos verificar el documento. Inténtalo nuevamente.');
+          this.checkingDocument.set(false);
+        });
       }
     });
+  }
+
+  private finishAccess(startedAt: number, complete: () => void): void {
+    const remainingMinimumTime = Math.max(0, 1000 - (Date.now() - startedAt));
+    setTimeout(complete, remainingMinimumTime);
   }
 
   backHome(): void {
@@ -235,18 +245,23 @@ export class App {
 
     const { doi } = this.accessForm.getRawValue();
     const { password } = this.loginForm.getRawValue();
+    const accessStartedAt = Date.now();
     this.authenticating.set(true);
     this.accessMessage.set('');
     this.userService.login(doi, password).subscribe({
       next: ({ accessToken }) => {
-        this.userService.setAccessToken(accessToken);
-        this.authenticating.set(false);
-        this.view.set('admin');
-        this.loadUsers();
+        this.finishAccess(accessStartedAt, () => {
+          this.userService.setAccessToken(accessToken);
+          this.authenticating.set(false);
+          this.view.set('admin');
+          this.loadUsers();
+        });
       },
       error: () => {
-        this.accessMessage.set('Documento o contraseña incorrectos.');
-        this.authenticating.set(false);
+        this.finishAccess(accessStartedAt, () => {
+          this.accessMessage.set('Documento o contraseña incorrectos.');
+          this.authenticating.set(false);
+        });
       }
     });
   }
@@ -367,7 +382,7 @@ export class App {
     this.userService.create(this.registrationPayload()).subscribe({
       next: () => {
         this.saving.set(false);
-        const remainingMinimumTime = Math.max(0, 2000 - (Date.now() - registrationStartedAt));
+        const remainingMinimumTime = Math.max(0, 1000 - (Date.now() - registrationStartedAt));
         setTimeout(() => {
           this.registrationModal.set('success');
           setTimeout(() => {
