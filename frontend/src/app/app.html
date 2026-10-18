@@ -353,22 +353,22 @@
           @if (view() === 'registration') {
             <span class="section-label">Nuevo usuario</span>
             <h2>Completa tu registro</h2>
-            <form [formGroup]="userForm" (ngSubmit)="registerStandard()" class="registration-form">
-              <label>Nombres <input type="text" formControlName="firstName" maxlength="30" placeholder="Adrian Jesús" /></label>
-              <label>Apellido paterno <input type="text" formControlName="paternalLastName" maxlength="30" placeholder="Lizarbe" /></label>
-              <label>Apellido materno <input type="text" formControlName="maternalLastName" maxlength="30" placeholder="Estrada" /></label>
+            <form [formGroup]="userForm" (ngSubmit)="registerStandard()" class="registration-form" autocomplete="off" name="identipat-registration">
+              <label>Nombres <input type="text" name="firstName" autocomplete="given-name" formControlName="firstName" maxlength="30" placeholder="Adrian Jesús" /></label>
+              <label>Apellido paterno <input type="text" name="paternalLastName" autocomplete="family-name" formControlName="paternalLastName" maxlength="30" placeholder="Lizarbe" /></label>
+              <label>Apellido materno <input type="text" name="maternalLastName" autocomplete="additional-name" formControlName="maternalLastName" maxlength="30" placeholder="Estrada" /></label>
               <label>Tipo de documento
-                <select formControlName="doiType"><option value="DNI">DNI</option><option value="CE">CE</option></select>
+                <select name="doiType" autocomplete="off" formControlName="doiType"><option value="DNI">DNI</option><option value="CE">CE</option></select>
               </label>
-              <label>Número de documento <input type="text" formControlName="doi" inputmode="numeric" [attr.maxlength]="userForm.controls.doiType.value === 'DNI' ? 8 : 11" /></label>
-              <label>Fecha de nacimiento <input type="date" formControlName="birthDate" min="1926-01-01" max="2020-12-31" /></label>
+              <label>Número de documento <input type="text" name="document-number" autocomplete="off" formControlName="doi" inputmode="numeric" [attr.maxlength]="userForm.controls.doiType.value === 'DNI' ? 8 : 11" /></label>
+              <label>Fecha de nacimiento <input type="date" name="birthDate" autocomplete="bday" formControlName="birthDate" min="1926-01-01" max="2020-12-31" /></label>
               <label>Género
-                <select formControlName="gender"><option value="" disabled>Seleccione</option><option value="MALE">Masculino</option><option value="FEMALE">Femenino</option></select>
+                <select name="gender" autocomplete="sex" formControlName="gender"><option value="" disabled>Seleccione</option><option value="MALE">Masculino</option><option value="FEMALE">Femenino</option></select>
               </label>
-              <label>Correo electrónico <input type="email" formControlName="email" placeholder="micorreo@ejemplo.com" /></label>
-              <label>Teléfono <input type="text" formControlName="phone" inputmode="numeric" maxlength="9" pattern="[0-9]*" (input)="sanitizePhone($event, userForm.controls.phone)" placeholder="01654321" /></label>
-              <label>Celular <input type="tel" formControlName="mobilePhone" inputmode="tel" maxlength="15" (input)="sanitizeMobilePhone($event, userForm.controls.mobilePhone)" placeholder="912345678" /></label>
-              <label class="registration-wide">Profesión / Ocupación <input type="text" formControlName="profession" placeholder="Ingeniero" /></label>
+              <label>Correo electrónico <input type="email" name="email" autocomplete="email" formControlName="email" placeholder="micorreo@ejemplo.com" /></label>
+              <label>Teléfono <input type="text" name="phone" autocomplete="tel" formControlName="phone" inputmode="numeric" maxlength="9" pattern="[0-9]*" (input)="sanitizePhone($event, userForm.controls.phone)" placeholder="01654321" /></label>
+              <label>Celular <input type="tel" name="mobilePhone" autocomplete="tel" formControlName="mobilePhone" inputmode="tel" maxlength="15" (input)="sanitizeMobilePhone($event, userForm.controls.mobilePhone)" placeholder="912345678" /></label>
+              <label class="registration-wide">Profesión / Ocupación <input type="text" name="profession" autocomplete="organization-title" formControlName="profession" placeholder="Ingeniero" /></label>
               <label class="registration-wide terms-checkbox">
                 <span><input type="checkbox" formControlName="termsAccepted" /> Acepto los <a href="/terminos-y-privacidad" target="_blank" rel="noopener noreferrer">Términos de uso y la Política de Privacidad</a></span>
               </label>
@@ -407,6 +407,25 @@
             }
           }
         </div>
+        @if (registrationModal(); as registrationStatus) {
+          <section class="registration-progress-modal" role="status" aria-live="polite">
+            <div class="registration-progress">
+              @if (registrationStatus === 'registering') {
+                <span class="analysis-spinner" aria-hidden="true"></span>
+                <div>
+                  <h2>Registrando usuario</h2>
+                  <p>Estamos guardando tu información. Este proceso puede tardar unos segundos.</p>
+                </div>
+              } @else {
+                <span class="registration-success-icon" aria-hidden="true">✓</span>
+                <div>
+                  <h2>Usuario registrado con éxito</h2>
+                  <p>Tu registro se completó correctamente.</p>
+                </div>
+              }
+            </div>
+          </section>
+        }
         @if (view() !== 'registration') {
           <p class="privacy-note">Al registrarte o acceder, aceptas los <a href="/terminos-y-privacidad" target="_blank" rel="noopener noreferrer">Términos de uso y Política de Privacidad de Identipat IA</a></p>
         }

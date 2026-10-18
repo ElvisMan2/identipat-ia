@@ -25,6 +25,7 @@ export class App {
   readonly loading = signal(false);
   readonly analysesLoading = signal(false);
   readonly saving = signal(false);
+  readonly registrationModal = signal<'registering' | 'success' | null>(null);
   readonly errorMessage = signal('');
   readonly analysesError = signal('');
   readonly editingUserId = signal<number | null>(null);
@@ -360,17 +361,27 @@ export class App {
     }
 
     this.saving.set(true);
+    const registrationStartedAt = Date.now();
+    this.registrationModal.set('registering');
     this.accessMessage.set('');
     this.userService.create(this.registrationPayload()).subscribe({
       next: () => {
         this.saving.set(false);
-        this.cancelEdit();
-        this.analysisForm.reset({ description: '' });
-        this.analysisMessage.set('');
-        this.view.set('standard-analysis');
+        const remainingMinimumTime = Math.max(0, 2000 - (Date.now() - registrationStartedAt));
+        setTimeout(() => {
+          this.registrationModal.set('success');
+          setTimeout(() => {
+            this.registrationModal.set(null);
+            this.cancelEdit();
+            this.analysisForm.reset({ description: '' });
+            this.analysisMessage.set('');
+            this.view.set('standard-analysis');
+          }, 2000);
+        }, remainingMinimumTime);
       },
       error: () => {
         this.saving.set(false);
+        this.registrationModal.set(null);
         this.accessMessage.set('No se pudo completar el registro. Verifica los datos e inténtalo nuevamente.');
       }
     });

@@ -87,6 +87,11 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .analysis-actions .primary-button { width: auto; min-width: 160px; margin-top: 0; }
 .analysis-progress-modal { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 1rem; background: rgb(15 26 24 / .55); }
 .analysis-progress { display: flex; align-items: center; gap: 1rem; width: min(520px, 100%); padding: 1.25rem; border: 1px solid var(--line); background: #fff; box-shadow: 0 18px 50px rgb(24 51 47 / .18); }
+.registration-progress-modal { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 1rem; background: rgb(15 26 24 / .55); }
+.registration-progress { display: flex; align-items: center; gap: 1rem; width: min(520px, 100%); padding: 1.25rem; border: 1px solid var(--line); background: #fff; box-shadow: 0 18px 50px rgb(24 51 47 / .18); }
+.registration-progress h2 { margin: 0; font-size: 1.15rem; }
+.registration-progress p { margin: .3rem 0 0; color: var(--muted); line-height: 1.5; }
+.registration-success-icon { display: grid; width: 2rem; height: 2rem; flex: 0 0 auto; place-items: center; border-radius: 50%; color: #fff; background: #17643a; font-size: 1.35rem; font-weight: 700; }
 .analysis-spinner { width: 2rem; height: 2rem; flex: 0 0 auto; border: 3px solid var(--mint); border-top-color: var(--teal); border-radius: 50%; animation: analysis-spin .8s linear infinite; }
 .analysis-progress h2, .analysis-failure h2 { margin: 0; font-size: 1.15rem; }
 .analysis-progress p { margin: .3rem 0 0; color: var(--muted); line-height: 1.5; }
