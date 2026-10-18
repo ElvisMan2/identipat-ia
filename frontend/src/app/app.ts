@@ -34,6 +34,7 @@ export class App {
   readonly adminSection = signal<'users' | 'predictions' | 'profile'>('users');
   readonly view = signal<'home' | 'registration' | 'standard-analysis' | 'standard-result' | 'admin-login' | 'admin' | 'legal'>('home');
   readonly checkingDocument = signal(false);
+  readonly standardAccessPending = signal(false);
   readonly authenticating = signal(false);
   readonly accessMessage = signal('');
   readonly savingProfile = signal(false);
@@ -173,9 +174,11 @@ export class App {
     const { doi, doiType } = this.accessForm.getRawValue();
     const accessStartedAt = Date.now();
     this.checkingDocument.set(true);
+    this.standardAccessPending.set(false);
     this.accessMessage.set('');
     this.userService.identify(doi, doiType).subscribe({
       next: ({ registered, passwordRequired }) => {
+        this.standardAccessPending.set(registered && !passwordRequired);
         this.finishAccess(accessStartedAt, () => {
           if (passwordRequired) {
             this.view.set('admin-login');
@@ -187,11 +190,13 @@ export class App {
             this.analysisMessage.set('');
             this.view.set('standard-analysis');
           }
+          this.standardAccessPending.set(false);
           this.checkingDocument.set(false);
         });
       },
       error: () => {
         this.finishAccess(accessStartedAt, () => {
+          this.standardAccessPending.set(false);
           this.accessMessage.set('No pudimos verificar el documento. Inténtalo nuevamente.');
           this.checkingDocument.set(false);
         });

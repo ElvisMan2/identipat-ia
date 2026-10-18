@@ -45,6 +45,45 @@ describe('App', () => {
     expect(fixture.nativeElement.querySelector('input[type="password"]')).not.toBeNull();
   });
 
+  it('should show the verification modal for a registered standard user', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+
+    app.accessForm.setValue({ doiType: 'DNI', doi: '12345678' });
+    app.identifyDocument();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.access-progress-modal')).toBeNull();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/users/identify`).flush({
+      registered: true,
+      passwordRequired: false
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.access-progress-modal')).not.toBeNull();
+  });
+
+  it('should show the verification modal after an admin submits the password', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+
+    app.view.set('admin-login');
+    app.accessForm.setValue({ doiType: 'DNI', doi: '12345678' });
+    app.loginForm.setValue({ password: 'secret' });
+    app.loginAdmin();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.access-progress-modal')).not.toBeNull();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/users/login`).flush({}, {
+      status: 401,
+      statusText: 'Unauthorized'
+    });
+  });
+
   it('should show a message for an unknown document without opening registration', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
