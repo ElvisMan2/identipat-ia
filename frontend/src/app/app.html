@@ -234,6 +234,7 @@
           <button class="primary-button" type="submit" [disabled]="submittingAnalysis()">{{ submittingAnalysis() ? 'Enviando...' : 'Iniciar análisis' }}</button>
         </div>
       </form>
+      <p class="analysis-disclaimer">Identipat es una herramienta de Inteligencia artificial y puede cometer errores, verifica la información importante.</p>
 
       @if (submittingAnalysis()) {
         <section class="analysis-progress-modal" role="status" aria-live="polite">
