@@ -128,7 +128,8 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .analysis-failure { margin-top: 1.25rem; padding: 1.25rem; color: #7a2424; background: #fff0ee; }
 .analysis-failure p { margin: .45rem 0 0; line-height: 1.5; }
 
-.admin-page { min-height: 100dvh; padding-bottom: 3rem; background: #f4f7f6; }
+.admin-page { min-height: 100dvh; display: flex; flex-direction: column; background: #f4f7f6; }
+.admin-page > .trust-strip { width: 100%; margin-top: auto; }
 .admin-bar { background: #fff; }
 .admin-bar div { display: grid; }
 .admin-bar .result-actions { display: flex; }
