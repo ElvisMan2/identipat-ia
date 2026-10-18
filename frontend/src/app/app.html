@@ -40,10 +40,22 @@
     <header class="topbar admin-bar">
       <div><a class="brand" href="/" (click)="$event.preventDefault(); logout()">IDENTIPAT IA</a><span>Panel administrativo</span></div>
       <div class="result-actions">
-        <button class="outline-button" type="button" (click)="startNewAnalysis()">Predicciones</button>
+        <button class="outline-button" type="button" (click)="openPredictions()" [disabled]="navigationPending()">Predicciones</button>
         <button class="outline-button" type="button" (click)="logout()">Cerrar sesión</button>
       </div>
     </header>
+
+    @if (navigationPending(); as pending) {
+      <section class="access-progress-modal" role="status" aria-live="polite">
+        <div class="access-progress">
+          <span class="analysis-spinner" aria-hidden="true"></span>
+          <div>
+            <h2>{{ pending === 'admin' ? 'Cargando panel de administración' : 'Cargando formulario de predicciones' }}</h2>
+            <p>Estamos preparando la pantalla solicitada.</p>
+          </div>
+        </div>
+      </section>
+    }
 
     <section class="admin-title">
       <p class="eyebrow">Administración</p>
@@ -206,11 +218,23 @@
       <a class="brand" href="/" (click)="$event.preventDefault(); backHome()">IDENTIPAT IA</a>
       <div class="result-actions">
         @if (adminAuthenticated()) {
-          <button class="outline-button" type="button" (click)="openAdminPanel()">Panel de administración</button>
+          <button class="outline-button" type="button" (click)="openAdminPanel()" [disabled]="navigationPending()">Panel de administración</button>
         }
-        <button class="outline-button" type="button" (click)="backHome()">Salir</button>
+        <button class="outline-button" type="button" (click)="exitAnalysis()" [disabled]="navigationPending()">Salir</button>
       </div>
     </header>
+
+    @if (navigationPending(); as pending) {
+      <section class="access-progress-modal" role="status" aria-live="polite">
+        <div class="access-progress">
+          <span class="analysis-spinner" aria-hidden="true"></span>
+          <div>
+            <h2>{{ pending === 'admin' ? 'Cargando panel de administración' : pending === 'predictions' ? 'Cargando predicciones' : 'Saliendo' }}</h2>
+            <p>{{ pending === 'exit' ? 'Estamos cerrando la sesión.' : 'Estamos preparando la pantalla solicitada.' }}</p>
+          </div>
+        </div>
+      </section>
+    }
 
     <section class="analysis-shell">
       <div class="analysis-heading">
@@ -255,9 +279,21 @@
       <a class="brand" href="/" (click)="$event.preventDefault(); backHome()">IDENTIPAT IA</a>
       <div class="result-actions">
         <button class="outline-button" type="button" (click)="startNewAnalysis()">Nuevo análisis</button>
-        <button class="outline-button" type="button" (click)="exitSession()">Salir</button>
+        <button class="outline-button" type="button" (click)="exitResult()" [disabled]="navigationPending()">Salir</button>
       </div>
     </header>
+
+    @if (navigationPending(); as pending) {
+      <section class="access-progress-modal" role="status" aria-live="polite">
+        <div class="access-progress">
+          <span class="analysis-spinner" aria-hidden="true"></span>
+          <div>
+            <h2>{{ pending === 'exit' ? 'Saliendo' : 'Cargando predicciones' }}</h2>
+            <p>{{ pending === 'exit' ? 'Estamos cerrando la sesión.' : 'Estamos preparando la pantalla solicitada.' }}</p>
+          </div>
+        </div>
+      </section>
+    }
 
     <section class="analysis-shell">
       @if (analysisResult()?.status === 'COMPLETED' && analysisResult()?.result; as result) {

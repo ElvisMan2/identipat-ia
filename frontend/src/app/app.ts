@@ -37,6 +37,7 @@ export class App {
   readonly standardAccessPending = signal(false);
   readonly authenticating = signal(false);
   readonly adminAuthenticated = signal(false);
+  readonly navigationPending = signal<'admin' | 'predictions' | 'exit' | null>(null);
   readonly accessMessage = signal('');
   readonly savingProfile = signal(false);
   readonly profileMessage = signal('');
@@ -238,6 +239,14 @@ export class App {
     this.backHome();
   }
 
+  exitAnalysis(): void {
+    this.scheduleNavigation('exit', () => this.backHome());
+  }
+
+  exitResult(): void {
+    this.scheduleNavigation('exit', () => this.exitSession());
+  }
+
   openRegistration(): void {
     this.cancelEdit();
     this.accessMessage.set('');
@@ -302,10 +311,37 @@ export class App {
   }
 
   openAdminPanel(): void {
-    this.adminSection.set('users');
-    this.view.set('admin');
-    this.loadUsers();
-    this.scrollToTop();
+    if (this.navigationPending()) {
+      return;
+    }
+
+    this.navigationPending.set('admin');
+    window.setTimeout(() => {
+      this.navigationPending.set(null);
+      this.adminSection.set('users');
+      this.view.set('admin');
+      this.loadUsers();
+      this.scrollToTop();
+    }, 500);
+  }
+
+  openPredictions(): void {
+    this.scheduleNavigation('predictions', () => this.startNewAnalysis());
+  }
+
+  private scheduleNavigation(
+    destination: 'admin' | 'predictions' | 'exit',
+    navigate: () => void
+  ): void {
+    if (this.navigationPending()) {
+      return;
+    }
+
+    this.navigationPending.set(destination);
+    window.setTimeout(() => {
+      this.navigationPending.set(null);
+      navigate();
+    }, 500);
   }
 
   setAdminSection(section: 'users' | 'predictions' | 'profile'): void {
