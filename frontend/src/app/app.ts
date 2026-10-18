@@ -198,6 +198,7 @@ export class App {
             this.analysisForm.reset({ description: '' });
             this.analysisMessage.set('');
             this.view.set('standard-analysis');
+            this.scrollToTop();
           }
           this.standardAccessPending.set(false);
           this.checkingDocument.set(false);
@@ -216,6 +217,10 @@ export class App {
   private finishAccess(startedAt: number, complete: () => void): void {
     const remainingMinimumTime = Math.max(0, 500 - (Date.now() - startedAt));
     setTimeout(complete, remainingMinimumTime);
+  }
+
+  private scrollToTop(): void {
+    this.document.defaultView?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }
 
   backHome(): void {
@@ -243,6 +248,7 @@ export class App {
     this.analysisMessage.set('');
     this.analysisResult.set(null);
     this.view.set('standard-analysis');
+    this.scrollToTop();
   }
 
   cancelRegistration(): void {
@@ -405,6 +411,7 @@ export class App {
             this.analysisForm.reset({ description: '' });
             this.analysisMessage.set('');
             this.view.set('standard-analysis');
+            this.scrollToTop();
           }, 2000);
         }, remainingMinimumTime);
       },
@@ -464,6 +471,7 @@ export class App {
             : 'El análisis no pudo completarse.');
           this.downloadAnalysisJson(analysisId, analysis);
           this.view.set('standard-result');
+          this.scrollToTop();
           return;
         }
 
