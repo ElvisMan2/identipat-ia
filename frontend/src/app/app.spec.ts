@@ -19,6 +19,18 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
+  it('should remove non-numeric characters from a DNI during registration', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const input = document.createElement('input');
+    input.value = '12AB3456789';
+
+    app.sanitizeDni({ target: input } as unknown as Event, app.userForm.controls.doi);
+
+    expect(input.value).toBe('12345678');
+    expect(app.userForm.controls.doi.value).toBe('12345678');
+  });
+
   it('should render the home as the first screen', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();

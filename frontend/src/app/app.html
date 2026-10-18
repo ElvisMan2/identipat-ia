@@ -201,7 +201,7 @@
   <main class="analysis-page">
     <header class="topbar">
       <a class="brand" href="/" (click)="$event.preventDefault(); backHome()">IDENTIPAT IA</a>
-      <button class="outline-button" type="button" (click)="backHome()">Volver</button>
+      <button class="outline-button" type="button" (click)="backHome()">Salir</button>
     </header>
 
     <section class="analysis-shell">
@@ -360,7 +360,7 @@
               <label>Tipo de documento
                 <select name="doiType" autocomplete="off" formControlName="doiType"><option value="DNI">DNI</option><option value="CE">CE</option></select>
               </label>
-              <label>Número de documento <input type="text" name="document-number" autocomplete="off" formControlName="doi" inputmode="numeric" [attr.maxlength]="userForm.controls.doiType.value === 'DNI' ? 8 : 11" /></label>
+              <label>Número de documento <input type="text" name="document-number" autocomplete="off" formControlName="doi" inputmode="numeric" [attr.maxlength]="userForm.controls.doiType.value === 'DNI' ? 8 : 11" (input)="userForm.controls.doiType.value === 'DNI' && sanitizeDni($event, userForm.controls.doi)" /></label>
               <label>Fecha de nacimiento <input type="date" name="birthDate" autocomplete="bday" formControlName="birthDate" min="1926-01-01" max="2020-12-31" /></label>
               <label>Género
                 <select name="gender" autocomplete="sex" formControlName="gender"><option value="" disabled>Seleccione</option><option value="MALE">Masculino</option><option value="FEMALE">Femenino</option></select>

@@ -155,6 +155,15 @@ export class App {
     }
   }
 
+  sanitizeDni(event: Event, control: AbstractControl): void {
+    const input = event.target as HTMLInputElement;
+    const sanitized = input.value.replace(/\D/g, '').slice(0, 8);
+    if (input.value !== sanitized) {
+      input.value = sanitized;
+      control.setValue(sanitized, { emitEvent: false });
+    }
+  }
+
   private toDateInputValue(date: string): string {
     const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(date);
     return match ? `${match[3]}-${match[2]}-${match[1]}` : date.slice(0, 10);
@@ -205,7 +214,7 @@ export class App {
   }
 
   private finishAccess(startedAt: number, complete: () => void): void {
-    const remainingMinimumTime = Math.max(0, 1000 - (Date.now() - startedAt));
+    const remainingMinimumTime = Math.max(0, 500 - (Date.now() - startedAt));
     setTimeout(complete, remainingMinimumTime);
   }
 
@@ -387,7 +396,7 @@ export class App {
     this.userService.create(this.registrationPayload()).subscribe({
       next: () => {
         this.saving.set(false);
-        const remainingMinimumTime = Math.max(0, 1000 - (Date.now() - registrationStartedAt));
+        const remainingMinimumTime = Math.max(0, 500 - (Date.now() - registrationStartedAt));
         setTimeout(() => {
           this.registrationModal.set('success');
           setTimeout(() => {
