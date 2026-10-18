@@ -128,7 +128,7 @@ describe('App', () => {
     expect(fixture.nativeElement.textContent).toContain('Completa tu registro');
   });
 
-  it('should show the user CRUD after a successful admin login', () => {
+  it('should show the analysis form and admin panel access after a successful admin login', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     const httpTesting = TestBed.inject(HttpTestingController);
@@ -147,12 +147,11 @@ describe('App', () => {
       tokenType: 'Bearer',
       accessToken: 'test-token'
     });
-    const usersRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users`);
-    expect(usersRequest.request.headers.get('Authorization')).toBe('Bearer test-token');
-    usersRequest.flush([]);
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Usuarios registrados');
+    expect(app.view()).toBe('standard-analysis');
+    expect(fixture.nativeElement.textContent).toContain('Cuéntanos qué quieres proteger');
+    expect(fixture.nativeElement.textContent).toContain('Panel de administración');
   });
 
   it('should show the predictions section without requesting the pending endpoint', () => {

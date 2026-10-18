@@ -36,6 +36,7 @@ export class App {
   readonly checkingDocument = signal(false);
   readonly standardAccessPending = signal(false);
   readonly authenticating = signal(false);
+  readonly adminAuthenticated = signal(false);
   readonly accessMessage = signal('');
   readonly savingProfile = signal(false);
   readonly profileMessage = signal('');
@@ -273,8 +274,11 @@ export class App {
         this.finishAccess(accessStartedAt, () => {
           this.userService.setAccessToken(accessToken);
           this.authenticating.set(false);
-          this.view.set('admin');
-          this.loadUsers();
+          this.adminAuthenticated.set(true);
+          this.analysisForm.reset({ description: '' });
+          this.analysisMessage.set('');
+          this.view.set('standard-analysis');
+          this.scrollToTop();
         });
       },
       error: () => {
@@ -288,12 +292,20 @@ export class App {
 
   logout(): void {
     this.userService.clearAccessToken();
+    this.adminAuthenticated.set(false);
     this.users.set([]);
     this.analyses.set([]);
     this.cancelEdit();
     this.adminSection.set('users');
     this.profileMessage.set('');
     this.backHome();
+  }
+
+  openAdminPanel(): void {
+    this.adminSection.set('users');
+    this.view.set('admin');
+    this.loadUsers();
+    this.scrollToTop();
   }
 
   setAdminSection(section: 'users' | 'predictions' | 'profile'): void {

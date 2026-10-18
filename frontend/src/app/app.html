@@ -39,7 +39,10 @@
   <main class="admin-page">
     <header class="topbar admin-bar">
       <div><a class="brand" href="/" (click)="$event.preventDefault(); logout()">IDENTIPAT IA</a><span>Panel administrativo</span></div>
-      <button class="outline-button" type="button" (click)="logout()">Cerrar sesión</button>
+      <div class="result-actions">
+        <button class="outline-button" type="button" (click)="startNewAnalysis()">Predicciones</button>
+        <button class="outline-button" type="button" (click)="logout()">Cerrar sesión</button>
+      </div>
     </header>
 
     <section class="admin-title">
@@ -201,7 +204,12 @@
   <main class="analysis-page">
     <header class="topbar">
       <a class="brand" href="/" (click)="$event.preventDefault(); backHome()">IDENTIPAT IA</a>
-      <button class="outline-button" type="button" (click)="backHome()">Salir</button>
+      <div class="result-actions">
+        @if (adminAuthenticated()) {
+          <button class="outline-button" type="button" (click)="openAdminPanel()">Panel de administración</button>
+        }
+        <button class="outline-button" type="button" (click)="backHome()">Salir</button>
+      </div>
     </header>
 
     <section class="analysis-shell">
