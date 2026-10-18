@@ -406,7 +406,7 @@
               }
               @if (accessMessage()) { <p class="access-message" [class.access-error]="accessMessage() === 'Usuario no registrado'" role="status">{{ accessMessage() }}</p> }
               <button class="primary-button" type="submit" [disabled]="checkingDocument() || authenticating()">
-                @if (view() === 'admin-login') { {{ authenticating() ? 'Verificando...' : 'Ingresar al panel' }} }
+                @if (view() === 'admin-login') { {{ authenticating() ? 'Verificando...' : 'Acceder como administrador' }} }
                 @else { {{ checkingDocument() ? 'Verificando...' : 'Ingresar' }} }
               </button>
             </form>
