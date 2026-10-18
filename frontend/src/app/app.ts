@@ -31,7 +31,7 @@ export class App {
   readonly editingUserType = signal('STANDARD');
   readonly showEditModal = signal(false);
   readonly adminSection = signal<'users' | 'predictions' | 'profile'>('users');
-  readonly view = signal<'home' | 'registration' | 'standard-analysis' | 'standard-result' | 'admin-login' | 'admin'>('home');
+  readonly view = signal<'home' | 'registration' | 'standard-analysis' | 'standard-result' | 'admin-login' | 'admin' | 'legal'>('home');
   readonly checkingDocument = signal(false);
   readonly authenticating = signal(false);
   readonly accessMessage = signal('');
@@ -42,6 +42,9 @@ export class App {
   readonly analysisResult = signal<AnalysisResponse | null>(null);
 
   constructor() {
+    if (this.document.location.pathname === '/terminos-y-privacidad') {
+      this.view.set('legal');
+    }
     this.accessForm.controls.doiType.valueChanges.subscribe(() => this.accessForm.controls.doi.updateValueAndValidity());
     this.userForm.controls.doiType.valueChanges.subscribe(() => this.userForm.controls.doi.updateValueAndValidity());
   }
