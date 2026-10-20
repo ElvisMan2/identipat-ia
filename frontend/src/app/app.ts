@@ -485,7 +485,7 @@ export class App {
 
     this.standardAnalysisService.createTextAnalysis(doi, doiType, description).subscribe({
       next: ({ analysisId }) => {
-        this.analysisMessage.set(`Análisis recibido. Código: ${analysisId}`);
+        this.analysisMessage.set('');
         this.pollAnalysis(analysisId);
       },
       error: () => {
@@ -515,7 +515,7 @@ export class App {
         if (analysis.status === 'COMPLETED' || analysis.status === 'FAILED') {
           this.submittingAnalysis.set(false);
           this.analysisMessage.set(analysis.status === 'COMPLETED'
-            ? 'Análisis completado.'
+            ? ''
             : 'El análisis no pudo completarse.');
           this.downloadAnalysisJson(analysisId, analysis);
           this.view.set('standard-result');
