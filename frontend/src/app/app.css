@@ -125,6 +125,8 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .result-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
 .result-section ul { display: grid; gap: .7rem; margin: 0; padding-left: 1.15rem; color: var(--muted); line-height: 1.55; }
 .warning-section { border-color: #ead6a7; background: #fffaf0; }
+.report-warning { margin-top: 1.25rem; padding: 1rem 1.25rem; border: 1px solid #ead6a7; background: #fffaf0; color: var(--muted); line-height: 1.55; }
+.report-warning strong { color: var(--ink); }
 .analysis-failure { margin-top: 1.25rem; padding: 1.25rem; color: #7a2424; background: #fff0ee; }
 .analysis-failure p { margin: .45rem 0 0; line-height: 1.5; }
 
