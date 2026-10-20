@@ -81,7 +81,8 @@ public class AnalysisApplicationService {
     @Transactional
     public AnalysisCreatedResponse createText(String rawSessionToken, String originalText) {
         StandardSessionContext context = requireSession(rawSessionToken);
-        if (!"STANDARD".equalsIgnoreCase(context.user().getUserType())) {
+        if (!"STANDARD".equalsIgnoreCase(context.user().getUserType())
+            && !"ADMIN".equalsIgnoreCase(context.user().getUserType())) {
             throw new StandardSessionRequiredException();
         }
         ConsentEvent consent = consentRepository

@@ -84,10 +84,6 @@ export class StandardAnalysisService {
         { headers: this.csrfHeaders(csrf), withCredentials: true }
       )),
       switchMap((session) => {
-        if (!session.consentRequired) {
-          return of(session);
-        }
-
         return this.http.post<unknown>(
           `${this.endpoint}/standard-session/consent`,
           { consentVersion: session.requiredConsentVersion, decision: 'ACCEPTED' },

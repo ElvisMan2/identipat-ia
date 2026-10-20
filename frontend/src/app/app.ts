@@ -523,7 +523,6 @@ export class App {
           return;
         }
 
-        this.analysisMessage.set('Análisis en curso.');
         window.setTimeout(() => this.pollAnalysis(analysisId), 2000);
       },
       error: (error) => {

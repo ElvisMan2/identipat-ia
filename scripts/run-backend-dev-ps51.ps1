@@ -44,10 +44,23 @@ function Import-DotEnvFile {
 $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 $envFile = Join-Path $repoRoot ".env"
 $backendDir = Join-Path $repoRoot "backend"
+$frontendDir = Join-Path $repoRoot "frontend"
 $mavenWrapper = Join-Path $backendDir "mvnw.cmd"
 $frontendBrowserDir = Join-Path $repoRoot "frontend\dist\identipat-ia\browser"
 $staticDir = Join-Path $backendDir "src\main\resources\static"
 
+Write-Host "Building frontend..."
+Push-Location $frontendDir
+try {
+    & npm run build
+    if ($LASTEXITCODE -ne 0) {
+        throw "Frontend build failed (exit code $LASTEXITCODE)."
+    }
+} finally {
+    Pop-Location
+}
+
+Write-Host "Frontend build completed"
 Write-Host "Copying frontend static files..."
 
 if (-not (Test-Path -LiteralPath $frontendBrowserDir -PathType Container)) {
@@ -124,6 +137,11 @@ Write-Host "Starting Spring Boot..."
 $mavenExitCode = 1
 Push-Location $backendDir
 try {
+    & $mavenWrapper clean
+    if ($LASTEXITCODE -ne 0) {
+        throw "Maven clean failed (exit code $LASTEXITCODE)."
+    }
+
     & $mavenWrapper spring-boot:run
     $mavenExitCode = $LASTEXITCODE
 } finally {
