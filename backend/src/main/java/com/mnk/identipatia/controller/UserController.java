@@ -15,11 +15,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +38,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.Map;
 
 @RestController
@@ -45,11 +50,17 @@ public class UserController {
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final Clock clock;
 
-    public UserController(UserService userService, AuthenticationManager authenticationManager, JwtService jwtService) {
+    public UserController(
+            UserService userService,
+            AuthenticationManager authenticationManager,
+            JwtService jwtService,
+            Clock clock) {
         this.userService = userService;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
+        this.clock = clock;
     }
 
     @PostMapping("/login")
@@ -121,6 +132,42 @@ public class UserController {
         UserSearchCriteria criteria = UserSearchCriteria.of(
                 page, size, search, userType, status, doiType, sort);
         return ResponseEntity.ok(userService.findAll(criteria));
+    }
+
+    @GetMapping(value = "/export", produces = "text/csv;charset=UTF-8")
+    @Operation(
+            summary = "Exportar usuarios a CSV",
+            description = "Exporta sin paginación todos los usuarios que coinciden con la misma búsqueda, filtros y ordenamiento del listado administrativo.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Archivo CSV UTF-8 con BOM",
+                    headers = @Header(name = HttpHeaders.CONTENT_DISPOSITION, description = "attachment; filename=usuarios-YYYY-MM-DD.csv"),
+                    content = @Content(mediaType = "text/csv", schema = @Schema(type = "string", format = "binary"))),
+            @ApiResponse(responseCode = "400", description = "Parámetros de filtro u ordenamiento inválidos", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Map.class))),
+            @ApiResponse(responseCode = "401", description = "JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "El usuario autenticado no es ADMIN")
+    })
+    public ResponseEntity<byte[]> export(
+            @Parameter(description = "Texto opcional; los términos separados por espacios se combinan con AND", example = "jose zuniga")
+            @RequestParam(required = false) String search,
+            @Parameter(description = "Filtro opcional: ADMIN o STANDARD", example = "STANDARD", schema = @Schema(allowableValues = {"ADMIN", "STANDARD"}))
+            @RequestParam(required = false) String userType,
+            @Parameter(description = "Filtro opcional: A o I", example = "A", schema = @Schema(allowableValues = {"A", "I"}))
+            @RequestParam(required = false) String status,
+            @Parameter(description = "Filtro opcional: DNI o CE", example = "DNI", schema = @Schema(allowableValues = {"DNI", "CE"}))
+            @RequestParam(required = false) String doiType,
+            @Parameter(description = "Orden field,direction. Campos: userId, firstName, paternalLastName, doi, email, userType, status, creationDate. Direcciones: asc, desc.", example = "creationDate,desc")
+            @RequestParam(defaultValue = UserSearchCriteria.DEFAULT_SORT) String sort) {
+        UserSearchCriteria criteria = UserSearchCriteria.forExport(
+                search, userType, status, doiType, sort);
+        String filename = "usuarios-" + LocalDate.now(clock) + ".csv";
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(filename).build().toString())
+                .body(userService.exportCsv(criteria));
     }
 
     @GetMapping("/{userId}")

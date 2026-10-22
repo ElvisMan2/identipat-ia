@@ -29,6 +29,7 @@ La estabilización técnica F0 está completada. El backend también materializa
 | F1.4 | Diagnóstico de propiedad intelectual | ✅ Implementada |
 | F1.4B | Listado administrativo paginado de usuarios (mejora backend) | ✅ Implementada |
 | F1.4C | Formalización del acceso ADMIN al análisis | ⏳ Pendiente |
+| F1.4D | Exportación CSV administrativa de usuarios (mejora backend) | ✅ Implementada |
 | F1.5–F1.9 | PDF, audio, reporte, recursos y E2E | ⏳ Pendientes |
 | F2 | Preparación para piloto y producción | ⏳ Pendiente |
 
@@ -53,6 +54,7 @@ La base actual incluye:
 - persistencia de intentos, resultados y metadata técnica;
 - lease, retry y recuperación de trabajos interrumpidos.
 - listado administrativo de usuarios con paginación, búsqueda, filtros y ordenamiento controlado.
+- exportación CSV administrativa de todos los usuarios coincidentes, sin paginación y con protección contra CSV injection.
 
 ---
 
@@ -393,6 +395,22 @@ Java debe:
 - coordinar cualquier cambio de contrato con frontend.
 
 No se rediseña este mecanismo en F1.4B. Hasta abordar F1.4C, la cookie temporal de análisis no otorga privilegios ADMIN y el JWT ADMIN continúa siendo un mecanismo independiente.
+
+---
+
+# F1.4D — Exportación CSV administrativa de usuarios
+
+**Estado:** implementada.
+
+## Alcance implementado
+
+- `GET /users/export` protegido con JWT ADMIN;
+- reutilización de búsqueda, filtros y ordenamiento de `GET /users`;
+- exportación de todos los registros coincidentes sin paginación;
+- CSV UTF-8 con BOM, CRLF, escape de campos y mitigación de CSV injection;
+- pruebas de seguridad, contrato HTTP, contenido y PostgreSQL real.
+
+La implementación actual construye el CSV en memoria. Si el volumen real lo justifica, podrá evolucionar a procesamiento por lotes o streaming sin cambiar el contrato HTTP.
 
 ---
 

@@ -174,6 +174,7 @@ class IdentipatIaApplicationTests {
         assertThat(api.at("/paths/~1users/post").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1users~1login/post").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1users/get").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1users~1export/get").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1users~1{userId}/delete").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1standard-session~1csrf/get").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1standard-sessions/post").isMissingNode()).isFalse();
@@ -195,6 +196,15 @@ class IdentipatIaApplicationTests {
         JsonNode listingParameters = api.at("/paths/~1users/get/parameters");
         assertThat(listingParameters).extracting(parameter -> parameter.path("name").asText())
                 .containsExactlyInAnyOrder("page", "size", "search", "userType", "status", "doiType", "sort");
+        assertThat(api.at("/paths/~1users~1export/get/security/0/bearerAuth").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1users~1export/get/responses/200/content/text~1csv/schema/type").asText())
+                .isEqualTo("string");
+        assertThat(api.at("/paths/~1users~1export/get/responses/400").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1users~1export/get/responses/401").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1users~1export/get/responses/403").isMissingNode()).isFalse();
+        JsonNode exportParameters = api.at("/paths/~1users~1export/get/parameters");
+        assertThat(exportParameters).extracting(parameter -> parameter.path("name").asText())
+                .containsExactlyInAnyOrder("search", "userType", "status", "doiType", "sort");
         assertThat(api.at("/paths/~1users~1{userId}/get/security/0/bearerAuth").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1users~1doi~1{doi}/get/security/0/bearerAuth").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1users~1admin~1{userId}/put/security/0/bearerAuth").isMissingNode()).isFalse();

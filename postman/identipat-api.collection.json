@@ -302,6 +302,15 @@
           }
         },
         {
+          "name": "Export active STANDARD users as CSV",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/users/export?userType=STANDARD&status=A&sort=firstName,asc",
+            "description": "Descarga todos los usuarios coincidentes, sin paginación, como CSV UTF-8."
+          }
+        },
+        {
           "name": "Get user by ID",
           "request": {
             "method": "GET",
