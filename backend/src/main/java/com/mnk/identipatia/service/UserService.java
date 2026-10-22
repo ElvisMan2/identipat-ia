@@ -29,16 +29,19 @@ public class UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final StandardSessionRepository standardSessionRepository;
+    private final UserCsvExporter userCsvExporter;
 
     public UserService(
             UserRepository userRepository,
             UserMapper userMapper,
             PasswordEncoder passwordEncoder,
-            StandardSessionRepository standardSessionRepository) {
+            StandardSessionRepository standardSessionRepository,
+            UserCsvExporter userCsvExporter) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
         this.standardSessionRepository = standardSessionRepository;
+        this.userCsvExporter = userCsvExporter;
     }
 
     public DocumentRecognitionResponse identifyDocument(DocumentRecognitionRequest request) {
@@ -66,6 +69,14 @@ public class UserService {
         return PagedResponse.from(userRepository
                 .findAll(UserSpecifications.matching(criteria), criteria.toPageable())
                 .map(userMapper::toDto));
+    }
+
+    public byte[] exportCsv(UserSearchCriteria criteria) {
+        return userCsvExporter.export(userRepository
+                .findAll(UserSpecifications.matching(criteria), criteria.toSort())
+                .stream()
+                .map(userMapper::toDto)
+                .toList());
     }
 
     public UserDTO findById(Long userId) {

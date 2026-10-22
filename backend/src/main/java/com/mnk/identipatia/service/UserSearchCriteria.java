@@ -80,13 +80,26 @@ public record UserSearchCriteria(
                 Sort.Direction.fromString(direction));
     }
 
-    public Pageable toPageable() {
+    public static UserSearchCriteria forExport(
+            String search,
+            String userType,
+            String status,
+            String doiType,
+            String sort) {
+        return of(DEFAULT_PAGE, DEFAULT_SIZE, search, userType, status, doiType, sort);
+    }
+
+    public Sort toSort() {
         List<Sort.Order> orders = new ArrayList<>();
         orders.add(new Sort.Order(sortDirection, sortField));
         if (!"userId".equals(sortField)) {
             orders.add(Sort.Order.asc("userId"));
         }
-        return PageRequest.of(page, size, Sort.by(orders));
+        return Sort.by(orders);
+    }
+
+    public Pageable toPageable() {
+        return PageRequest.of(page, size, toSort());
     }
 
     private static String normalizeSort(String sort) {

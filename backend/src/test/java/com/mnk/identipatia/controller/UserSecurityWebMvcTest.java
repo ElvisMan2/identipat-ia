@@ -15,6 +15,7 @@ import com.mnk.identipatia.service.UserService;
 import com.mnk.identipatia.service.UserSearchCriteria;
 import io.jsonwebtoken.MalformedJwtException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -28,6 +29,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -39,6 +43,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(UserController.class)
@@ -79,6 +85,15 @@ class UserSecurityWebMvcTest {
 
     @MockBean
     private UserRepository userRepository;
+
+    @MockBean
+    private Clock clock;
+
+    @BeforeEach
+    void configureClock() {
+        when(clock.instant()).thenReturn(Instant.parse("2026-10-22T12:00:00Z"));
+        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
+    }
 
     @Test
     void anonymousUserCanRegisterOnlyThroughTheStandardRegistrationContract() throws Exception {
@@ -153,11 +168,43 @@ class UserSecurityWebMvcTest {
     @Test
     void anonymousRequestsCannotAccessAdministrativeOperations() throws Exception {
         mockMvc.perform(get("/users")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/users/export")).andExpect(status().isUnauthorized());
         mockMvc.perform(get("/users/1")).andExpect(status().isUnauthorized());
         mockMvc.perform(get("/users/doi/12345678")).andExpect(status().isUnauthorized());
         mockMvc.perform(put("/users/1").contentType(MediaType.APPLICATION_JSON).content(STANDARD_REGISTRATION))
                 .andExpect(status().isUnauthorized());
         mockMvc.perform(delete("/users/1")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void authenticatedAdminCanExportCsvWithDownloadHeaders() throws Exception {
+        byte[] csv = "\uFEFF\"ID\",\"Nombre completo\"".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        when(userService.exportCsv(any(UserSearchCriteria.class))).thenReturn(csv);
+
+        mockMvc.perform(get("/users/export")
+                        .param("search", " Jose ")
+                        .param("userType", " standard ")
+                        .param("status", " a ")
+                        .param("doiType", " dni ")
+                        .param("sort", "firstName,asc"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("text/csv;charset=UTF-8"))
+                .andExpect(header().string("Content-Disposition",
+                        "attachment; filename=\"usuarios-2026-10-22.csv\""))
+                .andExpect(content().bytes(csv));
+
+        ArgumentCaptor<UserSearchCriteria> captor = ArgumentCaptor.forClass(UserSearchCriteria.class);
+        verify(userService).exportCsv(captor.capture());
+        UserSearchCriteria criteria = captor.getValue();
+        org.junit.jupiter.api.Assertions.assertEquals(List.of("jose"), criteria.searchTerms());
+        org.junit.jupiter.api.Assertions.assertEquals("STANDARD", criteria.userType());
+        org.junit.jupiter.api.Assertions.assertEquals("A", criteria.status());
+        org.junit.jupiter.api.Assertions.assertEquals("DNI", criteria.doiType());
+        org.junit.jupiter.api.Assertions.assertEquals("firstName", criteria.sortField());
+        org.junit.jupiter.api.Assertions.assertEquals(
+                org.springframework.data.domain.Sort.Direction.ASC,
+                criteria.sortDirection());
     }
 
     @Test
@@ -219,6 +266,24 @@ class UserSecurityWebMvcTest {
     @WithMockUser(roles = "STANDARD")
     void authenticatedNonAdminCannotListUsers() throws Exception {
         mockMvc.perform(get("/users")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/users/export")).andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void invalidExportFiltersAndSortReturnBadRequest() throws Exception {
+        List<String> invalidQueries = List.of(
+                "?userType=SUPERADMIN",
+                "?status=X",
+                "?doiType=PASSPORT",
+                "?sort=password,asc",
+                "?sort=firstName,sideways");
+
+        for (String query : invalidQueries) {
+            mockMvc.perform(get("/users/export" + query))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.status").value(400));
+        }
     }
 
     @Test

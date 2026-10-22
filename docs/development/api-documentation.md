@@ -35,6 +35,14 @@ La respuesta contiene `content`, `page`, `size`, `totalElements`, `totalPages`, 
 
 Este cambio reemplaza intencionalmente el contrato anterior `List<UserDTO>`. El frontend existente puede quedar temporalmente incompatible hasta que adapte su consumo; esta tarea no modifica Angular.
 
+## Exportación administrativa de usuarios
+
+`GET /users/export` requiere JWT de un usuario `ADMIN` y acepta `search`, `userType`, `status`, `doiType` y `sort` con las mismas reglas de validación y matching que `GET /users`. No acepta parámetros funcionales de paginación: consulta y exporta todos los usuarios coincidentes, manteniendo el orden solicitado y el desempate estable por `userId asc`.
+
+La respuesta `200` usa `Content-Type: text/csv; charset=UTF-8` y `Content-Disposition: attachment; filename="usuarios-YYYY-MM-DD.csv"`. El archivo incluye BOM UTF-8, separador coma, saltos `CRLF`, escape mediante comillas dobles y protección contra fórmulas de hoja de cálculo para valores cuyo primer carácter significativo sea `=`, `+`, `-` o `@`. Si no hay coincidencias, contiene únicamente el BOM y el encabezado. Parámetros inválidos responden `400`; JWT ausente o inválido responde `401`, y un actor autenticado que no sea ADMIN recibe `403`.
+
+Las columnas, en orden, son: `ID`, `Nombre completo`, `Documento`, `Nacimiento`, `Género`, `Correo`, `Teléfono`, `Celular`, `Tipo`, `Profesión` y `Estado`. La contraseña y la metadata interna no se exportan.
+
 ## Postman
 
 La colección está en `postman/identipat-api.collection.json` e incluye `STANDARD - Session and consent`, además de reconocimiento/registro, administración y negativos.
@@ -49,7 +57,7 @@ Las variables de colección no contienen secretos reales:
 - `consentVersion`: versión esperada por el backend.
 - `analysisId`: se guarda desde la respuesta `202` para una consulta GET manual posterior.
 
-Ejecuta primero **Login ADMIN and save JWT** y luego las operaciones en `Admin - Users`, que envían `Authorization: Bearer {{adminJwt}}`. El grupo incluye ejemplos paginados, de búsqueda, filtros y ordenamiento. Las solicitudes que crean, actualizan o eliminan datos requieren valores de prueba únicos y son intencionalmente manuales.
+Ejecuta primero **Login ADMIN and save JWT** y luego las operaciones en `Admin - Users`, que envían `Authorization: Bearer {{adminJwt}}`. El grupo incluye ejemplos paginados, de búsqueda, filtros, ordenamiento y exportación CSV completa. Las solicitudes que crean, actualizan o eliminan datos requieren valores de prueba únicos y son intencionalmente manuales.
 
 El flujo STANDARD no usa Bearer token: primero **Recognize document** y, si aplica, **Register STANDARD**. Después ejecuta **Get CSRF**, crea sesión, registra consentimiento, crea el análisis y realiza un GET manual. Postman conserva las cookies en su cookie jar y envía `X-XSRF-TOKEN: {{csrfToken}}`. No hay polling infinito. No deben guardarse DNI reales, cookies, pepper, JWT ni secretos en variables compartidas.
 

@@ -22,6 +22,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -151,6 +153,79 @@ class UserListingIntegrationTest {
         assertThat(criteria.toPageable().getSort().getOrderFor("userId")).isNotNull();
     }
 
+    @Test
+    void csvExportReturnsEveryMatchWithoutTheListingPageLimit() {
+        List<User> additionalUsers = new ArrayList<>();
+        for (int index = 0; index < 21; index++) {
+            additionalUsers.add(user(
+                    "Bulk" + index,
+                    "Apellido" + index,
+                    "Prueba",
+                    "BULK-" + index,
+                    index % 2 == 0 ? "DNI" : "CE",
+                    "bulk" + index + "@example.test",
+                    "Profesional",
+                    "STANDARD",
+                    "A",
+                    7 + index));
+        }
+        userRepository.saveAllAndFlush(additionalUsers);
+
+        String csv = export(null, null, null, null, "userId,asc");
+
+        assertThat(csv.split("\\r\\n", -1)).hasSize(28);
+        assertThat(csv).contains("\"Bulk20 Apellido20 Prueba\"");
+        assertThat(csv).doesNotContain("encoded-sensitive-value");
+    }
+
+    @Test
+    void csvExportReusesSearchAndEveryFilterWithAndSemantics() {
+        String searchCsv = export("ingeniero jose", null, null, null, "userId,asc");
+        String userTypeCsv = export(null, "ADMIN", null, null, "userId,asc");
+        String statusCsv = export(null, null, "I", null, "userId,asc");
+        String doiTypeCsv = export(null, null, null, "CE", "userId,asc");
+        String combinedCsv = export(
+                "ingeniero jose", "STANDARD", "A", "DNI", "userId,asc");
+
+        assertThat(searchCsv).contains("Jose Zuniga Lima").doesNotContain("Lucia Ramos Vega");
+        assertThat(userTypeCsv).contains("Lucia Ramos Vega", "Elena Torres Diaz")
+                .doesNotContain("Jose Zuniga Lima");
+        assertThat(statusCsv).contains("Lucia Ramos Vega", "Carlos Mendoza Ruiz")
+                .doesNotContain("Elena Torres Diaz");
+        assertThat(doiTypeCsv).contains("Lucia Ramos Vega", "Elena Torres Diaz", "Ana Abarca Soto")
+                .doesNotContain("Jose Zuniga Lima");
+        assertThat(combinedCsv).contains("Jose Zuniga Lima").doesNotContain("Lucia Ramos Vega");
+    }
+
+    @Test
+    void csvExportHonorsAscendingDescendingAndStableUserIdTieBreaker() {
+        User firstTwin = userRepository.saveAndFlush(user(
+                "Twin", "First", "User", "TWIN-1", "DNI", "twin1@example.test",
+                "Tester", "STANDARD", "A", 20));
+        User secondTwin = userRepository.saveAndFlush(user(
+                "Twin", "Second", "User", "TWIN-2", "DNI", "twin2@example.test",
+                "Tester", "STANDARD", "A", 21));
+
+        String ascending = export(null, null, null, null, "firstName,asc");
+        String descending = export(null, null, null, null, "firstName,desc");
+
+        assertThat(ascending.indexOf("Ana Abarca Soto"))
+                .isLessThan(ascending.indexOf("Twin First User"));
+        assertThat(descending.indexOf("Twin First User"))
+                .isLessThan(descending.indexOf("Ana Abarca Soto"));
+        assertThat(ascending.indexOf("\"" + firstTwin.getUserId() + "\""))
+                .isLessThan(ascending.indexOf("\"" + secondTwin.getUserId() + "\""));
+        assertThat(descending.indexOf("\"" + firstTwin.getUserId() + "\""))
+                .isLessThan(descending.indexOf("\"" + secondTwin.getUserId() + "\""));
+    }
+
+    @Test
+    void csvExportWithNoMatchesContainsOnlyBomAndHeader() {
+        String csv = export("no-user-can-match-this", null, null, null, "userId,asc");
+
+        assertThat(csv).isEqualTo("\uFEFF\"ID\",\"Nombre completo\",\"Documento\",\"Nacimiento\",\"Género\",\"Correo\",\"Teléfono\",\"Celular\",\"Tipo\",\"Profesión\",\"Estado\"");
+    }
+
     private PagedResponse<UserDTO> find(
             int page,
             int size,
@@ -161,6 +236,17 @@ class UserListingIntegrationTest {
             String sort) {
         return userService.findAll(UserSearchCriteria.of(
                 page, size, search, userType, status, doiType, sort));
+    }
+
+    private String export(
+            String search,
+            String userType,
+            String status,
+            String doiType,
+            String sort) {
+        byte[] csv = userService.exportCsv(UserSearchCriteria.forExport(
+                search, userType, status, doiType, sort));
+        return new String(csv, StandardCharsets.UTF_8);
     }
 
     private static User user(
