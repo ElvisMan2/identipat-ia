@@ -81,6 +81,25 @@ class StandardSessionIntegrationTest {
     }
 
     @Test
+    void activeAdminCanCreateSessionAcceptConsentAndReachAiAvailabilityCheck() throws Exception {
+        User admin = saveUser("ADMIN", "A");
+        Csrf csrf = csrf();
+        Cookie session = createSession(admin, csrf, null).getResponse()
+                .getCookie("IDENTIPAT_STANDARD_SESSION");
+
+        mockMvc.perform(consentPost(session, csrf, "ACCEPTED", "personal-data/1.0"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.decision").value("ACCEPTED"));
+
+        mockMvc.perform(post("/analyses/text").cookie(session, csrf.cookie())
+                        .header("X-XSRF-TOKEN", csrf.token()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"description\":\"Descripción administrativa suficientemente extensa para analizar.\"}"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("ANALYSIS_AI_UNAVAILABLE"));
+        assertThat(analysisRepository.count()).isZero();
+    }
+
+    @Test
     void realCookieHeaderCsrfProtectsCreateConsentAndClose() throws Exception {
         User user = saveUser("STANDARD", "A");
         Csrf csrf = csrf();
@@ -157,14 +176,25 @@ class StandardSessionIntegrationTest {
     }
 
     @Test
-    void createRejectsMissingAdminInactiveAndInvalidDocument() throws Exception {
+    void activeStandardAndAdminCanCreateSessions() throws Exception {
+        Csrf csrf = csrf();
+
+        for (User user : new User[]{saveUser("STANDARD", "A"), saveUser("ADMIN", "A")}) {
+            MvcResult created = createSession(user, csrf, null);
+            assertThat(created.getResponse().getCookie("IDENTIPAT_STANDARD_SESSION")).isNotNull();
+        }
+    }
+
+    @Test
+    void createRejectsMissingInactiveUnsupportedAndInvalidDocument() throws Exception {
         Csrf csrf = csrf();
         mockMvc.perform(csrfPost("/standard-sessions", csrf)
                         .content("{\"doi\":\"missing\",\"doiType\":\"DNI\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("STANDARD_REGISTRATION_REQUIRED"));
 
-        for (User user : new User[]{saveUser("ADMIN", "A"), saveUser("STANDARD", "I")}) {
+        for (User user : new User[]{saveUser("STANDARD", "I"), saveUser("ADMIN", "I"),
+                saveUser("AUDITOR", "A")}) {
             mockMvc.perform(csrfPost("/standard-sessions", csrf).content(sessionBody(user)))
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.code").value("STANDARD_SESSION_NOT_AVAILABLE"));

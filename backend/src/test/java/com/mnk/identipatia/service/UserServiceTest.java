@@ -5,6 +5,7 @@ import com.mnk.identipatia.dto.DocumentRecognitionResponse;
 import com.mnk.identipatia.dto.StandardUserRegistrationRequest;
 import com.mnk.identipatia.dto.StandardUserRegistrationResponse;
 import com.mnk.identipatia.dto.UserDTO;
+import com.mnk.identipatia.dto.PagedResponse;
 import com.mnk.identipatia.exception.InvalidUserDataException;
 import com.mnk.identipatia.exception.UserNotFoundException;
 import com.mnk.identipatia.mapper.UserMapper;
@@ -13,11 +14,15 @@ import com.mnk.identipatia.repository.UserRepository;
 import com.mnk.identipatia.repository.StandardSessionRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -125,17 +130,30 @@ class UserServiceTest {
     }
 
     @Test
-    void findAllMapsEveryUser() {
+    void findAllMapsARepositoryPageAndPreservesMetadata() {
         User first = user();
         User second = user();
         UserDTO firstDTO = userDTO(1L, "Ana", "Torres", "Salas", "12345678", "DNI");
         UserDTO secondDTO = userDTO(2L, "Luis", "Ramos", "Diaz", "87654321", "CE");
+        UserSearchCriteria criteria = UserSearchCriteria.of(
+                1, 2, null, null, null, null, "creationDate,desc");
 
-        when(userRepository.findAll()).thenReturn(List.of(first, second));
+        when(userRepository.findAll(
+                ArgumentMatchers.<Specification<User>>any(),
+                any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(first, second), criteria.toPageable(), 5));
         when(userMapper.toDto(first)).thenReturn(firstDTO);
         when(userMapper.toDto(second)).thenReturn(secondDTO);
 
-        assertEquals(List.of(firstDTO, secondDTO), userService.findAll());
+        PagedResponse<UserDTO> response = userService.findAll(criteria);
+
+        assertEquals(List.of(firstDTO, secondDTO), response.content());
+        assertEquals(1, response.page());
+        assertEquals(2, response.size());
+        assertEquals(5, response.totalElements());
+        assertEquals(3, response.totalPages());
+        assertFalse(response.first());
+        assertFalse(response.last());
         verify(userMapper).toDto(first);
         verify(userMapper).toDto(second);
     }

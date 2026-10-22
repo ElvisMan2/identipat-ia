@@ -1,6 +1,7 @@
 package com.mnk.identipatia.controller;
 
 import com.mnk.identipatia.dto.UserDTO;
+import com.mnk.identipatia.dto.PagedResponse;
 import com.mnk.identipatia.dto.DocumentRecognitionRequest;
 import com.mnk.identipatia.dto.DocumentRecognitionResponse;
 import com.mnk.identipatia.dto.LoginRequestDTO;
@@ -9,9 +10,9 @@ import com.mnk.identipatia.dto.StandardUserRegistrationRequest;
 import com.mnk.identipatia.dto.StandardUserRegistrationResponse;
 import com.mnk.identipatia.service.JwtService;
 import com.mnk.identipatia.service.UserService;
+import com.mnk.identipatia.service.UserSearchCriteria;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -20,6 +21,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -30,9 +32,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -90,16 +92,35 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.registerStandard(request));
     }
 
-    @GetMapping
-    @Operation(summary = "Listar usuarios")
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Listar usuarios",
+            description = "Listado administrativo paginado. Busca cada término en nombre, apellidos, DOI, email y profesión; todos los términos y filtros se combinan con AND.")
     @SecurityRequirement(name = "bearerAuth")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Usuarios", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = UserDTO.class)))),
+            @ApiResponse(responseCode = "200", description = "Página de usuarios"),
+            @ApiResponse(responseCode = "400", description = "Parámetros de paginación, filtro u ordenamiento inválidos", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Map.class))),
             @ApiResponse(responseCode = "401", description = "JWT ausente o inválido"),
             @ApiResponse(responseCode = "403", description = "El usuario autenticado no es ADMIN")
     })
-    public ResponseEntity<List<UserDTO>> findAll() {
-        return ResponseEntity.ok(userService.findAll());
+    public ResponseEntity<PagedResponse<UserDTO>> findAll(
+            @Parameter(description = "Página basada en cero; debe ser mayor o igual a 0", example = "0", schema = @Schema(type = "integer", defaultValue = "0", minimum = "0"))
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Elementos por página; entre 1 y 100", example = "20", schema = @Schema(type = "integer", defaultValue = "20", minimum = "1", maximum = "100"))
+            @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "Texto opcional; los términos separados por espacios se combinan con AND", example = "jose zuniga")
+            @RequestParam(required = false) String search,
+            @Parameter(description = "Filtro opcional: ADMIN o STANDARD", example = "STANDARD")
+            @RequestParam(required = false) String userType,
+            @Parameter(description = "Filtro opcional: A o I", example = "A")
+            @RequestParam(required = false) String status,
+            @Parameter(description = "Filtro opcional: DNI o CE", example = "DNI")
+            @RequestParam(required = false) String doiType,
+            @Parameter(description = "Orden field,direction. Campos: userId, firstName, paternalLastName, doi, email, userType, status, creationDate. Direcciones: asc, desc.", example = "creationDate,desc")
+            @RequestParam(defaultValue = UserSearchCriteria.DEFAULT_SORT) String sort) {
+        UserSearchCriteria criteria = UserSearchCriteria.of(
+                page, size, search, userType, status, doiType, sort);
+        return ResponseEntity.ok(userService.findAll(criteria));
     }
 
     @GetMapping("/{userId}")

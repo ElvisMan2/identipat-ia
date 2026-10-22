@@ -269,11 +269,36 @@
       "name": "Admin - Users",
       "item": [
         {
-          "name": "List users",
+          "name": "List users - first page",
           "request": {
             "method": "GET",
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
-            "url": "{{baseUrl}}/users"
+            "url": "{{baseUrl}}/users?page=0&size=20",
+            "description": "Devuelve el contrato paginado con content y metadata de página."
+          }
+        },
+        {
+          "name": "Search users",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/users?page=0&size=20&search=jose"
+          }
+        },
+        {
+          "name": "Filter STANDARD active users",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/users?page=0&size=20&userType=STANDARD&status=A"
+          }
+        },
+        {
+          "name": "Filter DNI and sort by first name",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/users?page=0&size=20&doiType=DNI&sort=firstName,asc"
           }
         },
         {

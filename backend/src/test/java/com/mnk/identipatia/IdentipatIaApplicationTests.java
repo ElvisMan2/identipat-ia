@@ -187,7 +187,14 @@ class IdentipatIaApplicationTests {
         assertThat(api.at("/paths/~1users/post/security").isMissingNode()).isTrue();
         assertThat(api.at("/paths/~1users~1login/post/security").isMissingNode()).isTrue();
         assertThat(api.at("/paths/~1users/get/security/0/bearerAuth").isMissingNode()).isFalse();
-        assertThat(api.at("/paths/~1users/get/responses/200/content/application~1json/schema/type").asText()).isEqualTo("array");
+        assertThat(api.at("/paths/~1users/get/responses/200/content/application~1json/schema/$ref").asText())
+                .endsWith("/PagedResponseUserDTO");
+        assertThat(api.at("/components/schemas/PagedResponseUserDTO/properties/content/items/$ref").asText())
+                .contains("UserDTO");
+        assertThat(api.at("/paths/~1users/get/responses/400").isMissingNode()).isFalse();
+        JsonNode listingParameters = api.at("/paths/~1users/get/parameters");
+        assertThat(listingParameters).extracting(parameter -> parameter.path("name").asText())
+                .containsExactlyInAnyOrder("page", "size", "search", "userType", "status", "doiType", "sort");
         assertThat(api.at("/paths/~1users~1{userId}/get/security/0/bearerAuth").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1users~1doi~1{doi}/get/security/0/bearerAuth").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1users~1admin~1{userId}/put/security/0/bearerAuth").isMissingNode()).isFalse();

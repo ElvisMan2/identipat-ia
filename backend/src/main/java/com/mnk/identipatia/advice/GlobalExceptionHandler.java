@@ -15,6 +15,7 @@ import com.mnk.identipatia.service.StandardSessionCookieService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -112,6 +113,16 @@ public class GlobalExceptionHandler {
         error.put("error", "Bad Request");
         error.put("code", "INVALID_REQUEST");
         error.put("message", "Request body is invalid");
+        return ResponseEntity.badRequest().body(error);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, Object>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        Map<String, Object> error = new HashMap<>();
+        error.put("timestamp", LocalDateTime.now());
+        error.put("status", HttpStatus.BAD_REQUEST.value());
+        error.put("error", "Bad Request");
+        error.put("message", "Invalid value for parameter " + ex.getName());
         return ResponseEntity.badRequest().body(error);
     }
 
