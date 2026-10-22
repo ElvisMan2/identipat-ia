@@ -1,13 +1,13 @@
 # Dominio de análisis — IDENTIPAT-IA
 
-**Estado:** diseño F1.0 materializado en F1.1–F1.3  
-**Versión:** 1.1  
-**Última actualización:** 16 de septiembre de 2026  
+**Estado:** diseño F1.0 materializado en F1.1–F1.4B
+**Versión:** 1.2
+**Última actualización:** 22 de octubre de 2026
 **Alcance:** modelo vigente de sesión, consentimiento, análisis de texto, invocaciones de IA y resultado canónico. PDF y audio se incorporarán sobre este núcleo en F1.5 y F1.6.
 
 ## 1. Objetivo
 
-Definir un núcleo único, durable y trazable para las consultas de propiedad intelectual realizadas por usuarios `STANDARD`.
+Definir un núcleo único, durable y trazable para las consultas de propiedad intelectual realizadas por usuarios `STANDARD` y, mediante la compatibilidad vigente, por usuarios `ADMIN` activos dentro del flujo de análisis.
 
 El dominio debe explicar:
 
@@ -29,7 +29,7 @@ F1.0 produjo el diseño conceptual. F1.1 materializó sesión y consentimiento; 
 - `ADMIN` es el único acceso autenticado mediante credenciales y JWT.
 - `STANDARD` no recibe JWT, no utiliza contraseña y no tiene perfil ni historial visible.
 - DNI/CE identifica o deduplica un registro; no autentica ni verifica la identidad real de quien opera el navegador.
-- La sesión `STANDARD` es una capacidad temporal revocable y limitada a una experiencia de uso.
+- La sesión de análisis es una capacidad temporal revocable y limitada a una experiencia de uso. Actualmente admite registros `STANDARD` y `ADMIN` activos, pero nunca concede privilegios ADMIN.
 - El motor funcional es IA generativa; no existe un pipeline paralelo de NLP, embeddings, clasificadores o ML clásico.
 - OpenAI es el adapter implementado actualmente mediante `GenerativeAiProvider`; Gemini u otros proveedores son extensiones futuras.
 - La información funcional y técnica se conserva ampliamente durante el desarrollo para trazabilidad y evaluación.
@@ -116,7 +116,7 @@ Analysis
 
 La sesión, el usuario y el evento de consentimiento forman el contexto que autorizó su creación.
 
-## 4. Sesión temporal STANDARD
+## 4. Sesión temporal de análisis
 
 ### 4.1 Modelo implementado
 
@@ -149,7 +149,7 @@ La sesión se transporta mediante una cookie propia, no mediante un token admini
 | `Path` | Limitado a `/identipat-ia`. |
 | Duración | Coherente con el TTL configurado del servidor. |
 
-`SameSite` y CORS no sustituyen CSRF. Las mutaciones STANDARD implementadas utilizan `CookieCsrfTokenRepository`, cookie `XSRF-TOKEN`, header `X-XSRF-TOKEN` y el patrón SPA de Spring Security 6.2.
+`SameSite` y CORS no sustituyen CSRF. Las mutaciones de sesión implementadas utilizan `CookieCsrfTokenRepository`, cookie `XSRF-TOKEN`, header `X-XSRF-TOKEN` y el patrón SPA de Spring Security 6.2.
 
 ### 4.3 Lifecycle
 
@@ -167,7 +167,7 @@ La sesión aplica dos límites:
 
 También puede cerrarse al detectar un usuario inactivo o una finalización explícita. `closed_at` y `close_reason` conservan la causa cuando corresponde.
 
-La sesión no se convierte en JWT, no concede privilegios ADMIN y no permite recuperar sesiones anteriores desde la interfaz.
+La sesión no se convierte en JWT, no concede privilegios ADMIN y no permite recuperar sesiones anteriores desde la interfaz. Aunque un ADMIN activo puede usarla temporalmente para consentimiento y análisis, los endpoints `/users/**` siguen requiriendo el JWT ADMIN independiente.
 
 ### 4.4 Invariantes físicas
 
@@ -180,7 +180,7 @@ La migración V2 garantiza:
 - `expires_at <= absolute_expires_at`;
 - estado limitado a `ACTIVE`, `EXPIRED` o `CLOSED`.
 
-Las reglas adicionales —por ejemplo, que el usuario sea `STANDARD` y esté activo— se aplican en el servicio.
+Las reglas adicionales —que el usuario sea `STANDARD` o `ADMIN` y esté activo— se aplican en el servicio.
 
 ## 5. Consentimiento
 
@@ -443,7 +443,7 @@ Una validación HTTP elemental puede responder `400` sin crear una `Analysis`. S
 
 `POST /analyses/text`:
 
-1. valida sesión, CSRF, consentimiento y longitud;
+1. valida sesión temporal de un STANDARD o ADMIN activo, CSRF, consentimiento y longitud;
 2. persiste `Analysis(RECEIVED)` y `AnalysisInput(TEXT)`;
 3. responde `202 Accepted` con el identificador.
 
@@ -580,10 +580,10 @@ Las decisiones definitivas de cifrado, retención, minimización, anonimización
 
 | Decisión | Selección vigente | Estado |
 |---|---|---|
-| Sesión STANDARD | Cookie `HttpOnly` con token opaco y estado server-side | Implementada F1.1 |
+| Sesión temporal de análisis | Cookie `HttpOnly` con token opaco y estado server-side; compatible con STANDARD y ADMIN activos | Implementada F1.1; formalización ADMIN pendiente F1.4C |
 | Protección del token | HMAC-SHA-256 con pepper | Implementada F1.1 |
 | TTL | Inactividad + límite absoluto configurables | Implementada F1.1 |
-| Creación de sesión | `POST /standard-sessions` separado del reconocimiento/registro | Implementada F1.1 |
+| Creación de sesión | `POST /standard-sessions` acepta STANDARD o ADMIN activo, separado del reconocimiento/registro | Implementada F1.1; revisar acceso ADMIN en F1.4C |
 | Consentimiento | Eventos `ACCEPTED`/`REJECTED` vinculados a sesión y usuario | Implementada F1.1 |
 | Vigencia del consentimiento | Coincidencia de versión y hash del documento | Implementada F1.1 |
 | CSRF STANDARD | Repositorio de cookie + header y handler SPA | Implementada; ampliar a PDF/audio |
@@ -608,6 +608,10 @@ Las decisiones definitivas de cifrado, retención, minimización, anonimización
 F1.4 cerró los criterios jurídicos explícitos, la representación de los artículos 15 y 20, las siete
 modalidades, el versionado 1.0/2.0 y el golden set. La revisión cualitativa por especialistas sigue
 siendo una actividad de aceptación, no una ampliación automática del alcance del modelo.
+
+### F1.4C — Formalización del acceso ADMIN al análisis
+
+La compatibilidad actual permite que `POST /standard-sessions`, una ruta pública protegida por CSRF, cree una sesión de análisis para un registro ADMIN usando DNI/CE. CSRF no es autenticación. Antes del piloto o producción se debe habilitar el análisis ADMIN a partir de la identidad autenticada por JWT, mantener separado el acceso STANDARD por sesión temporal y coordinar el cambio de contrato con frontend. Esta deuda no se implementa en F1.4B.
 
 ### F1.5/F1.6 — PDF y audio
 

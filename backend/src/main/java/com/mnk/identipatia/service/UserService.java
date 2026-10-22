@@ -5,17 +5,18 @@ import com.mnk.identipatia.dto.DocumentRecognitionResponse;
 import com.mnk.identipatia.dto.StandardUserRegistrationRequest;
 import com.mnk.identipatia.dto.StandardUserRegistrationResponse;
 import com.mnk.identipatia.dto.UserDTO;
+import com.mnk.identipatia.dto.PagedResponse;
 import com.mnk.identipatia.exception.InvalidUserDataException;
 import com.mnk.identipatia.exception.UserNotFoundException;
 import com.mnk.identipatia.mapper.UserMapper;
 import com.mnk.identipatia.model.User;
 import com.mnk.identipatia.repository.UserRepository;
+import com.mnk.identipatia.repository.UserSpecifications;
 import com.mnk.identipatia.repository.StandardSessionRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 public class UserService {
@@ -61,10 +62,10 @@ public class UserService {
         return new StandardUserRegistrationResponse(true);
     }
 
-    public List<UserDTO> findAll() {
-        return userRepository.findAll().stream()
-                .map(userMapper::toDto)
-                .toList();
+    public PagedResponse<UserDTO> findAll(UserSearchCriteria criteria) {
+        return PagedResponse.from(userRepository
+                .findAll(UserSpecifications.matching(criteria), criteria.toPageable())
+                .map(userMapper::toDto));
     }
 
     public UserDTO findById(Long userId) {

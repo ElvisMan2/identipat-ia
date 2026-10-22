@@ -1,8 +1,8 @@
 # Roadmap funcional — IDENTIPAT-IA
 
 **Estado:** F0 y F1.0 completadas; F1.1–F1.4 implementadas; F1.5 es la siguiente fase
-**Versión del roadmap:** 1.2
-**Última actualización:** 20 de septiembre de 2026
+**Versión del roadmap:** 1.3
+**Última actualización:** 22 de octubre de 2026
 **Objetivo:** mantener una visión vigente de la secuencia funcional del producto, diferenciando lo ya materializado de las fases pendientes.
 
 ---
@@ -27,6 +27,8 @@ La estabilización técnica F0 está completada. El backend también materializa
 | F1.2 | Capa de IA generativa en Java | ✅ Implementada |
 | F1.3 | Análisis end-to-end desde texto | ✅ Implementada |
 | F1.4 | Diagnóstico de propiedad intelectual | ✅ Implementada |
+| F1.4B | Listado administrativo paginado de usuarios (mejora backend) | ✅ Implementada |
+| F1.4C | Formalización del acceso ADMIN al análisis | ⏳ Pendiente |
 | F1.5–F1.9 | PDF, audio, reporte, recursos y E2E | ⏳ Pendientes |
 | F2 | Preparación para piloto y producción | ⏳ Pendiente |
 
@@ -50,6 +52,7 @@ La base actual incluye:
 - prompts y JSON Schemas versionados;
 - persistencia de intentos, resultados y metadata técnica;
 - lease, retry y recuperación de trabajos interrumpidos.
+- listado administrativo de usuarios con paginación, búsqueda, filtros y ordenamiento controlado.
 
 ---
 
@@ -70,6 +73,8 @@ Los usuarios STANDARD:
 La solución vigente utiliza una sesión server-side. El navegador recibe un token aleatorio en una cookie `HttpOnly`; PostgreSQL conserva únicamente su representación HMAC. La sesión aplica TTL de inactividad y TTL absoluto, ambos configurables.
 
 El DNI/CE sirve para identificación y deduplicación funcional. No autentica ni verifica criptográfica o presencialmente la identidad real de quien opera el navegador.
+
+Por compatibilidad con la experiencia administrativa vigente, un ADMIN activo también puede crear esta sesión temporal para consentimiento y análisis. La cookie no concede privilegios ADMIN ni sustituye su JWT; `/users/**` continúa requiriendo `ADMIN_JWT`.
 
 ## 2.2 Consentimiento y disclaimer
 
@@ -227,7 +232,7 @@ El modelo implementado incorpora además control de concurrencia mediante lease,
 
 ## Alcance implementado
 
-- creación y cierre de sesiones temporales STANDARD;
+- creación y cierre de sesiones temporales de análisis para STANDARD y ADMIN activos;
 - asociación con el usuario reconocido o registrado;
 - token aleatorio conservado en cookie `HttpOnly`;
 - persistencia del token únicamente mediante HMAC;
@@ -238,6 +243,8 @@ El modelo implementado incorpora además control de concurrencia mediante lease,
 - bloqueo del análisis sin aceptación vigente;
 - protección CSRF con `CookieCsrfTokenRepository` y patrón SPA de Spring Security;
 - separación entre sesión STANDARD y autenticación ADMIN con JWT Bearer.
+
+La compatibilidad ADMIN actual no equivale a autenticación: `POST /standard-sessions` es público + CSRF y puede asociar una sesión a un ADMIN mediante DNI/CE. CSRF no autentica. La formalización de este acceso queda registrada como F1.4C y no altera todavía el contrato coordinado con frontend.
 
 La mutación `POST /analyses/text` ya está incluida en la estrategia CSRF. Las futuras mutaciones PDF/audio deberán quedar igualmente cubiertas, preferiblemente mediante una regla general aplicable a `/analyses/**`.
 
@@ -370,6 +377,22 @@ Java debe:
 - persistir el JSON estructurado y la explicación legible;
 - registrar prompt, schema, proveedor y modelo utilizados;
 - mantener trazabilidad por ejecución.
+
+---
+
+# F1.4C — Formalización del acceso ADMIN al análisis
+
+**Estado:** pendiente; deuda de seguridad previa al piloto/producción.
+
+## Objetivo futuro
+
+- dejar de depender para ADMIN de una sesión pública creada únicamente con DNI/CE + CSRF;
+- derivar la identidad ADMIN autenticada desde JWT para habilitar el análisis;
+- mantener separados el acceso STANDARD por sesión temporal y el acceso ADMIN autenticado;
+- conservar la exigencia de `ADMIN_JWT` en `/users/**`;
+- coordinar cualquier cambio de contrato con frontend.
+
+No se rediseña este mecanismo en F1.4B. Hasta abordar F1.4C, la cookie temporal de análisis no otorga privilegios ADMIN y el JWT ADMIN continúa siendo un mecanismo independiente.
 
 ---
 

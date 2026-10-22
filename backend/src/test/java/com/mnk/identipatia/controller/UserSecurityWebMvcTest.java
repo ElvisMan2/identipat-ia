@@ -5,14 +5,17 @@ import com.mnk.identipatia.config.JwtAuthenticationFilter;
 import com.mnk.identipatia.config.SecurityConfig;
 import com.mnk.identipatia.dto.DocumentRecognitionResponse;
 import com.mnk.identipatia.dto.LoginResponseDTO;
+import com.mnk.identipatia.dto.PagedResponse;
 import com.mnk.identipatia.dto.StandardUserRegistrationResponse;
 import com.mnk.identipatia.dto.UserDTO;
 import com.mnk.identipatia.model.User;
 import com.mnk.identipatia.repository.UserRepository;
 import com.mnk.identipatia.service.JwtService;
 import com.mnk.identipatia.service.UserService;
+import com.mnk.identipatia.service.UserSearchCriteria;
 import io.jsonwebtoken.MalformedJwtException;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -161,19 +164,84 @@ class UserSecurityWebMvcTest {
     @WithMockUser(roles = "ADMIN")
     void authenticatedAdminCanExecuteAdministrativeOperations() throws Exception {
         UserDTO user = userDto();
-        when(userService.findAll()).thenReturn(List.of(user));
+        when(userService.findAll(any(UserSearchCriteria.class)))
+                .thenReturn(new PagedResponse<>(List.of(user), 0, 20, 1, 1, true, true));
         when(userService.findById(1L)).thenReturn(user);
         when(userService.findByDoi("12345678")).thenReturn(user);
         when(userService.update(eq(1L), any())).thenReturn(user);
 
         mockMvc.perform(get("/users"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].doi").value("12345678"));
+                .andExpect(jsonPath("$.content[0].doi").value("12345678"))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(20))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").value(true))
+                .andExpect(jsonPath("$.content[0].password").doesNotExist());
         mockMvc.perform(get("/users/1")).andExpect(status().isOk());
         mockMvc.perform(get("/users/doi/12345678")).andExpect(status().isOk());
         mockMvc.perform(put("/users/1").contentType(MediaType.APPLICATION_JSON).content(adminUserJson()))
                 .andExpect(status().isOk());
         mockMvc.perform(delete("/users/1")).andExpect(status().isNoContent());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void listingUsesDefaultsAndNormalizesFilters() throws Exception {
+        when(userService.findAll(any(UserSearchCriteria.class)))
+                .thenReturn(new PagedResponse<>(List.of(), 0, 20, 0, 0, true, true));
+
+        mockMvc.perform(get("/users")
+                        .param("search", "  Ana   TORRES ")
+                        .param("userType", " standard ")
+                        .param("status", " a ")
+                        .param("doiType", " dni "))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<UserSearchCriteria> captor = ArgumentCaptor.forClass(UserSearchCriteria.class);
+        verify(userService).findAll(captor.capture());
+        UserSearchCriteria criteria = captor.getValue();
+        org.junit.jupiter.api.Assertions.assertEquals(0, criteria.page());
+        org.junit.jupiter.api.Assertions.assertEquals(20, criteria.size());
+        org.junit.jupiter.api.Assertions.assertEquals(List.of("ana", "torres"), criteria.searchTerms());
+        org.junit.jupiter.api.Assertions.assertEquals("STANDARD", criteria.userType());
+        org.junit.jupiter.api.Assertions.assertEquals("A", criteria.status());
+        org.junit.jupiter.api.Assertions.assertEquals("DNI", criteria.doiType());
+        org.junit.jupiter.api.Assertions.assertEquals("creationDate", criteria.sortField());
+        org.junit.jupiter.api.Assertions.assertEquals(
+                org.springframework.data.domain.Sort.Direction.DESC,
+                criteria.sortDirection());
+    }
+
+    @Test
+    @WithMockUser(roles = "STANDARD")
+    void authenticatedNonAdminCannotListUsers() throws Exception {
+        mockMvc.perform(get("/users")).andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void invalidListingParametersReturnBadRequest() throws Exception {
+        List<String> invalidQueries = List.of(
+                "?page=-1",
+                "?size=0",
+                "?size=101",
+                "?userType=SUPERADMIN",
+                "?status=X",
+                "?doiType=PASSPORT",
+                "?sort=password,asc",
+                "?sort=firstName,sideways",
+                "?sort=firstName",
+                "?sort=firstName,asc,extra",
+                "?page=not-a-number");
+
+        for (String query : invalidQueries) {
+            mockMvc.perform(get("/users" + query))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.status").value(400));
+        }
     }
 
     @Test
@@ -187,6 +255,7 @@ class UserSecurityWebMvcTest {
     private static UserDTO userDto() {
         return UserDTO.builder()
                 .userId(1L)
+                .password("sensitive-password")
                 .firstName("Ana")
                 .paternalLastName("Torres")
                 .maternalLastName("Salas")

@@ -15,6 +15,26 @@ La especificación define `bearerAuth` para ADMIN. STANDARD no recibe JWT: usa `
 
 Swagger UI permite usar **Authorize** con el JWT emitido por el login administrativo. No se usa HTTP Basic.
 
+## Listado administrativo de usuarios
+
+`GET /users` requiere JWT de un usuario `ADMIN` y devuelve un objeto paginado, no un array plano. Sus parámetros son:
+
+| Parámetro | Default | Regla |
+| --- | --- | --- |
+| `page` | `0` | entero mayor o igual a cero |
+| `size` | `20` | entero entre 1 y 100 |
+| `search` | vacío | términos separados por espacios |
+| `userType` | vacío | `ADMIN` o `STANDARD` |
+| `status` | vacío | `A` o `I` |
+| `doiType` | vacío | `DNI` o `CE` |
+| `sort` | `creationDate,desc` | campo permitido y dirección `asc` o `desc` |
+
+Cada término de `search` se busca, sin distinguir mayúsculas/minúsculas, en nombre, apellidos, DOI, email o profesión. Un término puede coincidir en una columna diferente, pero todos los términos y filtros deben coincidir. Los campos ordenables son `userId`, `firstName`, `paternalLastName`, `doi`, `email`, `userType`, `status` y `creationDate`; salvo cuando el orden principal ya es `userId`, se agrega `userId asc` como desempate estable.
+
+La respuesta contiene `content`, `page`, `size`, `totalElements`, `totalPages`, `first` y `last`. Una página válida sin elementos responde `200` con `content: []`. Parámetros inválidos responden `400`; JWT ausente o inválido responde `401`, y un actor autenticado que no sea ADMIN recibe `403`.
+
+Este cambio reemplaza intencionalmente el contrato anterior `List<UserDTO>`. El frontend existente puede quedar temporalmente incompatible hasta que adapte su consumo; esta tarea no modifica Angular.
+
 ## Postman
 
 La colección está en `postman/identipat-api.collection.json` e incluye `STANDARD - Session and consent`, además de reconocimiento/registro, administración y negativos.
@@ -29,7 +49,7 @@ Las variables de colección no contienen secretos reales:
 - `consentVersion`: versión esperada por el backend.
 - `analysisId`: se guarda desde la respuesta `202` para una consulta GET manual posterior.
 
-Ejecuta primero **Login ADMIN and save JWT** y luego las operaciones en `Admin - Users`, que envían `Authorization: Bearer {{adminJwt}}`. Las solicitudes que crean, actualizan o eliminan datos requieren valores de prueba únicos y son intencionalmente manuales.
+Ejecuta primero **Login ADMIN and save JWT** y luego las operaciones en `Admin - Users`, que envían `Authorization: Bearer {{adminJwt}}`. El grupo incluye ejemplos paginados, de búsqueda, filtros y ordenamiento. Las solicitudes que crean, actualizan o eliminan datos requieren valores de prueba únicos y son intencionalmente manuales.
 
 El flujo STANDARD no usa Bearer token: primero **Recognize document** y, si aplica, **Register STANDARD**. Después ejecuta **Get CSRF**, crea sesión, registra consentimiento, crea el análisis y realiza un GET manual. Postman conserva las cookies en su cookie jar y envía `X-XSRF-TOKEN: {{csrfToken}}`. No hay polling infinito. No deben guardarse DNI reales, cookies, pepper, JWT ni secretos en variables compartidas.
 

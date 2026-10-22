@@ -1,22 +1,22 @@
 # Matriz de autorización vigente — IDENTIPAT-IA
 
-**Estado verificado hasta:** F1.3  
-**Última actualización:** 16 de septiembre de 2026
+**Estado verificado hasta:** F1.4B
+**Última actualización:** 22 de octubre de 2026
 
 Las rutas son relativas a `/identipat-ia`. Existen tres categorías separadas:
 
 - `PUBLIC`: no exige una capacidad de acceso; una mutación puede exigir CSRF.
 - `ADMIN_JWT`: autenticación ADMIN mediante Bearer JWT.
-- `STANDARD_SESSION`: capacidad temporal por cookie `HttpOnly`; no es login, JWT, identidad verificada ni una authority ADMIN.
+- `STANDARD_SESSION`: capacidad temporal de análisis por cookie `HttpOnly`; su nombre histórico no impide la compatibilidad temporal con un ADMIN activo. No es login, JWT, identidad verificada ni una authority ADMIN.
 
 | Endpoint | Acceso | Observaciones |
 |---|---|---|
 | `GET /standard-session/csrf` | `PUBLIC` | Emite `XSRF-TOKEN`; CSRF no autentica. |
-| `POST /standard-sessions` | `PUBLIC + CSRF` | Exige `X-XSRF-TOKEN`; valida un STANDARD activo y emite `IDENTIPAT_STANDARD_SESSION`. |
+| `POST /standard-sessions` | `PUBLIC + CSRF` | Exige `X-XSRF-TOKEN`; valida un STANDARD activo o un ADMIN activo y emite `IDENTIPAT_STANDARD_SESSION` para el flujo de análisis. |
 | `GET /standard-session` | `STANDARD_SESSION` | Renueva inactividad sin superar el límite absoluto. |
 | `POST /standard-session/consent` | `STANDARD_SESSION + CSRF` | Persiste una decisión inmutable; `REJECTED` cierra la sesión. |
 | `DELETE /standard-session` | `STANDARD_SESSION + CSRF` | Revoca server-side y elimina la cookie. |
-| `POST /analyses/text` | `STANDARD_SESSION + CSRF` | Exige consentimiento vigente; deriva usuario/sesión del servidor, persiste antes de invocar al LLM y responde `202`. |
+| `POST /analyses/text` | `STANDARD_SESSION + CSRF` | Admite la sesión temporal de un STANDARD activo o ADMIN activo, exige consentimiento vigente, deriva usuario/sesión del servidor, persiste antes de invocar al LLM y responde `202`. |
 | `GET /analyses/{analysisId}` | `STANDARD_SESSION` | Exige sesión activa y pertenencia a la misma `session_id`; otra sesión o un UUID inexistente responde `404`. |
 | `POST /users/identify` | `PUBLIC` | Solo reconoce el registro; DNI/CE no autentica. |
 | `POST /users` | `PUBLIC` | Registra un usuario STANDARD activo sin contraseña. |
@@ -31,11 +31,13 @@ La autorización combina la configuración HTTP de Spring Security con validacio
 
 - las rutas administrativas bajo `/users/**` quedan protegidas mediante `ADMIN_JWT`, excepto los tres endpoints públicos enumerados;
 - las rutas `/standard-session/**`, `/standard-sessions` y `/analyses/**` llegan al controller sin exigir JWT ADMIN;
-- los servicios STANDARD resuelven la cookie, comprueban vigencia y estado de la sesión y validan las reglas funcionales correspondientes;
+- los servicios de sesión temporal resuelven la cookie, comprueban vigencia y estado de la sesión y validan las reglas funcionales correspondientes;
 - `GET /analyses/{analysisId}` consulta por `analysis_id` y `session_id`, por lo que el UUID por sí solo no autoriza el acceso;
 - `POST /analyses/text` exige además consentimiento aceptado para la versión y el hash vigentes.
 
 El `permitAll()` de Spring Security para `/analyses/**` no convierte los análisis en recursos públicos: permite que el caso de uso aplique el mecanismo de sesión STANDARD, distinto del JWT ADMIN. Todo endpoint futuro bajo ese prefijo debe conservar explícitamente esta validación; no debe confiar únicamente en el matcher HTTP.
+
+La sesión temporal asociada a un registro ADMIN solo habilita el flujo de análisis y consentimiento. No concede privilegios ADMIN: los endpoints administrativos bajo `/users/**` continúan exigiendo `ADMIN_JWT`. El JWT ADMIN y la cookie `IDENTIPAT_STANDARD_SESSION` son mecanismos distintos y no intercambiables.
 
 ## CSRF y CORS
 
@@ -60,7 +62,7 @@ Cuando se incorporen `POST /analyses/pdf` y `POST /analyses/audio`, deberán agr
 
 ## Límites del modelo
 
-La cookie `IDENTIPAT_STANDARD_SESSION` vincula una experiencia a un registro STANDARD, pero no demuestra que quien opera el navegador sea titular real del DNI/CE.
+La cookie `IDENTIPAT_STANDARD_SESSION` vincula una experiencia de análisis a un registro STANDARD o, por compatibilidad vigente, a un registro ADMIN activo, pero no demuestra que quien opera el navegador sea titular real del DNI/CE.
 
 Para STANDARD no existe:
 
@@ -72,5 +74,11 @@ Para STANDARD no existe:
 - recuperación de sesiones anteriores.
 
 El consentimiento de datos y el disclaimer orientativo son conceptos distintos. El consentimiento y el análisis de texto están implementados en F1.1 y F1.3, respectivamente; el disclaimer institucional permanece pendiente para F1.7.
+
+## Limitación temporal del acceso ADMIN al análisis
+
+`POST /standard-sessions` es público con protección CSRF y actualmente puede crear una sesión de análisis asociada a un ADMIN a partir de DNI/CE. CSRF protege frente a solicitudes entre sitios, pero no autentica al operador ni sustituye el JWT ADMIN. Este mecanismo se conserva para compatibilidad con la experiencia administrativa vigente y debe formalizarse antes del piloto o producción.
+
+La deuda **F1.4C — Formalización del acceso ADMIN al análisis** debe derivar la identidad ADMIN autenticada desde JWT para habilitar análisis, mantener separado el acceso STANDARD por sesión temporal y coordinar cualquier cambio contractual con frontend.
 
 La política definitiva de acceso administrativo a consultas/resultados, retención, anonimización y borrado físico debe cerrarse antes de producción.
