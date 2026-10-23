@@ -185,7 +185,7 @@
             <p><strong>Tipo de usuario:</strong> Administrador</p>
             <p><strong>Estado:</strong> {{ isInactive(currentAdmin()!) ? 'Inactivo' : 'Activo' }}</p>
           </div>
-          <form [formGroup]="profileForm" (ngSubmit)="updateProfile()" class="form-grid">
+          <form [formGroup]="profileForm" (ngSubmit)="updateProfile()" class="form-grid registration-form">
             <label>Nombres <input type="text" formControlName="firstName" maxlength="30" /></label>
             <label>Apellido paterno <input type="text" formControlName="paternalLastName" maxlength="30" /></label>
             <label>Apellido materno <input type="text" formControlName="maternalLastName" maxlength="30" /></label>
