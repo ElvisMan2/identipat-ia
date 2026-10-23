@@ -24,6 +24,7 @@ export class App {
   readonly userPage = signal(0);
   readonly userPageSize = signal(20);
   readonly userSearch = signal('');
+  readonly userStatus = signal('');
   readonly userTotalPages = signal(0);
   readonly userTotalElements = signal(0);
   readonly downloadingUsers = signal(false);
@@ -434,7 +435,7 @@ export class App {
   downloadUsersCsv(): void {
     this.downloadingUsers.set(true);
     this.errorMessage.set('');
-    this.userService.exportAll(this.userSearch()).subscribe({
+    this.userService.exportAll(this.userSearch(), this.userStatus()).subscribe({
       next: response => {
         const blob = response.body;
         if (!blob) {
@@ -481,7 +482,7 @@ export class App {
     this.loading.set(true);
     this.errorMessage.set('');
 
-    this.userService.findAll(page, this.userPageSize(), this.userSearch()).subscribe({
+    this.userService.findAll(page, this.userPageSize(), this.userSearch(), this.userStatus()).subscribe({
       next: (response) => {
         this.users.set(response.content);
         this.userPage.set(response.page);
@@ -519,6 +520,16 @@ export class App {
   }
 
   searchUsers(): void {
+    this.loadUsers(0);
+  }
+
+  changeUserStatus(event: Event): void {
+    const status = (event.target as HTMLSelectElement).value;
+    if (!['', 'A', 'I'].includes(status)) {
+      return;
+    }
+
+    this.userStatus.set(status);
     this.loadUsers(0);
   }
 
