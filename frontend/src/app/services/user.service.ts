@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { User } from '../models/user.model';
 import { environment } from '../../environments/environment';
@@ -74,6 +74,14 @@ export class UserService {
     return this.http.get<PagedResponse<User>>(this.endpoint, {
       ...this.authenticatedOptions,
       params: { page, size }
+    });
+  }
+
+  exportAll(): Observable<HttpResponse<Blob>> {
+    return this.http.get(`${this.endpoint}/export`, {
+      ...this.authenticatedOptions,
+      observe: 'response',
+      responseType: 'blob'
     });
   }
 

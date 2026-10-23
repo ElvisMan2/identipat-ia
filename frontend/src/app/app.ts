@@ -25,6 +25,7 @@ export class App {
   readonly userPageSize = signal(20);
   readonly userTotalPages = signal(0);
   readonly userTotalElements = signal(0);
+  readonly downloadingUsers = signal(false);
   readonly analyses = signal<AdminAnalysis[]>([]);
   readonly loading = signal(false);
   readonly analysesLoading = signal(false);
@@ -382,30 +383,33 @@ export class App {
   }
 
   downloadUsersCsv(): void {
-    const headers = ['ID', 'Nombre completo', 'Documento', 'Nacimiento', 'Género', 'Correo', 'Teléfono', 'Celular', 'Tipo', 'Profesión', 'Estado'];
-    const rows = this.users().map(user => [
-      String(user.userId ?? ''),
-      `${user.firstName} ${user.paternalLastName} ${user.maternalLastName}`,
-      `${user.doiType} ${user.doi}`,
-      user.birthDate,
-      user.gender,
-      user.email,
-      user.phone,
-      user.mobilePhone,
-      user.userType,
-      user.profession,
-      user.status ?? ''
-    ]);
-    const csv = '\uFEFF' + [headers, ...rows]
-      .map(row => row.map(value => this.csvCell(value)).join(','))
-      .join('\r\n');
-    const link = this.document.createElement('a');
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    this.downloadingUsers.set(true);
+    this.errorMessage.set('');
+    this.userService.exportAll().subscribe({
+      next: response => {
+        const blob = response.body;
+        if (!blob) {
+          this.errorMessage.set('No se pudo descargar el archivo de usuarios.');
+          this.downloadingUsers.set(false);
+          return;
+        }
 
-    link.href = url;
-    link.download = `usuarios-${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+        const contentDisposition = response.headers.get('Content-Disposition');
+        const filename = contentDisposition?.match(/filename="?([^";]+)"?/i)?.[1]
+          ?? `usuarios-${new Date().toISOString().slice(0, 10)}.csv`;
+        const url = URL.createObjectURL(blob);
+        const link = this.document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(url));
+        this.downloadingUsers.set(false);
+      },
+      error: () => {
+        this.errorMessage.set('No se pudieron exportar los usuarios.');
+        this.downloadingUsers.set(false);
+      }
+    });
   }
 
   private csvCell(value: string): string {
