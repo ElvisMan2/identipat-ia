@@ -54,6 +54,8 @@ textarea:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgb(20 108 99 
 .input-actions { display: flex; justify-content: flex-end; gap: .6rem; margin: .65rem 0 .35rem; }
 .voice-button, .pdf-button { border: 1px solid var(--teal); border-radius: 5px; padding: .58rem .85rem; color: var(--teal-dark); background: transparent; font-weight: 600; cursor: pointer; }
 .password-field { margin-top: .8rem; }
+.password-input-wrap { display: flex; }
+.password-visibility { width: 2.5rem; flex: none; margin-left: -2.5rem; border: 0; background: none; cursor: pointer; }
 .primary-button { width: 100%; min-height: 48px; margin-top: 1rem; border: 0; border-radius: 5px; padding: .75rem 1rem; color: #fff; background: var(--teal); font-weight: 700; cursor: pointer; }
 .primary-button:hover { background: var(--teal-dark); }
 .access-register-button { width: 100%; margin-top: .65rem; }

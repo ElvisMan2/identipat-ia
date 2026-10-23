@@ -19,6 +19,7 @@ export class App {
   private readonly document = inject(DOCUMENT);
   private readonly userService = inject(UserService);
   private readonly standardAnalysisService = inject(StandardAnalysisService);
+  private readonly defaultAdminPassword = 'admin';
 
   readonly users = signal<User[]>([]);
   readonly userPage = signal(0);
@@ -37,6 +38,7 @@ export class App {
   readonly analysesError = signal('');
   readonly editingUserId = signal<number | null>(null);
   readonly editingUserType = signal('STANDARD');
+  readonly showAdminPassword = signal(false);
   readonly showEditModal = signal(false);
   readonly adminSection = signal<'users' | 'predictions' | 'profile'>('users');
   readonly view = signal<'home' | 'registration' | 'standard-analysis' | 'standard-result' | 'admin-login' | 'admin' | 'legal'>('home');
@@ -523,6 +525,31 @@ export class App {
     this.loadUsers(0);
   }
 
+  changeEditingUserType(event: Event): void {
+    const userType = (event.target as HTMLSelectElement).value;
+    if (!['STANDARD', 'ADMIN'].includes(userType)) {
+      return;
+    }
+
+    const wasAdmin = this.editingUserType() === 'ADMIN';
+    this.editingUserType.set(userType);
+    const passwordControl = this.userForm.controls.password;
+    if (userType === 'ADMIN') {
+      if (!wasAdmin) {
+        passwordControl.setValue(this.defaultAdminPassword);
+      }
+      passwordControl.setValidators([Validators.required]);
+    } else {
+      passwordControl.setValue('');
+      passwordControl.clearValidators();
+    }
+    passwordControl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  toggleAdminPasswordVisibility(): void {
+    this.showAdminPassword.update(visible => !visible);
+  }
+
   changeUserStatus(event: Event): void {
     const status = (event.target as HTMLSelectElement).value;
     if (!['', 'A', 'I'].includes(status)) {
@@ -696,6 +723,7 @@ export class App {
 
     this.editingUserId.set(user.userId);
     this.editingUserType.set(user.userType);
+    this.showAdminPassword.set(false);
     const passwordControl = this.userForm.controls.password;
     if (user.userType === 'ADMIN') {
       passwordControl.setValidators([Validators.required]);
@@ -724,6 +752,7 @@ export class App {
   cancelEdit(): void {
     this.editingUserId.set(null);
     this.editingUserType.set('STANDARD');
+    this.showAdminPassword.set(false);
     this.showEditModal.set(false);
     this.userForm.controls.password.clearValidators();
     this.userForm.controls.password.updateValueAndValidity({ emitEvent: false });
@@ -777,7 +806,7 @@ export class App {
     this.userService.update(user.userId, {
       ...user,
       userType: 'ADMIN',
-      password: 'admin'
+      password: this.defaultAdminPassword
     }).subscribe({
       next: () => this.loadUsers(),
       error: () => this.errorMessage.set('No se pudo convertir el usuario en administrador.')

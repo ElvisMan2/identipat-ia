@@ -419,4 +419,65 @@ describe('App', () => {
     updateRequest.flush({ ...user, userType: 'ADMIN' });
     httpTesting.expectOne(`${environment.apiBaseUrl}/users`).flush([]);
   });
+
+  it('should assign the default admin password when changing the edit form user type', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const user = {
+      userId: 10,
+      firstName: 'Usuario',
+      paternalLastName: 'Estándar',
+      maternalLastName: 'Prueba',
+      doi: '11223344',
+      doiType: 'DNI',
+      birthDate: '01/01/1990',
+      gender: 'FEMALE',
+      email: 'standard@example.test',
+      phone: '016543210',
+      mobilePhone: '912345678',
+      userType: 'STANDARD',
+      profession: 'Profesional',
+      status: 'A'
+    };
+
+    app.startEdit(user);
+    app.changeEditingUserType({ target: { value: 'ADMIN' } } as unknown as Event);
+
+    expect(app.editingUserType()).toBe('ADMIN');
+    expect(app.userForm.controls.password.value).toBe('admin');
+    expect(app.userForm.controls.password.valid).toBeTrue();
+  });
+
+  it('should toggle visibility of the admin password in the edit form', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const user = {
+      userId: 11,
+      firstName: 'Usuario',
+      paternalLastName: 'Estándar',
+      maternalLastName: 'Prueba',
+      doi: '11223344',
+      doiType: 'DNI',
+      birthDate: '01/01/1990',
+      gender: 'FEMALE',
+      email: 'standard@example.test',
+      phone: '016543210',
+      mobilePhone: '912345678',
+      userType: 'STANDARD',
+      profession: 'Profesional',
+      status: 'A'
+    };
+    app.startEdit(user);
+    app.changeEditingUserType({ target: { value: 'ADMIN' } } as unknown as Event);
+    fixture.detectChanges();
+
+    const passwordInput = fixture.nativeElement.querySelector('[formControlName="password"]') as HTMLInputElement;
+    const visibilityButton = fixture.nativeElement.querySelector('.password-visibility') as HTMLButtonElement;
+    expect(passwordInput.type).toBe('password');
+    visibilityButton.click();
+    fixture.detectChanges();
+
+    expect(passwordInput.type).toBe('text');
+    expect(visibilityButton.getAttribute('aria-pressed')).toBe('true');
+  });
 });
