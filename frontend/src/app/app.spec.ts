@@ -39,6 +39,57 @@ describe('App', () => {
     expect(compiled.textContent).not.toContain('Usuarios registrados');
   });
 
+  it('should load and navigate paginated admin users', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    const pageResponse = {
+      content: [{
+        userId: 1,
+        firstName: 'Ana',
+        paternalLastName: 'Pérez',
+        maternalLastName: 'Rojas',
+        doi: '12345678',
+        doiType: 'DNI',
+        birthDate: '1990-01-01',
+        gender: 'F',
+        email: 'ana@example.com',
+        phone: '123456789',
+        mobilePhone: '987654321',
+        userType: 'STANDARD',
+        profession: 'Abogada',
+        status: 'A'
+      }],
+      page: 0,
+      size: 20,
+      totalElements: 42,
+      totalPages: 3,
+      first: true,
+      last: false
+    };
+
+    app.loadUsers();
+    httpTesting.expectOne(request =>
+      request.url === `${environment.apiBaseUrl}/users`
+      && request.params.get('page') === '0'
+      && request.params.get('size') === '20'
+    ).flush(pageResponse);
+
+    expect(app.users()).toEqual(pageResponse.content);
+    expect(app.userTotalElements()).toBe(42);
+    expect(app.userTotalPages()).toBe(3);
+
+    app.changeUserPage(1);
+    httpTesting.expectOne(request =>
+      request.url === `${environment.apiBaseUrl}/users`
+      && request.params.get('page') === '1'
+      && request.params.get('size') === '20'
+    ).flush({ ...pageResponse, page: 1, first: false });
+
+    expect(app.userPage()).toBe(1);
+    expect(app.users()).toHaveSize(1);
+  });
+
   it('should request a password automatically when the document belongs to an admin', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;

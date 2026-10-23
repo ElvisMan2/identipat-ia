@@ -32,6 +32,16 @@ export interface StandardUserRegistrationResponse {
   registered: boolean;
 }
 
+export interface PagedResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -60,8 +70,11 @@ export class UserService {
     return { headers: { Authorization: `Bearer ${this.accessToken}` } };
   }
 
-  findAll(): Observable<User[]> {
-    return this.http.get<User[]>(this.endpoint, this.authenticatedOptions);
+  findAll(page = 0, size = 20): Observable<PagedResponse<User>> {
+    return this.http.get<PagedResponse<User>>(this.endpoint, {
+      ...this.authenticatedOptions,
+      params: { page, size }
+    });
   }
 
   findById(userId: number): Observable<User> {

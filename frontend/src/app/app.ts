@@ -21,6 +21,10 @@ export class App {
   private readonly standardAnalysisService = inject(StandardAnalysisService);
 
   readonly users = signal<User[]>([]);
+  readonly userPage = signal(0);
+  readonly userPageSize = signal(20);
+  readonly userTotalPages = signal(0);
+  readonly userTotalElements = signal(0);
   readonly analyses = signal<AdminAnalysis[]>([]);
   readonly loading = signal(false);
   readonly analysesLoading = signal(false);
@@ -320,7 +324,7 @@ export class App {
       this.navigationPending.set(null);
       this.adminSection.set('users');
       this.view.set('admin');
-      this.loadUsers();
+      this.loadUsers(0);
       this.scrollToTop();
     }, 500);
   }
@@ -420,13 +424,16 @@ export class App {
     return labels[status];
   }
 
-  loadUsers(): void {
+  loadUsers(page = this.userPage()): void {
     this.loading.set(true);
     this.errorMessage.set('');
 
-    this.userService.findAll().subscribe({
-      next: (users) => {
-        this.users.set(users);
+    this.userService.findAll(page, this.userPageSize()).subscribe({
+      next: (response) => {
+        this.users.set(response.content);
+        this.userPage.set(response.page);
+        this.userTotalPages.set(response.totalPages);
+        this.userTotalElements.set(response.totalElements);
         this.loading.set(false);
       },
       error: () => {
@@ -434,6 +441,24 @@ export class App {
         this.loading.set(false);
       }
     });
+  }
+
+  changeUserPage(page: number): void {
+    if (this.loading() || page < 0 || page >= this.userTotalPages()) {
+      return;
+    }
+
+    this.loadUsers(page);
+  }
+
+  changeUserPageSize(event: Event): void {
+    const size = Number((event.target as HTMLSelectElement).value);
+    if (![10, 20, 50, 100].includes(size)) {
+      return;
+    }
+
+    this.userPageSize.set(size);
+    this.loadUsers(0);
   }
 
   registerStandard(): void {
@@ -445,7 +470,6 @@ export class App {
 
     this.saving.set(true);
     const registrationStartedAt = Date.now();
-    this.registrationModal.set('registering');
     this.accessMessage.set('');
     this.userService.create(this.registrationPayload()).subscribe({
       next: () => {

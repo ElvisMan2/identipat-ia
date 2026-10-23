@@ -114,7 +114,15 @@
         <div class="table-head">
           <h2>Usuarios registrados</h2>
           <div class="table-actions">
-            <button class="ghost" type="button" (click)="downloadUsersCsv()" [disabled]="!users().length">Descargar CSV</button>
+            <label class="page-size">Mostrar
+              <select [value]="userPageSize()" (change)="changeUserPageSize($event)">
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </label>
+            <button class="ghost" type="button" (click)="downloadUsersCsv()" [disabled]="!users().length">Descargar CSV de esta página</button>
             <button class="ghost" type="button" (click)="loadUsers()" [disabled]="loading()">{{ loading() ? 'Cargando...' : 'Refrescar' }}</button>
           </div>
         </div>
@@ -140,6 +148,13 @@
             </tbody>
           </table>
         </div>
+        <nav class="pagination" aria-label="Paginación de usuarios">
+          <span>Página {{ userPage() + 1 }} de {{ userTotalPages() || 1 }} · {{ userTotalElements() }} usuarios</span>
+          <div class="table-actions">
+            <button class="ghost" type="button" (click)="changeUserPage(userPage() - 1)" [disabled]="loading() || userPage() === 0">Anterior</button>
+            <button class="ghost" type="button" (click)="changeUserPage(userPage() + 1)" [disabled]="loading() || userPage() >= userTotalPages() - 1">Siguiente</button>
+          </div>
+        </nav>
       </article>
     </section>
     }
