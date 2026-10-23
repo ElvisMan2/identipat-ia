@@ -49,6 +49,10 @@ $mavenWrapper = Join-Path $backendDir "mvnw.cmd"
 $frontendBrowserDir = Join-Path $repoRoot "frontend\dist\identipat-ia\browser"
 $staticDir = Join-Path $backendDir "src\main\resources\static"
 
+if (Test-Path -LiteralPath $frontendBrowserDir -PathType Container) {
+    Get-ChildItem -LiteralPath $frontendBrowserDir -Force | Remove-Item -Recurse -Force
+}
+
 Write-Host "Building frontend..."
 Push-Location $frontendDir
 try {
@@ -70,6 +74,8 @@ if (-not (Test-Path -LiteralPath $frontendBrowserDir -PathType Container)) {
 if (-not (Test-Path -LiteralPath $staticDir -PathType Container)) {
     New-Item -ItemType Directory -Path $staticDir -Force | Out-Null
 }
+
+Get-ChildItem -LiteralPath $staticDir -Force | Remove-Item -Recurse -Force
 
 Copy-Item `
     -Path (Join-Path $frontendBrowserDir "*") `
@@ -132,6 +138,24 @@ try {
 }
 
 Write-Host "PostgreSQL DEV: ready"
+
+$serverPort = 8082
+if (-not [string]::IsNullOrWhiteSpace($env:SERVER_PORT)) {
+    $configuredServerPort = 0
+    if (-not [int]::TryParse($env:SERVER_PORT.Trim(), [ref]$configuredServerPort) -or
+        $configuredServerPort -lt 1 -or $configuredServerPort -gt 65535) {
+        throw "SERVER_PORT must be an integer between 1 and 65535."
+    }
+    $serverPort = $configuredServerPort
+}
+
+$portProcesses = Get-NetTCPConnection -LocalPort $serverPort -State Listen -ErrorAction SilentlyContinue |
+    Select-Object -ExpandProperty OwningProcess -Unique
+foreach ($processId in $portProcesses) {
+    Stop-Process -Id $processId -Force
+    Write-Host "Stopped process $processId listening on port $serverPort."
+}
+
 Write-Host "Starting Spring Boot..."
 
 $mavenExitCode = 1
