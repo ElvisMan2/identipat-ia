@@ -62,6 +62,8 @@ jacoco.exec
 *.class
 /backend/src/main/resources/static/
 /frontend/dist/identipat-ia/browser/
+/frontend/dist/identipat-ia/*.txt
+/frontend/dist/identipat-ia/*.json
 
 # Python preprocessing service
 .venv/
