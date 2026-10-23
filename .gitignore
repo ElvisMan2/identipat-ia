@@ -60,6 +60,7 @@ jacoco.exec
 
 # Generated files
 *.class
+/backend/src/main/resources/static/
 
 # Python preprocessing service
 .venv/
