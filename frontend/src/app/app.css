@@ -47,7 +47,7 @@ button, input, select { font: inherit; }
 label { display: grid; gap: .38rem; color: var(--ink); font-size: .82rem; font-weight: 600; }
 input, select { width: 100%; min-height: 46px; border: 1px solid var(--line); border-radius: 5px; padding: .68rem .75rem; outline: none; color: var(--ink); background: #fff; transition: border-color 150ms ease, box-shadow 150ms ease; }
 input:focus, select:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgb(20 108 99 / .13); }
-.registration-form input.ng-invalid.ng-touched:not([type='checkbox']), .registration-form select.ng-invalid.ng-touched { border-color: var(--danger); background: #fff5f3; box-shadow: 0 0 0 3px rgb(168 50 50 / .12); }
+.registration-form input.ng-invalid.ng-touched:not([type='checkbox']), .registration-form select.ng-invalid.ng-touched, .form-grid input.ng-invalid.ng-touched:not([type='checkbox']), .form-grid select.ng-invalid.ng-touched { border-color: var(--danger); background: #fff5f3; box-shadow: 0 0 0 3px rgb(168 50 50 / .12); }
 .registration-form .terms-checkbox input.ng-invalid.ng-touched { outline: 2px solid var(--danger); outline-offset: 2px; }
 textarea { width: 100%; resize: vertical; border: 1px solid var(--line); border-radius: 5px; padding: .8rem; outline: none; color: var(--ink); background: #fff; font: inherit; line-height: 1.55; transition: border-color 150ms ease, box-shadow 150ms ease; }
 textarea:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgb(20 108 99 / .13); }

@@ -200,9 +200,9 @@
         <article class="panel modal-panel" (click)="$event.stopPropagation()">
           <h2>Editar usuario</h2>
           <form [formGroup]="userForm" (ngSubmit)="submit()" class="form-grid">
-            <label>Nombres <input type="text" formControlName="firstName" maxlength="30" placeholder="Juan" /></label>
-            <label>Apellido paterno <input type="text" formControlName="paternalLastName" maxlength="30" placeholder="Pérez" /></label>
-            <label>Apellido materno <input type="text" formControlName="maternalLastName" maxlength="30" placeholder="Gómez" /></label>
+            <label>Nombres <input type="text" formControlName="firstName" maxlength="25" placeholder="Juan" /></label>
+            <label>Apellido paterno <input type="text" formControlName="paternalLastName" maxlength="25" placeholder="Pérez" /></label>
+            <label>Apellido materno <input type="text" formControlName="maternalLastName" maxlength="25" placeholder="Gómez" /></label>
             <label>Tipo de documento
               <select formControlName="doiType"><option value="" disabled>Seleccione</option><option value="DNI">DNI</option><option value="CE">CE</option></select>
             </label>
@@ -436,9 +436,9 @@
             <span class="section-label">Nuevo usuario</span>
             <h2>Completa tu registro</h2>
             <form [formGroup]="userForm" (ngSubmit)="registerStandard()" class="registration-form" autocomplete="off" name="identipat-registration">
-              <label>Nombres <input type="text" name="firstName" autocomplete="given-name" formControlName="firstName" maxlength="30" placeholder="Adrian Jesús" /></label>
-              <label>Apellido paterno <input type="text" name="paternalLastName" autocomplete="family-name" formControlName="paternalLastName" maxlength="30" placeholder="Lizarbe" /></label>
-              <label>Apellido materno <input type="text" name="maternalLastName" autocomplete="additional-name" formControlName="maternalLastName" maxlength="30" placeholder="Estrada" /></label>
+              <label>Nombres <input type="text" name="firstName" autocomplete="given-name" formControlName="firstName" maxlength="25" placeholder="Adrian Jesús" /></label>
+              <label>Apellido paterno <input type="text" name="paternalLastName" autocomplete="family-name" formControlName="paternalLastName" maxlength="25" placeholder="Lizarbe" /></label>
+              <label>Apellido materno <input type="text" name="maternalLastName" autocomplete="additional-name" formControlName="maternalLastName" maxlength="25" placeholder="Estrada" /></label>
               <label>Tipo de documento
                 <select name="doiType" autocomplete="off" formControlName="doiType"><option value="DNI">DNI</option><option value="CE">CE</option></select>
               </label>
