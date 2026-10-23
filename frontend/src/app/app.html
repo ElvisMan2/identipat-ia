@@ -114,6 +114,10 @@
         <div class="table-head">
           <h2>Usuarios registrados</h2>
           <div class="table-actions">
+            <label class="user-search">Buscar
+              <input type="search" [value]="userSearch()" (input)="updateUserSearch($event)" (keydown.enter)="$event.preventDefault(); searchUsers()" placeholder="Nombre, documento, correo..." aria-label="Buscar usuarios" />
+              <button class="ghost" type="button" (click)="searchUsers()" [disabled]="loading()">Buscar</button>
+            </label>
             <label class="page-size">Mostrar
               <select [value]="userPageSize()" (change)="changeUserPageSize($event)">
                 <option value="10">10</option>

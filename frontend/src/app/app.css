@@ -155,6 +155,8 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .actions { margin-top: .4rem; }
 .table-head { justify-content: space-between; }
 .table-head h2 { margin-bottom: 0; }
+.user-search { display: flex; align-items: center; gap: .4rem; color: var(--muted); }
+.user-search input { width: min(18rem, 34vw); min-height: 36px; padding: .4rem .55rem; }
 .page-size { display: flex; align-items: center; gap: .4rem; color: var(--muted); white-space: nowrap; }
 .page-size select { width: auto; min-height: 36px; padding: .4rem 1.8rem .4rem .55rem; }
 .pagination { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-top: .9rem; color: var(--muted); font-size: .86rem; }
@@ -192,6 +194,8 @@ tr.editing { background: #eef8f5; }
 @media (max-width: 620px) {
   .table-head { align-items: flex-start; flex-direction: column; }
   .table-actions { flex-wrap: wrap; justify-content: flex-start; }
+  .user-search { flex-wrap: wrap; }
+  .user-search input { width: min(18rem, 62vw); }
   .topbar { height: 68px; padding-inline: 1rem; }
   .outline-button { padding: .55rem .65rem; font-size: .78rem; }
   .hero { width: min(100% - 2rem, 1180px); gap: 2.25rem; }

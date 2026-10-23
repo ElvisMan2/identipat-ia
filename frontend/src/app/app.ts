@@ -23,6 +23,7 @@ export class App {
   readonly users = signal<User[]>([]);
   readonly userPage = signal(0);
   readonly userPageSize = signal(20);
+  readonly userSearch = signal('');
   readonly userTotalPages = signal(0);
   readonly userTotalElements = signal(0);
   readonly downloadingUsers = signal(false);
@@ -433,7 +434,7 @@ export class App {
   downloadUsersCsv(): void {
     this.downloadingUsers.set(true);
     this.errorMessage.set('');
-    this.userService.exportAll().subscribe({
+    this.userService.exportAll(this.userSearch()).subscribe({
       next: response => {
         const blob = response.body;
         if (!blob) {
@@ -480,7 +481,7 @@ export class App {
     this.loading.set(true);
     this.errorMessage.set('');
 
-    this.userService.findAll(page, this.userPageSize()).subscribe({
+    this.userService.findAll(page, this.userPageSize(), this.userSearch()).subscribe({
       next: (response) => {
         this.users.set(response.content);
         this.userPage.set(response.page);
@@ -510,6 +511,14 @@ export class App {
     }
 
     this.userPageSize.set(size);
+    this.loadUsers(0);
+  }
+
+  updateUserSearch(event: Event): void {
+    this.userSearch.set((event.target as HTMLInputElement).value);
+  }
+
+  searchUsers(): void {
     this.loadUsers(0);
   }
 

@@ -88,6 +88,18 @@ describe('App', () => {
 
     expect(app.userPage()).toBe(1);
     expect(app.users()).toHaveSize(1);
+
+    app.updateUserSearch({ target: { value: 'ana rojas' } } as unknown as Event);
+    app.searchUsers();
+    httpTesting.expectOne(request =>
+      request.url === `${environment.apiBaseUrl}/users`
+      && request.params.get('page') === '0'
+      && request.params.get('size') === '20'
+      && request.params.get('search') === 'ana rojas'
+    ).flush({ ...pageResponse, totalElements: 1, totalPages: 1 });
+
+    expect(app.userPage()).toBe(0);
+    expect(app.userTotalElements()).toBe(1);
   });
 
   it('should request a password automatically when the document belongs to an admin', () => {
