@@ -26,6 +26,7 @@ export class App {
   readonly userPageSize = signal(20);
   readonly userSearch = signal('');
   readonly userStatus = signal('');
+  readonly userType = signal('');
   readonly userTotalPages = signal(0);
   readonly userTotalElements = signal(0);
   readonly downloadingUsers = signal(false);
@@ -437,7 +438,7 @@ export class App {
   downloadUsersCsv(): void {
     this.downloadingUsers.set(true);
     this.errorMessage.set('');
-    this.userService.exportAll(this.userSearch(), this.userStatus()).subscribe({
+    this.userService.exportAll(this.userSearch(), this.userStatus(), this.userType()).subscribe({
       next: response => {
         const blob = response.body;
         if (!blob) {
@@ -484,7 +485,7 @@ export class App {
     this.loading.set(true);
     this.errorMessage.set('');
 
-    this.userService.findAll(page, this.userPageSize(), this.userSearch(), this.userStatus()).subscribe({
+    this.userService.findAll(page, this.userPageSize(), this.userSearch(), this.userStatus(), this.userType()).subscribe({
       next: (response) => {
         this.users.set(response.content);
         this.userPage.set(response.page);
@@ -557,6 +558,16 @@ export class App {
     }
 
     this.userStatus.set(status);
+    this.loadUsers(0);
+  }
+
+  changeUserType(event: Event): void {
+    const userType = (event.target as HTMLSelectElement).value;
+    if (!['', 'STANDARD', 'ADMIN'].includes(userType)) {
+      return;
+    }
+
+    this.userType.set(userType);
     this.loadUsers(0);
   }
 

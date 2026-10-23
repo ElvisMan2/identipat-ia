@@ -104,13 +104,16 @@ export class UserService {
     return { headers: { Authorization: `Bearer ${this.accessToken}` } };
   }
 
-  findAll(page = 0, size = 20, search = '', status = ''): Observable<PagedResponse<User>> {
+  findAll(page = 0, size = 20, search = '', status = '', userType = ''): Observable<PagedResponse<User>> {
     const params: Record<string, string | number> = { page, size };
     if (search.trim()) {
       params['search'] = search.trim();
     }
     if (status) {
       params['status'] = status;
+    }
+    if (userType) {
+      params['userType'] = userType;
     }
 
     return this.http.get<PagedResponse<User>>(this.endpoint, {
@@ -119,13 +122,16 @@ export class UserService {
     });
   }
 
-  exportAll(search = '', status = ''): Observable<HttpResponse<Blob>> {
+  exportAll(search = '', status = '', userType = ''): Observable<HttpResponse<Blob>> {
     const params: Record<string, string> = {};
     if (search.trim()) {
       params['search'] = search.trim();
     }
     if (status) {
       params['status'] = status;
+    }
+    if (userType) {
+      params['userType'] = userType;
     }
 
     return this.http.get(`${this.endpoint}/export`, {
