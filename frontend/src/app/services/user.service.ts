@@ -48,7 +48,14 @@ export interface PagedResponse<T> {
 export class UserService {
   private readonly http = inject(HttpClient);
   private readonly endpoint = `${environment.apiBaseUrl}/users`;
+  private readonly adminTokenKey = 'identipat.admin.accessToken';
+  private readonly adminDoiKey = 'identipat.admin.doi';
+  private readonly adminDoiTypeKey = 'identipat.admin.doiType';
   private accessToken = '';
+
+  constructor() {
+    this.accessToken = this.sessionStorage()?.getItem(this.adminTokenKey) ?? '';
+  }
 
   identify(doi: string, doiType: string): Observable<DocumentRecognitionResponse> {
     return this.http.post<DocumentRecognitionResponse>(`${this.endpoint}/identify`, { doi, doiType });
@@ -58,12 +65,39 @@ export class UserService {
     return this.http.post<LoginResponse>(`${this.endpoint}/login`, { doi, password });
   }
 
-  setAccessToken(accessToken: string): void {
+  setAccessToken(accessToken: string, doi: string, doiType: string): void {
     this.accessToken = accessToken;
+    const storage = this.sessionStorage();
+    storage?.setItem(this.adminTokenKey, accessToken);
+    storage?.setItem(this.adminDoiKey, doi);
+    storage?.setItem(this.adminDoiTypeKey, doiType);
   }
 
   clearAccessToken(): void {
     this.accessToken = '';
+    const storage = this.sessionStorage();
+    storage?.removeItem(this.adminTokenKey);
+    storage?.removeItem(this.adminDoiKey);
+    storage?.removeItem(this.adminDoiTypeKey);
+  }
+
+  getAdminIdentity(): { doi: string; doiType: string } | null {
+    const storage = this.sessionStorage();
+    const doi = storage?.getItem(this.adminDoiKey);
+    const doiType = storage?.getItem(this.adminDoiTypeKey);
+    return this.accessToken && doi && doiType ? { doi, doiType } : null;
+  }
+
+  private sessionStorage(): Storage | null {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    try {
+      return window.sessionStorage;
+    } catch {
+      return null;
+    }
   }
 
   private get authenticatedOptions(): { headers: { Authorization: string } } {
@@ -87,6 +121,10 @@ export class UserService {
 
   findById(userId: number): Observable<User> {
     return this.http.get<User>(`${this.endpoint}/${userId}`, this.authenticatedOptions);
+  }
+
+  findByDoi(doi: string): Observable<User> {
+    return this.http.get<User>(`${this.endpoint}/doi/${encodeURIComponent(doi)}`, this.authenticatedOptions);
   }
 
   create(user: StandardUserRegistrationRequest): Observable<StandardUserRegistrationResponse> {

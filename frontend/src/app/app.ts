@@ -46,6 +46,7 @@ export class App {
   readonly accessMessage = signal('');
   readonly savingProfile = signal(false);
   readonly profileMessage = signal('');
+  readonly adminProfile = signal<User | null>(null);
   readonly submittingAnalysis = signal(false);
   readonly analysisMessage = signal('');
   readonly analysisResult = signal<AnalysisResponse | null>(null);
@@ -56,9 +57,37 @@ export class App {
     }
     this.accessForm.controls.doiType.valueChanges.subscribe(() => this.accessForm.controls.doi.updateValueAndValidity());
     this.userForm.controls.doiType.valueChanges.subscribe(() => this.userForm.controls.doi.updateValueAndValidity());
+
+    const adminIdentity = this.userService.getAdminIdentity();
+    if (adminIdentity) {
+      this.accessForm.setValue(adminIdentity);
+      this.adminAuthenticated.set(true);
+      this.adminSection.set('users');
+      this.view.set('admin');
+      this.userService.findByDoi(adminIdentity.doi).subscribe({
+        next: admin => {
+          if (admin.userType?.toUpperCase() !== 'ADMIN' || admin.doiType !== adminIdentity.doiType) {
+            this.logout();
+            return;
+          }
+
+          this.adminProfile.set(admin);
+          if (this.adminSection() === 'profile') {
+            this.loadProfileForm();
+          }
+          this.loadUsers(0);
+        },
+        error: () => this.logout()
+      });
+    }
   }
 
   readonly currentAdmin = computed<User | null>(() => {
+    const authenticatedAdmin = this.adminProfile();
+    if (authenticatedAdmin) {
+      return authenticatedAdmin;
+    }
+
     const { doi, doiType } = this.accessForm.getRawValue();
     return this.users().find(user =>
       user.userType?.toUpperCase() === 'ADMIN'
@@ -286,7 +315,8 @@ export class App {
     this.userService.login(doi, password).subscribe({
       next: ({ accessToken }) => {
         this.finishAccess(accessStartedAt, () => {
-          this.userService.setAccessToken(accessToken);
+          const { doiType } = this.accessForm.getRawValue();
+          this.userService.setAccessToken(accessToken, doi, doiType);
           this.authenticating.set(false);
           this.adminAuthenticated.set(true);
           this.analysisForm.reset({ description: '' });
@@ -307,6 +337,7 @@ export class App {
   logout(): void {
     this.userService.clearAccessToken();
     this.adminAuthenticated.set(false);
+    this.adminProfile.set(null);
     this.users.set([]);
     this.analyses.set([]);
     this.cancelEdit();
@@ -326,6 +357,7 @@ export class App {
       this.adminSection.set('users');
       this.view.set('admin');
       this.loadUsers(0);
+      this.loadAdminProfile();
       this.scrollToTop();
     }, 500);
   }
@@ -356,6 +388,22 @@ export class App {
     } else if (section === 'profile') {
       this.loadProfileForm();
     }
+  }
+
+  private loadAdminProfile(): void {
+    const { doi, doiType } = this.accessForm.getRawValue();
+    this.userService.findByDoi(doi).subscribe({
+      next: admin => {
+        if (admin.userType?.toUpperCase() !== 'ADMIN' || admin.doiType !== doiType) {
+          return;
+        }
+
+        this.adminProfile.set(admin);
+        if (this.adminSection() === 'profile') {
+          this.loadProfileForm();
+        }
+      }
+    });
   }
 
   loadAnalyses(): void {
