@@ -60,12 +60,16 @@ def _client(
         "audio/webm",
         "audio/mpeg",
         "audio/mp4",
+        "video/mp4",
         "audio/x-m4a",
+        "audio/3gpp",
+        "video/3gpp",
         "audio/wav",
         "audio/x-wav",
         "audio/ogg",
         "audio/flac",
         "audio/webm;codecs=opus",
+        "video/mp4;codecs=mp4a.40.2",
     ],
 )
 def test_transcribes_supported_audio_and_returns_metadata(media_type: str) -> None:

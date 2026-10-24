@@ -94,11 +94,15 @@ Respuestas PDF: `413 PDF_TOO_LARGE`, `415 UNSUPPORTED_PDF_MEDIA_TYPE`, `422 INVA
 
 `POST /analyses/audio` consume `multipart/form-data` con un único campo `file`; no acepta idioma,
 modelo, texto ni actor en el body. Los MIME admitidos son `audio/webm`, `audio/mpeg`, `audio/mp4`,
-`audio/x-m4a`, `audio/wav`, `audio/x-wav`, `audio/ogg` y `audio/flac`; se ignoran parámetros como
-`codecs=opus`. Los defaults son 20 MiB, 180 segundos, español y límites de texto normalizado de
-20–20000 caracteres. Java valida MIME/tamaño y Python valida autoritativamente al decodificar antes
-de ejecutar `faster-whisper`. El `202`, `Location`, `Retry-After` y GET son comunes; el GET devuelve
-`inputType=AUDIO`. El binario no se persiste.
+`video/mp4`, `audio/x-m4a`, `audio/3gpp`, `video/3gpp`, `audio/wav`, `audio/x-wav`, `audio/ogg` y
+`audio/flac`; se ignoran parámetros como `codecs=opus` o `codecs=mp4a.40.2`. `video/mp4` y
+`video/3gpp` son exclusivamente aliases de transporte para contenedores de audio etiquetados así por
+el cliente: Python exige al menos una pista de audio y rechaza cualquier pista de video. No se aceptan
+`video/*`, `audio/*` ni `application/octet-stream` de forma genérica. Los defaults son 20 MiB,
+180 segundos, español y límites de texto normalizado de 20–20000 caracteres. Java valida MIME/tamaño
+y Python valida autoritativamente el contenedor y lo decodifica antes de ejecutar `faster-whisper`.
+El `202`, `Location`, `Retry-After` y GET son comunes; el GET devuelve `inputType=AUDIO`. El binario
+no se persiste.
 
 Respuestas audio: `413 AUDIO_TOO_LARGE`, `415 UNSUPPORTED_AUDIO_MEDIA_TYPE`, `422 INVALID_AUDIO`,
 `AUDIO_DURATION_LIMIT_EXCEEDED`, `AUDIO_TRANSCRIPTION_EMPTY` o `AUDIO_TEXT_TOO_LONG`; y

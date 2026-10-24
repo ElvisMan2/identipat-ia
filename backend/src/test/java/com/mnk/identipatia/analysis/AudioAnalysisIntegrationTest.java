@@ -124,7 +124,7 @@ class AudioAnalysisIntegrationTest {
     void standardAudioPersistsSafeMetadataAndUsesExistingWorkerPipeline() throws Exception {
         Browser browser = browser(true);
 
-        MvcResult created = postAudio(browser, audio(VALID_AUDIO, "audio/webm;codecs=opus"))
+        MvcResult created = postAudio(browser, audio(VALID_AUDIO, "video/mp4;codecs=mp4a.40.2"))
                 .andExpect(status().isAccepted())
                 .andExpect(header().string(HttpHeaders.RETRY_AFTER, "2"))
                 .andExpect(header().string(HttpHeaders.LOCATION,
@@ -133,7 +133,7 @@ class AudioAnalysisIntegrationTest {
                 .andReturn();
         UUID analysisId = id(created);
 
-        verify(preprocessingClient).transcribeAudio(VALID_AUDIO, "audio/webm");
+        verify(preprocessingClient).transcribeAudio(VALID_AUDIO, "video/mp4");
         Analysis analysis = analysisRepository.findById(analysisId).orElseThrow();
         AnalysisInput input = inputRepository.findById(analysisId).orElseThrow();
         assertThat(analysis.getInputType()).isEqualTo(AnalysisInputType.AUDIO);
@@ -141,7 +141,7 @@ class AudioAnalysisIntegrationTest {
         assertThat(input.getProcessedText())
                 .isEqualTo("Sistema de riego inteligente con sensores y válvulas independientes.");
         JsonNode metadata = input.getSourceMetadata();
-        assertThat(metadata.path("mediaType").asText()).isEqualTo("audio/webm");
+        assertThat(metadata.path("mediaType").asText()).isEqualTo("video/mp4");
         assertThat(metadata.path("sizeBytes").asLong()).isEqualTo(VALID_AUDIO.length);
         assertThat(metadata.path("durationSeconds").asDouble()).isEqualTo(42.31);
         assertThat(metadata.path("characterCount").asInt())
@@ -221,7 +221,10 @@ class AudioAnalysisIntegrationTest {
             "audio/webm",
             "audio/mpeg",
             "audio/mp4",
+            "video/mp4",
             "audio/x-m4a",
+            "audio/3gpp",
+            "video/3gpp",
             "audio/wav",
             "audio/x-wav",
             "audio/ogg",
@@ -240,6 +243,9 @@ class AudioAnalysisIntegrationTest {
     void validatesMimeEmptyAndSizeBeforeTranscription() throws Exception {
         Browser browser = browser(true);
         postAudio(browser, audio(VALID_AUDIO, MediaType.TEXT_PLAIN_VALUE))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.code").value("UNSUPPORTED_AUDIO_MEDIA_TYPE"));
+        postAudio(browser, audio(VALID_AUDIO, "video/avi"))
                 .andExpect(status().isUnsupportedMediaType())
                 .andExpect(jsonPath("$.code").value("UNSUPPORTED_AUDIO_MEDIA_TYPE"));
         postAudio(browser, audio(new byte[0], "audio/wav"))
