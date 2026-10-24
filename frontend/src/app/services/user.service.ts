@@ -81,6 +81,10 @@ export class UserService {
     storage?.removeItem(this.adminDoiTypeKey);
   }
 
+  getAccessToken(): string {
+    return this.accessToken;
+  }
+
   getAdminIdentity(): { doi: string; doiType: string } | null {
     const storage = this.sessionStorage();
     const doi = storage?.getItem(this.adminDoiKey);

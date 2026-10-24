@@ -74,7 +74,15 @@ export class StandardAnalysisService {
   private readonly http = inject(HttpClient);
   private readonly endpoint = environment.apiBaseUrl;
 
-  createTextAnalysis(doi: string, doiType: string, description: string): Observable<AnalysisCreatedResponse> {
+  createTextAnalysis(doi: string, doiType: string, description: string, accessToken = ''): Observable<AnalysisCreatedResponse> {
+    if (accessToken) {
+      return this.http.post<AnalysisCreatedResponse>(
+        `${this.endpoint}/analyses/text`,
+        { description },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+    }
+
     return this.http.get<CsrfResponse>(`${this.endpoint}/standard-session/csrf`, {
       withCredentials: true
     }).pipe(
@@ -98,10 +106,12 @@ export class StandardAnalysisService {
     );
   }
 
-  getAnalysis(analysisId: string): Observable<AnalysisResponse> {
+  getAnalysis(analysisId: string, accessToken = ''): Observable<AnalysisResponse> {
     return this.http.get<AnalysisResponse>(
       `${this.endpoint}/analyses/${analysisId}`,
-      { withCredentials: true }
+      accessToken
+        ? { headers: { Authorization: `Bearer ${accessToken}` } }
+        : { withCredentials: true }
     );
   }
 

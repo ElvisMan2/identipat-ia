@@ -617,10 +617,11 @@ export class App {
     this.analysisMessage.set('');
     this.analysisResult.set(null);
 
-    this.standardAnalysisService.createTextAnalysis(doi, doiType, description).subscribe({
+    const adminAccessToken = this.adminAuthenticated() ? this.userService.getAccessToken() : '';
+    this.standardAnalysisService.createTextAnalysis(doi, doiType, description, adminAccessToken).subscribe({
       next: ({ analysisId }) => {
         this.analysisMessage.set('');
-        this.pollAnalysis(analysisId);
+        this.pollAnalysis(analysisId, adminAccessToken);
       },
       error: () => {
         this.submittingAnalysis.set(false);
@@ -641,8 +642,8 @@ export class App {
     URL.revokeObjectURL(url);
   }
 
-  private pollAnalysis(analysisId: string): void {
-    this.standardAnalysisService.getAnalysis(analysisId).subscribe({
+  private pollAnalysis(analysisId: string, accessToken = ''): void {
+    this.standardAnalysisService.getAnalysis(analysisId, accessToken).subscribe({
       next: (analysis) => {
         this.analysisResult.set(analysis);
         console.log('JSON del análisis:', analysis);
@@ -657,7 +658,7 @@ export class App {
           return;
         }
 
-        window.setTimeout(() => this.pollAnalysis(analysisId), 2000);
+        window.setTimeout(() => this.pollAnalysis(analysisId, accessToken), 2000);
       },
       error: (error) => {
         this.submittingAnalysis.set(false);
