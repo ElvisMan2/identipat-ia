@@ -27,8 +27,10 @@ Java, extrae de forma síncrona la capa de texto mediante el servicio Python y s
 el mismo worker, prompt, proveedor, schema y resultado que TEXT.
 
 El flujo de audio recibe `multipart/form-data` en `POST /analyses/audio`, acepta WebM, MP3, MP4/M4A,
-WAV, OGG y FLAC, y aplica defaults de 20 MiB, 180 segundos y español. Python decodifica en memoria
-con PyAV y transcribe localmente con `faster-whisper` (`base`, CPU INT8); ni el audio ni segmentos se
+3GP, WAV, OGG y FLAC, y aplica defaults de 20 MiB, 180 segundos y español. Algunos clientes etiquetan
+contenedores MP4/M4A/3GP de solo audio como `video/mp4` o `video/3gpp`; esos MIME se aceptan como
+aliases de transporte, pero Python verifica con PyAV que exista audio y que no haya una pista de video.
+Luego transcribe localmente con `faster-whisper` (`base`, CPU INT8); ni el audio ni segmentos se
 persisten o envían a un STT cloud. La transcripción converge al mismo `AnalysisInput`, worker, prompt,
 schema y resultado de TEXT/PDF.
 

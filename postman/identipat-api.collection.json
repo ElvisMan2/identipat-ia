@@ -285,7 +285,7 @@
               "formdata": [{ "key": "file", "type": "file", "src": [] }]
             },
             "url": "{{baseUrl}}/analyses/audio",
-            "description": "Campo multipart file. WebM/MP3/MP4/M4A/WAV/OGG/FLAC, máximo 20 MiB y 180 s. La transcripción local ocurre antes del 202 y el audio no se persiste."
+            "description": "Campo multipart file. WebM/MP3/MP4/M4A/3GP/WAV/OGG/FLAC, máximo 20 MiB y 180 s. MP4/M4A/3GP de solo audio puede llegar como video/mp4 o video/3gpp; Python rechaza una pista de video real. La transcripción local ocurre antes del 202 y el audio no se persiste."
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('Audio analysis is accepted asynchronously', function () { pm.response.to.have.status(202); });",
@@ -432,7 +432,7 @@
               "formdata": [{ "key": "file", "type": "file", "src": [] }]
             },
             "url": "{{baseUrl}}/analyses/audio",
-            "description": "Campo multipart file. El ADMIN se deriva exclusivamente del JWT y el audio no se persiste."
+            "description": "Campo multipart file. Admite los aliases video/mp4 y video/3gpp únicamente para contenedores de audio sin pista de video. El ADMIN se deriva exclusivamente del JWT y el audio no se persiste."
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('ADMIN audio analysis is accepted', function () { pm.response.to.have.status(202); });",
