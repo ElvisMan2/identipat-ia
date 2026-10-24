@@ -71,6 +71,7 @@ Producción requiere `SPRING_PROFILES_ACTIVE=prod` además de todas las variable
 | `APP_TIME_ZONE` | `America/Lima` | `America/Lima` | `America/Lima` | Zona de Jackson y JDBC/Hibernate |
 | `STATIC_LOCATIONS` | Classpath y build Angular local | Solo classpath | Solo classpath | Ubicaciones de recursos, separadas por coma |
 | `PREPROCESSING_SERVICE_BASE_URL` | `http://localhost:8090` si no se define | No aplica; se usa `http://preprocessing-service.test` | Obligatoria | URL base del servicio Python consumido internamente por Java |
+| `PREPROCESSING_SERVICE_TIMEOUT` | `15s` | `15s` | `15s` si no se reemplaza | Timeout positivo de conexión/lectura para extracción PDF |
 | `IDENTIPAT_AI_ENABLED` | `true` | `false` | Obligatoria | Activa la creación del adapter LLM |
 | `IDENTIPAT_AI_PROVIDER` | `openai` | `openai` | Obligatoria | Selecciona el provider; F1.2 admite `openai` |
 | `OPENAI_API_KEY` | Sin default efectivo | Vacía con IA deshabilitada | Obligatoria al habilitar OpenAI | Secreto del SDK oficial |
@@ -78,6 +79,9 @@ Producción requiere `SPRING_PROFILES_ACTIVE=prod` además de todas las variable
 | `OPENAI_TIMEOUT` | `60s` | `60s` | Obligatoria al habilitar OpenAI | Timeout total positivo |
 | `ANALYSIS_TEXT_MIN_LENGTH` | `20` | `20` | Configurable | Límite técnico mínimo aplicado al texto normalizado |
 | `ANALYSIS_TEXT_MAX_LENGTH` | `20000` | `20000` | Configurable | Límite técnico máximo aplicado al texto normalizado |
+| `ANALYSIS_PDF_MAX_FILE_SIZE_BYTES` | `10485760` | `10485760` | Configurable | Máximo PDF (10 MiB); alimenta política Java y límite multipart |
+| `ANALYSIS_PDF_MAX_REQUEST_SIZE` | `11MB` | `11MB` | Configurable | Techo multipart con margen para headers/form-data |
+| `ANALYSIS_PDF_MAX_PAGES` | `50` | `50` | Configurable | Máximo de páginas aceptadas tras extracción |
 | `ANALYSIS_WORKER_ENABLED` | `true` | `false` | Configurable | Activa el poller; los tests pueden invocar un ciclo manual |
 | `ANALYSIS_POLL_INTERVAL` | `2s` | `2s` | Configurable | Intervalo positivo entre polls |
 | `ANALYSIS_WORKER_THREADS` | `2` | `2` | Configurable | Threads del executor acotado |
@@ -94,10 +98,12 @@ Los valores DEV son conocidos, no productivos y pueden reemplazarse desde el ent
 ## Servicio de preprocesamiento
 
 Java se comunica internamente con `preprocessing-service` mediante `app.preprocessing.base-url` y un
-cliente `RestClient`, con timeout de conexión y lectura de cinco segundos. DEV usa
+cliente `RestClient`, con timeout de conexión y lectura configurable (15 segundos por defecto). DEV usa
 `http://localhost:8090` y permite reemplazarlo con `PREPROCESSING_SERVICE_BASE_URL`; TEST tiene una
 URL dummy y sus pruebas usan HTTP simulado; PROD exige esa variable sin fallback. El backend no
-consulta el health del servicio al iniciar. Consulta [preprocessing-service.md](preprocessing-service.md).
+consulta health antes de extraer. Python replica los límites con
+`PREPROCESSING_PDF_MAX_FILE_SIZE_BYTES` y `PREPROCESSING_PDF_MAX_PAGES`. Consulta
+[preprocessing-service.md](preprocessing-service.md).
 
 ## IA generativa y OpenAI
 

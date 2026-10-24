@@ -11,7 +11,7 @@ La API se documenta en tiempo de ejecución con `springdoc-openapi-starter-webmv
 
 ## Seguridad
 
-La especificación define `bearerAuth` para ADMIN y `standardSession` para la cookie STANDARD. STANDARD no recibe JWT: usa `IDENTIPAT_STANDARD_SESSION` HttpOnly como capacidad temporal. `GET /standard-session/csrf` es público; `POST /standard-sessions` es público + CSRF pero solo crea sesiones para STANDARD activo. `POST /analyses/text` admite sesión + consentimiento + CSRF o Bearer ADMIN; `GET /analyses/{analysisId}` usa la misma sesión STANDARD o el ADMIN propietario. `POST /users/identify`, `POST /users` y `POST /users/login` conservan acceso público.
+La especificación define `bearerAuth` para ADMIN y `standardSession` para la cookie STANDARD. STANDARD no recibe JWT: usa `IDENTIPAT_STANDARD_SESSION` HttpOnly como capacidad temporal. `GET /standard-session/csrf` es público; `POST /standard-sessions` es público + CSRF pero solo crea sesiones para STANDARD activo. `POST /analyses/text` y `POST /analyses/pdf` admiten sesión + consentimiento + CSRF o Bearer ADMIN; `GET /analyses/{analysisId}` usa la misma sesión STANDARD o el ADMIN propietario. `POST /users/identify`, `POST /users` y `POST /users/login` conservan acceso público.
 
 Swagger UI permite usar **Authorize** con el JWT emitido por el login administrativo. No se usa HTTP Basic.
 
@@ -60,7 +60,7 @@ Las variables de colección no contienen secretos reales:
 
 Ejecuta primero **Login ADMIN and save JWT** y luego las operaciones en `Admin - Users`, que envían `Authorization: Bearer {{adminJwt}}`. El grupo incluye ejemplos paginados, de búsqueda, filtros, ordenamiento y exportación CSV completa. Las solicitudes que crean, actualizan o eliminan datos requieren valores de prueba únicos y son intencionalmente manuales.
 
-El flujo STANDARD no usa Bearer token: primero **Recognize document** y, si aplica, **Register STANDARD**. Después ejecuta **Get CSRF**, crea sesión, registra consentimiento, crea el análisis y realiza un GET manual. El flujo ADMIN ejecuta **Login ADMIN and save JWT** y luego crea/consulta el análisis con `Authorization: Bearer {{adminJwt}}`, sin DNI/CE en el body, cookie requerida, CSRF ni consentimiento STANDARD. No hay polling infinito. No deben guardarse DNI reales, cookies, pepper, JWT ni secretos en variables compartidas.
+El flujo STANDARD no usa Bearer token: primero **Recognize document** y, si aplica, **Register STANDARD**. Después ejecuta **Get CSRF**, crea sesión, registra consentimiento, crea el análisis TEXT o PDF y realiza un GET manual. El flujo ADMIN ejecuta **Login ADMIN and save JWT** y luego crea/consulta el análisis con `Authorization: Bearer {{adminJwt}}`, sin DNI/CE en el body, cookie requerida, CSRF ni consentimiento STANDARD. Los grupos PDF usan selección manual de archivo y no almacenan documentos en el repositorio. No hay polling infinito. No deben guardarse DNI reales, cookies, pepper, JWT ni secretos en variables compartidas.
 
 ## Endpoints STANDARD
 
@@ -72,10 +72,23 @@ El flujo STANDARD no usa Bearer token: primero **Recognize document** y, si apli
 | `POST /standard-session/consent` | Evento `ACCEPTED`/`REJECTED`; nunca recibe hash/IDs. |
 | `DELETE /standard-session` | `204`, revocación y borrado de cookie. |
 | `POST /analyses/text` | `202`, `Location`, `Retry-After` y UUID; STANDARD usa sesión/consentimiento/CSRF y ADMIN usa Bearer. |
+| `POST /analyses/pdf` | Multipart `file`; mismo `202` después de extracción exitosa. STANDARD usa sesión/consentimiento/CSRF y ADMIN usa Bearer. |
 | `GET /analyses/{analysisId}` | `200` para la misma sesión STANDARD o el ADMIN propietario del análisis ADMIN. |
 
-Las mutaciones anteriores, incluido el POST de análisis, requieren cookie `XSRF-TOKEN` y header `X-XSRF-TOKEN`; su ausencia o discordancia responde `403`. Spring Boot 3.2.12 resuelve Spring Security 6.2.8, por lo que se usa un handler SPA: valor plano para cookie/header y manejo XOR/BREACH para atributos de request.
+Las mutaciones anteriores, incluidos los POST bajo `/analyses/**` sin Bearer, requieren cookie `XSRF-TOKEN` y header `X-XSRF-TOKEN`; su ausencia o discordancia responde `403`. Con Bearer se eximen de CSRF y un token inválido nunca hace fallback a STANDARD. Spring Boot 3.2.12 resuelve Spring Security 6.2.8, por lo que se usa un handler SPA: valor plano para cookie/header y manejo XOR/BREACH para atributos de request.
+
+## Contrato público PDF
+
+`POST /analyses/pdf` consume `multipart/form-data` con un único campo `file`. Solo acepta
+`application/pdf` con firma `%PDF-`; los defaults son 10 MiB, 50 páginas y los mismos límites de
+texto normalizado de TEXT (20–20000 caracteres). La extracción es síncrona y el `202 Accepted` usa
+exactamente `AnalysisCreatedResponse`, `Location` y `Retry-After`; el resultado se consulta con el
+GET común. El binario no se persiste y OCR no está incluido.
+
+Respuestas PDF: `413 PDF_TOO_LARGE`, `415 UNSUPPORTED_PDF_MEDIA_TYPE`, `422 INVALID_PDF`,
+`PDF_ENCRYPTED_NOT_SUPPORTED`, `PDF_PAGE_LIMIT_EXCEEDED`, `PDF_TEXT_NOT_EXTRACTABLE` o
+`PDF_TEXT_TOO_LONG`; `503 PREPROCESSING_SERVICE_UNAVAILABLE` o `ANALYSIS_AI_UNAVAILABLE`.
 
 ## Errores actuales
 
-Los códigos de sesión/consentimiento se complementan con `CONSENT_REQUIRED`, `INVALID_ANALYSIS_DESCRIPTION`, `ANALYSIS_AI_UNAVAILABLE` y `ANALYSIS_NOT_FOUND`. Un análisis `FAILED` devuelve solo categorías públicas saneadas. Ningún error expone token, hash, pepper, PII, stack trace, prompt, respuesta del proveedor o detalle de base. Los rechazos CSRF los produce Spring Security con `403`.
+Los códigos de sesión/consentimiento se complementan con `CONSENT_REQUIRED`, `INVALID_ANALYSIS_DESCRIPTION`, los códigos PDF documentados, `ANALYSIS_AI_UNAVAILABLE` y `ANALYSIS_NOT_FOUND`. Un análisis `FAILED` devuelve solo categorías públicas saneadas. Ningún error expone token, hash, pepper, PII, stack trace, prompt, respuesta del proveedor o detalle de base. Los rechazos CSRF los produce Spring Security con `403`.

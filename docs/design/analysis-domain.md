@@ -1,9 +1,9 @@
 # Dominio de análisis — IDENTIPAT-IA
 
-**Estado:** diseño F1.0 materializado en F1.1–F1.4C
-**Versión:** 1.3
-**Última actualización:** 23 de octubre de 2026
-**Alcance:** modelo vigente de sesión, consentimiento, análisis de texto, invocaciones de IA y resultado canónico. PDF y audio se incorporarán sobre este núcleo en F1.5 y F1.6.
+**Estado:** diseño F1.0 materializado en F1.1–F1.5
+**Versión:** 1.4
+**Última actualización:** 24 de octubre de 2026
+**Alcance:** modelo vigente de sesión, consentimiento, análisis de texto/PDF, invocaciones de IA y resultado canónico. Audio se incorporará sobre este núcleo en F1.6.
 
 ## 1. Objetivo
 
@@ -25,7 +25,7 @@ F1.0 produjo el diseño conceptual. F1.1 materializó sesión y consentimiento; 
 
 - Java/Spring Boot es dueño de sesión, consentimiento, análisis, persistencia, resultado e inferencia generativa.
 - Angular consume los contratos Java y no accede directamente a PostgreSQL, Python ni al proveedor LLM.
-- Python se reserva para preprocesamiento técnico futuro de PDF/audio.
+- Python extrae técnicamente la capa de texto de PDF y se reserva para el futuro preprocesamiento de audio.
 - `ADMIN` es el único acceso autenticado mediante credenciales y JWT.
 - `STANDARD` no recibe JWT, no utiliza contraseña y no tiene perfil ni historial visible.
 - DNI/CE identifica o deduplica un registro; no autentica ni verifica la identidad real de quien opera el navegador.
@@ -275,7 +275,11 @@ Separarla mantiene liviana la fila operativa del análisis, evita arrastrar cont
 
 `source_metadata` debe ser un objeto JSON. No debe usarse como contenedor indiscriminado de información sensible.
 
-Para `TEXT`, se conserva el original y se diferencia del texto técnicamente normalizado. Para PDF/audio, F1.5/F1.6 definirán storage, MIME, límites, OCR/STT y manejo del archivo original. La salida de esos procesos se persistirá como `processed_text` dentro de la misma estructura 1:1.
+Para `TEXT`, se conserva el original y se diferencia del texto técnicamente normalizado. Para `PDF`,
+`original_text` es el texto devuelto por la extracción técnica y `processed_text` es su normalización
+funcional con `TextNormalizer`. El binario no se persiste. `source_metadata` guarda únicamente
+`mediaType`, `sizeBytes`, `pageCount`, `characterCount`, `extractionMethod` y SHA-256; no guarda el
+filename. Audio permanece pendiente en F1.6.
 
 ## 8. Invocaciones de IA
 
@@ -413,7 +417,7 @@ F1.4 no realiza un examen completo de patentabilidad o registrabilidad. Queda pr
 stateDiagram-v2
     [*] --> RECEIVED: entrada aceptada
     RECEIVED --> ANALYZING: texto disponible
-    RECEIVED --> PREPROCESSING: PDF o AUDIO futuro
+    RECEIVED --> PREPROCESSING: reservado para flujos futuros
     PREPROCESSING --> ANALYZING: texto utilizable
     PREPROCESSING --> FAILED: fallo terminal
     ANALYZING --> ANALYZING: retry programado
@@ -593,7 +597,7 @@ Las decisiones definitivas de cifrado, retención, minimización, anonimización
 | Creación de sesión | `POST /standard-sessions` acepta solo STANDARD activo, separado del reconocimiento/registro | Implementada F1.1 y formalizada en F1.4C |
 | Consentimiento | Eventos `ACCEPTED`/`REJECTED` vinculados a sesión y usuario | Implementada F1.1 |
 | Vigencia del consentimiento | Coincidencia de versión y hash del documento | Implementada F1.1 |
-| CSRF STANDARD | Repositorio de cookie + header y handler SPA | Implementada; ampliar a PDF/audio |
+| CSRF STANDARD | Repositorio de cookie + header y handler SPA para `POST /analyses/**` sin Bearer | Implementada para TEXT/PDF |
 | PK del dominio | UUID; resultado/input reutilizan `analysis_id` en 1:1 | Implementada V2/V3 |
 | Analysis/Input | Un `Analysis` + `analysis_inputs` 1:1 | Implementada F1.3 |
 | Invocaciones | `ai_invocations` 1:N | Implementada F1.3 |
@@ -603,11 +607,11 @@ Las decisiones definitivas de cifrado, retención, minimización, anonimización
 | Concurrencia | `FOR UPDATE SKIP LOCKED` + lease | Implementada F1.3 |
 | Retry | `next_attempt_at`, sin `sleep` bloqueante | Implementada F1.3 |
 | Recuperación | Lease vencido + invocación `ABANDONED` | Implementada F1.3 |
-| Endpoints | Rutas por tipo con núcleo interno común | Texto implementado; PDF/audio pendientes |
+| Endpoints | Rutas por tipo con núcleo interno común | TEXT y PDF implementados; audio pendiente |
 | Prompt | ID/versión + hashes + snapshot renderizado | Implementada F1.2–F1.4 |
 | Respuesta cruda | JSONB por invocación | Implementada F1.3 |
 | Tokens | Columnas normalizadas + JSONB de detalle | Implementada F1.3 |
-| Archivos originales | Diferir storage y retención | Pendiente F1.5/F1.6/F2.1 |
+| Archivos originales | PDF no persistido en F1.5; política futura en F2.1 | Implementada para PDF |
 | Usuario con evidencia | Desactivación lógica y conservación | Dirección vigente; política final F2.1 |
 
 ## 15. Decisiones pendientes
@@ -620,15 +624,17 @@ siendo una actividad de aceptación, no una ampliación automática del alcance 
 
 Implementada. Un Bearer presente selecciona exclusivamente el modo ADMIN; debe ser un JWT válido cuyo subject resuelva a un ADMIN activo. Sin Bearer se selecciona el modo STANDARD con cookie, consentimiento y CSRF. Si coexisten Bearer válido y cookie, prevalece ADMIN; un Bearer inválido nunca hace fallback. El pipeline y el worker son comunes y procesan análisis ADMIN con ambos IDs de contexto nulos.
 
-### F1.5/F1.6 — PDF y audio
+### F1.5 — PDF
 
-- formatos, MIME y límites;
-- almacenamiento de originales;
-- OCR y documentos sin texto;
-- tecnología de transcripción;
-- contratos Java ↔ Python;
-- metadata de preprocesamiento;
-- protección CSRF y aislamiento de nuevos endpoints.
+Implementada con `application/pdf`, firma `%PDF-`, límites configurables de 10 MiB/50 páginas,
+extracción síncrona `pypdf`, contrato Java ↔ Python estable, metadata mínima y el mismo pipeline IA.
+Los documentos cifrados, corruptos o sin capa de texto suficiente se rechazan antes de crear el
+análisis. No hay OCR ni persistencia del binario.
+
+### F1.6 — Audio
+
+Permanecen pendientes formatos, límites, almacenamiento temporal, tecnología de transcripción y
+contrato técnico Java ↔ Python. Debe converger en la misma persistencia y worker.
 
 ### F1.7 — Presentación
 

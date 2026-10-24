@@ -237,6 +237,40 @@
       ]
     },
     {
+      "name": "STANDARD - PDF analysis",
+      "description": "Ejecute primero CSRF, sesión y consentimiento ACCEPTED. Seleccione manualmente un PDF digital de prueba; no guarde archivos reales ni PII en la colección.",
+      "item": [
+        {
+          "name": "1. Create PDF analysis and save ID",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }],
+            "auth": { "type": "noauth" },
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": [] }]
+            },
+            "url": "{{baseUrl}}/analyses/pdf",
+            "description": "Campo multipart file. Solo application/pdf con firma %PDF-, máximo configurable. La extracción ocurre antes del 202 y no incluye OCR."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('PDF analysis is accepted asynchronously', function () { pm.response.to.have.status(202); });",
+            "const body = pm.response.json();",
+            "if (body.analysisId) { pm.collectionVariables.set('analysisId', body.analysisId); }"
+          ] } }]
+        },
+        {
+          "name": "2. Get PDF analysis once",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/analyses/{{analysisId}}",
+            "description": "Reutiliza el GET común y solo permite la misma session_id STANDARD."
+          }
+        }
+      ]
+    },
+    {
       "name": "Admin - Authentication",
       "item": [{
         "name": "Login ADMIN and save JWT",
@@ -314,6 +348,39 @@
               ]
             }
           }]
+        }
+      ]
+    },
+    {
+      "name": "ADMIN - PDF analysis",
+      "description": "Ejecute primero Login ADMIN. Seleccione manualmente un PDF de prueba; no requiere cookie STANDARD, consentimiento ni CSRF.",
+      "item": [
+        {
+          "name": "1. Create ADMIN PDF analysis and save ID",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": [] }]
+            },
+            "url": "{{baseUrl}}/analyses/pdf",
+            "description": "Campo multipart file. El ADMIN se deriva exclusivamente del JWT y el binario no se persiste."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('ADMIN PDF analysis is accepted', function () { pm.response.to.have.status(202); });",
+            "const body = pm.response.json();",
+            "if (body.analysisId) { pm.collectionVariables.set('adminAnalysisId', body.analysisId); }"
+          ] } }]
+        },
+        {
+          "name": "2. Get ADMIN PDF analysis once",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/analyses/{{adminAnalysisId}}",
+            "description": "Reutiliza el GET común para el ADMIN propietario."
+          }
         }
       ]
     },

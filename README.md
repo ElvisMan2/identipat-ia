@@ -6,10 +6,10 @@ Repositorio del sistema IDENTIPAT-IA, organizado como una aplicación web con ba
 
 - `backend/`: API principal, reglas de negocio y seguridad.
 - `frontend/`: interfaz web Angular.
-- `preprocessing-service/`: servicio FastAPI interno para futuros preprocesamientos técnicos de PDF y audio.
+- `preprocessing-service/`: servicio FastAPI interno para extracción técnica de PDF; audio queda para una fase posterior.
 - `postman/`: colección de pruebas manuales de la API.
 - `docs/`: diagnóstico y documentación técnica.
-- `docker-compose.yml`: PostgreSQL 16 y pgAdmin para desarrollo local.
+- `docker-compose.yml`: PostgreSQL 16, pgAdmin y `preprocessing-service` para desarrollo local.
 - `codex-prompts/`: instrucciones locales para Codex; su contenido no se versiona.
 
 El backend contiene una capa de IA generativa agnóstica al proveedor. OpenAI es el adapter inicial
@@ -20,6 +20,11 @@ Otros entornos pueden arrancar sin credenciales externas mientras `IDENTIPAT_AI_
 El flujo de texto persiste la consulta antes de responder `202`, la procesa mediante un worker
 PostgreSQL claim/lease y permite consultar el resultado solo desde la misma sesión STANDARD. Consulta
 la [guía del flujo de análisis de texto](docs/development/text-analysis-flow.md).
+
+El flujo PDF recibe `multipart/form-data` en `POST /analyses/pdf`, valida MIME, tamaño y firma en
+Java, extrae de forma síncrona la capa de texto mediante el servicio Python y solo entonces persiste
+`AnalysisInput(PDF)` y responde `202`. No incluye OCR y no conserva el binario; el texto extraído usa
+el mismo worker, prompt, proveedor, schema y resultado que TEXT.
 
 Los análisis nuevos usan el contrato jurídico-funcional `analysis-result/2.0` y el prompt
 `intellectual-property-analysis/0.2`: admiten protecciones concurrentes, screening limitado de los
@@ -45,12 +50,14 @@ necesarios —en especial `OPENAI_API_KEY`— y usa el launcher:
 ```powershell
 Copy-Item .env.example .env
 # Edita .env y completa los valores locales/secretos necesarios.
-.\scripts\run-backend-dev.ps1
+.\scripts\run-backend-dev-ps51.ps1
 ```
 
 El script carga `.env` únicamente en el entorno de su proceso, fuerza
-`SPRING_PROFILES_ACTIVE=dev`, asegura el servicio Compose `db` y ejecuta el Maven Wrapper. No levanta
-pgAdmin. Puede invocarse desde otra ubicación porque resuelve el repositorio mediante su propia ruta.
+`SPRING_PROFILES_ACTIVE=dev`, compila el frontend, levanta PostgreSQL y `preprocessing-service` con
+Docker Compose, espera el health técnico de Python y ejecuta Spring Boot localmente mediante el
+Maven Wrapper. No levanta pgAdmin. Puede invocarse desde otra ubicación porque resuelve el
+repositorio mediante su propia ruta.
 
 Spring Boot no carga `.env` automáticamente. Docker Compose sí usa el `.env` local de la raíz y el
 launcher lo carga además para Spring Boot. `application-dev.yml` aporta defaults DEV no sensibles;
@@ -72,11 +79,12 @@ La API se publica bajo `http://localhost:8082/identipat-ia` y el frontend de des
 ## Servicio de preprocesamiento
 
 El servicio Python es un componente técnico interno consumido solo por Java; Angular nunca lo llama
-directamente. En desarrollo expone `GET http://127.0.0.1:8090/health`. La URL que usa el backend
-puede reemplazarse mediante `PREPROCESSING_SERVICE_BASE_URL`.
+directamente. En desarrollo expone `GET http://127.0.0.1:8090/health` y el contrato privado
+`POST /v1/pdf/extract`. La URL y timeout que usa Java se configuran mediante
+`PREPROCESSING_SERVICE_BASE_URL` y `PREPROCESSING_SERVICE_TIMEOUT`.
 
 Consulta [la guía del servicio de preprocesamiento](docs/development/preprocessing-service.md) para
-ejecución local con Python 3.12, pruebas y Docker.
+el flujo Compose estándar, la ejecución manual con Python 3.12 y las pruebas.
 
 ## Documentación de API y Postman
 
@@ -85,7 +93,7 @@ Con el perfil `dev` activo, la especificación OpenAPI y Swagger UI están dispo
 - `http://localhost:8082/identipat-ia/v3/api-docs`
 - `http://localhost:8082/identipat-ia/swagger-ui.html`
 
-La colección para pruebas manuales está en `postman/identipat-api.collection.json`. Para STANDARD ejecuta **Get CSRF**, reconocimiento/registro, creación de sesión, consentimiento y luego **Create text analysis** / **Get text analysis once**; Postman conserva las cookies y guarda solo los IDs/tokens temporales necesarios. Para ADMIN configura credenciales localmente y usa **Login ADMIN and save JWT**. No versiones documentos reales, cookies, credenciales, JWT ni secretos.
+La colección para pruebas manuales está en `postman/identipat-api.collection.json`. Para STANDARD ejecuta **Get CSRF**, reconocimiento/registro, creación de sesión, consentimiento y luego el flujo TEXT o PDF; para PDF selecciona manualmente un archivo de prueba. Postman conserva las cookies y guarda solo los IDs/tokens temporales necesarios. Para ADMIN configura credenciales localmente y usa **Login ADMIN and save JWT**. No versiones documentos reales, cookies, credenciales, JWT ni secretos.
 
 Consulta [la guía de documentación de API](docs/development/api-documentation.md) para la disponibilidad por ambiente y el flujo STANDARD.
 
@@ -130,8 +138,9 @@ PROD continúa requiriendo `OPENAI_API_KEY`, `OPENAI_MODEL` y `OPENAI_TIMEOUT` e
 
 La sesión STANDARD es server-side y usa `IDENTIPAT_STANDARD_SESSION` HttpOnly; no es login ni JWT. Las mutaciones de sesión/consentimiento requieren `XSRF-TOKEN` y `X-XSRF-TOKEN`. El backend no devuelve PII, IDs internos ni el token de sesión en esos contratos.
 
-El análisis de texto usa las variables `ANALYSIS_*` para límites y worker. Sus valores predeterminados
-son técnicos para DEV/TEST y todos pueden sobrescribirse por ambiente.
+El análisis usa variables `ANALYSIS_*` para límites y worker. PDF admite por defecto 10 MiB y 50
+páginas mediante `ANALYSIS_PDF_MAX_FILE_SIZE_BYTES` y `ANALYSIS_PDF_MAX_PAGES`; los límites de texto
+extraído reutilizan `ANALYSIS_TEXT_MIN_LENGTH`/`ANALYSIS_TEXT_MAX_LENGTH`.
 
 Spring Boot y Maven no cargan automáticamente un archivo `.env`; el launcher PowerShell lo carga en
 el proceso para DEV y Docker Compose lo lee desde la raíz. Consulta [la guía de configuración](docs/development/configuration.md) y [.env.example](.env.example) para conocer todas las variables.

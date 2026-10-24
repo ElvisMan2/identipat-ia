@@ -181,12 +181,14 @@ identipat-ia/
 │   └── identipat-api.collection.json
 ├── preprocessing-service/
 │   ├── src/preprocessing_service/
-│   │   ├── api/                      # Ruta técnica /health
-│   │   ├── core/                     # Configuración externa mínima
-│   │   ├── schemas/                  # Schemas Pydantic
+│   │   ├── api/                      # Rutas /health y /v1/pdf/extract
+│   │   ├── core/                     # Configuración externa y límites PDF
+│   │   ├── schemas/                  # Schemas Pydantic health/PDF
+│   │   ├── services/                 # Extracción técnica PDF con pypdf
 │   │   └── main.py                   # Bootstrap FastAPI
 │   ├── tests/
-│   │   └── test_health.py
+│   │   ├── test_health.py
+│   │   └── test_pdf.py
 │   ├── .dockerignore
 │   ├── Dockerfile
 │   ├── pyproject.toml
@@ -203,6 +205,6 @@ identipat-ia/
 
 ## Servicio de preprocesamiento
 
-`preprocessing-service/` es un bootstrap FastAPI con el único contrato `GET /health`. Aún no contiene
-procesamiento de PDF/audio ni sus dependencias. Java conserva la orquestación y la integración de IA;
-Angular nunca llama a Python directamente.
+`preprocessing-service/` expone `GET /health` y el contrato privado `POST /v1/pdf/extract`. Extrae
+únicamente la capa de texto con `pypdf`; no implementa OCR, audio, negocio, persistencia ni IA. Java
+conserva la orquestación y la integración generativa; Angular nunca llama a Python directamente.

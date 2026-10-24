@@ -21,7 +21,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
 import java.util.UUID;
@@ -60,11 +62,33 @@ public class AnalysisController {
             @RequestBody TextAnalysisRequest body, HttpServletRequest request, Authentication authentication) {
         AnalysisCreatedResponse created = service.createText(
                 accessResolver.resolve(request, authentication), body == null ? null : body.description());
-        long retryAfter = Math.max(1, properties.pollInterval().toSeconds());
-        return ResponseEntity.accepted()
-                .location(URI.create("/identipat-ia/analyses/" + created.analysisId()))
-                .header(HttpHeaders.RETRY_AFTER, Long.toString(retryAfter))
-                .body(created);
+        return accepted(created);
+    }
+
+    @PostMapping(value = "/pdf", consumes = "multipart/form-data")
+    @Operation(summary = "Crear análisis desde PDF",
+            description = "Acepta un PDF digital application/pdf con firma %PDF-. Los defaults configurables son 10 MiB, 50 páginas y los límites de texto comunes. STANDARD requiere sesión activa, consentimiento vigente y CSRF; ADMIN requiere Bearer JWT. La extracción síncrona no incluye OCR, el binario no se persiste y el análisis reutiliza el pipeline asíncrono existente.",
+            security = {
+                    @SecurityRequirement(name = OpenApiConfig.STANDARD_SESSION),
+                    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+            })
+    @ApiResponses({
+            @ApiResponse(responseCode = "202", description = "PDF extraído y análisis recibido"),
+            @ApiResponse(responseCode = "401", description = "Sesión STANDARD o Bearer ADMIN inválido"),
+            @ApiResponse(responseCode = "403", description = "CSRF STANDARD inválido"),
+            @ApiResponse(responseCode = "409", description = "Consentimiento STANDARD vigente no aceptado"),
+            @ApiResponse(responseCode = "413", description = "PDF_TOO_LARGE"),
+            @ApiResponse(responseCode = "415", description = "UNSUPPORTED_PDF_MEDIA_TYPE"),
+            @ApiResponse(responseCode = "422", description = "PDF inválido, cifrado, sin texto o fuera de límites"),
+            @ApiResponse(responseCode = "503", description = "Preprocesamiento o IA no disponible")
+    })
+    public ResponseEntity<AnalysisCreatedResponse> createPdf(
+            @RequestPart(name = "file", required = false) MultipartFile file,
+            HttpServletRequest request,
+            Authentication authentication) {
+        AnalysisCreatedResponse created = service.createPdf(
+                accessResolver.resolve(request, authentication), file);
+        return accepted(created);
     }
 
     @GetMapping("/{analysisId}")
@@ -82,5 +106,13 @@ public class AnalysisController {
     public AnalysisResponse get(@PathVariable UUID analysisId, HttpServletRequest request,
             Authentication authentication) {
         return service.get(accessResolver.resolve(request, authentication), analysisId);
+    }
+
+    private ResponseEntity<AnalysisCreatedResponse> accepted(AnalysisCreatedResponse created) {
+        long retryAfter = Math.max(1, properties.pollInterval().toSeconds());
+        return ResponseEntity.accepted()
+                .location(URI.create("/identipat-ia/analyses/" + created.analysisId()))
+                .header(HttpHeaders.RETRY_AFTER, Long.toString(retryAfter))
+                .body(created);
     }
 }

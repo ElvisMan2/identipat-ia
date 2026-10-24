@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -124,6 +125,17 @@ public class GlobalExceptionHandler {
         error.put("error", "Bad Request");
         error.put("message", "Invalid value for parameter " + ex.getName());
         return ResponseEntity.badRequest().body(error);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleMaxUploadSizeExceeded() {
+        Map<String, Object> error = new HashMap<>();
+        error.put("timestamp", LocalDateTime.now());
+        error.put("status", HttpStatus.PAYLOAD_TOO_LARGE.value());
+        error.put("error", HttpStatus.PAYLOAD_TOO_LARGE.getReasonPhrase());
+        error.put("code", "PDF_TOO_LARGE");
+        error.put("message", "The PDF exceeds the configured size limit");
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(error);
     }
 
     @ExceptionHandler(Exception.class)

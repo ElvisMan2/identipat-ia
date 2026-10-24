@@ -1,5 +1,6 @@
 package com.mnk.identipatia.preprocessing.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mnk.identipatia.preprocessing.client.PreprocessingServiceClient;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -24,7 +25,8 @@ public class PreprocessingServiceClientConfiguration {
     }
 
     @Bean
-    PreprocessingServiceClient preprocessingServiceClient(RestClient preprocessingRestClient) {
-        return new PreprocessingServiceClient(preprocessingRestClient);
+    PreprocessingServiceClient preprocessingServiceClient(
+            RestClient preprocessingRestClient, ObjectMapper objectMapper) {
+        return new PreprocessingServiceClient(preprocessingRestClient, objectMapper);
     }
 }
