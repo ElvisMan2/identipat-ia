@@ -577,14 +577,15 @@ Una sesión puede vencer después de autorizar el `POST`. El procesamiento puede
 
 ## 12. PDF y audio
 
-PDF y audio utilizarán el mismo `Analysis` y el mismo endpoint de consulta. Solo cambia el transporte de entrada y aparece la etapa `PREPROCESSING`.
+PDF y audio utilizan el mismo `Analysis` y el mismo endpoint de consulta. El preprocesamiento es
+síncrono y ocurre antes de crear `Analysis`; por eso no agrega un estado durable `PREPROCESSING`.
 
-| Ruta futura | Fase | Body | Secuencia |
+| Ruta | Fase | Body | Secuencia |
 |---|---|---|---|
-| `POST /analyses/pdf` | F1.5 | `multipart/form-data` con PDF y metadata permitida | `RECEIVED → PREPROCESSING → ANALYZING → terminal` |
-| `POST /analyses/audio` | F1.6 | `multipart/form-data` con audio y metadata permitida | `RECEIVED → PREPROCESSING → ANALYZING → terminal` |
+| `POST /analyses/pdf` | F1.5 | `multipart/form-data`, campo `file` | extracción → `RECEIVED → ANALYZING → terminal` |
+| `POST /analyses/audio` | F1.6 | `multipart/form-data`, campo `file` | transcripción → `RECEIVED → ANALYZING → terminal` |
 
-Ambas rutas deberán:
+Ambas rutas:
 
 - devolver `202` con el mismo `AnalysisCreatedResponse`;
 - publicar `Location` y `Retry-After`;
@@ -594,7 +595,8 @@ Ambas rutas deberán:
 - coordinar Python únicamente desde Java;
 - converger a `processedText` y al mismo proveedor generativo.
 
-F1.5/F1.6 deben definir MIME, formatos, tamaños, OCR/STT, almacenamiento y tratamiento de archivos originales.
+F1.5/F1.6 definieron MIME, formatos y límites; no persisten binarios. PDF usa `pypdf` sin OCR y
+audio usa `faster-whisper` local, español, sin STT cloud ni realtime.
 
 ## 13. Visibilidad STANDARD y administración futura
 
@@ -620,6 +622,9 @@ La persistencia habilita evaluación, QA, métricas y auditoría internas futura
 | F1.1 | CSRF, sesión temporal, consulta/cierre y consentimiento |
 | F1.2 | Contrato interno `GenerativeAiProvider`, prompts y schemas versionados |
 | F1.3 | `POST /analyses/text`, `GET /analyses/{analysisId}`, asincronía durable y `AnalysisResult 1.0` |
+| F1.4 | Contrato jurídico `AnalysisResult 2.0`, prompt y golden set |
+| F1.5 | `POST /analyses/pdf` y extracción local sin persistencia del binario |
+| F1.6 | `POST /analyses/audio` y transcripción local sin persistencia del audio |
 
 ### F1.4
 
@@ -628,12 +633,6 @@ La persistencia habilita evaluación, QA, métricas y auditoría internas futura
 - evolucionar el schema y los DTOs de resultado;
 - conservar compatibilidad o publicar una versión mayor;
 - evitar puntuaciones numéricas de confianza sin calibración metodológica.
-
-### F1.5/F1.6
-
-- agregar contratos multipart de PDF/audio;
-- mantener el mismo aggregate y contrato de consulta;
-- extender seguridad, CSRF y pruebas de aislamiento.
 
 ### F1.7
 

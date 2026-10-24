@@ -271,6 +271,40 @@
       ]
     },
     {
+      "name": "STANDARD - Audio analysis",
+      "description": "Ejecute primero CSRF, sesión y consentimiento ACCEPTED. Seleccione manualmente una grabación corta en español, sin PII; el archivo no se guarda en la colección.",
+      "item": [
+        {
+          "name": "1. Create audio analysis and save ID",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }],
+            "auth": { "type": "noauth" },
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": [] }]
+            },
+            "url": "{{baseUrl}}/analyses/audio",
+            "description": "Campo multipart file. WebM/MP3/MP4/M4A/WAV/OGG/FLAC, máximo 20 MiB y 180 s. La transcripción local ocurre antes del 202 y el audio no se persiste."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Audio analysis is accepted asynchronously', function () { pm.response.to.have.status(202); });",
+            "const body = pm.response.json();",
+            "if (body.analysisId) { pm.collectionVariables.set('analysisId', body.analysisId); }"
+          ] } }]
+        },
+        {
+          "name": "2. Get audio analysis once",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/analyses/{{analysisId}}",
+            "description": "Reutiliza el GET común y solo permite la misma session_id STANDARD; inputType será AUDIO."
+          }
+        }
+      ]
+    },
+    {
       "name": "Admin - Authentication",
       "item": [{
         "name": "Login ADMIN and save JWT",
@@ -380,6 +414,39 @@
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
             "url": "{{baseUrl}}/analyses/{{adminAnalysisId}}",
             "description": "Reutiliza el GET común para el ADMIN propietario."
+          }
+        }
+      ]
+    },
+    {
+      "name": "ADMIN - Audio analysis",
+      "description": "Ejecute primero Login ADMIN. Seleccione manualmente una grabación corta sin PII; no requiere cookie STANDARD, consentimiento ni CSRF.",
+      "item": [
+        {
+          "name": "1. Create ADMIN audio analysis and save ID",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": [] }]
+            },
+            "url": "{{baseUrl}}/analyses/audio",
+            "description": "Campo multipart file. El ADMIN se deriva exclusivamente del JWT y el audio no se persiste."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('ADMIN audio analysis is accepted', function () { pm.response.to.have.status(202); });",
+            "const body = pm.response.json();",
+            "if (body.analysisId) { pm.collectionVariables.set('adminAnalysisId', body.analysisId); }"
+          ] } }]
+        },
+        {
+          "name": "2. Get ADMIN audio analysis once",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/analyses/{{adminAnalysisId}}",
+            "description": "Reutiliza el GET común para el ADMIN propietario; inputType será AUDIO."
           }
         }
       ]

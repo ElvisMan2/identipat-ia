@@ -11,5 +11,7 @@ import java.time.Duration;
 @ConfigurationProperties(prefix = "app.preprocessing")
 public record PreprocessingServiceProperties(
         @NotNull URI baseUrl,
-        @NotNull Duration timeout) {
+        @NotNull Duration connectTimeout,
+        @NotNull Duration pdfTimeout,
+        @NotNull Duration audioTimeout) {
 }

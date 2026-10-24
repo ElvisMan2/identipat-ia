@@ -66,6 +66,46 @@ function Wait-PreprocessingService {
     return $false
 }
 
+function Wait-AudioTranscriptionService {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Uri,
+
+        [int]$TimeoutSeconds
+    )
+
+    $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+    do {
+        try {
+            $health = Invoke-RestMethod -Uri $Uri -Method Get -TimeoutSec 5
+            if ($health.status -eq "UP" -and $health.service -eq "audio-transcription") {
+                return $true
+            }
+        } catch {
+            # The model can still be downloading/loading after general health is available.
+        }
+
+        Start-Sleep -Seconds 2
+    } while ([DateTime]::UtcNow -lt $deadline)
+
+    return $false
+}
+
+function Show-PreprocessingDiagnostics {
+    Push-Location $repoRoot
+    try {
+        Write-Host "preprocessing-service Compose status:"
+        & docker compose ps preprocessing
+        Write-Host "Last sanitized preprocessing-service logs:"
+        & docker compose logs --tail 50 preprocessing |
+            ForEach-Object {
+                $_ -replace '(?i)(token|secret|password|api[_-]?key)=\S+', '$1=<redacted>'
+            }
+    } finally {
+        Pop-Location
+    }
+}
+
 $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 $envFile = Join-Path $repoRoot ".env"
 $backendDir = Join-Path $repoRoot "backend"
@@ -168,18 +208,29 @@ Write-Host "PostgreSQL DEV: ready"
 $preprocessingHealthUri = "http://localhost:8090/health"
 Write-Host "Waiting up to 60 seconds for preprocessing-service..."
 if (-not (Wait-PreprocessingService -Uri $preprocessingHealthUri -TimeoutSeconds 60)) {
-    Push-Location $repoRoot
-    try {
-        Write-Host "preprocessing-service did not become ready. Compose status:"
-        & docker compose ps preprocessing
-        Write-Host "Last preprocessing-service logs:"
-        & docker compose logs --tail 50 preprocessing
-    } finally {
-        Pop-Location
-    }
+    Show-PreprocessingDiagnostics
     throw "preprocessing-service did not report status=UP and service=preprocessing-service within 60 seconds. Spring Boot was not started."
 }
 Write-Host "preprocessing-service DEV: healthy"
+
+$audioReadyTimeoutSeconds = 300
+if (-not [string]::IsNullOrWhiteSpace($env:PREPROCESSING_AUDIO_READY_TIMEOUT_SECONDS)) {
+    if (-not [int]::TryParse(
+            $env:PREPROCESSING_AUDIO_READY_TIMEOUT_SECONDS.Trim(),
+            [ref]$audioReadyTimeoutSeconds) -or $audioReadyTimeoutSeconds -lt 1) {
+        throw "PREPROCESSING_AUDIO_READY_TIMEOUT_SECONDS must be a positive integer."
+    }
+}
+
+$audioHealthUri = "http://localhost:8090/v1/audio/health"
+Write-Host "Waiting up to $audioReadyTimeoutSeconds seconds for the local audio model..."
+if (-not (Wait-AudioTranscriptionService `
+        -Uri $audioHealthUri `
+        -TimeoutSeconds $audioReadyTimeoutSeconds)) {
+    Show-PreprocessingDiagnostics
+    throw "Audio transcription did not report readiness within $audioReadyTimeoutSeconds seconds. Spring Boot was not started."
+}
+Write-Host "audio-transcription DEV: ready"
 
 $serverPort = 8082
 if (-not [string]::IsNullOrWhiteSpace($env:SERVER_PORT)) {

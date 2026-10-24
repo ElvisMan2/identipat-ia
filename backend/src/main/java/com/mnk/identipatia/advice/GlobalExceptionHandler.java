@@ -13,6 +13,7 @@ import com.mnk.identipatia.exception.StandardSessionRequiredException;
 import com.mnk.identipatia.exception.UserNotFoundException;
 import com.mnk.identipatia.service.StandardSessionCookieService;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -128,13 +129,16 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<Map<String, Object>> handleMaxUploadSizeExceeded() {
+    public ResponseEntity<Map<String, Object>> handleMaxUploadSizeExceeded(HttpServletRequest request) {
+        boolean audio = request.getServletPath().endsWith("/analyses/audio");
         Map<String, Object> error = new HashMap<>();
         error.put("timestamp", LocalDateTime.now());
         error.put("status", HttpStatus.PAYLOAD_TOO_LARGE.value());
         error.put("error", HttpStatus.PAYLOAD_TOO_LARGE.getReasonPhrase());
-        error.put("code", "PDF_TOO_LARGE");
-        error.put("message", "The PDF exceeds the configured size limit");
+        error.put("code", audio ? "AUDIO_TOO_LARGE" : "PDF_TOO_LARGE");
+        error.put("message", audio
+                ? "The audio exceeds the configured size limit"
+                : "The PDF exceeds the configured size limit");
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(error);
     }
 

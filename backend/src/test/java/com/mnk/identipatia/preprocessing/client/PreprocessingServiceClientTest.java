@@ -26,7 +26,8 @@ class PreprocessingServiceClientTest {
     void setUp() {
         RestClient.Builder builder = RestClient.builder().baseUrl("http://preprocessing.test");
         server = MockRestServiceServer.bindTo(builder).build();
-        client = new PreprocessingServiceClient(builder.build(), new ObjectMapper());
+        RestClient restClient = builder.build();
+        client = new PreprocessingServiceClient(restClient, restClient, new ObjectMapper());
     }
 
     @Test
@@ -107,6 +108,52 @@ class PreprocessingServiceClientTest {
 
         assertThatThrownBy(() -> client.extractPdf("%PDF-test".getBytes()))
                 .isInstanceOf(PreprocessingServiceUnavailableException.class);
+        server.verify();
+    }
+
+    @Test
+    void transcribeAudioSendsMultipartAndDeserializesStableResponse() {
+        server.expect(requestTo("http://preprocessing.test/v1/audio/transcribe"))
+                .andExpect(method(POST))
+                .andRespond(withSuccess("""
+                        {"text":"Descripción hablada suficientemente extensa","durationSeconds":2.5,
+                         "characterCount":43,"language":"es",
+                         "transcriptionMethod":"FASTER_WHISPER","model":"base"}
+                        """, MediaType.APPLICATION_JSON));
+
+        AudioTranscriptionResponse response = client.transcribeAudio(
+                "audio".getBytes(), "audio/webm");
+
+        assertThat(response.durationSeconds()).isEqualTo(2.5);
+        assertThat(response.model()).isEqualTo("base");
+        server.verify();
+    }
+
+    @Test
+    void transcribeAudioMapsControlledErrorWithoutLeakingMessage() {
+        server.expect(requestTo("http://preprocessing.test/v1/audio/transcribe"))
+                .andRespond(withStatus(org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"code\":\"INVALID_AUDIO\",\"message\":\"decoder internals\"}"));
+
+        assertThatThrownBy(() -> client.transcribeAudio("audio".getBytes(), "audio/wav"))
+                .isInstanceOf(PreprocessingAudioException.class)
+                .extracting(exception -> ((PreprocessingAudioException) exception).getCode())
+                .isEqualTo("INVALID_AUDIO");
+        server.verify();
+    }
+
+    @Test
+    void transcribeAudioMapsModelNotReadyAndServerFailure() {
+        server.expect(requestTo("http://preprocessing.test/v1/audio/transcribe"))
+                .andRespond(withStatus(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"code\":\"AUDIO_MODEL_NOT_READY\",\"message\":\"not ready\"}"));
+
+        assertThatThrownBy(() -> client.transcribeAudio("audio".getBytes(), "audio/ogg"))
+                .isInstanceOf(PreprocessingAudioException.class)
+                .extracting(exception -> ((PreprocessingAudioException) exception).getCode())
+                .isEqualTo("AUDIO_MODEL_NOT_READY");
         server.verify();
     }
 }

@@ -25,18 +25,31 @@ public class PreprocessingServiceClient {
             "PDF_TEXT_NOT_EXTRACTABLE",
             "PDF_TOO_LARGE",
             "UNSUPPORTED_PDF_MEDIA_TYPE");
+    private static final Set<String> CONTROLLED_AUDIO_CODES = Set.of(
+            "AUDIO_TOO_LARGE",
+            "UNSUPPORTED_AUDIO_MEDIA_TYPE",
+            "INVALID_AUDIO",
+            "AUDIO_DURATION_LIMIT_EXCEEDED",
+            "AUDIO_TRANSCRIPTION_EMPTY",
+            "AUDIO_MODEL_NOT_READY",
+            "AUDIO_TRANSCRIPTION_ERROR");
 
-    private final RestClient restClient;
+    private final RestClient pdfRestClient;
+    private final RestClient audioRestClient;
     private final ObjectMapper objectMapper;
 
-    public PreprocessingServiceClient(RestClient restClient, ObjectMapper objectMapper) {
-        this.restClient = restClient;
+    public PreprocessingServiceClient(
+            RestClient pdfRestClient,
+            RestClient audioRestClient,
+            ObjectMapper objectMapper) {
+        this.pdfRestClient = pdfRestClient;
+        this.audioRestClient = audioRestClient;
         this.objectMapper = objectMapper;
     }
 
     public PreprocessingHealthResponse health() {
         try {
-            PreprocessingHealthResponse response = restClient.get()
+            PreprocessingHealthResponse response = pdfRestClient.get()
                     .uri("/health")
                     .retrieve()
                     .body(PreprocessingHealthResponse.class);
@@ -66,7 +79,7 @@ public class PreprocessingServiceClient {
         body.add("file", new HttpEntity<>(resource, partHeaders));
 
         try {
-            PdfExtractionResponse response = restClient.post()
+            PdfExtractionResponse response = pdfRestClient.post()
                     .uri("/v1/pdf/extract")
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(body)
@@ -91,6 +104,45 @@ public class PreprocessingServiceClient {
         }
     }
 
+    public AudioTranscriptionResponse transcribeAudio(byte[] audioBytes, String mediaType) {
+        ByteArrayResource resource = new ByteArrayResource(audioBytes) {
+            @Override
+            public String getFilename() {
+                return "audio";
+            }
+        };
+        HttpHeaders partHeaders = new HttpHeaders();
+        partHeaders.setContentType(MediaType.parseMediaType(mediaType));
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("file", new HttpEntity<>(resource, partHeaders));
+
+        try {
+            AudioTranscriptionResponse response = audioRestClient.post()
+                    .uri("/v1/audio/transcribe")
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(body)
+                    .retrieve()
+                    .body(AudioTranscriptionResponse.class);
+            if (response == null || !response.isValid()) {
+                throw new PreprocessingServiceUnavailableException(
+                        "Preprocessing service returned an invalid audio transcription response");
+            }
+            return response;
+        } catch (PreprocessingServiceUnavailableException exception) {
+            throw exception;
+        } catch (RestClientResponseException exception) {
+            if (exception.getStatusCode().is4xxClientError()
+                    || exception.getStatusCode().value() == 503) {
+                throw controlledAudioError(exception);
+            }
+            throw new PreprocessingServiceUnavailableException(
+                    "Preprocessing service audio transcription failed", exception);
+        } catch (RestClientException exception) {
+            throw new PreprocessingServiceUnavailableException(
+                    "Preprocessing service audio transcription failed", exception);
+        }
+    }
+
     private RuntimeException controlledPdfError(RestClientResponseException exception) {
         try {
             PdfExtractionErrorResponse response = objectMapper.readValue(
@@ -103,5 +155,19 @@ public class PreprocessingServiceClient {
         }
         return new PreprocessingServiceUnavailableException(
                 "Preprocessing service returned an invalid PDF error response", exception);
+    }
+
+    private RuntimeException controlledAudioError(RestClientResponseException exception) {
+        try {
+            AudioTranscriptionErrorResponse response = objectMapper.readValue(
+                    exception.getResponseBodyAsByteArray(), AudioTranscriptionErrorResponse.class);
+            if (response != null && CONTROLLED_AUDIO_CODES.contains(response.code())) {
+                return new PreprocessingAudioException(response.code());
+            }
+        } catch (IOException ignored) {
+            // An invalid error payload is treated as service unavailability below.
+        }
+        return new PreprocessingServiceUnavailableException(
+                "Preprocessing service returned an invalid audio error response", exception);
     }
 }

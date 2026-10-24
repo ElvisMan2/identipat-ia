@@ -3,6 +3,7 @@ FROM python:3.12-slim
 WORKDIR /app
 
 RUN addgroup --system app && adduser --system --ingroup app app
+RUN mkdir -p /models && chown app:app /models
 
 COPY pyproject.toml README.md ./
 COPY src ./src

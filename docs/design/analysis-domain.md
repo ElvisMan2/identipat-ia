@@ -1,9 +1,9 @@
 # Dominio de análisis — IDENTIPAT-IA
 
-**Estado:** diseño F1.0 materializado en F1.1–F1.5
+**Estado:** diseño F1.0 materializado en F1.1–F1.6
 **Versión:** 1.4
 **Última actualización:** 24 de octubre de 2026
-**Alcance:** modelo vigente de sesión, consentimiento, análisis de texto/PDF, invocaciones de IA y resultado canónico. Audio se incorporará sobre este núcleo en F1.6.
+**Alcance:** modelo vigente de sesión, consentimiento, análisis de texto/PDF/audio, invocaciones de IA y resultado canónico.
 
 ## 1. Objetivo
 
@@ -25,7 +25,7 @@ F1.0 produjo el diseño conceptual. F1.1 materializó sesión y consentimiento; 
 
 - Java/Spring Boot es dueño de sesión, consentimiento, análisis, persistencia, resultado e inferencia generativa.
 - Angular consume los contratos Java y no accede directamente a PostgreSQL, Python ni al proveedor LLM.
-- Python extrae técnicamente la capa de texto de PDF y se reserva para el futuro preprocesamiento de audio.
+- Python extrae técnicamente la capa de texto de PDF y transcribe audio localmente; no ejecuta el diagnóstico.
 - `ADMIN` es el único acceso autenticado mediante credenciales y JWT.
 - `STANDARD` no recibe JWT, no utiliza contraseña y no tiene perfil ni historial visible.
 - DNI/CE identifica o deduplica un registro; no autentica ni verifica la identidad real de quien opera el navegador.
@@ -279,7 +279,9 @@ Para `TEXT`, se conserva el original y se diferencia del texto técnicamente nor
 `original_text` es el texto devuelto por la extracción técnica y `processed_text` es su normalización
 funcional con `TextNormalizer`. El binario no se persiste. `source_metadata` guarda únicamente
 `mediaType`, `sizeBytes`, `pageCount`, `characterCount`, `extractionMethod` y SHA-256; no guarda el
-filename. Audio permanece pendiente en F1.6.
+filename. Para `AUDIO`, `original_text` es la transcripción y `processed_text` su normalización;
+metadata conserva `mediaType`, `sizeBytes`, `durationSeconds`, `characterCount`, `language`,
+`transcriptionMethod`, `model` y SHA-256. No se guardan audio, filename, rutas ni segmentos.
 
 ## 8. Invocaciones de IA
 
@@ -417,7 +419,7 @@ F1.4 no realiza un examen completo de patentabilidad o registrabilidad. Queda pr
 stateDiagram-v2
     [*] --> RECEIVED: entrada aceptada
     RECEIVED --> ANALYZING: texto disponible
-    RECEIVED --> PREPROCESSING: reservado para flujos futuros
+    RECEIVED --> PREPROCESSING: reservado; no usado por TEXT/PDF/AUDIO actuales
     PREPROCESSING --> ANALYZING: texto utilizable
     PREPROCESSING --> FAILED: fallo terminal
     ANALYZING --> ANALYZING: retry programado
@@ -429,7 +431,9 @@ stateDiagram-v2
 
 `COMPLETED` y `FAILED` son terminales.
 
-Para texto, `PREPROCESSING` se omite. Un retry no reinicia la consulta ni crea otra `Analysis`; crea la siguiente `AiInvocation` y mantiene el lifecycle funcional.
+Para TEXT, PDF y AUDIO, `PREPROCESSING` se omite: PDF/audio se convierten a texto antes de crear el
+análisis. Un retry no reinicia la consulta ni crea otra `Analysis`; crea la siguiente `AiInvocation`
+y mantiene el lifecycle funcional.
 
 ### 10.1 Timestamps
 
@@ -597,7 +601,7 @@ Las decisiones definitivas de cifrado, retención, minimización, anonimización
 | Creación de sesión | `POST /standard-sessions` acepta solo STANDARD activo, separado del reconocimiento/registro | Implementada F1.1 y formalizada en F1.4C |
 | Consentimiento | Eventos `ACCEPTED`/`REJECTED` vinculados a sesión y usuario | Implementada F1.1 |
 | Vigencia del consentimiento | Coincidencia de versión y hash del documento | Implementada F1.1 |
-| CSRF STANDARD | Repositorio de cookie + header y handler SPA para `POST /analyses/**` sin Bearer | Implementada para TEXT/PDF |
+| CSRF STANDARD | Repositorio de cookie + header y handler SPA para `POST /analyses/**` sin Bearer | Implementada para TEXT/PDF/AUDIO |
 | PK del dominio | UUID; resultado/input reutilizan `analysis_id` en 1:1 | Implementada V2/V3 |
 | Analysis/Input | Un `Analysis` + `analysis_inputs` 1:1 | Implementada F1.3 |
 | Invocaciones | `ai_invocations` 1:N | Implementada F1.3 |
@@ -607,11 +611,11 @@ Las decisiones definitivas de cifrado, retención, minimización, anonimización
 | Concurrencia | `FOR UPDATE SKIP LOCKED` + lease | Implementada F1.3 |
 | Retry | `next_attempt_at`, sin `sleep` bloqueante | Implementada F1.3 |
 | Recuperación | Lease vencido + invocación `ABANDONED` | Implementada F1.3 |
-| Endpoints | Rutas por tipo con núcleo interno común | TEXT y PDF implementados; audio pendiente |
+| Endpoints | Rutas por tipo con núcleo interno común | TEXT, PDF y AUDIO implementados |
 | Prompt | ID/versión + hashes + snapshot renderizado | Implementada F1.2–F1.4 |
 | Respuesta cruda | JSONB por invocación | Implementada F1.3 |
 | Tokens | Columnas normalizadas + JSONB de detalle | Implementada F1.3 |
-| Archivos originales | PDF no persistido en F1.5; política futura en F2.1 | Implementada para PDF |
+| Archivos originales | PDF/audio no persistidos; política futura en F2.1 | Implementada F1.5/F1.6 |
 | Usuario con evidencia | Desactivación lógica y conservación | Dirección vigente; política final F2.1 |
 
 ## 15. Decisiones pendientes
@@ -633,8 +637,11 @@ análisis. No hay OCR ni persistencia del binario.
 
 ### F1.6 — Audio
 
-Permanecen pendientes formatos, límites, almacenamiento temporal, tecnología de transcripción y
-contrato técnico Java ↔ Python. Debe converger en la misma persistencia y worker.
+Implementada con WebM, MPEG/MP3, MP4/M4A, WAV, OGG y FLAC; límites configurables de 20 MiB y
+180 segundos; español; decodificación PyAV en memoria; y `faster-whisper base` local en CPU INT8.
+El modelo tiene cache persistente y readiness independiente. La transcripción se valida y persiste
+por el mismo `AnalysisCreationPersistenceService`; el audio no se conserva y el worker es común.
+F2.0 evaluará calidad/modelo y F2.3 definirá el aprovisionamiento offline productivo.
 
 ### F1.7 — Presentación
 

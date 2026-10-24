@@ -91,6 +91,32 @@ public class AnalysisController {
         return accepted(created);
     }
 
+    @PostMapping(value = "/audio", consumes = "multipart/form-data")
+    @Operation(summary = "Crear análisis desde audio",
+            description = "Acepta una descripción hablada en español (WebM, MP3, MP4/M4A, WAV, OGG o FLAC), con defaults configurables de 20 MiB y 180 segundos. STANDARD requiere sesión activa, consentimiento vigente y CSRF; ADMIN requiere Bearer JWT. La transcripción usa faster-whisper local, el audio no se persiste y el análisis reutiliza el pipeline asíncrono existente.",
+            security = {
+                    @SecurityRequirement(name = OpenApiConfig.STANDARD_SESSION),
+                    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+            })
+    @ApiResponses({
+            @ApiResponse(responseCode = "202", description = "Audio transcrito y análisis recibido"),
+            @ApiResponse(responseCode = "401", description = "Sesión STANDARD o Bearer ADMIN inválido"),
+            @ApiResponse(responseCode = "403", description = "CSRF STANDARD inválido"),
+            @ApiResponse(responseCode = "409", description = "Consentimiento STANDARD vigente no aceptado"),
+            @ApiResponse(responseCode = "413", description = "AUDIO_TOO_LARGE"),
+            @ApiResponse(responseCode = "415", description = "UNSUPPORTED_AUDIO_MEDIA_TYPE"),
+            @ApiResponse(responseCode = "422", description = "Audio inválido, demasiado largo o transcripción fuera de límites"),
+            @ApiResponse(responseCode = "503", description = "Transcripción local o IA no disponible")
+    })
+    public ResponseEntity<AnalysisCreatedResponse> createAudio(
+            @RequestPart(name = "file", required = false) MultipartFile file,
+            HttpServletRequest request,
+            Authentication authentication) {
+        AnalysisCreatedResponse created = service.createAudio(
+                accessResolver.resolve(request, authentication), file);
+        return accepted(created);
+    }
+
     @GetMapping("/{analysisId}")
     @Operation(summary = "Consultar análisis",
             description = "STANDARD se aísla por session_id; ADMIN por user_id y contexto ADMIN. No expone invocaciones ni metadata del proveedor.",

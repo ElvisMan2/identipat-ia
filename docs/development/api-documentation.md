@@ -11,7 +11,7 @@ La API se documenta en tiempo de ejecución con `springdoc-openapi-starter-webmv
 
 ## Seguridad
 
-La especificación define `bearerAuth` para ADMIN y `standardSession` para la cookie STANDARD. STANDARD no recibe JWT: usa `IDENTIPAT_STANDARD_SESSION` HttpOnly como capacidad temporal. `GET /standard-session/csrf` es público; `POST /standard-sessions` es público + CSRF pero solo crea sesiones para STANDARD activo. `POST /analyses/text` y `POST /analyses/pdf` admiten sesión + consentimiento + CSRF o Bearer ADMIN; `GET /analyses/{analysisId}` usa la misma sesión STANDARD o el ADMIN propietario. `POST /users/identify`, `POST /users` y `POST /users/login` conservan acceso público.
+La especificación define `bearerAuth` para ADMIN y `standardSession` para la cookie STANDARD. STANDARD no recibe JWT: usa `IDENTIPAT_STANDARD_SESSION` HttpOnly como capacidad temporal. `GET /standard-session/csrf` es público; `POST /standard-sessions` es público + CSRF pero solo crea sesiones para STANDARD activo. `POST /analyses/text`, `/pdf` y `/audio` admiten sesión + consentimiento + CSRF o Bearer ADMIN; `GET /analyses/{analysisId}` usa la misma sesión STANDARD o el ADMIN propietario. `POST /users/identify`, `POST /users` y `POST /users/login` conservan acceso público.
 
 Swagger UI permite usar **Authorize** con el JWT emitido por el login administrativo. No se usa HTTP Basic.
 
@@ -60,7 +60,7 @@ Las variables de colección no contienen secretos reales:
 
 Ejecuta primero **Login ADMIN and save JWT** y luego las operaciones en `Admin - Users`, que envían `Authorization: Bearer {{adminJwt}}`. El grupo incluye ejemplos paginados, de búsqueda, filtros, ordenamiento y exportación CSV completa. Las solicitudes que crean, actualizan o eliminan datos requieren valores de prueba únicos y son intencionalmente manuales.
 
-El flujo STANDARD no usa Bearer token: primero **Recognize document** y, si aplica, **Register STANDARD**. Después ejecuta **Get CSRF**, crea sesión, registra consentimiento, crea el análisis TEXT o PDF y realiza un GET manual. El flujo ADMIN ejecuta **Login ADMIN and save JWT** y luego crea/consulta el análisis con `Authorization: Bearer {{adminJwt}}`, sin DNI/CE en el body, cookie requerida, CSRF ni consentimiento STANDARD. Los grupos PDF usan selección manual de archivo y no almacenan documentos en el repositorio. No hay polling infinito. No deben guardarse DNI reales, cookies, pepper, JWT ni secretos en variables compartidas.
+El flujo STANDARD no usa Bearer token: primero **Recognize document** y, si aplica, **Register STANDARD**. Después ejecuta **Get CSRF**, crea sesión, registra consentimiento, crea el análisis TEXT, PDF o AUDIO y realiza un GET manual. El flujo ADMIN ejecuta **Login ADMIN and save JWT** y luego crea/consulta el análisis con `Authorization: Bearer {{adminJwt}}`, sin DNI/CE en el body, cookie requerida, CSRF ni consentimiento STANDARD. Los grupos PDF/audio usan selección manual de archivo y no almacenan archivos en el repositorio. No hay polling infinito. No deben guardarse DNI, voz o documentos reales, cookies, pepper, JWT ni secretos en variables compartidas.
 
 ## Endpoints STANDARD
 
@@ -73,6 +73,7 @@ El flujo STANDARD no usa Bearer token: primero **Recognize document** y, si apli
 | `DELETE /standard-session` | `204`, revocación y borrado de cookie. |
 | `POST /analyses/text` | `202`, `Location`, `Retry-After` y UUID; STANDARD usa sesión/consentimiento/CSRF y ADMIN usa Bearer. |
 | `POST /analyses/pdf` | Multipart `file`; mismo `202` después de extracción exitosa. STANDARD usa sesión/consentimiento/CSRF y ADMIN usa Bearer. |
+| `POST /analyses/audio` | Multipart `file`; mismo `202` después de transcripción local exitosa. STANDARD usa sesión/consentimiento/CSRF y ADMIN usa Bearer. |
 | `GET /analyses/{analysisId}` | `200` para la misma sesión STANDARD o el ADMIN propietario del análisis ADMIN. |
 
 Las mutaciones anteriores, incluidos los POST bajo `/analyses/**` sin Bearer, requieren cookie `XSRF-TOKEN` y header `X-XSRF-TOKEN`; su ausencia o discordancia responde `403`. Con Bearer se eximen de CSRF y un token inválido nunca hace fallback a STANDARD. Spring Boot 3.2.12 resuelve Spring Security 6.2.8, por lo que se usa un handler SPA: valor plano para cookie/header y manejo XOR/BREACH para atributos de request.
@@ -89,6 +90,20 @@ Respuestas PDF: `413 PDF_TOO_LARGE`, `415 UNSUPPORTED_PDF_MEDIA_TYPE`, `422 INVA
 `PDF_ENCRYPTED_NOT_SUPPORTED`, `PDF_PAGE_LIMIT_EXCEEDED`, `PDF_TEXT_NOT_EXTRACTABLE` o
 `PDF_TEXT_TOO_LONG`; `503 PREPROCESSING_SERVICE_UNAVAILABLE` o `ANALYSIS_AI_UNAVAILABLE`.
 
+## Contrato público audio
+
+`POST /analyses/audio` consume `multipart/form-data` con un único campo `file`; no acepta idioma,
+modelo, texto ni actor en el body. Los MIME admitidos son `audio/webm`, `audio/mpeg`, `audio/mp4`,
+`audio/x-m4a`, `audio/wav`, `audio/x-wav`, `audio/ogg` y `audio/flac`; se ignoran parámetros como
+`codecs=opus`. Los defaults son 20 MiB, 180 segundos, español y límites de texto normalizado de
+20–20000 caracteres. Java valida MIME/tamaño y Python valida autoritativamente al decodificar antes
+de ejecutar `faster-whisper`. El `202`, `Location`, `Retry-After` y GET son comunes; el GET devuelve
+`inputType=AUDIO`. El binario no se persiste.
+
+Respuestas audio: `413 AUDIO_TOO_LARGE`, `415 UNSUPPORTED_AUDIO_MEDIA_TYPE`, `422 INVALID_AUDIO`,
+`AUDIO_DURATION_LIMIT_EXCEEDED`, `AUDIO_TRANSCRIPTION_EMPTY` o `AUDIO_TEXT_TOO_LONG`; y
+`503 AUDIO_TRANSCRIPTION_UNAVAILABLE` o `ANALYSIS_AI_UNAVAILABLE`.
+
 ## Errores actuales
 
-Los códigos de sesión/consentimiento se complementan con `CONSENT_REQUIRED`, `INVALID_ANALYSIS_DESCRIPTION`, los códigos PDF documentados, `ANALYSIS_AI_UNAVAILABLE` y `ANALYSIS_NOT_FOUND`. Un análisis `FAILED` devuelve solo categorías públicas saneadas. Ningún error expone token, hash, pepper, PII, stack trace, prompt, respuesta del proveedor o detalle de base. Los rechazos CSRF los produce Spring Security con `403`.
+Los códigos de sesión/consentimiento se complementan con `CONSENT_REQUIRED`, `INVALID_ANALYSIS_DESCRIPTION`, los códigos PDF/audio documentados, `ANALYSIS_AI_UNAVAILABLE` y `ANALYSIS_NOT_FOUND`. Un análisis `FAILED` devuelve solo categorías públicas saneadas. Ningún error expone token, hash, pepper, PII, stack trace, prompt, respuesta del proveedor, PyAV/CTranslate2/Hugging Face o detalle de base. Los rechazos CSRF los produce Spring Security con `403`.

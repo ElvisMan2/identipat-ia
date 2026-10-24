@@ -6,7 +6,7 @@ Repositorio del sistema IDENTIPAT-IA, organizado como una aplicación web con ba
 
 - `backend/`: API principal, reglas de negocio y seguridad.
 - `frontend/`: interfaz web Angular.
-- `preprocessing-service/`: servicio FastAPI interno para extracción técnica de PDF; audio queda para una fase posterior.
+- `preprocessing-service/`: servicio FastAPI interno para extracción PDF y transcripción local de audio.
 - `postman/`: colección de pruebas manuales de la API.
 - `docs/`: diagnóstico y documentación técnica.
 - `docker-compose.yml`: PostgreSQL 16, pgAdmin y `preprocessing-service` para desarrollo local.
@@ -25,6 +25,12 @@ El flujo PDF recibe `multipart/form-data` en `POST /analyses/pdf`, valida MIME, 
 Java, extrae de forma síncrona la capa de texto mediante el servicio Python y solo entonces persiste
 `AnalysisInput(PDF)` y responde `202`. No incluye OCR y no conserva el binario; el texto extraído usa
 el mismo worker, prompt, proveedor, schema y resultado que TEXT.
+
+El flujo de audio recibe `multipart/form-data` en `POST /analyses/audio`, acepta WebM, MP3, MP4/M4A,
+WAV, OGG y FLAC, y aplica defaults de 20 MiB, 180 segundos y español. Python decodifica en memoria
+con PyAV y transcribe localmente con `faster-whisper` (`base`, CPU INT8); ni el audio ni segmentos se
+persisten o envían a un STT cloud. La transcripción converge al mismo `AnalysisInput`, worker, prompt,
+schema y resultado de TEXT/PDF.
 
 Los análisis nuevos usan el contrato jurídico-funcional `analysis-result/2.0` y el prompt
 `intellectual-property-analysis/0.2`: admiten protecciones concurrentes, screening limitado de los
@@ -55,7 +61,7 @@ Copy-Item .env.example .env
 
 El script carga `.env` únicamente en el entorno de su proceso, fuerza
 `SPRING_PROFILES_ACTIVE=dev`, compila el frontend, levanta PostgreSQL y `preprocessing-service` con
-Docker Compose, espera el health técnico de Python y ejecuta Spring Boot localmente mediante el
+Docker Compose, espera el health general y el readiness del modelo de audio, y ejecuta Spring Boot localmente mediante el
 Maven Wrapper. No levanta pgAdmin. Puede invocarse desde otra ubicación porque resuelve el
 repositorio mediante su propia ruta.
 
@@ -79,9 +85,10 @@ La API se publica bajo `http://localhost:8082/identipat-ia` y el frontend de des
 ## Servicio de preprocesamiento
 
 El servicio Python es un componente técnico interno consumido solo por Java; Angular nunca lo llama
-directamente. En desarrollo expone `GET http://127.0.0.1:8090/health` y el contrato privado
-`POST /v1/pdf/extract`. La URL y timeout que usa Java se configuran mediante
-`PREPROCESSING_SERVICE_BASE_URL` y `PREPROCESSING_SERVICE_TIMEOUT`.
+directamente. En desarrollo expone `GET /health`, `GET /v1/audio/health`, `POST /v1/pdf/extract` y
+`POST /v1/audio/transcribe` en `http://127.0.0.1:8090`. Java usa timeouts separados mediante
+`PREPROCESSING_SERVICE_CONNECT_TIMEOUT`, `PREPROCESSING_PDF_TIMEOUT` y
+`PREPROCESSING_AUDIO_TIMEOUT`.
 
 Consulta [la guía del servicio de preprocesamiento](docs/development/preprocessing-service.md) para
 el flujo Compose estándar, la ejecución manual con Python 3.12 y las pruebas.
@@ -93,7 +100,7 @@ Con el perfil `dev` activo, la especificación OpenAPI y Swagger UI están dispo
 - `http://localhost:8082/identipat-ia/v3/api-docs`
 - `http://localhost:8082/identipat-ia/swagger-ui.html`
 
-La colección para pruebas manuales está en `postman/identipat-api.collection.json`. Para STANDARD ejecuta **Get CSRF**, reconocimiento/registro, creación de sesión, consentimiento y luego el flujo TEXT o PDF; para PDF selecciona manualmente un archivo de prueba. Postman conserva las cookies y guarda solo los IDs/tokens temporales necesarios. Para ADMIN configura credenciales localmente y usa **Login ADMIN and save JWT**. No versiones documentos reales, cookies, credenciales, JWT ni secretos.
+La colección para pruebas manuales está en `postman/identipat-api.collection.json`. Para STANDARD ejecuta **Get CSRF**, reconocimiento/registro, creación de sesión, consentimiento y luego el flujo TEXT, PDF o audio; los archivos se seleccionan manualmente. Postman conserva las cookies y guarda solo los IDs/tokens temporales necesarios. Para ADMIN configura credenciales localmente y usa **Login ADMIN and save JWT**. No versiones documentos ni grabaciones reales, PII, cookies, credenciales, JWT ni secretos.
 
 Consulta [la guía de documentación de API](docs/development/api-documentation.md) para la disponibilidad por ambiente y el flujo STANDARD.
 
@@ -141,6 +148,8 @@ La sesión STANDARD es server-side y usa `IDENTIPAT_STANDARD_SESSION` HttpOnly; 
 El análisis usa variables `ANALYSIS_*` para límites y worker. PDF admite por defecto 10 MiB y 50
 páginas mediante `ANALYSIS_PDF_MAX_FILE_SIZE_BYTES` y `ANALYSIS_PDF_MAX_PAGES`; los límites de texto
 extraído reutilizan `ANALYSIS_TEXT_MIN_LENGTH`/`ANALYSIS_TEXT_MAX_LENGTH`.
+Audio admite por defecto 20 MiB y 180 segundos mediante `ANALYSIS_AUDIO_MAX_FILE_SIZE_BYTES` y
+`ANALYSIS_AUDIO_MAX_DURATION_SECONDS`; el cache Docker persistente del modelo se monta en `/models`.
 
 Spring Boot y Maven no cargan automáticamente un archivo `.env`; el launcher PowerShell lo carga en
 el proceso para DEV y Docker Compose lo lee desde la raíz. Consulta [la guía de configuración](docs/development/configuration.md) y [.env.example](.env.example) para conocer todas las variables.

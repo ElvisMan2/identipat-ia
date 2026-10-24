@@ -26,7 +26,9 @@ app:
       timeout: ${OPENAI_TIMEOUT}
   preprocessing:
     base-url: ${PREPROCESSING_SERVICE_BASE_URL}
-    timeout: ${PREPROCESSING_SERVICE_TIMEOUT:15s}
+    connect-timeout: ${PREPROCESSING_SERVICE_CONNECT_TIMEOUT:5s}
+    pdf-timeout: ${PREPROCESSING_PDF_TIMEOUT:15s}
+    audio-timeout: ${PREPROCESSING_AUDIO_TIMEOUT:300s}
   jwt:
     secret: ${JWT_SECRET}
   cors:

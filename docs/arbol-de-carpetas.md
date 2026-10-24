@@ -181,12 +181,13 @@ identipat-ia/
 │   └── identipat-api.collection.json
 ├── preprocessing-service/
 │   ├── src/preprocessing_service/
-│   │   ├── api/                      # Rutas /health y /v1/pdf/extract
-│   │   ├── core/                     # Configuración externa y límites PDF
-│   │   ├── schemas/                  # Schemas Pydantic health/PDF
-│   │   ├── services/                 # Extracción técnica PDF con pypdf
+│   │   ├── api/                      # /health, PDF y audio privado
+│   │   ├── core/                     # Configuración externa PDF/audio
+│   │   ├── schemas/                  # Schemas Pydantic health/PDF/audio
+│   │   ├── services/                 # pypdf y faster-whisper local
 │   │   └── main.py                   # Bootstrap FastAPI
 │   ├── tests/
+│   │   ├── test_audio.py
 │   │   ├── test_health.py
 │   │   └── test_pdf.py
 │   ├── .dockerignore
@@ -205,6 +206,7 @@ identipat-ia/
 
 ## Servicio de preprocesamiento
 
-`preprocessing-service/` expone `GET /health` y el contrato privado `POST /v1/pdf/extract`. Extrae
-únicamente la capa de texto con `pypdf`; no implementa OCR, audio, negocio, persistencia ni IA. Java
+`preprocessing-service/` expone `GET /health`, `GET /v1/audio/health`, `POST /v1/pdf/extract` y
+`POST /v1/audio/transcribe`. Extrae PDF con `pypdf` y transcribe audio localmente con
+`faster-whisper`; no implementa OCR, negocio, persistencia ni IA generativa. Java
 conserva la orquestación y la integración generativa; Angular nunca llama a Python directamente.
