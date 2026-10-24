@@ -297,13 +297,24 @@
 
       <form [formGroup]="analysisForm" (ngSubmit)="submitAnalysis()" class="analysis-form">
         <label for="description">Descripción de la creación</label>
-        <textarea id="description" formControlName="description" rows="10" placeholder="Escribe aquí la descripción de tu creación..."></textarea>
-        @if (analysisForm.controls.description.touched && analysisForm.controls.description.invalid) {
+        @if (selectedPdf(); as pdf) {
+          <div class="pdf-selection" role="status" aria-label="Archivo PDF seleccionado" style="height: 188px; position: relative; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 5px;">
+            <button type="button" aria-label="Quitar archivo PDF" title="Quitar archivo PDF" (click)="removeSelectedPdf()" style="position: absolute; top: 8px; right: 8px; z-index: 1; width: 32px; height: 32px; padding: 5px; border: 0; border-radius: 50%; background: #fff; cursor: pointer;">
+              <img src="close.png" alt="" style="display: block; width: 22px; height: 22px; object-fit: contain;" />
+            </button>
+            <img src="/Icon_pdf_file.svg.webp" alt="" style="width: 72px; height: 72px;" />
+            <span style="max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ pdf.name }}</span>
+          </div>
+        } @else {
+          <textarea id="description" formControlName="description" rows="10" placeholder="Escribe aquí la descripción de tu creación..."></textarea>
+        }
+        @if (!selectedPdf() && analysisForm.controls.description.touched && analysisForm.controls.description.invalid) {
           <p class="field-error">La descripción debe tener entre 20 y 20 000 caracteres.</p>
         }
         <div class="input-actions">
           <button class="voice-button" type="button" aria-label="Grabar descripción por voz">Grabar voz</button>
-          <button class="pdf-button" type="button" aria-label="Adjuntar archivo PDF">Adjuntar PDF</button>
+          <input #pdfInput type="file" accept="application/pdf" hidden (change)="onPdfSelected($event)" />
+          <button class="pdf-button" type="button" aria-label="Adjuntar archivo PDF" (click)="pdfInput.click()">Adjuntar PDF</button>
         </div>
         <div class="analysis-actions">
           <span [class.success-message]="analysisMessage().startsWith('Análisis recibido')" [class.error]="analysisMessage().startsWith('No se pudo')">{{ analysisMessage() }}</span>

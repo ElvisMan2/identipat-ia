@@ -55,6 +55,7 @@ export class App {
   readonly submittingAnalysis = signal(false);
   readonly analysisMessage = signal('');
   readonly analysisResult = signal<AnalysisResponse | null>(null);
+  readonly selectedPdf = signal<File | null>(null);
 
   constructor() {
     if (this.document.location.pathname === '/terminos-y-privacidad') {
@@ -606,7 +607,8 @@ export class App {
   }
 
   submitAnalysis(): void {
-    if (this.analysisForm.invalid) {
+    const selectedPdf = this.selectedPdf();
+    if (!selectedPdf && this.analysisForm.invalid) {
       this.analysisForm.markAllAsTouched();
       return;
     }
@@ -618,8 +620,12 @@ export class App {
     this.analysisResult.set(null);
 
     const adminAccessToken = this.adminAuthenticated() ? this.userService.getAccessToken() : '';
-    this.standardAnalysisService.createTextAnalysis(doi, doiType, description, adminAccessToken).subscribe({
+    const request = selectedPdf
+      ? this.standardAnalysisService.createPdfAnalysis(doi, doiType, selectedPdf, adminAccessToken)
+      : this.standardAnalysisService.createTextAnalysis(doi, doiType, description, adminAccessToken);
+    request.subscribe({
       next: ({ analysisId }) => {
+        this.selectedPdf.set(null);
         this.analysisMessage.set('');
         this.pollAnalysis(analysisId, adminAccessToken);
       },
@@ -628,6 +634,38 @@ export class App {
         this.analysisMessage.set('No se pudo iniciar el análisis. Verifica tu sesión, consentimiento e intenta nuevamente.');
       }
     });
+  }
+
+  onPdfSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+
+    if (!file) {
+      return;
+    }
+
+    if (file.type !== 'application/pdf') {
+      this.analysisMessage.set('Selecciona un archivo PDF válido.');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      this.analysisMessage.set('El PDF no puede superar los 10 MiB.');
+      return;
+    }
+
+    this.selectedPdf.set(file);
+    this.analysisForm.controls.description.setValue('');
+    this.analysisForm.controls.description.markAsUntouched();
+    this.analysisMessage.set('');
+  }
+
+  removeSelectedPdf(): void {
+    this.selectedPdf.set(null);
+    this.analysisForm.controls.description.setValue('');
+    this.analysisForm.controls.description.markAsUntouched();
+    this.analysisMessage.set('');
   }
 
   private downloadAnalysisJson(analysisId: string, analysis: unknown): void {
