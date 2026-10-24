@@ -1,13 +1,13 @@
 # Dominio de análisis — IDENTIPAT-IA
 
-**Estado:** diseño F1.0 materializado en F1.1–F1.4B
-**Versión:** 1.2
-**Última actualización:** 22 de octubre de 2026
+**Estado:** diseño F1.0 materializado en F1.1–F1.4C
+**Versión:** 1.3
+**Última actualización:** 23 de octubre de 2026
 **Alcance:** modelo vigente de sesión, consentimiento, análisis de texto, invocaciones de IA y resultado canónico. PDF y audio se incorporarán sobre este núcleo en F1.5 y F1.6.
 
 ## 1. Objetivo
 
-Definir un núcleo único, durable y trazable para las consultas de propiedad intelectual realizadas por usuarios `STANDARD` y, mediante la compatibilidad vigente, por usuarios `ADMIN` activos dentro del flujo de análisis.
+Definir un núcleo único, durable y trazable para las consultas de propiedad intelectual realizadas por usuarios `STANDARD` mediante sesión temporal y por usuarios `ADMIN` autenticados mediante JWT.
 
 El dominio debe explicar:
 
@@ -29,7 +29,7 @@ F1.0 produjo el diseño conceptual. F1.1 materializó sesión y consentimiento; 
 - `ADMIN` es el único acceso autenticado mediante credenciales y JWT.
 - `STANDARD` no recibe JWT, no utiliza contraseña y no tiene perfil ni historial visible.
 - DNI/CE identifica o deduplica un registro; no autentica ni verifica la identidad real de quien opera el navegador.
-- La sesión de análisis es una capacidad temporal revocable y limitada a una experiencia de uso. Actualmente admite registros `STANDARD` y `ADMIN` activos, pero nunca concede privilegios ADMIN.
+- La sesión de análisis es una capacidad temporal revocable y exclusiva de registros `STANDARD` activos. Nunca concede privilegios ADMIN.
 - El motor funcional es IA generativa; no existe un pipeline paralelo de NLP, embeddings, clasificadores o ML clásico.
 - OpenAI es el adapter implementado actualmente mediante `GenerativeAiProvider`; Gemini u otros proveedores son extensiones futuras.
 - La información funcional y técnica se conserva ampliamente durante el desarrollo para trazabilidad y evaluación.
@@ -114,7 +114,7 @@ Analysis
 └── AnalysisResult            0..1
 ```
 
-La sesión, el usuario y el evento de consentimiento forman el contexto que autorizó su creación.
+El contexto de autorización es mutuamente excluyente: para STANDARD lo forman sesión, usuario y evento de consentimiento; para ADMIN lo forma el usuario activo resuelto exclusivamente desde el JWT.
 
 ## 4. Sesión temporal de análisis
 
@@ -167,7 +167,7 @@ La sesión aplica dos límites:
 
 También puede cerrarse al detectar un usuario inactivo o una finalización explícita. `closed_at` y `close_reason` conservan la causa cuando corresponde.
 
-La sesión no se convierte en JWT, no concede privilegios ADMIN y no permite recuperar sesiones anteriores desde la interfaz. Aunque un ADMIN activo puede usarla temporalmente para consentimiento y análisis, los endpoints `/users/**` siguen requiriendo el JWT ADMIN independiente.
+La sesión no se convierte en JWT, no concede privilegios ADMIN y no permite recuperar sesiones anteriores desde la interfaz. Un ADMIN no puede crearla por DNI/CE; cualquier sesión ADMIN histórica deja de resolverse sin necesidad de borrarla físicamente.
 
 ### 4.4 Invariantes físicas
 
@@ -180,7 +180,7 @@ La migración V2 garantiza:
 - `expires_at <= absolute_expires_at`;
 - estado limitado a `ACTIVE`, `EXPIRED` o `CLOSED`.
 
-Las reglas adicionales —que el usuario sea `STANDARD` o `ADMIN` y esté activo— se aplican en el servicio.
+Las reglas adicionales —que el usuario sea `STANDARD` y esté activo— se aplican en el servicio y en cada resolución de la cookie.
 
 ## 5. Consentimiento
 
@@ -200,9 +200,9 @@ Campos relevantes:
 
 La tabla impide asociaciones cruzadas mediante una FK compuesta a `(session_id, user_id)` y limita a una decisión por `(session_id, consent_version)`.
 
-Antes de admitir un análisis, el backend verifica que exista una decisión `ACCEPTED` correspondiente tanto a la versión como al hash del documento vigente. La versión sola no es suficiente.
+Antes de admitir un análisis STANDARD, el backend verifica que exista una decisión `ACCEPTED` correspondiente tanto a la versión como al hash del documento vigente. La versión sola no es suficiente. El modo ADMIN JWT no crea ni requiere un `ConsentEvent` STANDARD.
 
-El `Analysis` conserva `consent_event_id`; por ello puede determinarse qué evidencia concreta habilitó su creación incluso después de que la sesión expire o cambie la versión vigente.
+El `Analysis` STANDARD conserva `consent_event_id`; por ello puede determinarse qué evidencia concreta habilitó su creación incluso después de que la sesión expire o cambie la versión vigente. En un análisis ADMIN ese campo es nulo por diseño.
 
 La evidencia no prueba la identidad real de quien opera el navegador. Permanece pendiente la confirmación funcional/legal sobre si el consentimiento debe obtenerse antes de persistir los datos personales del registro inicial.
 
@@ -217,9 +217,9 @@ Una regeneración solicitada explícitamente crea una nueva `Analysis`. Los rein
 | Campo | Uso |
 |---|---|
 | `analysis_id` | UUID público del análisis. |
-| `user_id` | Usuario STANDARD asociado. |
-| `session_id` | Sesión propietaria y límite de acceso. |
-| `consent_event_id` | Evidencia que habilitó el análisis. |
+| `user_id` | Usuario propietario, siempre obligatorio. |
+| `session_id` | Sesión propietaria para STANDARD; `NULL` para ADMIN JWT. |
+| `consent_event_id` | Evidencia STANDARD; `NULL` para ADMIN JWT. |
 | `input_type` | `TEXT`, `PDF` o `AUDIO`. |
 | `status` | Lifecycle funcional. |
 | `created_at` | Recepción persistida. |
@@ -231,11 +231,11 @@ Una regeneración solicitada explícitamente crea una nueva `Analysis`. Los rein
 | `next_attempt_at` | Instante desde el cual puede reintentarse. |
 | `lease_owner`, `lease_until` | Propiedad temporal del trabajo. |
 
-La migración V3 exige que `lease_owner` y `lease_until` sean ambos nulos o ambos no nulos. También exige el timestamp correspondiente cuando el estado es `COMPLETED` o `FAILED`.
+La migración V3 exige que `lease_owner` y `lease_until` sean ambos nulos o ambos no nulos. También exige el timestamp correspondiente cuando el estado es `COMPLETED` o `FAILED`. La migración V4 hace nullable el contexto de sesión y agrega `ck_analyses_access_context` para exigir que `session_id` y `consent_event_id` estén ambos presentes o ambos ausentes.
 
 ### 6.2 Integridad de contexto
 
-V3 utiliza FKs compuestas para garantizar que el análisis no pueda combinar accidentalmente:
+V3 utiliza FKs compuestas para garantizar que un análisis STANDARD no pueda combinar accidentalmente:
 
 - un usuario con la sesión de otro usuario;
 - una sesión con un evento de consentimiento ajeno;
@@ -249,7 +249,14 @@ V3 utiliza FKs compuestas para garantizar que el análisis no pueda combinar acc
     → consent_events
 ```
 
-Estas restricciones complementan las validaciones del servicio.
+Estas restricciones se conservan en V4. PostgreSQL `MATCH SIMPLE` omite su comprobación en el contexto ADMIN nulo y el nuevo CHECK impide estados parciales. La semántica resultante es:
+
+```text
+session_id + consent_event_id presentes → STANDARD_SESSION
+session_id + consent_event_id ausentes  → ADMIN_JWT
+```
+
+La consulta STANDARD usa `analysis_id + session_id`; la ADMIN usa `analysis_id + user_id + session_id IS NULL`. Así, ninguno de los actores puede atravesar el contexto del otro y todo acceso ajeno responde `404`.
 
 ## 7. Datos de entrada
 
@@ -443,7 +450,7 @@ Una validación HTTP elemental puede responder `400` sin crear una `Analysis`. S
 
 `POST /analyses/text`:
 
-1. valida sesión temporal de un STANDARD o ADMIN activo, CSRF, consentimiento y longitud;
+1. resuelve sesión STANDARD con CSRF/consentimiento o ADMIN JWT, y valida longitud;
 2. persiste `Analysis(RECEIVED)` y `AnalysisInput(TEXT)`;
 3. responde `202 Accepted` con el identificador.
 
@@ -580,10 +587,10 @@ Las decisiones definitivas de cifrado, retención, minimización, anonimización
 
 | Decisión | Selección vigente | Estado |
 |---|---|---|
-| Sesión temporal de análisis | Cookie `HttpOnly` con token opaco y estado server-side; compatible con STANDARD y ADMIN activos | Implementada F1.1; formalización ADMIN pendiente F1.4C |
+| Sesión temporal de análisis | Cookie `HttpOnly` con token opaco y estado server-side; exclusiva de STANDARD activo | Implementada F1.1 y restringida en F1.4C |
 | Protección del token | HMAC-SHA-256 con pepper | Implementada F1.1 |
 | TTL | Inactividad + límite absoluto configurables | Implementada F1.1 |
-| Creación de sesión | `POST /standard-sessions` acepta STANDARD o ADMIN activo, separado del reconocimiento/registro | Implementada F1.1; revisar acceso ADMIN en F1.4C |
+| Creación de sesión | `POST /standard-sessions` acepta solo STANDARD activo, separado del reconocimiento/registro | Implementada F1.1 y formalizada en F1.4C |
 | Consentimiento | Eventos `ACCEPTED`/`REJECTED` vinculados a sesión y usuario | Implementada F1.1 |
 | Vigencia del consentimiento | Coincidencia de versión y hash del documento | Implementada F1.1 |
 | CSRF STANDARD | Repositorio de cookie + header y handler SPA | Implementada; ampliar a PDF/audio |
@@ -611,7 +618,7 @@ siendo una actividad de aceptación, no una ampliación automática del alcance 
 
 ### F1.4C — Formalización del acceso ADMIN al análisis
 
-La compatibilidad actual permite que `POST /standard-sessions`, una ruta pública protegida por CSRF, cree una sesión de análisis para un registro ADMIN usando DNI/CE. CSRF no es autenticación. Antes del piloto o producción se debe habilitar el análisis ADMIN a partir de la identidad autenticada por JWT, mantener separado el acceso STANDARD por sesión temporal y coordinar el cambio de contrato con frontend. Esta deuda no se implementa en F1.4B.
+Implementada. Un Bearer presente selecciona exclusivamente el modo ADMIN; debe ser un JWT válido cuyo subject resuelva a un ADMIN activo. Sin Bearer se selecciona el modo STANDARD con cookie, consentimiento y CSRF. Si coexisten Bearer válido y cookie, prevalece ADMIN; un Bearer inválido nunca hace fallback. El pipeline y el worker son comunes y procesan análisis ADMIN con ambos IDs de contexto nulos.
 
 ### F1.5/F1.6 — PDF y audio
 

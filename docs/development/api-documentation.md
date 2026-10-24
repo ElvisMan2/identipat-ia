@@ -11,7 +11,7 @@ La API se documenta en tiempo de ejecución con `springdoc-openapi-starter-webmv
 
 ## Seguridad
 
-La especificación define `bearerAuth` para ADMIN. STANDARD no recibe JWT: usa `IDENTIPAT_STANDARD_SESSION` HttpOnly como capacidad temporal. `GET /standard-session/csrf` es público; `POST /standard-sessions` es público pero exige CSRF; consultar, consentir y cerrar requieren la cookie válida. `POST /analyses/text` exige sesión, consentimiento y CSRF; `GET /analyses/{analysisId}` exige la misma sesión pero no CSRF. `POST /users/identify`, `POST /users` y `POST /users/login` conservan acceso público y no exigen CSRF porque no se autorizan mediante la cookie STANDARD.
+La especificación define `bearerAuth` para ADMIN y `standardSession` para la cookie STANDARD. STANDARD no recibe JWT: usa `IDENTIPAT_STANDARD_SESSION` HttpOnly como capacidad temporal. `GET /standard-session/csrf` es público; `POST /standard-sessions` es público + CSRF pero solo crea sesiones para STANDARD activo. `POST /analyses/text` admite sesión + consentimiento + CSRF o Bearer ADMIN; `GET /analyses/{analysisId}` usa la misma sesión STANDARD o el ADMIN propietario. `POST /users/identify`, `POST /users` y `POST /users/login` conservan acceso público.
 
 Swagger UI permite usar **Authorize** con el JWT emitido por el login administrativo. No se usa HTTP Basic.
 
@@ -55,23 +55,24 @@ Las variables de colección no contienen secretos reales:
 - `standardDoi`, `standardDoiType` y `adminUserId`: datos de prueba ajustables.
 - `csrfToken`: se guarda dinámicamente desde **Get CSRF and save token**.
 - `consentVersion`: versión esperada por el backend.
-- `analysisId`: se guarda desde la respuesta `202` para una consulta GET manual posterior.
+- `analysisId`: se guarda desde la respuesta `202` del flujo STANDARD.
+- `adminAnalysisId`: se guarda por separado desde la respuesta `202` del flujo ADMIN.
 
 Ejecuta primero **Login ADMIN and save JWT** y luego las operaciones en `Admin - Users`, que envían `Authorization: Bearer {{adminJwt}}`. El grupo incluye ejemplos paginados, de búsqueda, filtros, ordenamiento y exportación CSV completa. Las solicitudes que crean, actualizan o eliminan datos requieren valores de prueba únicos y son intencionalmente manuales.
 
-El flujo STANDARD no usa Bearer token: primero **Recognize document** y, si aplica, **Register STANDARD**. Después ejecuta **Get CSRF**, crea sesión, registra consentimiento, crea el análisis y realiza un GET manual. Postman conserva las cookies en su cookie jar y envía `X-XSRF-TOKEN: {{csrfToken}}`. No hay polling infinito. No deben guardarse DNI reales, cookies, pepper, JWT ni secretos en variables compartidas.
+El flujo STANDARD no usa Bearer token: primero **Recognize document** y, si aplica, **Register STANDARD**. Después ejecuta **Get CSRF**, crea sesión, registra consentimiento, crea el análisis y realiza un GET manual. El flujo ADMIN ejecuta **Login ADMIN and save JWT** y luego crea/consulta el análisis con `Authorization: Bearer {{adminJwt}}`, sin DNI/CE en el body, cookie requerida, CSRF ni consentimiento STANDARD. No hay polling infinito. No deben guardarse DNI reales, cookies, pepper, JWT ni secretos en variables compartidas.
 
 ## Endpoints STANDARD
 
 | Método y ruta | Resultado principal |
 | --- | --- |
 | `GET /standard-session/csrf` | Cookie `XSRF-TOKEN` y `{token, headerName}`; no autentica. |
-| `POST /standard-sessions` | `201`, cookie HttpOnly y estado sin PII/IDs/token. |
+| `POST /standard-sessions` | `201`, cookie HttpOnly para STANDARD activo; ADMIN recibe `409`. |
 | `GET /standard-session` | Estado vigente y renovación de inactividad. |
 | `POST /standard-session/consent` | Evento `ACCEPTED`/`REJECTED`; nunca recibe hash/IDs. |
 | `DELETE /standard-session` | `204`, revocación y borrado de cookie. |
-| `POST /analyses/text` | `202`, `Location`, `Retry-After` y UUID público del análisis. |
-| `GET /analyses/{analysisId}` | `200` con estado/resultado/fallo saneado de la misma sesión. |
+| `POST /analyses/text` | `202`, `Location`, `Retry-After` y UUID; STANDARD usa sesión/consentimiento/CSRF y ADMIN usa Bearer. |
+| `GET /analyses/{analysisId}` | `200` para la misma sesión STANDARD o el ADMIN propietario del análisis ADMIN. |
 
 Las mutaciones anteriores, incluido el POST de análisis, requieren cookie `XSRF-TOKEN` y header `X-XSRF-TOKEN`; su ausencia o discordancia responde `403`. Spring Boot 3.2.12 resuelve Spring Security 6.2.8, por lo que se usa un handler SPA: valor plano para cookie/header y manejo XOR/BREACH para atributos de request.
 

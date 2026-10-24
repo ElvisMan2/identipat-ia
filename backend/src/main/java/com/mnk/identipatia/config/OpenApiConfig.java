@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
 
     public static final String BEARER_AUTH = "bearerAuth";
+    public static final String STANDARD_SESSION = "standardSession";
 
     @Bean
     public OpenAPI identipatOpenApi() {
@@ -24,6 +25,10 @@ public class OpenApiConfig {
                         .addSecuritySchemes(BEARER_AUTH, new SecurityScheme()
                                 .type(SecurityScheme.Type.HTTP)
                                 .scheme("bearer")
-                                .bearerFormat("JWT")));
+                                .bearerFormat("JWT"))
+                        .addSecuritySchemes(STANDARD_SESSION, new SecurityScheme()
+                                .type(SecurityScheme.Type.APIKEY)
+                                .in(SecurityScheme.In.COOKIE)
+                                .name("IDENTIPAT_STANDARD_SESSION")));
     }
 }

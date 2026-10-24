@@ -1,8 +1,8 @@
 # Contrato de análisis — IDENTIPAT-IA
 
-**Estado:** contrato jurídico-funcional F1.4 implementado sobre el flujo de texto F1.3
-**Versión:** 2.0
-**Última actualización:** 20 de septiembre de 2026
+**Estado:** contrato jurídico-funcional F1.4 con acceso ADMIN formalizado en F1.4C
+**Versión:** 2.1
+**Última actualización:** 23 de octubre de 2026
 **Ámbito:** contratos HTTP consumidos por Angular exclusivamente a través de Java/Spring Boot y contrato canónico `AnalysisResult`.
 
 ## 1. Propósito
@@ -30,10 +30,10 @@ Todas las rutas son relativas al context path:
 - DNI/CE identifica o deduplica un registro, pero no verifica criptográfica o presencialmente la identidad real de quien usa el navegador.
 - La creación de sesión es independiente de `POST /users/identify` y `POST /users`.
 - Java vuelve a resolver el usuario mediante DNI/CE y nunca acepta un `userId` enviado por Angular para crear la sesión.
-- Una sesión solo puede crear análisis después de aceptar el consentimiento vigente.
+- Una sesión STANDARD solo puede crear análisis después de aceptar el consentimiento vigente; ADMIN usa JWT y no crea sesión ni consentimiento STANDARD.
 - Consentimiento y disclaimer institucional son conceptos separados.
 - Un análisis es asíncrono: el `POST` persiste y devuelve `202`; no espera al LLM.
-- El UUID del análisis identifica el recurso, pero no lo autoriza. Java también verifica que pertenezca a la sesión vigente.
+- El UUID del análisis identifica el recurso, pero no lo autoriza. Java verifica la sesión STANDARD o el ADMIN propietario y el contexto ADMIN.
 - Las respuestas públicas no incluyen PII, token de sesión, IDs internos de usuario/sesión, prompts, respuestas crudas, parámetros del modelo ni intentos técnicos.
 - Los contratos rechazan campos desconocidos en las requests de sesión y consentimiento.
 - El resultado generado es orientativo; no constituye una decisión oficial ni una probabilidad calibrada.
@@ -61,13 +61,13 @@ Actualmente requieren CSRF:
 - `POST /standard-sessions`;
 - `POST /standard-session/consent`;
 - `DELETE /standard-session`;
-- `POST /analyses/text`.
+- `POST /analyses/text` cuando no existe un Bearer.
 
-La ausencia o discordancia del token responde `403 Forbidden`. `SameSite` y CORS son defensas complementarias, no sustitutos de CSRF.
+El modo ADMIN Bearer de `POST /analyses/text` no requiere CSRF. Un Bearer presente selecciona exclusivamente ADMIN: si es inválido, expiró o no corresponde a un ADMIN activo, responde `401` y nunca cae al modo cookie. La ausencia o discordancia del token en modo STANDARD responde `403 Forbidden`.
 
 Las futuras mutaciones PDF/audio deberán quedar igualmente protegidas. Se recomienda una regla general para las mutaciones STANDARD bajo `/analyses/**`.
 
-### 3.3 Aislamiento por sesión
+### 3.3 Aislamiento por actor y contexto
 
 Para consultar un análisis se exige:
 
@@ -77,7 +77,7 @@ cookie STANDARD válida
 analysis.session_id = currentSession.session_id
 ```
 
-Conocer un `analysisId` ajeno no permite recuperarlo. El backend responde como no encontrado y no revela que el recurso pertenece a otra sesión.
+Para ADMIN se exige `Bearer válido + analysis.user_id = admin.user_id + analysis.session_id IS NULL`. Conocer un `analysisId` ajeno no permite recuperarlo. El backend responde `404` sin revelar si pertenece a otra sesión, otro ADMIN o al otro modo de acceso.
 
 ## 4. Envelope de errores
 
@@ -295,11 +295,21 @@ X-XSRF-TOKEN: <csrf-token>
 Cookie: IDENTIPAT_STANDARD_SESSION=<token-opaco>
 ```
 
-Precondiciones:
+Modo STANDARD:
 
 - sesión `STANDARD` activa;
 - usuario asociado de tipo `STANDARD` y activo;
 - consentimiento `ACCEPTED` para la versión y hash vigentes;
+- CSRF válido.
+
+Modo ADMIN:
+
+- `Authorization: Bearer <jwt>` válido;
+- subject resuelto a un usuario `ADMIN` activo en PostgreSQL;
+- sin cookie, consentimiento ni CSRF requeridos.
+
+Precondiciones comunes:
+
 - proveedor de IA habilitado y disponible;
 - descripción dentro de los límites configurados.
 
@@ -313,10 +323,10 @@ Request:
 
 El cliente no aporta `userId`, `sessionId`, `consentEventId`, `analysisId`, proveedor, modelo, prompt ni estado.
 
-El backend:
+El backend selecciona primero el modo con precedencia Bearer y luego:
 
-1. resuelve y renueva la sesión;
-2. verifica el consentimiento vigente;
+1. resuelve la sesión STANDARD o el ADMIN autenticado;
+2. verifica el consentimiento vigente solo para STANDARD;
 3. comprueba la disponibilidad de IA;
 4. normaliza técnicamente la descripción;
 5. valida su longitud por code points;
@@ -346,7 +356,8 @@ Errores:
 |---:|---|---|
 | `400` | `INVALID_REQUEST` | JSON malformado. |
 | `401` | `STANDARD_SESSION_REQUIRED` | Falta sesión activa o la cookie es inválida. |
-| `403` | — | CSRF ausente o inválido. |
+| `401` | `ADMIN_AUTHENTICATION_REQUIRED` | Bearer ausente de autenticación válida, expirado, inactivo o no ADMIN. |
+| `403` | — | CSRF STANDARD ausente o inválido. |
 | `409` | `CONSENT_REQUIRED` | No existe aceptación para versión y hash vigentes. |
 | `422` | `INVALID_ANALYSIS_DESCRIPTION` | Descripción normalizada fuera de límites. |
 | `503` | `ANALYSIS_AI_UNAVAILABLE` | IA deshabilitada o sin provider disponible; no se crea el análisis. |
@@ -358,12 +369,20 @@ GET /analyses/{analysisId}
 Cookie: IDENTIPAT_STANDARD_SESSION=<token-opaco>
 ```
 
-No requiere CSRF porque es una lectura, pero sí una sesión activa y pertenencia a la misma `session_id`.
+o:
+
+```http
+GET /analyses/{analysisId}
+Authorization: Bearer <jwt-admin>
+```
+
+No requiere CSRF porque es una lectura. STANDARD exige la misma `session_id`; ADMIN exige el mismo `user_id` y que el análisis tenga `session_id IS NULL`.
 
 | HTTP | Código | Significado |
 |---:|---|---|
 | `401` | `STANDARD_SESSION_REQUIRED` | Sesión ausente, inválida o expirada. |
-| `404` | `ANALYSIS_NOT_FOUND` | UUID inexistente o no perteneciente a la sesión actual. |
+| `401` | `ADMIN_AUTHENTICATION_REQUIRED` | Bearer ADMIN inválido. |
+| `404` | `ANALYSIS_NOT_FOUND` | UUID inexistente o ajeno al actor/contexto actual. |
 
 #### Respuesta en procesamiento
 
@@ -570,8 +589,8 @@ Ambas rutas deberán:
 - devolver `202` con el mismo `AnalysisCreatedResponse`;
 - publicar `Location` y `Retry-After`;
 - utilizar `GET /analyses/{analysisId}`;
-- requerir sesión, consentimiento y CSRF;
-- mantener el aislamiento por sesión;
+- reutilizar la resolución dual: sesión/consentimiento/CSRF para STANDARD o JWT para ADMIN;
+- mantener el aislamiento por sesión STANDARD o propietario ADMIN y contexto;
 - coordinar Python únicamente desde Java;
 - converger a `processedText` y al mismo proveedor generativo.
 
@@ -590,7 +609,7 @@ No existen contratos para:
 - ver prompts, invocaciones o metadata del proveedor;
 - acceder a un perfil STANDARD desde este flujo.
 
-La persistencia habilita evaluación, QA, métricas y auditoría internas futuras, pero no existe todavía un contrato ADMIN para consultar estos datos. Cualquier acceso administrativo debe diseñarse con autorización, minimización, retención y auditoría específicas.
+La persistencia habilita evaluación, QA, métricas y auditoría internas futuras. F1.4C permite al ADMIN consultar únicamente sus propios análisis creados en contexto JWT; no crea un historial administrativo global ni acceso a consultas de terceros. Cualquier contrato administrativo adicional debe diseñarse con autorización, minimización, retención y auditoría específicas.
 
 ## 14. Evolución por fases
 

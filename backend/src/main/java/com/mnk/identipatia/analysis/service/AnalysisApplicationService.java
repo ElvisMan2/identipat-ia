@@ -21,12 +21,9 @@ import com.mnk.identipatia.analysis.result.AnalysisResult;
 import com.mnk.identipatia.analysis.result.AnalysisResultReader;
 import com.mnk.identipatia.config.StandardSessionProperties;
 import com.mnk.identipatia.exception.ApiException;
-import com.mnk.identipatia.exception.StandardSessionRequiredException;
 import com.mnk.identipatia.model.ConsentDecision;
 import com.mnk.identipatia.model.ConsentEvent;
 import com.mnk.identipatia.repository.ConsentEventRepository;
-import com.mnk.identipatia.service.StandardSessionContext;
-import com.mnk.identipatia.service.StandardSessionResolver;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -45,7 +42,6 @@ public class AnalysisApplicationService {
     private final AnalysisInputRepository inputRepository;
     private final StoredAnalysisResultRepository resultRepository;
     private final ConsentEventRepository consentRepository;
-    private final StandardSessionResolver sessionResolver;
     private final StandardSessionProperties sessionProperties;
     private final AnalysisProperties analysisProperties;
     private final AiProperties aiProperties;
@@ -58,7 +54,6 @@ public class AnalysisApplicationService {
             AnalysisInputRepository inputRepository,
             StoredAnalysisResultRepository resultRepository,
             ConsentEventRepository consentRepository,
-            StandardSessionResolver sessionResolver,
             StandardSessionProperties sessionProperties,
             AnalysisProperties analysisProperties,
             AiProperties aiProperties,
@@ -69,7 +64,6 @@ public class AnalysisApplicationService {
         this.inputRepository = inputRepository;
         this.resultRepository = resultRepository;
         this.consentRepository = consentRepository;
-        this.sessionResolver = sessionResolver;
         this.sessionProperties = sessionProperties;
         this.analysisProperties = analysisProperties;
         this.aiProperties = aiProperties;
@@ -79,31 +73,36 @@ public class AnalysisApplicationService {
     }
 
     @Transactional
-    public AnalysisCreatedResponse createText(String rawSessionToken, String originalText) {
-        StandardSessionContext context = requireSession(rawSessionToken);
-        if (!"STANDARD".equalsIgnoreCase(context.user().getUserType())
-            && !"ADMIN".equalsIgnoreCase(context.user().getUserType())) {
-            throw new StandardSessionRequiredException();
-        }
-        ConsentEvent consent = consentRepository
-                .findBySessionSessionIdAndUserUserIdAndConsentVersionAndConsentDocumentHashAndDecision(
-                        context.session().getSessionId(), context.user().getUserId(),
-                        sessionProperties.getConsentCurrentVersion(),
-                        sessionProperties.getConsentDocumentSha256(), ConsentDecision.ACCEPTED)
-                .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "CONSENT_REQUIRED",
-                        "Current consent must be accepted before creating an analysis"));
+    public AnalysisCreatedResponse createText(AnalysisAccessContext access, String originalText) {
+        ConsentEvent consent = access.mode() == AnalysisAccessContext.Mode.STANDARD_SESSION
+                ? requireCurrentConsent(access) : null;
         ensureAiAvailable();
 
         String processedText = TextNormalizer.normalize(originalText);
         validateLength(processedText);
+        return persistText(access, consent, originalText, processedText);
+    }
+
+    private ConsentEvent requireCurrentConsent(AnalysisAccessContext access) {
+        return consentRepository
+                .findBySessionSessionIdAndUserUserIdAndConsentVersionAndConsentDocumentHashAndDecision(
+                        access.session().getSessionId(), access.user().getUserId(),
+                        sessionProperties.getConsentCurrentVersion(),
+                        sessionProperties.getConsentDocumentSha256(), ConsentDecision.ACCEPTED)
+                .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "CONSENT_REQUIRED",
+                        "Current consent must be accepted before creating an analysis"));
+    }
+
+    private AnalysisCreatedResponse persistText(AnalysisAccessContext access, ConsentEvent consent,
+            String originalText, String processedText) {
         Instant now = clock.instant();
         UUID analysisId = UUID.randomUUID();
 
         Analysis analysis = new Analysis();
         analysis.setAnalysisId(analysisId);
-        analysis.setUserId(context.user().getUserId());
-        analysis.setSessionId(context.session().getSessionId());
-        analysis.setConsentEventId(consent.getConsentEventId());
+        analysis.setUserId(access.user().getUserId());
+        analysis.setSessionId(access.session() == null ? null : access.session().getSessionId());
+        analysis.setConsentEventId(consent == null ? null : consent.getConsentEventId());
         analysis.setInputType(AnalysisInputType.TEXT);
         analysis.setStatus(AnalysisStatus.RECEIVED);
         analysis.setCreatedAt(now);
@@ -123,10 +122,12 @@ public class AnalysisApplicationService {
     }
 
     @Transactional(readOnly = true)
-    public AnalysisResponse get(String rawSessionToken, UUID analysisId) {
-        StandardSessionContext context = requireSession(rawSessionToken);
-        Analysis analysis = analysisRepository.findByAnalysisIdAndSessionId(
-                        analysisId, context.session().getSessionId())
+    public AnalysisResponse get(AnalysisAccessContext access, UUID analysisId) {
+        Analysis analysis = (access.mode() == AnalysisAccessContext.Mode.ADMIN_JWT
+                ? analysisRepository.findByAnalysisIdAndUserIdAndSessionIdIsNull(
+                        analysisId, access.user().getUserId())
+                : analysisRepository.findByAnalysisIdAndSessionId(
+                        analysisId, access.session().getSessionId()))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ANALYSIS_NOT_FOUND",
                         "Analysis was not found"));
 
@@ -147,11 +148,6 @@ public class AnalysisApplicationService {
         return new AnalysisResponse(analysis.getAnalysisId(), analysis.getInputType(), analysis.getStatus(),
                 analysis.getCreatedAt(), analysis.getStartedAt(), analysis.getCompletedAt(), analysis.getFailedAt(),
                 result, failure);
-    }
-
-    private StandardSessionContext requireSession(String rawSessionToken) {
-        return sessionResolver.resolveAndRenew(rawSessionToken)
-                .orElseThrow(StandardSessionRequiredException::new);
     }
 
     private void ensureAiAvailable() {

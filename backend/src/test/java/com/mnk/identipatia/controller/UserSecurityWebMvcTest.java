@@ -317,6 +317,15 @@ class UserSecurityWebMvcTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void malformedBearerClearsAnyPreexistingAuthentication() throws Exception {
+        when(jwtService.extractUsername("manipulated-token")).thenThrow(new MalformedJwtException("invalid"));
+
+        mockMvc.perform(get("/users").header("Authorization", "Bearer manipulated-token"))
+                .andExpect(status().isUnauthorized());
+    }
+
     private static UserDTO userDto() {
         return UserDTO.builder()
                 .userId(1L)

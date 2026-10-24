@@ -26,6 +26,7 @@ import com.mnk.identipatia.model.User;
 import com.mnk.identipatia.repository.ConsentEventRepository;
 import com.mnk.identipatia.repository.StandardSessionRepository;
 import com.mnk.identipatia.repository.UserRepository;
+import com.mnk.identipatia.service.JwtService;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,7 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -54,6 +56,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -97,6 +100,8 @@ class TextAnalysisIntegrationTest {
     @Autowired AnalysisClaimService claimService;
     @Autowired AnalysisAttemptService attemptService;
     @Autowired @Qualifier("analysisWorkerId") String workerId;
+    @Autowired JwtService jwtService;
+    @Autowired JdbcTemplate jdbcTemplate;
 
     @MockBean GenerativeAiProvider provider;
 
@@ -177,6 +182,156 @@ class TextAnalysisIntegrationTest {
                 .andExpect(jsonPath("$.result.protectionOptions[0].protectedSubjectMatter").exists())
                 .andExpect(jsonPath("$.provider").doesNotExist())
                 .andExpect(jsonPath("$.invocations").doesNotExist());
+    }
+
+    @Test
+    void adminBearerCreatesReadsAndWorkerCompletesAnalysisWithoutStandardContext() throws Exception {
+        User admin = user("ADMIN", "A");
+        String token = jwtService.generateToken(admin.getDoi());
+
+        MvcResult created = postAdminAnalysis(token,
+                "Descripción administrativa suficientemente extensa para analizar sin sesión.")
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.status").value("RECEIVED"))
+                .andReturn();
+        UUID analysisId = id(created);
+
+        Analysis analysis = analysisRepository.findById(analysisId).orElseThrow();
+        assertThat(analysis.getUserId()).isEqualTo(admin.getUserId());
+        assertThat(analysis.getSessionId()).isNull();
+        assertThat(analysis.getConsentEventId()).isNull();
+        assertThat(sessionRepository.count()).isZero();
+        assertThat(consentRepository.count()).isZero();
+
+        getAdminAnalysis(token, analysisId)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("RECEIVED"));
+
+        when(provider.generate(any())).thenReturn(successResponse());
+        assertThat(worker.processOneSynchronously()).isTrue();
+        assertThat(analysisRepository.findById(analysisId).orElseThrow().getStatus())
+                .isEqualTo(AnalysisStatus.COMPLETED);
+        getAdminAnalysis(token, analysisId)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("COMPLETED"));
+    }
+
+    @Test
+    void analysisOwnershipIsIsolatedAcrossAdminAndStandardContexts() throws Exception {
+        User owner = user("ADMIN", "A");
+        User other = user("ADMIN", "A");
+        String ownerToken = jwtService.generateToken(owner.getDoi());
+        String otherToken = jwtService.generateToken(other.getDoi());
+        UUID adminAnalysisId = id(postAdminAnalysis(ownerToken,
+                "Descripción administrativa suficientemente extensa para validar aislamiento.")
+                .andExpect(status().isAccepted()).andReturn());
+
+        getAdminAnalysis(otherToken, adminAnalysisId)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("ANALYSIS_NOT_FOUND"));
+        Browser standard = acceptedBrowser();
+        getAnalysis(standard, adminAnalysisId)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("ANALYSIS_NOT_FOUND"));
+
+        UUID standardAnalysisId = id(postAnalysis(standard,
+                "Descripción STANDARD suficientemente extensa para validar aislamiento.")
+                .andExpect(status().isAccepted()).andReturn());
+        getAdminAnalysis(ownerToken, standardAnalysisId)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("ANALYSIS_NOT_FOUND"));
+    }
+
+    @Test
+    void validAdminBearerTakesPrecedenceOverStandardCookieAndNeedsNoCsrf() throws Exception {
+        Browser standard = acceptedBrowser();
+        User admin = user("ADMIN", "A");
+        String token = jwtService.generateToken(admin.getDoi());
+
+        MvcResult created = mockMvc.perform(post("/analyses/text")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .cookie(standard.session())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"description\":\"Descripción administrativa con cookie ajena presente.\"}"))
+                .andExpect(status().isAccepted()).andReturn();
+
+        Analysis analysis = analysisRepository.findById(id(created)).orElseThrow();
+        assertThat(analysis.getUserId()).isEqualTo(admin.getUserId());
+        assertThat(analysis.getSessionId()).isNull();
+        assertThat(analysis.getConsentEventId()).isNull();
+    }
+
+    @Test
+    void invalidBearerNeverFallsBackToValidStandardCookie() throws Exception {
+        Browser standard = acceptedBrowser();
+
+        mockMvc.perform(post("/analyses/text")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer invalid-token")
+                        .cookie(standard.session())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"description\":\"Descripción suficientemente extensa para no autorizar.\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("ADMIN_AUTHENTICATION_REQUIRED"));
+        assertThat(analysisRepository.count()).isZero();
+    }
+
+    @Test
+    void missingInactiveOrNonAdminBearerCannotCreateAnalysis() throws Exception {
+        Csrf csrf = csrf();
+        mockMvc.perform(post("/analyses/text").cookie(csrf.cookie())
+                        .header("X-XSRF-TOKEN", csrf.token()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"description\":\"Descripción suficientemente extensa sin credenciales.\"}"))
+                .andExpect(status().isUnauthorized());
+
+        User inactive = user("ADMIN", "I");
+        postAdminAnalysis(jwtService.generateToken(inactive.getDoi()),
+                "Descripción suficientemente extensa para ADMIN inactivo.")
+                .andExpect(status().isUnauthorized());
+
+        User standard = user("STANDARD", "A");
+        postAdminAnalysis(jwtService.generateToken(standard.getDoi()),
+                "Descripción suficientemente extensa para token no ADMIN.")
+                .andExpect(status().isUnauthorized());
+        assertThat(analysisRepository.count()).isZero();
+    }
+
+    @Test
+    void databaseEnforcesCompleteOrAbsentAccessContextAndKeepsStandardForeignKeys() throws Exception {
+        User admin = user("ADMIN", "A");
+        UUID bothNull = UUID.randomUUID();
+        jdbcTemplate.update("""
+                INSERT INTO analyses
+                    (analysis_id, user_id, session_id, consent_event_id, input_type, status, created_at, updated_at)
+                VALUES (?, ?, NULL, NULL, 'TEXT', 'RECEIVED', now(), now())
+                """, bothNull, admin.getUserId());
+        assertThat(analysisRepository.findById(bothNull)).isPresent();
+
+        assertThatThrownBy(() -> jdbcTemplate.update("""
+                INSERT INTO analyses
+                    (analysis_id, user_id, session_id, consent_event_id, input_type, status, created_at, updated_at)
+                VALUES (?, ?, ?, NULL, 'TEXT', 'RECEIVED', now(), now())
+                """, UUID.randomUUID(), admin.getUserId(), UUID.randomUUID()))
+                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbcTemplate.update("""
+                INSERT INTO analyses
+                    (analysis_id, user_id, session_id, consent_event_id, input_type, status, created_at, updated_at)
+                VALUES (?, ?, NULL, ?, 'TEXT', 'RECEIVED', now(), now())
+                """, UUID.randomUUID(), admin.getUserId(), UUID.randomUUID()))
+                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbcTemplate.update("""
+                INSERT INTO analyses
+                    (analysis_id, user_id, session_id, consent_event_id, input_type, status, created_at, updated_at)
+                VALUES (?, ?, ?, ?, 'TEXT', 'RECEIVED', now(), now())
+                """, UUID.randomUUID(), admin.getUserId(), UUID.randomUUID(), UUID.randomUUID()))
+                .isInstanceOf(DataIntegrityViolationException.class);
+
+        Browser standard = acceptedBrowser();
+        UUID standardId = id(postAnalysis(standard,
+                "Descripción suficientemente extensa para probar contexto STANDARD completo.")
+                .andExpect(status().isAccepted()).andReturn());
+        Analysis standardAnalysis = analysisRepository.findById(standardId).orElseThrow();
+        assertThat(standardAnalysis.getSessionId()).isNotNull();
+        assertThat(standardAnalysis.getConsentEventId()).isNotNull();
     }
 
     @Test
@@ -394,6 +549,30 @@ class TextAnalysisIntegrationTest {
 
     private Browser acceptedBrowser() throws Exception {
         return browser(true);
+    }
+
+    private User user(String type, String status) {
+        User user = new User();
+        user.setDoi("F14C-" + UUID.randomUUID());
+        user.setDoiType("DNI");
+        user.setUserType(type);
+        user.setStatus(status);
+        user.setPassword("unused-for-direct-jwt-test");
+        return userRepository.saveAndFlush(user);
+    }
+
+    private org.springframework.test.web.servlet.ResultActions postAdminAnalysis(String token, String description)
+            throws Exception {
+        return mockMvc.perform(post("/analyses/text")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(java.util.Map.of("description", description))));
+    }
+
+    private org.springframework.test.web.servlet.ResultActions getAdminAnalysis(String token, UUID analysisId)
+            throws Exception {
+        return mockMvc.perform(get("/analyses/{analysisId}", analysisId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token));
     }
 
     private Browser browser(boolean acceptConsent) throws Exception {
