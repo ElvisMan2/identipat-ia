@@ -1,6 +1,6 @@
 # Matriz de autorización vigente — IDENTIPAT-IA
 
-**Estado verificado hasta:** F1.5
+**Estado verificado hasta:** F1.6
 **Última actualización:** 24 de octubre de 2026
 
 Las rutas son relativas a `/identipat-ia`. Existen tres categorías separadas:
@@ -18,6 +18,7 @@ Las rutas son relativas a `/identipat-ia`. Existen tres categorías separadas:
 | `DELETE /standard-session` | `STANDARD_SESSION + CSRF` | Revoca server-side y elimina la cookie. |
 | `POST /analyses/text` | `STANDARD_SESSION + consentimiento + CSRF` **o** `ADMIN_JWT` | STANDARD conserva el flujo de sesión. ADMIN se deriva del JWT, no requiere sesión ni consentimiento STANDARD y persiste ambos IDs de contexto como `NULL`. |
 | `POST /analyses/pdf` | `STANDARD_SESSION + consentimiento + CSRF` **o** `ADMIN_JWT` | Extrae antes de persistir; aplica la misma resolución dual y no conserva el binario. |
+| `POST /analyses/audio` | `STANDARD_SESSION + consentimiento + CSRF` **o** `ADMIN_JWT` | Transcribe localmente antes de persistir; aplica la misma resolución dual y no conserva el audio. |
 | `GET /analyses/{analysisId}` | `STANDARD_SESSION` propia **o** `ADMIN_JWT` propietario | STANDARD se aísla por `session_id`; ADMIN por `user_id` y `session_id IS NULL`. Un recurso ajeno responde `404`. |
 | `POST /users/identify` | `PUBLIC` | Solo reconoce el registro; DNI/CE no autentica. |
 | `POST /users` | `PUBLIC` | Registra un usuario STANDARD activo sin contraseña. |
@@ -35,7 +36,7 @@ La autorización combina la configuración HTTP de Spring Security con validacio
 - los servicios de sesión temporal solo aceptan usuarios `STANDARD` activos; una sesión histórica de un usuario cuyo tipo actual no sea `STANDARD` se considera inválida para consulta, consentimiento y análisis;
 - `AnalysisAccessResolver` selecciona exactamente un modo: Bearer presente implica intento `ADMIN_JWT`; sin Bearer se usa `STANDARD_SESSION`;
 - `GET /analyses/{analysisId}` consulta por `analysis_id + session_id` para STANDARD o por `analysis_id + user_id + session_id IS NULL` para ADMIN;
-- `POST /analyses/text` y `POST /analyses/pdf` exigen consentimiento vigente únicamente en modo STANDARD.
+- `POST /analyses/text`, `/analyses/pdf` y `/analyses/audio` exigen consentimiento vigente únicamente en modo STANDARD.
 
 El `permitAll()` técnico de Spring Security para `/analyses/**` no convierte los análisis en recursos públicos: permite que el caso de uso seleccione `STANDARD_SESSION` o `ADMIN_JWT`. Todo endpoint futuro bajo ese prefijo debe conservar esta resolución explícita.
 
@@ -77,7 +78,7 @@ El consentimiento de datos y el disclaimer orientativo son conceptos distintos. 
 
 ## Acceso ADMIN formalizado
 
-F1.4C eliminó el acceso público de ADMIN mediante DNI/CE. El flujo es `POST /users/login` → Bearer JWT → `POST /analyses/text|pdf` / `GET /analyses/{id}`. La identidad se vuelve a resolver en PostgreSQL por el subject del JWT y debe conservar `user_type=ADMIN` y `status=A`. Los análisis ADMIN tienen `user_id` obligatorio y `session_id`/`consent_event_id` nulos; no se crean sesiones ni consentimientos ficticios.
+F1.4C eliminó el acceso público de ADMIN mediante DNI/CE. El flujo es `POST /users/login` → Bearer JWT → `POST /analyses/text|pdf|audio` / `GET /analyses/{id}`. La identidad se vuelve a resolver en PostgreSQL por el subject del JWT y debe conservar `user_type=ADMIN` y `status=A`. Los análisis ADMIN tienen `user_id` obligatorio y `session_id`/`consent_event_id` nulos; no se crean sesiones ni consentimientos ficticios.
 
 Impacto frontend: la experiencia ADMIN debe dejar de invocar `POST /standard-sessions` y `POST /standard-session/consent` para inferencia. El flujo STANDARD no cambia.
 

@@ -21,7 +21,8 @@ public record AnalysisProperties(
         @Min(1) int maxAttempts,
         @NotNull Duration retryDelay,
         @Min(1) int aiMaxOutputTokens,
-        @Valid @NotNull Pdf pdf) {
+        @Valid @NotNull Pdf pdf,
+        @Valid @NotNull Audio audio) {
 
     public AnalysisProperties {
         requirePositive(pollInterval, "pollInterval");
@@ -41,5 +42,10 @@ public record AnalysisProperties(
     public record Pdf(
             @Min(1) long maxFileSizeBytes,
             @Min(1) int maxPages) {
+    }
+
+    public record Audio(
+            @Min(1) long maxFileSizeBytes,
+            @Min(1) int maxDurationSeconds) {
     }
 }

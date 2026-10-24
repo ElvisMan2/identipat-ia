@@ -27,7 +27,9 @@ app:
       timeout: ${OPENAI_TIMEOUT:60s}
   preprocessing:
     base-url: ${PREPROCESSING_SERVICE_BASE_URL:http://localhost:8090}
-    timeout: ${PREPROCESSING_SERVICE_TIMEOUT:15s}
+    connect-timeout: ${PREPROCESSING_SERVICE_CONNECT_TIMEOUT:5s}
+    pdf-timeout: ${PREPROCESSING_PDF_TIMEOUT:15s}
+    audio-timeout: ${PREPROCESSING_AUDIO_TIMEOUT:300s}
   jwt:
     # Valor conocido y no productivo; reemplazar mediante JWT_SECRET cuando sea necesario.
     secret: ${JWT_SECRET:identipat-dev-secret-key-change-me-32chars}

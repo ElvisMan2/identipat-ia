@@ -1,7 +1,7 @@
 # Roadmap funcional — IDENTIPAT-IA
 
-**Estado:** F0 y F1.0 completadas; F1.1–F1.5 implementadas; F1.6 es la siguiente fase
-**Versión del roadmap:** 1.4
+**Estado:** F0 y F1.0 completadas; F1.1–F1.6 implementadas; F1.7 es la siguiente fase
+**Versión del roadmap:** 1.5
 **Última actualización:** 24 de octubre de 2026
 **Objetivo:** mantener una visión vigente de la secuencia funcional del producto, diferenciando lo ya materializado de las fases pendientes.
 
@@ -31,7 +31,8 @@ La estabilización técnica F0 está completada. El backend también materializa
 | F1.4C | Formalización del acceso ADMIN al análisis | ✅ Implementada |
 | F1.4D | Exportación CSV administrativa de usuarios (mejora backend) | ✅ Implementada |
 | F1.5 | Entrada mediante PDF | ✅ Implementada |
-| F1.6–F1.9 | Audio, reporte, recursos y E2E | ⏳ Pendientes |
+| F1.6 | Entrada mediante audio | ✅ Implementada |
+| F1.7–F1.9 | Reporte, recursos y E2E | ⏳ Pendientes |
 | F2 | Preparación para piloto y producción | ⏳ Pendiente |
 
 Los estados **implementada** indican que el alcance técnico existe en el backend y está cubierto por pruebas. No sustituyen la revisión funcional, jurídica, de seguridad o de aceptación que corresponda antes del piloto.
@@ -442,7 +443,7 @@ PDF → Java → preprocessing-service → texto extraído → Analysis existent
 
 # F1.6 — Entrada mediante audio
 
-**Estado:** pendiente.
+**Estado:** implementada.
 
 ## Objetivo
 
@@ -452,16 +453,21 @@ Agregar voz reutilizando el pipeline central.
 Audio → Java → preprocessing-service → transcripción → Analysis existente
 ```
 
-## Definir e implementar
+## Resultado implementado
 
-- tecnología speech-to-text;
-- formatos y MIME;
-- tamaño y duración máxima;
-- idioma;
-- manejo de audio inválido y errores de transcripción;
-- almacenamiento temporal;
-- persistencia de la transcripción;
-- extensión de CSRF y autorización al nuevo endpoint.
+- `POST /analyses/audio` multipart para STANDARD y ADMIN con la misma resolución dual;
+- WebM, MP3/MPEG, MP4/M4A, WAV, OGG y FLAC; 20 MiB y 180 segundos por defecto;
+- español mediante `faster-whisper` local, modelo multilingüe `base`, CPU INT8 y VAD;
+- decodificación PyAV en memoria y validación de duración antes de inferencia;
+- warm-up en background, singleton por proceso, readiness `/v1/audio/health` y cache Docker;
+- timeouts Java separados para conexión, PDF y audio;
+- errores públicos/internos saneados y sin detalles nativos;
+- transcripción original/normalizada y metadata mínima con SHA-256, sin audio ni filename;
+- mismo `AnalysisCreationPersistenceService`, worker, prompt, schema, proveedor y resultado;
+- sin STT cloud, streaming, realtime, diarización ni traducción.
+
+F2.0 evaluará calidad y elección de modelo; F2.3 definirá el empaquetado/provisionamiento offline
+para producción.
 
 ---
 
@@ -675,8 +681,7 @@ No introducir embeddings, clasificadores o pipelines NLP auxiliares salvo decisi
 La siguiente fase es:
 
 ```text
-F1.6 — Entrada mediante audio
+F1.7 — Reporte web + PDF + disclaimer
 ```
 
-F1.6 debe reutilizar el mismo núcleo `Analysis` y mantener Python limitado al preprocesamiento técnico,
-sin duplicar seguridad, persistencia, prompts ni inferencia generativa.
+F1.7 debe construir la salida formal desde el mismo `AnalysisResult`, sin duplicar el diagnóstico.

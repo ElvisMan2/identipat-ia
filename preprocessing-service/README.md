@@ -1,6 +1,6 @@
 # preprocessing-service
 
-Servicio técnico interno de IDENTIPAT-IA para extracción de texto desde PDF; audio queda pendiente.
+Servicio técnico interno de IDENTIPAT-IA para extracción PDF y transcripción local de audio.
 No implementa reglas de negocio, autenticación, PostgreSQL ni integración LLM; Angular se comunica
 exclusivamente con el backend Java.
 
@@ -20,4 +20,8 @@ uvicorn preprocessing_service.main:app --host 127.0.0.1 --port 8090
 No incluye OCR, persistencia, autenticación ni llamadas externas. Los límites se sobrescriben con
 `PREPROCESSING_PDF_MAX_FILE_SIZE_BYTES` y `PREPROCESSING_PDF_MAX_PAGES`. Consulta la guía del
 repositorio en `../docs/development/preprocessing-service.md` para contratos, pruebas y Docker.
+
+`POST /v1/audio/transcribe` decodifica en memoria y transcribe español con `faster-whisper`; por
+defecto usa `base`, CPU INT8, 20 MiB y 180 segundos. `GET /v1/audio/health` informa el readiness del
+modelo sin alterar `/health`. El audio no se persiste ni se envía a servicios STT cloud.
 

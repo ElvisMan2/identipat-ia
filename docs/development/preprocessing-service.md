@@ -3,7 +3,7 @@
 ## Propósito y frontera
 
 `preprocessing-service/` es un servicio FastAPI técnico y privado que extrae la capa de texto de
-documentos PDF; el audio permanece pendiente. El flujo autorizado es Angular → Java/Spring Boot → Python. Angular nunca llama
+PDF y transcribe descripciones de audio localmente. El flujo autorizado es Angular → Java/Spring Boot → Python. Angular nunca llama
 Python directamente; Java conserva la orquestación, reglas de negocio, seguridad, persistencia e
 integración de IA generativa.
 
@@ -19,12 +19,13 @@ El arranque normal del stack DEV se realiza desde la raíz con:
 ```
 
 El launcher valida y carga `.env`, comprueba Docker, compila el frontend, levanta PostgreSQL y este
-servicio mediante `docker compose up -d --build db preprocessing`, espera hasta 60 segundos a que
-`GET http://localhost:8090/health` confirme `status=UP` y `service=preprocessing-service`, y luego
+servicio mediante `docker compose up -d --build db preprocessing`, espera el health general y luego
+hasta `PREPROCESSING_AUDIO_READY_TIMEOUT_SECONDS` (300 por defecto) a que `GET /v1/audio/health`
+confirme el modelo listo, y recién entonces
 inicia Spring Boot localmente. No levanta pgAdmin. Java conserva
 `PREPROCESSING_SERVICE_BASE_URL=http://localhost:8090` porque se ejecuta fuera de Docker.
 
-Si Python no queda listo, el launcher muestra el estado Compose y los últimos logs del servicio,
+Si Python o el modelo no quedan listos, el launcher muestra el estado Compose y logs saneados,
 aborta antes de Spring Boot y devuelve un código distinto de cero. No finaliza procesos que ocupen
 el puerto 8090; un conflicto de publicación se reporta para que se resuelva explícitamente.
 
@@ -66,6 +67,14 @@ no registra cuerpos de solicitud, documentos, audio, textos ni headers sensibles
 | `PREPROCESSING_LOG_LEVEL` | `INFO` | Nivel de logging. |
 | `PREPROCESSING_PDF_MAX_FILE_SIZE_BYTES` | `10485760` | Máximo de bytes leídos antes de parsear. |
 | `PREPROCESSING_PDF_MAX_PAGES` | `50` | Máximo de páginas extraídas. |
+| `PREPROCESSING_AUDIO_MAX_FILE_SIZE_BYTES` | `20971520` | Máximo leído antes de decodificar. |
+| `PREPROCESSING_AUDIO_MAX_DURATION_SECONDS` | `180` | Duración decodificada máxima antes de inferencia. |
+| `PREPROCESSING_AUDIO_MODEL` | `base` | Modelo multilingüe provisional. |
+| `PREPROCESSING_AUDIO_LANGUAGE` | `es` | Idioma fijo; no se acepta desde el request. |
+| `PREPROCESSING_AUDIO_DEVICE` | `cpu` | Dispositivo de inferencia. |
+| `PREPROCESSING_AUDIO_COMPUTE_TYPE` | `int8` | Tipo de cómputo CTranslate2. |
+| `PREPROCESSING_AUDIO_MODEL_CACHE_DIR` | `/models` | Cache persistente del modelo. |
+| `PREPROCESSING_HF_HOME` | `/models/.huggingface` | Cache auxiliar descargable dentro del volumen escribible. |
 
 El comando Uvicorn determina host/puerto al iniciar; dentro de Docker se usa `0.0.0.0:8090`.
 
@@ -84,8 +93,10 @@ docker run --rm -p 8090:8090 identipat-preprocessing:local
 ```
 
 La imagen se basa en `python:3.12-slim`, instala solo las dependencias runtime y se ejecuta con un
-usuario no-root. `pypdf` es Python puro y no requiere paquetes del sistema. La imagen no instala
-ffmpeg, Poppler, Tesseract ni OCRmyPDF.
+usuario no-root con escritura en `/models`. El volumen `preprocessing_models` reutiliza el modelo
+entre reinicios; `HF_HOME` también queda bajo ese volumen y Compose deshabilita Xet para usar la
+descarga HTTP estándar en DEV. PyAV, instalado transitivamente por `faster-whisper`, decodifica sin FFmpeg del
+sistema; la imagen tampoco instala Poppler, Tesseract ni OCRmyPDF.
 
 ## Extracción PDF
 
@@ -108,8 +119,28 @@ F1.5 no implementa OCR. Un PDF escaneado sin capa de texto suficiente se rechaza
 OCRizado funciona si `pypdf` puede extraer su capa de texto. El servicio no escribe archivos, no
 persiste el binario y no envía contenido a terceros.
 
-Las dependencias nuevas son `pypdf` (BSD-3-Clause, extracción Python pura) y `python-multipart`
-(parseo del campo multipart requerido por FastAPI). No se agregaron librerías de IA ni OCR.
+La extracción usa `pypdf`; el multipart usa `python-multipart`; y audio usa `faster-whisper`
+(CTranslate2 + PyAV). No se agregaron Torch, OpenAI Whisper, servicios STT cloud ni OCR.
+
+## Transcripción de audio
+
+`POST /v1/audio/transcribe` recibe solo el campo multipart `file`. Acepta WebM, MPEG/MP3, MP4/M4A,
+WAV, OGG y FLAC, normalizando parámetros MIME. Lee como máximo el límite + 1, decodifica en memoria
+a mono 16 kHz mediante `faster_whisper.audio.decode_audio`/PyAV, calcula duración desde las muestras
+y rechaza audio inválido o mayor de 180 segundos antes de inferencia. Luego materializa todos los
+segmentos de `faster-whisper` con `task=transcribe`, `language=es` y `vad_filter=true`.
+
+La respuesta contiene `text`, `durationSeconds`, `characterCount`, `language`,
+`transcriptionMethod=FASTER_WHISPER` y `model`. Los errores `{code,message}` son
+`AUDIO_TOO_LARGE`, `UNSUPPORTED_AUDIO_MEDIA_TYPE`, `INVALID_AUDIO`,
+`AUDIO_DURATION_LIMIT_EXCEEDED`, `AUDIO_TRANSCRIPTION_EMPTY`, `AUDIO_MODEL_NOT_READY` o
+`AUDIO_TRANSCRIPTION_ERROR`; no exponen detalles de PyAV, CTranslate2, host o cache.
+
+El modelo `base` multilingüe se carga una vez por proceso en background. `/health` permanece estable
+para PDF mientras `GET /v1/audio/health` responde `503 AUDIO_MODEL_NOT_READY`; cuando está listo
+responde `{status:"UP",service:"audio-transcription",model:"base"}`. La primera ejecución DEV
+requiere acceso al repositorio del modelo. En PROD no se asume Internet en runtime: F2.3 definirá si
+el modelo se hornea en la imagen o se provisiona previamente. F2.0 evaluará calidad/modelo.
 
 ## Cliente Java
 
@@ -118,7 +149,8 @@ No existe ni se debe agregar un endpoint Java público proxy de health. Su méto
 `GET {app.preprocessing.base-url}/health`. `extractPdf(...)` envía el documento como multipart a
 `/v1/pdf/extract`, usa un filename interno neutro y convierte los errores controlados en códigos
 públicos saneados. Fallos de red, timeout, 5xx o contratos inválidos se convierten en
-`PREPROCESSING_SERVICE_UNAVAILABLE`.
+`PREPROCESSING_SERVICE_UNAVAILABLE`. `transcribeAudio(...)` usa un cliente separado con timeout
+largo y mapea red, timeout, 5xx o contrato inválido a `AUDIO_TRANSCRIPTION_UNAVAILABLE`.
 
 `app.preprocessing.base-url` tiene estos valores:
 
@@ -128,11 +160,12 @@ públicos saneados. Fallos de red, timeout, 5xx o contratos inválidos se convie
 | TEST | `http://preprocessing-service.test`; las pruebas usan HTTP simulado |
 | PROD | `PREPROCESSING_SERVICE_BASE_URL` obligatorio, sin fallback |
 
-El timeout de conexión y lectura es configurable con `PREPROCESSING_SERVICE_TIMEOUT` y vale 15
-segundos por defecto. El backend no llama a `/health` antes de extraer ni realiza reintentos
+Los timeouts son `PREPROCESSING_SERVICE_CONNECT_TIMEOUT=5s`, `PREPROCESSING_PDF_TIMEOUT=15s` y
+`PREPROCESSING_AUDIO_TIMEOUT=300s`. El backend no llama a `/health` antes de procesar ni realiza reintentos
 infinitos. La llamada ocurre sin una transacción PostgreSQL abierta.
 
 ## Trabajo futuro
 
-OCR solo se evaluará si la aceptación funcional lo requiere. Audio se define en F1.6; antivirus,
-DLP, hardening adicional y la política productiva de retención pertenecen a fases posteriores.
+OCR solo se evaluará si la aceptación funcional lo requiere. Audio no incluye streaming, realtime,
+diarización, traducción ni STT cloud. Antivirus, DLP, hardening adicional y la política productiva
+de retención pertenecen a fases posteriores.

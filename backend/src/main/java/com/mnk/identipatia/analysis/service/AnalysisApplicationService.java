@@ -23,6 +23,8 @@ import com.mnk.identipatia.exception.ApiException;
 import com.mnk.identipatia.model.ConsentDecision;
 import com.mnk.identipatia.model.ConsentEvent;
 import com.mnk.identipatia.preprocessing.client.PdfExtractionResponse;
+import com.mnk.identipatia.preprocessing.client.AudioTranscriptionResponse;
+import com.mnk.identipatia.preprocessing.client.PreprocessingAudioException;
 import com.mnk.identipatia.preprocessing.client.PreprocessingPdfException;
 import com.mnk.identipatia.preprocessing.client.PreprocessingServiceClient;
 import com.mnk.identipatia.preprocessing.client.PreprocessingServiceUnavailableException;
@@ -37,6 +39,8 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -44,6 +48,15 @@ public class AnalysisApplicationService {
     private static final String PUBLIC_TEMPORARY_CODE = "ANALYSIS_TEMPORARILY_UNAVAILABLE";
     private static final String PUBLIC_TEMPORARY_MESSAGE = "No fue posible completar el análisis en este momento.";
     private static final byte[] PDF_SIGNATURE = {'%', 'P', 'D', 'F', '-'};
+    private static final Set<String> SUPPORTED_AUDIO_MEDIA_TYPES = Set.of(
+            "audio/webm",
+            "audio/mpeg",
+            "audio/mp4",
+            "audio/x-m4a",
+            "audio/wav",
+            "audio/x-wav",
+            "audio/ogg",
+            "audio/flac");
 
     private final AnalysisRepository analysisRepository;
     private final StoredAnalysisResultRepository resultRepository;
@@ -124,6 +137,41 @@ public class AnalysisApplicationService {
                 metadata, consent);
     }
 
+    public AnalysisCreatedResponse createAudio(AnalysisAccessContext access, MultipartFile file) {
+        ConsentEvent consent = access.mode() == AnalysisAccessContext.Mode.STANDARD_SESSION
+                ? requireCurrentConsent(access) : null;
+        ValidatedAudio audio = validateAndReadAudio(file);
+
+        AudioTranscriptionResponse transcription;
+        try {
+            transcription = preprocessingClient.transcribeAudio(audio.bytes(), audio.mediaType());
+        } catch (PreprocessingAudioException exception) {
+            throw mapAudioError(exception.getCode());
+        } catch (PreprocessingServiceUnavailableException exception) {
+            throw audioUnavailable();
+        }
+
+        if (transcription.durationSeconds() > analysisProperties.audio().maxDurationSeconds()) {
+            throw audioError("AUDIO_DURATION_LIMIT_EXCEEDED",
+                    "The audio exceeds the configured duration limit");
+        }
+        String processedText = TextNormalizer.normalize(transcription.text());
+        validateAudioLength(processedText);
+        ensureAiAvailable();
+
+        ObjectNode metadata = objectMapper.createObjectNode();
+        metadata.put("mediaType", audio.mediaType());
+        metadata.put("sizeBytes", audio.bytes().length);
+        metadata.put("durationSeconds", transcription.durationSeconds());
+        metadata.put("characterCount", transcription.characterCount());
+        metadata.put("language", transcription.language());
+        metadata.put("transcriptionMethod", transcription.transcriptionMethod());
+        metadata.put("model", transcription.model());
+        metadata.put("sha256", sha256(audio.bytes()));
+        return creationService.create(access, AnalysisInputType.AUDIO, transcription.text(), processedText,
+                metadata, consent);
+    }
+
     private ConsentEvent requireCurrentConsent(AnalysisAccessContext access) {
         return consentRepository
                 .findBySessionSessionIdAndUserUserIdAndConsentVersionAndConsentDocumentHashAndDecision(
@@ -189,6 +237,18 @@ public class AnalysisApplicationService {
         }
     }
 
+    private void validateAudioLength(String text) {
+        int length = text == null ? 0 : text.codePointCount(0, text.length());
+        if (length < analysisProperties.textMinLength()) {
+            throw audioError("AUDIO_TRANSCRIPTION_EMPTY",
+                    "The audio did not produce enough transcribed text");
+        }
+        if (length > analysisProperties.textMaxLength()) {
+            throw audioError("AUDIO_TEXT_TOO_LONG",
+                    "The transcribed audio text exceeds the configured limit");
+        }
+    }
+
     private byte[] validateAndReadPdf(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw pdfError("INVALID_PDF", "A non-empty PDF file is required");
@@ -228,6 +288,40 @@ public class AnalysisApplicationService {
         return true;
     }
 
+    private ValidatedAudio validateAndReadAudio(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw audioError("INVALID_AUDIO", "A non-empty audio file is required");
+        }
+        String mediaType = normalizeMediaType(file.getContentType());
+        if (!SUPPORTED_AUDIO_MEDIA_TYPES.contains(mediaType)) {
+            throw new ApiException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "UNSUPPORTED_AUDIO_MEDIA_TYPE",
+                    "The audio media type is not supported");
+        }
+        if (file.getSize() > analysisProperties.audio().maxFileSizeBytes()) {
+            throw new ApiException(HttpStatus.PAYLOAD_TOO_LARGE, "AUDIO_TOO_LARGE",
+                    "The audio exceeds the configured size limit");
+        }
+        try {
+            byte[] bytes = file.getBytes();
+            if (bytes.length > analysisProperties.audio().maxFileSizeBytes()) {
+                throw new ApiException(HttpStatus.PAYLOAD_TOO_LARGE, "AUDIO_TOO_LARGE",
+                        "The audio exceeds the configured size limit");
+            }
+            return new ValidatedAudio(bytes, mediaType);
+        } catch (IOException exception) {
+            throw audioError("INVALID_AUDIO", "The audio could not be read");
+        }
+    }
+
+    private static String normalizeMediaType(String contentType) {
+        if (contentType == null) {
+            return "";
+        }
+        int parameterStart = contentType.indexOf(';');
+        String baseType = parameterStart >= 0 ? contentType.substring(0, parameterStart) : contentType;
+        return baseType.trim().toLowerCase(Locale.ROOT);
+    }
+
     private static ApiException mapPdfError(String code) {
         return switch (code) {
             case "PDF_ENCRYPTED" -> pdfError("PDF_ENCRYPTED_NOT_SUPPORTED",
@@ -247,6 +341,31 @@ public class AnalysisApplicationService {
     }
 
     private static ApiException pdfError(String code, String message) {
+        return new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, code, message);
+    }
+
+    private static ApiException mapAudioError(String code) {
+        return switch (code) {
+            case "AUDIO_TOO_LARGE" -> new ApiException(HttpStatus.PAYLOAD_TOO_LARGE, code,
+                    "The audio exceeds the configured size limit");
+            case "UNSUPPORTED_AUDIO_MEDIA_TYPE" -> new ApiException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, code,
+                    "The audio media type is not supported");
+            case "INVALID_AUDIO" -> audioError(code, "The audio could not be decoded");
+            case "AUDIO_DURATION_LIMIT_EXCEEDED" -> audioError(code,
+                    "The audio exceeds the configured duration limit");
+            case "AUDIO_TRANSCRIPTION_EMPTY" -> audioError(code,
+                    "The audio did not produce enough transcribed text");
+            case "AUDIO_MODEL_NOT_READY", "AUDIO_TRANSCRIPTION_ERROR" -> audioUnavailable();
+            default -> audioUnavailable();
+        };
+    }
+
+    private static ApiException audioUnavailable() {
+        return new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "AUDIO_TRANSCRIPTION_UNAVAILABLE",
+                "Audio transcription is temporarily unavailable");
+    }
+
+    private static ApiException audioError(String code, String message) {
         return new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, code, message);
     }
 
@@ -275,5 +394,8 @@ public class AnalysisApplicationService {
             case WORKER_PROCESSING_ERROR -> new AnalysisFailureResponse(
                     "ANALYSIS_INTERNAL_ERROR", PUBLIC_TEMPORARY_MESSAGE);
         };
+    }
+
+    private record ValidatedAudio(byte[] bytes, String mediaType) {
     }
 }

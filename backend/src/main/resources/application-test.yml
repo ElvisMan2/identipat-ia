@@ -24,7 +24,9 @@ app:
       timeout: 60s
   preprocessing:
     base-url: http://preprocessing-service.test
-    timeout: 15s
+    connect-timeout: 5s
+    pdf-timeout: 15s
+    audio-timeout: 300s
   jwt:
     secret: identipat-test-secret-key-only-for-automated-tests
   cors:

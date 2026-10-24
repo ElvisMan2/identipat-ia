@@ -21,5 +21,26 @@ class Settings(BaseSettings):
         gt=0,
         validation_alias="PREPROCESSING_PDF_MAX_PAGES",
     )
+    audio_max_file_size_bytes: int = Field(
+        default=20_971_520,
+        gt=0,
+        validation_alias="PREPROCESSING_AUDIO_MAX_FILE_SIZE_BYTES",
+    )
+    audio_max_duration_seconds: float = Field(
+        default=180,
+        gt=0,
+        validation_alias="PREPROCESSING_AUDIO_MAX_DURATION_SECONDS",
+    )
+    audio_model: str = Field(default="base", validation_alias="PREPROCESSING_AUDIO_MODEL")
+    audio_language: str = Field(default="es", validation_alias="PREPROCESSING_AUDIO_LANGUAGE")
+    audio_device: str = Field(default="cpu", validation_alias="PREPROCESSING_AUDIO_DEVICE")
+    audio_compute_type: str = Field(
+        default="int8",
+        validation_alias="PREPROCESSING_AUDIO_COMPUTE_TYPE",
+    )
+    audio_model_cache_dir: str = Field(
+        default="/models",
+        validation_alias="PREPROCESSING_AUDIO_MODEL_CACHE_DIR",
+    )
 
     model_config = SettingsConfigDict(extra="ignore", populate_by_name=True)

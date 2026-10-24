@@ -1,7 +1,7 @@
 # Arquitectura de referencia de IDENTIPAT-IA
 
-**Estado:** arquitectura vigente y materializada hasta F1.5
-**Versión:** 1.3
+**Estado:** arquitectura vigente y materializada hasta F1.6
+**Versión:** 1.4
 **Última actualización:** 24 de octubre de 2026
 
 ## Contexto
@@ -10,7 +10,7 @@ Este documento describe la arquitectura lógica, los límites de responsabilidad
 
 La arquitectura ya no representa una propuesta previa a F0.3: la estabilización F0, el diseño F1.0 y las capacidades F1.1–F1.4 se encuentran materializadas en el backend. Cuando exista una discrepancia con diagnósticos históricos, prevalecen este documento, el código vigente y las especificaciones especializadas enlazadas desde aquí.
 
-La entrada PDF está implementada; audio y el reporte formal continúan pendientes en F1.6–F1.7.
+Las entradas PDF y audio están implementadas; el reporte formal continúa pendiente en F1.7.
 
 ## Componentes y comunicación
 
@@ -39,7 +39,7 @@ Angular es responsable de:
 - presentación, navegación e interacción;
 - identificación y registro del usuario STANDARD;
 - obtención y envío del token CSRF según el patrón SPA;
-- captura de texto/PDF y, en una fase posterior, audio;
+- captura de texto/PDF/audio (la UI de micrófono permanece fuera de F1.6);
 - visualización de estados y resultados de la sesión actual;
 - polling del análisis asíncrono;
 - presentación y descarga de reportes cuando F1.7 se implemente.
@@ -70,7 +70,7 @@ Ningún controller ni caso de uso conoce tipos `com.openai.*`. Los prompts y JSO
 
 ### Python: `preprocessing-service`
 
-Python es un servicio FastAPI especializado en preprocesamiento técnico; no es un segundo backend funcional. Dispone de `GET /health` y `POST /v1/pdf/extract` para extracción de capa de texto con `pypdf`.
+Python es un servicio FastAPI especializado en preprocesamiento técnico; no es un segundo backend funcional. Dispone de `GET /health`, extracción PDF con `pypdf` y transcripción local con `faster-whisper`.
 
 Sus responsabilidades previstas son:
 
@@ -197,6 +197,31 @@ binario ni se usa almacenamiento temporal durable. `original_text` conserva lo e
 `processed_text` lo normalizado y la metadata guarda MIME, tamaño, páginas, caracteres, método y
 SHA-256. No hay OCR: PDFs cifrados, corruptos o sin texto suficiente se rechazan.
 
+### Flujo de análisis de audio
+
+```text
+POST /analyses/audio (multipart)
+      ↓
+resolver acceso + consentimiento STANDARD
+      ↓
+validar MIME + tamaño en Java
+      ↓
+POST privado /v1/audio/transcribe (sin transacción DB)
+      ↓
+decodificar en memoria + validar duración + faster-whisper local
+      ↓
+validar longitud + disponibilidad IA
+      ↓
+persistir Analysis(RECEIVED) + AnalysisInput(AUDIO)
+      ↓
+202 Accepted → mismo worker/LLM/resultado de TEXT/PDF
+```
+
+El audio es una descripción corta, no un repositorio de grabaciones. Se admite español, 20 MiB y
+180 segundos por defecto. No se persiste el binario, filename, rutas, segmentos ni biometría; la
+metadata guarda MIME, tamaño, duración, caracteres, idioma, método, modelo y SHA-256. El STT no usa
+cloud y no implementa realtime, traducción ni diarización.
+
 ## Sesión STANDARD, consentimiento y disclaimer
 
 F1.1 implementa una capacidad temporal server-side asociada al registro STANDARD:
@@ -227,7 +252,7 @@ La arquitectura separa dos contextos:
 
 Los endpoints STANDARD no deben depender solo de reglas `permitAll()` en la configuración HTTP. Cada caso de uso debe resolver la sesión, comprobar su vigencia y verificar que el recurso solicitado pertenece a esa sesión.
 
-La regla CSRF cubre de forma general `POST /analyses/**` cuando no existe Bearer. TEXT y PDF STANDARD
+La regla CSRF cubre de forma general `POST /analyses/**` cuando no existe Bearer. TEXT, PDF y AUDIO STANDARD
 requieren cookie/header CSRF; ADMIN Bearer se exime. Un Bearer presente siempre selecciona ADMIN y,
 si es inválido, responde `401` sin fallback a la cookie STANDARD. Los GET no requieren CSRF.
 
@@ -332,9 +357,9 @@ También conviene reforzar la transición terminal mediante una actualización c
 11. Los prompts, schemas y resultados estructurados son contratos versionados.
 12. No existe un pipeline funcional separado de PLN/NLP o ML clásico.
 13. La retención amplia es provisional durante el desarrollo y debe minimizarse antes de producción.
-14. TEXT y PDF convergen al mismo núcleo `Analysis`; los tipos futuros deben hacer lo mismo.
+14. TEXT, PDF y AUDIO convergen al mismo núcleo `Analysis`.
 
-## Estado materializado hasta F1.4
+## Estado materializado hasta F1.6
 
 F1.0 cerró el diseño conceptual de:
 
@@ -365,13 +390,16 @@ Las especificaciones detalladas se encuentran en:
 - [flujo end-to-end de texto](../development/text-analysis-flow.md);
 - [roadmap funcional](../roadmap-funcional.md).
 
+F1.6 materializó audio con decodificación PyAV en memoria, `faster-whisper` local, modelo `base`
+multilingüe en CPU INT8, cache Docker persistente, readiness independiente y timeouts por operación.
+
 ## Decisiones pendientes
 
 Permanecen abiertas y deben cerrarse en las fases correspondientes:
 
 - aceptación funcional de PDFs solo texto y eventual necesidad futura de OCR;
-- tecnología y límites de transcripción de audio;
-- política futura de almacenamiento/retención para archivos (F1.5 no persiste el PDF);
+- evaluación de calidad/modelo STT en F2.0 y empaquetado offline del modelo en F2.3;
+- política futura de retención (F1.5/F1.6 no persisten PDF/audio);
 - catálogo institucional y recursos asociados;
 - reporte web/PDF y disclaimer institucional;
 - política definitiva de retención, minimización, cifrado y anonimización;
@@ -395,5 +423,6 @@ Cuando un usuario ya tenga sesiones, consentimientos, análisis u otra evidencia
 | F1.3 | Análisis end-to-end desde texto | Implementada |
 | F1.4 | Diagnóstico de propiedad intelectual | Implementada |
 | F1.5 | Entrada mediante PDF | Implementada |
-| F1.6–F1.9 | Audio, reporte, recursos e integración E2E | Pendientes |
+| F1.6 | Entrada mediante audio | Implementada |
+| F1.7–F1.9 | Reporte, recursos e integración E2E | Pendientes |
 | F2 | Preparación para piloto y producción | Pendiente |
