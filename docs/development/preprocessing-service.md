@@ -125,10 +125,14 @@ La extracción usa `pypdf`; el multipart usa `python-multipart`; y audio usa `fa
 ## Transcripción de audio
 
 `POST /v1/audio/transcribe` recibe solo el campo multipart `file`. Acepta WebM, MPEG/MP3, MP4/M4A,
-WAV, OGG y FLAC, normalizando parámetros MIME. Lee como máximo el límite + 1, decodifica en memoria
-a mono 16 kHz mediante `faster_whisper.audio.decode_audio`/PyAV, calcula duración desde las muestras
-y rechaza audio inválido o mayor de 180 segundos antes de inferencia. Luego materializa todos los
-segmentos de `faster-whisper` con `task=transcribe`, `language=es` y `vad_filter=true`.
+3GP, WAV, OGG y FLAC, normalizando parámetros MIME. Los MIME `video/mp4` y `video/3gpp` se admiten
+solo como aliases de transporte usados por algunos clientes para audio MP4/M4A/3GP. Antes de
+decodificar, PyAV inspecciona el contenedor: debe existir al menos una pista de audio y ninguna pista
+de video; por tanto, este endpoint no extrae audio de videos reales. Lee como máximo el límite + 1,
+decodifica en memoria a mono 16 kHz mediante `faster_whisper.audio.decode_audio`, calcula duración
+desde las muestras y rechaza audio inválido o mayor de 180 segundos antes de inferencia. Luego
+materializa todos los segmentos de `faster-whisper` con `task=transcribe`, `language=es` y
+`vad_filter=true`.
 
 La respuesta contiene `text`, `durationSeconds`, `characterCount`, `language`,
 `transcriptionMethod=FASTER_WHISPER` y `model`. Los errores `{code,message}` son

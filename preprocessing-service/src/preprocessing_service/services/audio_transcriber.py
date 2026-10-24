@@ -30,6 +30,12 @@ class DecodedAudio:
     duration_seconds: float
 
 
+@dataclass(frozen=True)
+class AudioContainerInspection:
+    audio_stream_count: int
+    video_stream_count: int
+
+
 class AudioDecoder(Protocol):
     def __call__(self, data: bytes) -> DecodedAudio: ...
 
@@ -38,11 +44,38 @@ class AudioTranscriber(Protocol):
     def transcribe(self, samples: Any) -> str: ...
 
 
+def inspect_audio_container(data: bytes) -> AudioContainerInspection:
+    """Require an audio stream and reject containers carrying any video stream."""
+    try:
+        import av
+
+        with av.open(BytesIO(data), mode="r") as container:
+            inspection = AudioContainerInspection(
+                audio_stream_count=sum(stream.type == "audio" for stream in container.streams),
+                video_stream_count=sum(stream.type == "video" for stream in container.streams),
+            )
+    except AudioProcessingError:
+        raise
+    except Exception as exception:
+        raise AudioProcessingError(
+            "INVALID_AUDIO",
+            "The uploaded file does not contain decodable audio",
+        ) from exception
+
+    if inspection.audio_stream_count == 0 or inspection.video_stream_count > 0:
+        raise AudioProcessingError(
+            "INVALID_AUDIO",
+            "The uploaded file does not contain decodable audio",
+        )
+    return inspection
+
+
 def decode_audio_bytes(data: bytes) -> DecodedAudio:
     """Decode untrusted media to mono 16 kHz samples without using a temporary file."""
     try:
         from faster_whisper.audio import decode_audio
 
+        inspect_audio_container(data)
         samples = decode_audio(BytesIO(data), sampling_rate=AUDIO_SAMPLE_RATE)
         sample_count = len(samples)
         if sample_count == 0:
