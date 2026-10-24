@@ -65,8 +65,8 @@ public class StandardSessionService {
         if (!request.getDoiType().equalsIgnoreCase(user.getDoiType())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_DOCUMENT", "Document data is invalid");
         }
-        if ((!STANDARD.equalsIgnoreCase(user.getUserType()) && !"ADMIN".equalsIgnoreCase(user.getUserType()))
-            || !ACTIVE.equalsIgnoreCase(user.getStatus())) {
+        if (!STANDARD.equalsIgnoreCase(user.getUserType())
+                || !ACTIVE.equalsIgnoreCase(user.getStatus())) {
             throw new ApiException(HttpStatus.CONFLICT, "STANDARD_SESSION_NOT_AVAILABLE",
                 "A session is not available for this user");
         }

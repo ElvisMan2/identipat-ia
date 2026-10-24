@@ -81,22 +81,14 @@ class StandardSessionIntegrationTest {
     }
 
     @Test
-    void activeAdminCanCreateSessionAcceptConsentAndReachAiAvailabilityCheck() throws Exception {
+    void activeAdminCannotCreateStandardSession() throws Exception {
         User admin = saveUser("ADMIN", "A");
         Csrf csrf = csrf();
-        Cookie session = createSession(admin, csrf, null).getResponse()
-                .getCookie("IDENTIPAT_STANDARD_SESSION");
-
-        mockMvc.perform(consentPost(session, csrf, "ACCEPTED", "personal-data/1.0"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.decision").value("ACCEPTED"));
-
-        mockMvc.perform(post("/analyses/text").cookie(session, csrf.cookie())
-                        .header("X-XSRF-TOKEN", csrf.token()).contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"description\":\"Descripción administrativa suficientemente extensa para analizar.\"}"))
-                .andExpect(status().isServiceUnavailable())
-                .andExpect(jsonPath("$.code").value("ANALYSIS_AI_UNAVAILABLE"));
-        assertThat(analysisRepository.count()).isZero();
+        long sessionsBefore = sessionRepository.count();
+        mockMvc.perform(csrfPost("/standard-sessions", csrf).content(sessionBody(admin)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("STANDARD_SESSION_NOT_AVAILABLE"));
+        assertThat(sessionRepository.count()).isEqualTo(sessionsBefore);
     }
 
     @Test
@@ -176,13 +168,48 @@ class StandardSessionIntegrationTest {
     }
 
     @Test
-    void activeStandardAndAdminCanCreateSessions() throws Exception {
+    void onlyActiveStandardCanCreateSession() throws Exception {
         Csrf csrf = csrf();
+        User standard = saveUser("STANDARD", "A");
+        MvcResult created = createSession(standard, csrf, null);
+        assertThat(created.getResponse().getCookie("IDENTIPAT_STANDARD_SESSION")).isNotNull();
 
-        for (User user : new User[]{saveUser("STANDARD", "A"), saveUser("ADMIN", "A")}) {
-            MvcResult created = createSession(user, csrf, null);
-            assertThat(created.getResponse().getCookie("IDENTIPAT_STANDARD_SESSION")).isNotNull();
-        }
+        User admin = saveUser("ADMIN", "A");
+        mockMvc.perform(csrfPost("/standard-sessions", csrf).content(sessionBody(admin)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("STANDARD_SESSION_NOT_AVAILABLE"));
+    }
+
+    @Test
+    void historicalAdminSessionCannotBeUsedForSessionConsentOrAnalysis() throws Exception {
+        User admin = saveUser("ADMIN", "A");
+        String rawToken = tokenService.generateToken();
+        Instant now = Instant.now();
+        StandardSession historical = new StandardSession();
+        historical.setSessionId(UUID.randomUUID());
+        historical.setUser(admin);
+        historical.setTokenHash(tokenService.hash(rawToken));
+        historical.setStatus(StandardSessionStatus.ACTIVE);
+        historical.setCreatedAt(now);
+        historical.setLastActivityAt(now);
+        historical.setExpiresAt(now.plus(Duration.ofMinutes(30)));
+        historical.setAbsoluteExpiresAt(now.plus(Duration.ofHours(8)));
+        sessionRepository.saveAndFlush(historical);
+
+        Cookie cookie = new Cookie("IDENTIPAT_STANDARD_SESSION", rawToken);
+        Csrf csrf = csrf();
+        long consentsBefore = consentRepository.count();
+        long analysesBefore = analysisRepository.count();
+        mockMvc.perform(get("/standard-session").cookie(cookie))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(consentPost(cookie, csrf, "ACCEPTED", "personal-data/1.0"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/analyses/text").cookie(cookie, csrf.cookie())
+                        .header("X-XSRF-TOKEN", csrf.token()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"description\":\"Descripción suficientemente extensa para analizar.\"}"))
+                .andExpect(status().isUnauthorized());
+        assertThat(consentRepository.count()).isEqualTo(consentsBefore);
+        assertThat(analysisRepository.count()).isEqualTo(analysesBefore);
     }
 
     @Test

@@ -56,6 +56,7 @@ public class StandardSessionResolver {
         if (found.isPresent()
                 && found.get().getStatus() == StandardSessionStatus.CLOSED
                 && found.get().getCloseReason() == StandardSessionCloseReason.CONSENT_REJECTED
+                && "STANDARD".equalsIgnoreCase(found.get().getUser().getUserType())
                 && "A".equalsIgnoreCase(found.get().getUser().getStatus())) {
             return Optional.of(new StandardSessionContext(found.get(), found.get().getUser()));
         }
@@ -69,6 +70,9 @@ public class StandardSessionResolver {
         }
         StandardSession session = found.get();
         Instant now = clock.instant();
+        if (!"STANDARD".equalsIgnoreCase(session.getUser().getUserType())) {
+            return Optional.empty();
+        }
         if (session.getStatus() != StandardSessionStatus.ACTIVE) {
             return Optional.empty();
         }

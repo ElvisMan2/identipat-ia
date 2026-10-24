@@ -15,7 +15,8 @@
     { "key": "adminUserId", "value": "1" },
     { "key": "csrfToken", "value": "" },
     { "key": "consentVersion", "value": "personal-data/1.0" },
-    { "key": "analysisId", "value": "" }
+    { "key": "analysisId", "value": "" },
+    { "key": "adminAnalysisId", "value": "" }
   ],
   "item": [
     {
@@ -264,6 +265,57 @@
           }
         }]
       }]
+    },
+    {
+      "name": "ADMIN - Text analysis",
+      "description": "Ejecute primero Login ADMIN and save JWT. Este recorrido usa exclusivamente Bearer JWT: no envía DOI/CE, consentimiento, X-XSRF-TOKEN ni requiere cookie STANDARD.",
+      "item": [
+        {
+          "name": "1. Create ADMIN text analysis and save ID",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"He desarrollado un mecanismo modular que controla el riego según mediciones del suelo.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/analyses/text",
+            "description": "El backend deriva el ADMIN del JWT. Responde 202 sin crear standard_session ni ConsentEvent."
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('ADMIN analysis is accepted asynchronously', function () { pm.response.to.have.status(202); });",
+                "const body = pm.response.json();",
+                "if (body.analysisId) { pm.collectionVariables.set('adminAnalysisId', body.analysisId); }"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "2. Get ADMIN text analysis once",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/analyses/{{adminAnalysisId}}",
+            "description": "Devuelve únicamente un análisis ADMIN cuyo user_id corresponde al JWT y cuyo session_id es NULL."
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('ADMIN analysis lookup succeeds', function () { pm.response.to.have.status(200); });",
+                "pm.expect(['RECEIVED', 'ANALYZING', 'COMPLETED', 'FAILED']).to.include(pm.response.json().status);"
+              ]
+            }
+          }]
+        }
+      ]
     },
     {
       "name": "Admin - Users",

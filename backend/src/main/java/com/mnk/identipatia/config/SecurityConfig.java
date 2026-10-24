@@ -24,7 +24,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.util.matcher.AndRequestMatcher;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -55,7 +57,9 @@ public class SecurityConfig {
                 new AntPathRequestMatcher("/standard-sessions", "POST"),
                 new AntPathRequestMatcher("/standard-session/consent", "POST"),
                 new AntPathRequestMatcher("/standard-session", "DELETE"),
-                new AntPathRequestMatcher("/analyses/text", "POST"));
+                new AndRequestMatcher(
+                        new AntPathRequestMatcher("/analyses/text", "POST"),
+                        new NegatedRequestMatcher(BearerTokenRequest::isPresent)));
 
         http
                 .csrf(csrf -> csrf
@@ -70,6 +74,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/users/identify").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users/login").permitAll()
                         .requestMatchers("/standard-session", "/standard-session/**", "/standard-sessions").permitAll()
+                        // STANDARD uses a server-side cookie rather than Spring Authentication;
+                        // functional authorization for both modes is enforced by AnalysisAccessResolver.
                         .requestMatchers("/analyses/**").permitAll()
                         .requestMatchers("/users/**").hasRole("ADMIN")
                         .requestMatchers("/", "/index.html", "/*.js", "/*.css", "/*.ico",

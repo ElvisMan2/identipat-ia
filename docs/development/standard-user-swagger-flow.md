@@ -75,7 +75,7 @@ $env:SPRINGDOC_SWAGGER_UI_CSRF_HEADER_NAME = "X-XSRF-TOKEN"
 
 Después de modificar la configuración, reinicie el backend.
 
-> Esta configuración es necesaria para completar el flujo usando los botones **Try it out** y **Execute**. La configuración actual del esquema OpenAPI solo declara `bearerAuth` para ADMIN y no expone el encabezado CSRF como parámetro manual de cada operación.
+> Esta configuración es necesaria para completar el flujo usando los botones **Try it out** y **Execute**. OpenAPI declara `standardSession` y `bearerAuth` como alternativas para análisis, pero el encabezado CSRF se obtiene mediante el flujo SPA y no se expone como parámetro manual de cada operación.
 
 ## 5. Paso 1: reconocer el documento
 
@@ -316,7 +316,7 @@ No utilice `REJECTED` en el flujo positivo: esa decisión persiste el rechazo, c
 
 ## 11. Paso 7: crear el análisis de texto
 
-En el grupo **STANDARD analyses**, ejecute:
+En el grupo **Analyses**, ejecute la alternativa `standardSession`:
 
 ```http
 POST /analyses/text

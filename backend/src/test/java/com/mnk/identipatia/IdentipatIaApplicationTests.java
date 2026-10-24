@@ -131,6 +131,8 @@ class IdentipatIaApplicationTests {
                 "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '2' AND success", Integer.class));
         assertEquals(1, jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '3' AND success", Integer.class));
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '4' AND success", Integer.class));
         assertEquals("validate", environment.getRequiredProperty("spring.jpa.hibernate.ddl-auto"));
         assertFalse(environment.getRequiredProperty("spring.flyway.baseline-on-migrate", Boolean.class));
     }
@@ -212,6 +214,15 @@ class IdentipatIaApplicationTests {
         assertThat(api.at("/components/securitySchemes/bearerAuth/type").asText()).isEqualTo("http");
         assertThat(api.at("/components/securitySchemes/bearerAuth/scheme").asText()).isEqualTo("bearer");
         assertThat(api.at("/components/securitySchemes/bearerAuth/bearerFormat").asText()).isEqualTo("JWT");
+        assertThat(api.at("/components/securitySchemes/standardSession/type").asText()).isEqualTo("apiKey");
+        assertThat(api.at("/components/securitySchemes/standardSession/in").asText()).isEqualTo("cookie");
+        assertThat(api.at("/components/securitySchemes/standardSession/name").asText())
+                .isEqualTo("IDENTIPAT_STANDARD_SESSION");
+        JsonNode analysisPostSecurity = api.at("/paths/~1analyses~1text/post/security");
+        assertThat(analysisPostSecurity).anySatisfy(requirement ->
+                assertThat(requirement.has("standardSession")).isTrue());
+        assertThat(analysisPostSecurity).anySatisfy(requirement ->
+                assertThat(requirement.has("bearerAuth")).isTrue());
 
         JsonNode recognitionProperties = api.at("/components/schemas/DocumentRecognitionResponse/properties");
         assertThat(recognitionProperties.size()).isEqualTo(2);

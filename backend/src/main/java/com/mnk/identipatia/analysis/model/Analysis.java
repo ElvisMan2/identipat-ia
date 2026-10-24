@@ -26,10 +26,14 @@ public class Analysis {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(name = "session_id", nullable = false)
+    /**
+     * Access-context invariant: sessionId and consentEventId are both present
+     * for STANDARD_SESSION analyses and both absent for ADMIN_JWT analyses.
+     */
+    @Column(name = "session_id")
     private UUID sessionId;
 
-    @Column(name = "consent_event_id", nullable = false)
+    @Column(name = "consent_event_id")
     private UUID consentEventId;
 
     @Enumerated(EnumType.STRING)
