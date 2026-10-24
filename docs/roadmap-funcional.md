@@ -1,8 +1,8 @@
 # Roadmap funcional — IDENTIPAT-IA
 
-**Estado:** F0 y F1.0 completadas; F1.1–F1.4D implementadas; F1.5 es la siguiente fase
-**Versión del roadmap:** 1.3
-**Última actualización:** 23 de octubre de 2026
+**Estado:** F0 y F1.0 completadas; F1.1–F1.5 implementadas; F1.6 es la siguiente fase
+**Versión del roadmap:** 1.4
+**Última actualización:** 24 de octubre de 2026
 **Objetivo:** mantener una visión vigente de la secuencia funcional del producto, diferenciando lo ya materializado de las fases pendientes.
 
 ---
@@ -30,7 +30,8 @@ La estabilización técnica F0 está completada. El backend también materializa
 | F1.4B | Listado administrativo paginado de usuarios (mejora backend) | ✅ Implementada |
 | F1.4C | Formalización del acceso ADMIN al análisis | ✅ Implementada |
 | F1.4D | Exportación CSV administrativa de usuarios (mejora backend) | ✅ Implementada |
-| F1.5–F1.9 | PDF, audio, reporte, recursos y E2E | ⏳ Pendientes |
+| F1.5 | Entrada mediante PDF | ✅ Implementada |
+| F1.6–F1.9 | Audio, reporte, recursos y E2E | ⏳ Pendientes |
 | F2 | Preparación para piloto y producción | ⏳ Pendiente |
 
 Los estados **implementada** indican que el alcance técnico existe en el backend y está cubierto por pruebas. No sustituyen la revisión funcional, jurídica, de seguridad o de aceptación que corresponda antes del piloto.
@@ -417,7 +418,7 @@ La implementación actual construye el CSV en memoria. Si el volumen real lo jus
 
 # F1.5 — Entrada mediante PDF
 
-**Estado:** pendiente.
+**Estado:** implementada.
 
 ## Objetivo
 
@@ -427,16 +428,15 @@ Agregar PDF reutilizando el pipeline de análisis existente.
 PDF → Java → preprocessing-service → texto extraído → Analysis existente
 ```
 
-## Definir e implementar
+## Resultado implementado
 
-- formatos y MIME aceptados;
-- tamaño y páginas máximas;
-- manejo de PDF corrupto o protegido;
-- PDF sin texto o escaneado;
-- política inicial de OCR;
-- almacenamiento temporal o persistente del archivo;
-- extensión de CSRF y autorización al nuevo endpoint;
-- pruebas de aislamiento y errores.
+- `POST /analyses/pdf` multipart para STANDARD (sesión, consentimiento y CSRF) y ADMIN (Bearer);
+- validación de `application/pdf`, firma `%PDF-`, 10 MiB y 50 páginas por defecto;
+- extracción privada `POST /v1/pdf/extract` con `pypdf`, sin OCR ni servicios externos;
+- errores saneados para PDF inválido, cifrado, sin texto, límites y servicio no disponible;
+- extracción síncrona antes de aceptar; si falla, no se crea `Analysis`;
+- persistencia de texto original/procesado y metadata mínima con SHA-256, sin binario ni filename;
+- convergencia en el mismo worker, prompt, schema, proveedor y `AnalysisResult` de TEXT.
 
 ---
 
@@ -675,18 +675,8 @@ No introducir embeddings, clasificadores o pipelines NLP auxiliares salvo decisi
 La siguiente fase es:
 
 ```text
-F1.4 — Diagnóstico de propiedad intelectual
+F1.6 — Entrada mediante audio
 ```
 
-Antes de modificar el prompt productivo, F1.4 debe cerrar:
-
-1. criterios jurídicos explícitos del diagnóstico;
-2. alcance y representación de los artículos 15 y 20 de la Decisión 486;
-3. modalidades de protección y taxonomía controlada;
-4. evolución versionada de `AnalysisResult` y su JSON Schema;
-5. prompt jurídico-funcional versionado;
-6. casos de prueba y criterios de aceptación experta;
-7. compatibilidad con los consumidores actuales del contrato;
-8. separación entre contenido generado, referencias controladas y disclaimer institucional.
-
-En paralelo, sin bloquear el diseño funcional, conviene planificar las mejoras técnicas identificadas: invariantes de roles ADMIN/STANDARD, validación timeout/lease, logging estructurado y conservación de metadata de respuestas `incomplete`.
+F1.6 debe reutilizar el mismo núcleo `Analysis` y mantener Python limitado al preprocesamiento técnico,
+sin duplicar seguridad, persistencia, prompts ni inferencia generativa.

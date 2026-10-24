@@ -1,8 +1,8 @@
 # Arquitectura de referencia de IDENTIPAT-IA
 
-**Estado:** arquitectura vigente y materializada hasta F1.4
-**Versión:** 1.2
-**Última actualización:** 20 de septiembre de 2026
+**Estado:** arquitectura vigente y materializada hasta F1.5
+**Versión:** 1.3
+**Última actualización:** 24 de octubre de 2026
 
 ## Contexto
 
@@ -10,7 +10,7 @@ Este documento describe la arquitectura lógica, los límites de responsabilidad
 
 La arquitectura ya no representa una propuesta previa a F0.3: la estabilización F0, el diseño F1.0 y las capacidades F1.1–F1.4 se encuentran materializadas en el backend. Cuando exista una discrepancia con diagnósticos históricos, prevalecen este documento, el código vigente y las especificaciones especializadas enlazadas desde aquí.
 
-Las entradas PDF/audio y el reporte formal continúan pendientes en F1.5–F1.7.
+La entrada PDF está implementada; audio y el reporte formal continúan pendientes en F1.6–F1.7.
 
 ## Componentes y comunicación
 
@@ -39,7 +39,7 @@ Angular es responsable de:
 - presentación, navegación e interacción;
 - identificación y registro del usuario STANDARD;
 - obtención y envío del token CSRF según el patrón SPA;
-- captura de texto y, en fases posteriores, carga de PDF/audio;
+- captura de texto/PDF y, en una fase posterior, audio;
 - visualización de estados y resultados de la sesión actual;
 - polling del análisis asíncrono;
 - presentación y descarga de reportes cuando F1.7 se implemente.
@@ -70,7 +70,7 @@ Ningún controller ni caso de uso conoce tipos `com.openai.*`. Los prompts y JSO
 
 ### Python: `preprocessing-service`
 
-Python es un servicio FastAPI especializado en preprocesamiento técnico; no es un segundo backend funcional. Actualmente dispone del bootstrap y `GET /health`.
+Python es un servicio FastAPI especializado en preprocesamiento técnico; no es un segundo backend funcional. Dispone de `GET /health` y `POST /v1/pdf/extract` para extracción de capa de texto con `pypdf`.
 
 Sus responsabilidades previstas son:
 
@@ -174,6 +174,29 @@ GET /analyses/{analysisId} desde la misma sesión
 
 El request HTTP no permanece abierto durante la inferencia. La consulta y el resultado pertenecen a la sesión STANDARD que creó el análisis; otra sesión no puede recuperarlos.
 
+### Flujo de análisis PDF
+
+```text
+POST /analyses/pdf (multipart)
+      ↓
+resolver acceso + consentimiento STANDARD
+      ↓
+validar MIME + tamaño + firma en Java
+      ↓
+POST privado /v1/pdf/extract (sin transacción DB)
+      ↓
+validar páginas + longitud + disponibilidad IA
+      ↓
+persistir Analysis(RECEIVED) + AnalysisInput(PDF)
+      ↓
+202 Accepted → mismo worker/LLM/resultado de TEXT
+```
+
+La extracción es síncrona antes del `202`; si Python falla no existe un `Analysis`. No se persiste el
+binario ni se usa almacenamiento temporal durable. `original_text` conserva lo extraído,
+`processed_text` lo normalizado y la metadata guarda MIME, tamaño, páginas, caracteres, método y
+SHA-256. No hay OCR: PDFs cifrados, corruptos o sin texto suficiente se rechazan.
+
 ## Sesión STANDARD, consentimiento y disclaimer
 
 F1.1 implementa una capacidad temporal server-side asociada al registro STANDARD:
@@ -204,7 +227,9 @@ La arquitectura separa dos contextos:
 
 Los endpoints STANDARD no deben depender solo de reglas `permitAll()` en la configuración HTTP. Cada caso de uso debe resolver la sesión, comprobar su vigencia y verificar que el recurso solicitado pertenece a esa sesión.
 
-Actualmente `POST /analyses/text` está incluido explícitamente en el matcher CSRF. Al incorporar PDF y audio, sus mutaciones deberán quedar protegidas. Se recomienda evolucionar hacia una regla general para las mutaciones STANDARD bajo `/analyses/**`, evitando depender de una enumeración manual por endpoint.
+La regla CSRF cubre de forma general `POST /analyses/**` cuando no existe Bearer. TEXT y PDF STANDARD
+requieren cookie/header CSRF; ADMIN Bearer se exime. Un Bearer presente siempre selecciona ADMIN y,
+si es inválido, responde `401` sin fallback a la cookie STANDARD. Los GET no requieren CSRF.
 
 No deben registrarse en logs operativos:
 
@@ -307,7 +332,7 @@ También conviene reforzar la transición terminal mediante una actualización c
 11. Los prompts, schemas y resultados estructurados son contratos versionados.
 12. No existe un pipeline funcional separado de PLN/NLP o ML clásico.
 13. La retención amplia es provisional durante el desarrollo y debe minimizarse antes de producción.
-14. Los tipos de entrada futuros convergen al mismo núcleo `Analysis`.
+14. TEXT y PDF convergen al mismo núcleo `Analysis`; los tipos futuros deben hacer lo mismo.
 
 ## Estado materializado hasta F1.4
 
@@ -329,6 +354,9 @@ F1.3 materializó el análisis de texto durable mediante `POST /analyses/text`, 
 F1.4 materializó el prompt 0.2, schema 2.0, modelos Java versionados, siete modalidades de protección,
 screening de patente, alerta de recursos genéticos y compatibilidad de lectura 1.0.
 
+F1.5 materializó la entrada PDF, extracción privada con `pypdf`, límites configurables, errores
+saneados, metadata sin filename/binario y reutilización íntegra del pipeline de análisis.
+
 Las especificaciones detalladas se encuentran en:
 
 - [dominio de análisis](../design/analysis-domain.md);
@@ -341,10 +369,9 @@ Las especificaciones detalladas se encuentran en:
 
 Permanecen abiertas y deben cerrarse en las fases correspondientes:
 
-- tecnología y límites de extracción PDF;
-- política de OCR;
+- aceptación funcional de PDFs solo texto y eventual necesidad futura de OCR;
 - tecnología y límites de transcripción de audio;
-- almacenamiento de archivos PDF/audio;
+- política futura de almacenamiento/retención para archivos (F1.5 no persiste el PDF);
 - catálogo institucional y recursos asociados;
 - reporte web/PDF y disclaimer institucional;
 - política definitiva de retención, minimización, cifrado y anonimización;
@@ -367,5 +394,6 @@ Cuando un usuario ya tenga sesiones, consentimientos, análisis u otra evidencia
 | F1.2 | Capa de IA generativa en Java | Implementada |
 | F1.3 | Análisis end-to-end desde texto | Implementada |
 | F1.4 | Diagnóstico de propiedad intelectual | Implementada |
-| F1.5–F1.9 | PDF, audio, reporte, recursos e integración E2E | Pendientes |
+| F1.5 | Entrada mediante PDF | Implementada |
+| F1.6–F1.9 | Audio, reporte, recursos e integración E2E | Pendientes |
 | F2 | Preparación para piloto y producción | Pendiente |

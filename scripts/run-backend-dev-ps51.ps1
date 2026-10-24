@@ -41,6 +41,31 @@ function Import-DotEnvFile {
     }
 }
 
+function Wait-PreprocessingService {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Uri,
+
+        [int]$TimeoutSeconds = 60
+    )
+
+    $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+    do {
+        try {
+            $health = Invoke-RestMethod -Uri $Uri -Method Get -TimeoutSec 5
+            if ($health.status -eq "UP" -and $health.service -eq "preprocessing-service") {
+                return $true
+            }
+        } catch {
+            # The service can refuse connections while Docker finishes starting it.
+        }
+
+        Start-Sleep -Seconds 2
+    } while ([DateTime]::UtcNow -lt $deadline)
+
+    return $false
+}
+
 $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 $envFile = Join-Path $repoRoot ".env"
 $backendDir = Join-Path $repoRoot "backend"
@@ -48,42 +73,6 @@ $frontendDir = Join-Path $repoRoot "frontend"
 $mavenWrapper = Join-Path $backendDir "mvnw.cmd"
 $frontendBrowserDir = Join-Path $repoRoot "frontend\dist\identipat-ia\browser"
 $staticDir = Join-Path $backendDir "src\main\resources\static"
-
-if (Test-Path -LiteralPath $frontendBrowserDir -PathType Container) {
-    Get-ChildItem -LiteralPath $frontendBrowserDir -Force | Remove-Item -Recurse -Force
-}
-
-Write-Host "Building frontend..."
-Push-Location $frontendDir
-try {
-    & npm run build
-    if ($LASTEXITCODE -ne 0) {
-        throw "Frontend build failed (exit code $LASTEXITCODE)."
-    }
-} finally {
-    Pop-Location
-}
-
-Write-Host "Frontend build completed"
-Write-Host "Copying frontend static files..."
-
-if (-not (Test-Path -LiteralPath $frontendBrowserDir -PathType Container)) {
-    throw "Frontend build not found at frontend\dist\identipat-ia\browser. Run the Angular build first."
-}
-
-if (-not (Test-Path -LiteralPath $staticDir -PathType Container)) {
-    New-Item -ItemType Directory -Path $staticDir -Force | Out-Null
-}
-
-Get-ChildItem -LiteralPath $staticDir -Force | Remove-Item -Recurse -Force
-
-Copy-Item `
-    -Path (Join-Path $frontendBrowserDir "*") `
-    -Destination $staticDir `
-    -Recurse `
-    -Force
-
-Write-Host "Frontend static files copied"
 
 Write-Host "IDENTIPAT-IA - Backend DEV (PowerShell 5.1)"
 
@@ -127,17 +116,70 @@ if ($LASTEXITCODE -ne 0) {
     throw "Docker Engine is not responding (exit code $LASTEXITCODE)."
 }
 
+if (Test-Path -LiteralPath $frontendBrowserDir -PathType Container) {
+    Get-ChildItem -LiteralPath $frontendBrowserDir -Force | Remove-Item -Recurse -Force
+}
+
+Write-Host "Building frontend..."
+Push-Location $frontendDir
+try {
+    & npm run build
+    if ($LASTEXITCODE -ne 0) {
+        throw "Frontend build failed (exit code $LASTEXITCODE)."
+    }
+} finally {
+    Pop-Location
+}
+
+Write-Host "Frontend build completed"
+Write-Host "Copying frontend static files..."
+
+if (-not (Test-Path -LiteralPath $frontendBrowserDir -PathType Container)) {
+    throw "Frontend build not found at frontend\dist\identipat-ia\browser. Run the Angular build first."
+}
+
+if (-not (Test-Path -LiteralPath $staticDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $staticDir -Force | Out-Null
+}
+
+Get-ChildItem -LiteralPath $staticDir -Force | Remove-Item -Recurse -Force
+
+Copy-Item `
+    -Path (Join-Path $frontendBrowserDir "*") `
+    -Destination $staticDir `
+    -Recurse `
+    -Force
+
+Write-Host "Frontend static files copied"
+
 Push-Location $repoRoot
 try {
-    & docker compose up -d db
+    & docker compose up -d --build db preprocessing
     if ($LASTEXITCODE -ne 0) {
-        throw "Could not start Compose service 'db' (exit code $LASTEXITCODE)."
+        & docker compose ps preprocessing
+        throw "Could not start Compose services 'db' and 'preprocessing' (exit code $LASTEXITCODE). Verify Docker and whether port 8090 is already in use."
     }
 } finally {
     Pop-Location
 }
 
 Write-Host "PostgreSQL DEV: ready"
+
+$preprocessingHealthUri = "http://localhost:8090/health"
+Write-Host "Waiting up to 60 seconds for preprocessing-service..."
+if (-not (Wait-PreprocessingService -Uri $preprocessingHealthUri -TimeoutSeconds 60)) {
+    Push-Location $repoRoot
+    try {
+        Write-Host "preprocessing-service did not become ready. Compose status:"
+        & docker compose ps preprocessing
+        Write-Host "Last preprocessing-service logs:"
+        & docker compose logs --tail 50 preprocessing
+    } finally {
+        Pop-Location
+    }
+    throw "preprocessing-service did not report status=UP and service=preprocessing-service within 60 seconds. Spring Boot was not started."
+}
+Write-Host "preprocessing-service DEV: healthy"
 
 $serverPort = 8082
 if (-not [string]::IsNullOrWhiteSpace($env:SERVER_PORT)) {

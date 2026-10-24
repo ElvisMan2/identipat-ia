@@ -58,7 +58,7 @@ public class SecurityConfig {
                 new AntPathRequestMatcher("/standard-session/consent", "POST"),
                 new AntPathRequestMatcher("/standard-session", "DELETE"),
                 new AndRequestMatcher(
-                        new AntPathRequestMatcher("/analyses/text", "POST"),
+                        new AntPathRequestMatcher("/analyses/**", "POST"),
                         new NegatedRequestMatcher(BearerTokenRequest::isPresent)));
 
         http

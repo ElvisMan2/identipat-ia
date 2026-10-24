@@ -2,6 +2,7 @@ package com.mnk.identipatia.analysis.config;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.Valid;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -19,7 +20,8 @@ public record AnalysisProperties(
         @NotNull Duration leaseDuration,
         @Min(1) int maxAttempts,
         @NotNull Duration retryDelay,
-        @Min(1) int aiMaxOutputTokens) {
+        @Min(1) int aiMaxOutputTokens,
+        @Valid @NotNull Pdf pdf) {
 
     public AnalysisProperties {
         requirePositive(pollInterval, "pollInterval");
@@ -34,5 +36,10 @@ public record AnalysisProperties(
         if (value != null && (value.isZero() || value.isNegative())) {
             throw new IllegalArgumentException(name + " must be greater than zero");
         }
+    }
+
+    public record Pdf(
+            @Min(1) long maxFileSizeBytes,
+            @Min(1) int maxPages) {
     }
 }
