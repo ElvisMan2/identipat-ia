@@ -305,14 +305,20 @@
             <img src="/Icon_pdf_file.svg.webp" alt="" style="width: 72px; height: 72px;" />
             <span style="max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ pdf.name }}</span>
           </div>
+        } @else if (selectedAudio(); as audio) {
+          <div class="pdf-selection" role="status" aria-label="Grabación de audio seleccionada" style="position: relative; display: grid; place-items: center; gap: .65rem; height: 188px; padding: 1rem; border: 1px solid var(--line); border-radius: 5px; background: #fff;">
+            <button type="button" aria-label="Quitar grabación de audio" title="Quitar grabación de audio" (click)="removeSelectedAudio()" style="position: absolute; top: 8px; right: 8px; z-index: 1; width: 32px; height: 32px; padding: 5px; border: 0; border-radius: 50%; background: #fff; cursor: pointer;"><img src="close.png" alt="" style="display: block; width: 22px; height: 22px; object-fit: contain;" /></button>
+            <img src="/audio.png" alt="Grabación de audio" style="display: block; width: 96px; height: 96px; object-fit: contain; background: #fff;" />
+            <span>Grabación de voz</span>
+          </div>
         } @else {
           <textarea id="description" formControlName="description" rows="10" placeholder="Escribe aquí la descripción de tu creación..."></textarea>
         }
-        @if (!selectedPdf() && analysisForm.controls.description.touched && analysisForm.controls.description.invalid) {
+        @if (!selectedPdf() && !selectedAudio() && analysisForm.controls.description.touched && analysisForm.controls.description.invalid) {
           <p class="field-error">La descripción debe tener entre 20 y 20 000 caracteres.</p>
         }
         <div class="input-actions">
-          <button class="voice-button" type="button" aria-label="Grabar descripción por voz">Grabar voz</button>
+          <button class="voice-button" type="button" [class.recording]="recordingAudio()" [attr.aria-label]="recordingAudio() ? 'Detener grabación' : 'Grabar descripción por voz'" (click)="toggleAudioRecording()">{{ recordingAudio() ? 'Detener grabación' : 'Grabar voz' }}</button>
           <input #pdfInput type="file" accept="application/pdf" hidden (change)="onPdfSelected($event)" />
           <button class="pdf-button" type="button" aria-label="Adjuntar archivo PDF" (click)="pdfInput.click()">Adjuntar PDF</button>
         </div>
@@ -331,6 +337,17 @@
               <h2>Analizando con IA</h2>
               <p>Estamos revisando la información de tu creación. Este proceso puede tardar unos segundos.</p>
             </div>
+          </div>
+        </section>
+      }
+
+      @if (recordingAudio()) {
+        <section role="dialog" aria-modal="true" aria-labelledby="audio-recording-title" style="position: fixed; inset: 0; z-index: 35; display: grid; place-items: center; padding: 1rem; background: rgb(15 26 24 / .58);">
+          <div style="display: grid; justify-items: center; gap: .75rem; width: min(360px, 100%); padding: 2rem; border: 1px solid var(--line); background: #fff; box-shadow: 0 18px 50px rgb(24 51 47 / .18); text-align: center;">
+            <img src="/microphone.png" alt="Micrófono" style="width: 96px; height: 96px; object-fit: contain;" />
+            <h2 id="audio-recording-title" style="margin: 0; font-size: 1.35rem;">Grabando voz</h2>
+            <p aria-live="polite" style="margin: 0; color: var(--teal-dark); font-family: 'Space Grotesk', sans-serif; font-size: 2rem; font-weight: 700; letter-spacing: .06em;">{{ recordingTimeLabel() }}</p>
+            <button class="primary-button" type="button" (click)="stopAudioRecording()" style="width: 100%; margin-top: .5rem;">Detener grabación</button>
           </div>
         </section>
       }

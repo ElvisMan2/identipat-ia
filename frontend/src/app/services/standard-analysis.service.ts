@@ -139,6 +139,39 @@ export class StandardAnalysisService {
     );
   }
 
+  createAudioAnalysis(doi: string, doiType: string, file: File, accessToken = ''): Observable<AnalysisCreatedResponse> {
+    const body = new FormData();
+    body.append('file', file, file.name);
+
+    if (accessToken) {
+      return this.http.post<AnalysisCreatedResponse>(
+        `${this.endpoint}/analyses/audio`,
+        body,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+    }
+
+    return this.http.get<CsrfResponse>(`${this.endpoint}/standard-session/csrf`, {
+      withCredentials: true
+    }).pipe(
+      switchMap((csrf) => this.http.post<StandardSessionResponse>(
+        `${this.endpoint}/standard-sessions`,
+        { doi, doiType },
+        { headers: this.csrfHeaders(csrf), withCredentials: true }
+      )),
+      switchMap((session) => this.http.post<unknown>(
+        `${this.endpoint}/standard-session/consent`,
+        { consentVersion: session.requiredConsentVersion, decision: 'ACCEPTED' },
+        { headers: this.csrfHeadersFromToken(), withCredentials: true }
+      ).pipe(switchMap(() => of(session)))),
+      switchMap(() => this.http.post<AnalysisCreatedResponse>(
+        `${this.endpoint}/analyses/audio`,
+        body,
+        { headers: this.csrfHeadersFromToken(), withCredentials: true }
+      ))
+    );
+  }
+
   getAnalysis(analysisId: string, accessToken = ''): Observable<AnalysisResponse> {
     return this.http.get<AnalysisResponse>(
       `${this.endpoint}/analyses/${analysisId}`,

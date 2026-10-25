@@ -56,6 +56,14 @@ export class App {
   readonly analysisMessage = signal('');
   readonly analysisResult = signal<AnalysisResponse | null>(null);
   readonly selectedPdf = signal<File | null>(null);
+  readonly selectedAudio = signal<File | null>(null);
+  readonly recordingAudio = signal(false);
+  readonly recordingMilliseconds = signal(0);
+  private mediaRecorder: MediaRecorder | null = null;
+  private recordingStream: MediaStream | null = null;
+  private recordingChunks: Blob[] = [];
+  private recordingTimer: number | null = null;
+  private recordingStartedAt = 0;
 
   constructor() {
     if (this.document.location.pathname === '/terminos-y-privacidad') {
@@ -610,7 +618,8 @@ export class App {
 
   submitAnalysis(): void {
     const selectedPdf = this.selectedPdf();
-    if (!selectedPdf && this.analysisForm.invalid) {
+    const selectedAudio = this.selectedAudio();
+    if (!selectedPdf && !selectedAudio && this.analysisForm.invalid) {
       this.analysisForm.markAllAsTouched();
       return;
     }
@@ -624,10 +633,11 @@ export class App {
     const adminAccessToken = this.adminAuthenticated() ? this.userService.getAccessToken() : '';
     const request = selectedPdf
       ? this.standardAnalysisService.createPdfAnalysis(doi, doiType, selectedPdf, adminAccessToken)
-      : this.standardAnalysisService.createTextAnalysis(doi, doiType, description, adminAccessToken);
+      : selectedAudio
+        ? this.standardAnalysisService.createAudioAnalysis(doi, doiType, selectedAudio, adminAccessToken)
+        : this.standardAnalysisService.createTextAnalysis(doi, doiType, description, adminAccessToken);
     request.subscribe({
       next: ({ analysisId }) => {
-        this.selectedPdf.set(null);
         this.analysisMessage.set('');
         this.pollAnalysis(analysisId, adminAccessToken);
       },
@@ -658,6 +668,7 @@ export class App {
     }
 
     this.selectedPdf.set(file);
+    this.selectedAudio.set(null);
     this.analysisForm.controls.description.setValue('');
     this.analysisForm.controls.description.markAsUntouched();
     this.analysisMessage.set('');
@@ -665,6 +676,85 @@ export class App {
 
   removeSelectedPdf(): void {
     this.selectedPdf.set(null);
+    this.analysisForm.controls.description.setValue('');
+    this.analysisForm.controls.description.markAsUntouched();
+    this.analysisMessage.set('');
+  }
+
+  async toggleAudioRecording(): Promise<void> {
+    if (this.recordingAudio()) {
+      this.mediaRecorder?.stop();
+      return;
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      this.analysisMessage.set('Tu navegador no permite grabar audio.');
+      return;
+    }
+
+    try {
+      this.recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
+        .find(type => MediaRecorder.isTypeSupported(type)) ?? '';
+      this.mediaRecorder = new MediaRecorder(this.recordingStream, mimeType ? { mimeType } : undefined);
+      this.recordingChunks = [];
+      this.mediaRecorder.ondataavailable = event => {
+        if (event.data.size > 0) this.recordingChunks.push(event.data);
+      };
+      this.mediaRecorder.onstop = () => {
+        const type = this.mediaRecorder?.mimeType || 'audio/webm';
+        const extension = type.includes('mp4') ? 'm4a' : 'webm';
+        const blob = new Blob(this.recordingChunks, { type });
+        this.selectedAudio.set(new File([blob], `grabacion-${Date.now()}.${extension}`, { type }));
+        this.selectedPdf.set(null);
+        this.analysisForm.controls.description.setValue('');
+        this.analysisForm.controls.description.markAsUntouched();
+        this.recordingAudio.set(false);
+        this.stopRecordingTimer();
+        this.recordingStream?.getTracks().forEach(track => track.stop());
+        this.recordingStream = null;
+        this.analysisMessage.set('');
+      };
+      this.mediaRecorder.start();
+      this.recordingStartedAt = Date.now();
+      this.recordingMilliseconds.set(0);
+      this.recordingTimer = window.setInterval(() => {
+        this.recordingMilliseconds.set(Date.now() - this.recordingStartedAt);
+      }, 50);
+      this.recordingAudio.set(true);
+      this.analysisMessage.set('Grabando... pulsa el botón para detener.');
+    } catch {
+      this.recordingAudio.set(false);
+      this.stopRecordingTimer();
+      this.recordingStream?.getTracks().forEach(track => track.stop());
+      this.recordingStream = null;
+      this.analysisMessage.set('No se pudo acceder al micrófono. Revisa los permisos del navegador.');
+    }
+  }
+
+  stopAudioRecording(): void {
+    if (this.recordingAudio()) {
+      this.mediaRecorder?.stop();
+    }
+  }
+
+  recordingTimeLabel(): string {
+    const milliseconds = this.recordingMilliseconds();
+    const minutes = Math.floor(milliseconds / 60000).toString().padStart(2, '0');
+    const seconds = Math.floor((milliseconds % 60000) / 1000).toString().padStart(2, '0');
+    const remainder = Math.floor((milliseconds % 1000) / 10).toString().padStart(2, '0');
+    return `${minutes}:${seconds}:${remainder}`;
+  }
+
+  private stopRecordingTimer(): void {
+    if (this.recordingTimer !== null) {
+      window.clearInterval(this.recordingTimer);
+      this.recordingTimer = null;
+    }
+  }
+
+  removeSelectedAudio(): void {
+    this.selectedAudio.set(null);
     this.analysisForm.controls.description.setValue('');
     this.analysisForm.controls.description.markAsUntouched();
     this.analysisMessage.set('');
@@ -688,6 +778,8 @@ export class App {
         this.analysisResult.set(analysis);
         console.log('JSON del análisis:', analysis);
         if (analysis.status === 'COMPLETED' || analysis.status === 'FAILED') {
+          this.selectedPdf.set(null);
+          this.selectedAudio.set(null);
           this.submittingAnalysis.set(false);
           this.analysisMessage.set(analysis.status === 'COMPLETED'
             ? ''
