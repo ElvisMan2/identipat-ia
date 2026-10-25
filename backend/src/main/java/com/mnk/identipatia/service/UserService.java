@@ -49,7 +49,8 @@ public class UserService {
             .filter(user -> request.getDoiType().equalsIgnoreCase(user.getDoiType()))
             .map(user -> new DocumentRecognitionResponse(
                 true,
-                ADMIN_USER_TYPE.equals(user.getUserType())))
+                ADMIN_USER_TYPE.equals(user.getUserType()),
+                "A".equalsIgnoreCase(user.getStatus())))
             .orElseGet(() -> new DocumentRecognitionResponse(false, false));
     }
 

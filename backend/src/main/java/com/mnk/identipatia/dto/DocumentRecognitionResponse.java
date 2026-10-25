@@ -13,4 +13,11 @@ public class DocumentRecognitionResponse {
 
     @Schema(description = "Indica si el siguiente paso requiere contraseña administrativa", example = "false")
     private boolean passwordRequired;
+
+    @Schema(description = "Indica si el usuario está activo", example = "true")
+    private boolean active;
+
+    public DocumentRecognitionResponse(boolean registered, boolean passwordRequired) {
+        this(registered, passwordRequired, false);
+    }
 }

@@ -228,10 +228,12 @@ export class App {
     this.standardAccessPending.set(false);
     this.accessMessage.set('');
     this.userService.identify(doi, doiType).subscribe({
-      next: ({ registered, passwordRequired }) => {
+      next: ({ registered, passwordRequired, active }) => {
         this.standardAccessPending.set(registered && !passwordRequired);
         this.finishAccess(accessStartedAt, () => {
-          if (passwordRequired) {
+          if (registered && active === false) {
+            this.accessMessage.set('Usuario inactivo');
+          } else if (passwordRequired) {
             this.view.set('admin-login');
             this.loginForm.reset({ password: '' });
           } else if (!registered) {

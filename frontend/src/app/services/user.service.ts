@@ -7,6 +7,7 @@ import { environment } from '../../environments/environment';
 export interface DocumentRecognitionResponse {
   registered: boolean;
   passwordRequired: boolean;
+  active?: boolean;
 }
 
 export interface LoginResponse {
