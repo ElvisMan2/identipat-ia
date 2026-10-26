@@ -26,6 +26,7 @@ import com.mnk.identipatia.repository.ConsentEventRepository;
 import com.mnk.identipatia.repository.StandardSessionRepository;
 import com.mnk.identipatia.repository.UserRepository;
 import com.mnk.identipatia.service.JwtService;
+import com.mnk.identipatia.reporting.repository.AnalysisReportContextRepository;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -95,6 +96,7 @@ class PdfAnalysisIntegrationTest {
     @Autowired AnalysisInputRepository inputRepository;
     @Autowired AiInvocationRepository invocationRepository;
     @Autowired StoredAnalysisResultRepository resultRepository;
+    @Autowired AnalysisReportContextRepository reportContextRepository;
     @Autowired AnalysisWorker worker;
     @Autowired JwtService jwtService;
 
@@ -104,6 +106,7 @@ class PdfAnalysisIntegrationTest {
 
     @BeforeEach
     void resetState() {
+        reportContextRepository.deleteAll();
         resultRepository.deleteAll();
         invocationRepository.deleteAll();
         inputRepository.deleteAll();

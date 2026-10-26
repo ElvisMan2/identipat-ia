@@ -1,8 +1,8 @@
 # Roadmap funcional — IDENTIPAT-IA
 
-**Estado:** F0 y F1.0 completadas; F1.1–F1.6 implementadas; F1.7 es la siguiente fase
-**Versión del roadmap:** 1.5
-**Última actualización:** 24 de octubre de 2026
+**Estado:** F0 y F1.0 completadas; F1.1–F1.7 implementadas; F1.8 es la siguiente fase
+**Versión del roadmap:** 1.6
+**Última actualización:** 26 de octubre de 2026
 **Objetivo:** mantener una visión vigente de la secuencia funcional del producto, diferenciando lo ya materializado de las fases pendientes.
 
 ---
@@ -32,7 +32,8 @@ La estabilización técnica F0 está completada. El backend también materializa
 | F1.4D | Exportación CSV administrativa de usuarios (mejora backend) | ✅ Implementada |
 | F1.5 | Entrada mediante PDF | ✅ Implementada |
 | F1.6 | Entrada mediante audio | ✅ Implementada |
-| F1.7–F1.9 | Reporte, recursos y E2E | ⏳ Pendientes |
+| F1.7 | Reporte web, PDF y disclaimer versionado | ✅ Implementada |
+| F1.8–F1.9 | Recursos e integración E2E | ⏳ Pendientes |
 | F2 | Preparación para piloto y producción | ⏳ Pendiente |
 
 Los estados **implementada** indican que el alcance técnico existe en el backend y está cubierto por pruebas. No sustituyen la revisión funcional, jurídica, de seguridad o de aceptación que corresponda antes del piloto.

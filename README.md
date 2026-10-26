@@ -41,6 +41,13 @@ conservan su versión y siguen siendo legibles; el análisis no evalúa novedad,
 aplicación industrial ni ventaja técnica. Las [reglas F1.4](docs/design/f1.4-legal-classification-rules.md)
 y el [golden set J01–J18](docs/design/f1.4-legal-evaluation-cases.md) documentan el alcance.
 
+F1.7 agrega el reporte `diagnostic-report/1.0`, construido exclusivamente desde el resultado
+canónico persistido. `GET /analyses/{id}/report` entrega la proyección JSON y
+`GET /analyses/{id}/report.pdf` genera un PDF A4 en memoria. Cada análisis completado conserva en
+`analysis_report_contexts` la versión histórica del disclaimer institucional que estaba activa al
+completar; ADMIN gobierna borradores, activación y retiro desde `/admin/report-disclaimers`.
+Consulta [el diseño de reporting](docs/design/reporting-design.md).
+
 ## Requisitos
 
 - JDK 21 (versión oficial del proyecto).

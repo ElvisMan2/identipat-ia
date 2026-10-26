@@ -16,7 +16,8 @@
     { "key": "csrfToken", "value": "" },
     { "key": "consentVersion", "value": "personal-data/1.0" },
     { "key": "analysisId", "value": "" },
-    { "key": "adminAnalysisId", "value": "" }
+    { "key": "adminAnalysisId", "value": "" },
+    { "key": "disclaimerId", "value": "" }
   ],
   "item": [
     {
@@ -447,6 +448,113 @@
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
             "url": "{{baseUrl}}/analyses/{{adminAnalysisId}}",
             "description": "Reutiliza el GET común para el ADMIN propietario; inputType será AUDIO."
+          }
+        }
+      ]
+    },
+    {
+      "name": "STANDARD - Diagnostic report",
+      "description": "Requiere la cookie de la misma sesión que creó un análisis COMPLETED. No usa CSRF por ser GET.",
+      "item": [
+        {
+          "name": "Get diagnostic report",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/analyses/{{analysisId}}/report",
+            "description": "Devuelve diagnostic-report/1.0 con el disclaimer histórico, sin PII ni metadata del proveedor."
+          }
+        },
+        {
+          "name": "Download diagnostic report PDF",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/analyses/{{analysisId}}/report.pdf",
+            "description": "Descarga el PDF generado en memoria desde el mismo reporte canónico."
+          }
+        }
+      ]
+    },
+    {
+      "name": "ADMIN - Diagnostic reports and disclaimers",
+      "description": "Ejecute primero Login ADMIN. Las operaciones usan exclusivamente Bearer JWT y no requieren CSRF.",
+      "item": [
+        {
+          "name": "Get diagnostic report",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/analyses/{{adminAnalysisId}}/report"
+          }
+        },
+        {
+          "name": "Download diagnostic report PDF",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/analyses/{{adminAnalysisId}}/report.pdf"
+          }
+        },
+        {
+          "name": "List disclaimers",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/admin/report-disclaimers"
+          }
+        },
+        {
+          "name": "Get active disclaimer",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/admin/report-disclaimers/active"
+          }
+        },
+        {
+          "name": "Create disclaimer draft",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Importante\",\n  \"content\": \"Contenido institucional de prueba, sin datos sensibles.\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/admin/report-disclaimers"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Draft is created', function () { pm.response.to.have.status(201); });",
+            "const body = pm.response.json(); if (body.id) { pm.collectionVariables.set('disclaimerId', body.id); }"
+          ] } }]
+        },
+        {
+          "name": "Clone active disclaimer to draft",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/admin/report-disclaimers/active/draft"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Active disclaimer is cloned', function () { pm.response.to.have.status(201); });",
+            "const body = pm.response.json(); if (body.id) { pm.collectionVariables.set('disclaimerId', body.id); }"
+          ] } }]
+        },
+        {
+          "name": "Update disclaimer draft",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Importante\",\n  \"content\": \"Contenido institucional actualizado de prueba.\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/admin/report-disclaimers/{{disclaimerId}}"
+          }
+        },
+        {
+          "name": "Activate disclaimer",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/admin/report-disclaimers/{{disclaimerId}}/activate",
+            "description": "Retira la versión ACTIVE anterior y activa este DRAFT de forma transaccional."
           }
         }
       ]

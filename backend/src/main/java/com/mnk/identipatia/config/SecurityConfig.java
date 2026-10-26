@@ -77,6 +77,7 @@ public class SecurityConfig {
                         // STANDARD uses a server-side cookie rather than Spring Authentication;
                         // functional authorization for both modes is enforced by AnalysisAccessResolver.
                         .requestMatchers("/analyses/**").permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/users/**").hasRole("ADMIN")
                         .requestMatchers("/", "/index.html", "/*.js", "/*.css", "/*.ico",
                                 "/assets/**", "/favicon.ico").permitAll()

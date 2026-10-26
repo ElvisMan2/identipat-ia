@@ -645,7 +645,10 @@ F2.0 evaluará calidad/modelo y F2.3 definirá el aprovisionamiento offline prod
 
 ### F1.7 — Presentación
 
-- reporte web y PDF;
+- `ReportDisclaimer` versionado (`DRAFT`, `ACTIVE`, `RETIRED`) con auditoría SYSTEM/ADMIN;
+- `AnalysisReportContext` uno-a-uno con `Analysis`, creado en la misma transacción terminal;
+- reporte web JSON y PDF A4 bajo demanda desde `AnalysisResult`, sin persistir binarios;
+- el contexto histórico impide que una activación posterior cambie reportes ya completados;
 - disclaimer institucional controlado y versionado;
 - visualización de resultados parciales o fallidos.
 

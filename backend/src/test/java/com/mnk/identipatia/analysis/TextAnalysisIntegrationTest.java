@@ -27,6 +27,8 @@ import com.mnk.identipatia.repository.ConsentEventRepository;
 import com.mnk.identipatia.repository.StandardSessionRepository;
 import com.mnk.identipatia.repository.UserRepository;
 import com.mnk.identipatia.service.JwtService;
+import com.mnk.identipatia.reporting.repository.AnalysisReportContextRepository;
+import com.mnk.identipatia.reporting.service.DiagnosticReportPdfRenderer;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +37,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -58,6 +61,7 @@ import java.util.concurrent.Future;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
@@ -96,6 +100,7 @@ class TextAnalysisIntegrationTest {
     @Autowired AnalysisInputRepository inputRepository;
     @Autowired AiInvocationRepository invocationRepository;
     @Autowired StoredAnalysisResultRepository resultRepository;
+    @Autowired AnalysisReportContextRepository reportContextRepository;
     @Autowired AnalysisWorker worker;
     @Autowired AnalysisClaimService claimService;
     @Autowired AnalysisAttemptService attemptService;
@@ -104,9 +109,11 @@ class TextAnalysisIntegrationTest {
     @Autowired JdbcTemplate jdbcTemplate;
 
     @MockBean GenerativeAiProvider provider;
+    @SpyBean DiagnosticReportPdfRenderer pdfRenderer;
 
     @BeforeEach
     void resetState() {
+        reportContextRepository.deleteAll();
         resultRepository.deleteAll();
         invocationRepository.deleteAll();
         inputRepository.deleteAll();
@@ -158,6 +165,7 @@ class TextAnalysisIntegrationTest {
 
         Analysis completed = analysisRepository.findById(analysisId).orElseThrow();
         assertThat(completed.getStatus()).isEqualTo(AnalysisStatus.COMPLETED);
+        assertThat(reportContextRepository.findById(analysisId)).isPresent();
         assertThat(completed.getLeaseOwner()).isNull();
         assertThat(resultRepository.findById(analysisId)).isPresent();
         AiInvocation invocation = invocationRepository.findAllByAnalysisIdOrderByAttemptNumber(analysisId).getFirst();
@@ -182,6 +190,76 @@ class TextAnalysisIntegrationTest {
                 .andExpect(jsonPath("$.result.protectionOptions[0].protectedSubjectMatter").exists())
                 .andExpect(jsonPath("$.provider").doesNotExist())
                 .andExpect(jsonPath("$.invocations").doesNotExist());
+
+        mockMvc.perform(get("/identipat-ia/analyses/{analysisId}/report", analysisId)
+                        .contextPath("/identipat-ia")
+                        .cookie(browser.session(), browser.csrf().cookie())
+                        .header("X-XSRF-TOKEN", browser.csrf().token())
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"))
+                .andExpect(jsonPath("$.analysisId").value(analysisId.toString()))
+                .andExpect(jsonPath("$.disclaimer.version").value(1))
+                .andExpect(jsonPath("$.sessionId").doesNotExist())
+                .andExpect(jsonPath("$.userId").doesNotExist());
+        mockMvc.perform(get("/identipat-ia/analyses/{analysisId}/report.pdf", analysisId)
+                        .contextPath("/identipat-ia")
+                        .cookie(browser.session(), browser.csrf().cookie())
+                        .header("X-XSRF-TOKEN", browser.csrf().token())
+                        .accept(MediaType.APPLICATION_PDF))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE))
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
+                .andExpect(result -> assertThat(result.getResponse().getContentAsByteArray())
+                        .startsWith('%', 'P', 'D', 'F', '-'));
+        Browser other = acceptedBrowser();
+        mockMvc.perform(get("/analyses/{analysisId}/report", analysisId).cookie(other.session()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("ANALYSIS_NOT_FOUND"));
+        mockMvc.perform(get("/identipat-ia/analyses/{analysisId}/report.pdf", analysisId)
+                        .contextPath("/identipat-ia")
+                        .cookie(other.session(), other.csrf().cookie())
+                        .header("X-XSRF-TOKEN", other.csrf().token())
+                        .accept(MediaType.APPLICATION_PDF))
+                .andExpect(status().isNotFound())
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(jsonPath("$.code").value("ANALYSIS_NOT_FOUND"));
+        mockMvc.perform(get("/identipat-ia/analyses/{analysisId}/report.pdf", analysisId)
+                        .contextPath("/identipat-ia")
+                        .accept(MediaType.APPLICATION_PDF))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(jsonPath("$.code").value("STANDARD_SESSION_REQUIRED"));
+        mockMvc.perform(get("/identipat-ia/analyses/{analysisId}/report.pdf", analysisId)
+                        .contextPath("/identipat-ia")
+                        .cookie(browser.session(), browser.csrf().cookie())
+                        .header("X-XSRF-TOKEN", browser.csrf().token())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer manipulated-token")
+                        .accept(MediaType.APPLICATION_PDF))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(jsonPath("$.code").value("ADMIN_AUTHENTICATION_REQUIRED"));
+    }
+
+    @Test
+    void unexpectedPdfRendererFailureReturnsControlledJsonErrorForStandardSession() throws Exception {
+        Browser browser = acceptedBrowser();
+        UUID analysisId = id(postAnalysis(browser,
+                "Descripción técnica suficientemente extensa para probar un fallo controlado del PDF.")
+                .andExpect(status().isAccepted()).andReturn());
+        when(provider.generate(any())).thenReturn(successResponse());
+        assertThat(worker.processOneSynchronously()).isTrue();
+        doThrow(new IllegalStateException("synthetic renderer failure"))
+                .when(pdfRenderer).render(any());
+
+        mockMvc.perform(get("/identipat-ia/analyses/{analysisId}/report.pdf", analysisId)
+                        .contextPath("/identipat-ia")
+                        .cookie(browser.session(), browser.csrf().cookie())
+                        .header("X-XSRF-TOKEN", browser.csrf().token())
+                        .accept(MediaType.APPLICATION_PDF))
+                .andExpect(status().isInternalServerError())
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(jsonPath("$.code").value("REPORT_GENERATION_FAILED"));
     }
 
     @Test

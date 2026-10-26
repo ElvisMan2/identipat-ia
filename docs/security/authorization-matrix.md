@@ -1,7 +1,7 @@
 # Matriz de autorización vigente — IDENTIPAT-IA
 
-**Estado verificado hasta:** F1.6
-**Última actualización:** 24 de octubre de 2026
+**Estado verificado hasta:** F1.7
+**Última actualización:** 26 de octubre de 2026
 
 Las rutas son relativas a `/identipat-ia`. Existen tres categorías separadas:
 
@@ -20,6 +20,8 @@ Las rutas son relativas a `/identipat-ia`. Existen tres categorías separadas:
 | `POST /analyses/pdf` | `STANDARD_SESSION + consentimiento + CSRF` **o** `ADMIN_JWT` | Extrae antes de persistir; aplica la misma resolución dual y no conserva el binario. |
 | `POST /analyses/audio` | `STANDARD_SESSION + consentimiento + CSRF` **o** `ADMIN_JWT` | Transcribe localmente antes de persistir; aplica la misma resolución dual y no conserva el audio. |
 | `GET /analyses/{analysisId}` | `STANDARD_SESSION` propia **o** `ADMIN_JWT` propietario | STANDARD se aísla por `session_id`; ADMIN por `user_id` y `session_id IS NULL`. Un recurso ajeno responde `404`. |
+| `GET /analyses/{analysisId}/report[.pdf]` | `STANDARD_SESSION` propia **o** `ADMIN_JWT` propietario | Misma precedencia Bearer y aislamiento que el análisis. Solo `COMPLETED`; no expone PII ni metadata IA. |
+| `/admin/report-disclaimers/**` | `ADMIN_JWT` | Gobierno del disclaimer institucional. El actor de auditoría se deriva del JWT; no acepta identidad en el body. |
 | `POST /users/identify` | `PUBLIC` | Solo reconoce el registro; DNI/CE no autentica. |
 | `POST /users` | `PUBLIC` | Registra un usuario STANDARD activo sin contraseña. |
 | `POST /users/login` | `PUBLIC` | Solo un ADMIN activo recibe JWT. |
@@ -74,7 +76,9 @@ Para STANDARD no existe:
 - historial visible de consultas;
 - recuperación de sesiones anteriores.
 
-El consentimiento de datos y el disclaimer orientativo son conceptos distintos. El consentimiento y el análisis de texto están implementados en F1.1 y F1.3, respectivamente; el disclaimer institucional permanece pendiente para F1.7.
+El consentimiento de datos y el disclaimer orientativo son conceptos distintos. El disclaimer de F1.7
+es contenido institucional versionado; cada análisis completado conserva su versión histórica y el
+reporte nunca utiliza automáticamente una versión activa posterior.
 
 ## Acceso ADMIN formalizado
 

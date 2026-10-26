@@ -1,6 +1,6 @@
 # Arquitectura de referencia de IDENTIPAT-IA
 
-**Estado:** arquitectura vigente y materializada hasta F1.6
+**Estado:** arquitectura vigente y materializada hasta F1.7
 **Versión:** 1.4
 **Última actualización:** 24 de octubre de 2026
 
@@ -10,7 +10,7 @@ Este documento describe la arquitectura lógica, los límites de responsabilidad
 
 La arquitectura ya no representa una propuesta previa a F0.3: la estabilización F0, el diseño F1.0 y las capacidades F1.1–F1.4 se encuentran materializadas en el backend. Cuando exista una discrepancia con diagnósticos históricos, prevalecen este documento, el código vigente y las especificaciones especializadas enlazadas desde aquí.
 
-Las entradas PDF y audio están implementadas; el reporte formal continúa pendiente en F1.7.
+Las entradas PDF y audio y el reporte formal JSON/PDF con disclaimer histórico están implementados.
 
 ## Componentes y comunicación
 
@@ -424,5 +424,6 @@ Cuando un usuario ya tenga sesiones, consentimientos, análisis u otra evidencia
 | F1.4 | Diagnóstico de propiedad intelectual | Implementada |
 | F1.5 | Entrada mediante PDF | Implementada |
 | F1.6 | Entrada mediante audio | Implementada |
-| F1.7–F1.9 | Reporte, recursos e integración E2E | Pendientes |
+| F1.7 | Reporte JSON/PDF y disclaimer institucional versionado | Implementada |
+| F1.8–F1.9 | Recursos e integración E2E | Pendientes |
 | F2 | Preparación para piloto y producción | Pendiente |

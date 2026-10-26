@@ -13,6 +13,12 @@ La API se documenta en tiempo de ejecución con `springdoc-openapi-starter-webmv
 
 La especificación define `bearerAuth` para ADMIN y `standardSession` para la cookie STANDARD. STANDARD no recibe JWT: usa `IDENTIPAT_STANDARD_SESSION` HttpOnly como capacidad temporal. `GET /standard-session/csrf` es público; `POST /standard-sessions` es público + CSRF pero solo crea sesiones para STANDARD activo. `POST /analyses/text`, `/pdf` y `/audio` admiten sesión + consentimiento + CSRF o Bearer ADMIN; `GET /analyses/{analysisId}` usa la misma sesión STANDARD o el ADMIN propietario. `POST /users/identify`, `POST /users` y `POST /users/login` conservan acceso público.
 
+Los reportes conservan esa resolución dual en `GET /analyses/{analysisId}/report` y
+`GET /analyses/{analysisId}/report.pdf`. Ambos responden solo para `COMPLETED`, envían
+`Cache-Control: no-store` y el PDF añade `Content-Disposition` y `X-Content-Type-Options: nosniff`.
+Los endpoints `/admin/report-disclaimers/**` requieren ADMIN JWT, no CSRF, y permiten listar,
+consultar, crear/editar DRAFT, clonar el ACTIVE y activar una versión.
+
 Swagger UI permite usar **Authorize** con el JWT emitido por el login administrativo. No se usa HTTP Basic.
 
 ## Listado administrativo de usuarios
@@ -75,6 +81,17 @@ El flujo STANDARD no usa Bearer token: primero **Recognize document** y, si apli
 | `POST /analyses/pdf` | Multipart `file`; mismo `202` después de extracción exitosa. STANDARD usa sesión/consentimiento/CSRF y ADMIN usa Bearer. |
 | `POST /analyses/audio` | Multipart `file`; mismo `202` después de transcripción local exitosa. STANDARD usa sesión/consentimiento/CSRF y ADMIN usa Bearer. |
 | `GET /analyses/{analysisId}` | `200` para la misma sesión STANDARD o el ADMIN propietario del análisis ADMIN. |
+| `GET /analyses/{analysisId}/report` | `DiagnosticReport` histórico; solo para `COMPLETED`. |
+| `GET /analyses/{analysisId}/report.pdf` | PDF en memoria con el mismo contenido y disclaimer histórico. |
+
+## Administración del disclaimer de reporte
+
+`GET /admin/report-disclaimers`, `/active` y `/{id}` consultan versiones; `POST` crea un DRAFT;
+`PUT /{id}` edita exclusivamente DRAFT; `POST /active/draft` clona el vigente y
+`POST /{id}/activate` retira el ACTIVE anterior y promueve el DRAFT. `title` se normaliza y admite
+1..120 caracteres; `content`, 1..5000. La identidad de auditoría siempre proviene del JWT.
+Los errores funcionales son `DISCLAIMER_NOT_FOUND` (404), `DISCLAIMER_IMMUTABLE` (409),
+`DISCLAIMER_ALREADY_ACTIVE` (409) e `INVALID_DISCLAIMER` (422).
 
 Las mutaciones anteriores, incluidos los POST bajo `/analyses/**` sin Bearer, requieren cookie `XSRF-TOKEN` y header `X-XSRF-TOKEN`; su ausencia o discordancia responde `403`. Con Bearer se eximen de CSRF y un token inválido nunca hace fallback a STANDARD. Spring Boot 3.2.12 resuelve Spring Security 6.2.8, por lo que se usa un handler SPA: valor plano para cookie/header y manejo XOR/BREACH para atributos de request.
 
