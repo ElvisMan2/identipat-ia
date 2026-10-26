@@ -29,6 +29,7 @@
         <springdoc.version>2.5.0</springdoc.version>
         <openai-java.version>4.63.1</openai-java.version>
         <json-schema-validator.version>1.0.88</json-schema-validator.version>
+        <pdfbox.version>3.0.3</pdfbox.version>
     </properties>
 
     <dependencies>
@@ -135,6 +136,11 @@
             <groupId>com.networknt</groupId>
             <artifactId>json-schema-validator</artifactId>
             <version>${json-schema-validator.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>${pdfbox.version}</version>
         </dependency>
     </dependencies>
 

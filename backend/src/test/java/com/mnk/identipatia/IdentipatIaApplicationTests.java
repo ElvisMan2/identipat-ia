@@ -77,7 +77,7 @@ class IdentipatIaApplicationTests {
     }
 
     @Test
-    void flywayAppliesV1V2AndV3ToFreshTestcontainerAndHibernateValidates() {
+    void flywayAppliesAllMigrationsToFreshTestcontainerAndHibernateValidates() {
         Integer usersTableCount = jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
                 FROM information_schema.tables
@@ -133,6 +133,13 @@ class IdentipatIaApplicationTests {
                 "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '3' AND success", Integer.class));
         assertEquals(1, jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '4' AND success", Integer.class));
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '5' AND success", Integer.class));
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM report_disclaimers WHERE status = 'ACTIVE'", Integer.class));
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'analysis_report_contexts'",
+                Integer.class));
         assertEquals("validate", environment.getRequiredProperty("spring.jpa.hibernate.ddl-auto"));
         assertFalse(environment.getRequiredProperty("spring.flyway.baseline-on-migrate", Boolean.class));
     }
@@ -185,6 +192,9 @@ class IdentipatIaApplicationTests {
         assertThat(api.at("/paths/~1standard-session/delete").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1analyses~1text/post").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1analyses~1{analysisId}/get").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1analyses~1{analysisId}~1report/get").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1analyses~1{analysisId}~1report.pdf/get").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1admin~1report-disclaimers/get").isMissingNode()).isFalse();
 
         assertThat(api.at("/paths/~1users~1identify/post/security").isMissingNode()).isTrue();
         assertThat(api.at("/paths/~1users/post/security").isMissingNode()).isTrue();
@@ -225,9 +235,10 @@ class IdentipatIaApplicationTests {
                 assertThat(requirement.has("bearerAuth")).isTrue());
 
         JsonNode recognitionProperties = api.at("/components/schemas/DocumentRecognitionResponse/properties");
-        assertThat(recognitionProperties.size()).isEqualTo(2);
+        assertThat(recognitionProperties.size()).isEqualTo(3);
         assertThat(recognitionProperties.has("registered")).isTrue();
         assertThat(recognitionProperties.has("passwordRequired")).isTrue();
+        assertThat(recognitionProperties.has("active")).isTrue();
 
         JsonNode registrationProperties = api.at("/components/schemas/StandardUserRegistrationRequest/properties");
         assertThat(registrationProperties.has("userType")).isFalse();

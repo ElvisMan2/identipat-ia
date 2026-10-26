@@ -636,7 +636,11 @@ La persistencia habilita evaluación, QA, métricas y auditoría internas futura
 
 ### F1.7
 
-- incorporar reporte web/PDF;
+- implementado `diagnostic-report/1.0` como proyección de presentación de resultados 1.0/2.0;
+- reporte JSON y PDF generado bajo demanda, sin segunda inferencia ni modificación del resultado;
+- disclaimer institucional histórico resuelto mediante `analysis_report_contexts`;
+- screening 15/20 anidado en patente, independiente si patente está ausente, u oculto si no aplica;
+- `warnings`, disclaimer y alcance permanecen en secciones distintas;
 - controlar y versionar el disclaimer institucional fuera de `warnings[]`.
 
 ### F2

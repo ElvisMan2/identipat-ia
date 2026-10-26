@@ -27,6 +27,7 @@ import com.mnk.identipatia.analysis.repository.AnalysisInputRepository;
 import com.mnk.identipatia.analysis.repository.AnalysisRepository;
 import com.mnk.identipatia.analysis.repository.StoredAnalysisResultRepository;
 import com.mnk.identipatia.analysis.result.AnalysisResult;
+import com.mnk.identipatia.reporting.service.AnalysisReportContextService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,6 +55,7 @@ public class AnalysisAttemptService {
     private final AnalysisProperties properties;
     private final ObjectMapper objectMapper;
     private final Clock clock;
+    private final AnalysisReportContextService reportContextService;
 
     public AnalysisAttemptService(
             AnalysisRepository analysisRepository,
@@ -64,7 +66,8 @@ public class AnalysisAttemptService {
             OutputSchemaRegistry schemaRegistry,
             AnalysisProperties properties,
             ObjectMapper objectMapper,
-            Clock clock) {
+            Clock clock,
+            AnalysisReportContextService reportContextService) {
         this.analysisRepository = analysisRepository;
         this.inputRepository = inputRepository;
         this.invocationRepository = invocationRepository;
@@ -74,6 +77,7 @@ public class AnalysisAttemptService {
         this.properties = properties;
         this.objectMapper = objectMapper;
         this.clock = clock;
+        this.reportContextService = reportContextService;
     }
 
     @Transactional
@@ -149,6 +153,8 @@ public class AnalysisAttemptService {
         stored.setResultJson(objectMapper.valueToTree(result));
         stored.setCreatedAt(now);
         resultRepository.save(stored);
+
+        reportContextService.bindToActiveDisclaimer(analysisId, now);
 
         analysis.setStatus(AnalysisStatus.COMPLETED);
         analysis.setCompletedAt(now);

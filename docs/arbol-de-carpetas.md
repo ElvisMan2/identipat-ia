@@ -133,8 +133,9 @@ identipat-ia/
 │   │   ├── text-analysis-flow.md
 │   │   └── preprocessing-service.md
 │   ├── design/
-│   │   ├── analysis-contract.md       # Contrato conceptual F1.0, aún no implementado
-│   │   └── analysis-domain.md         # Dominio y persistencia conceptual F1.0
+│   │   ├── analysis-contract.md       # Contratos canónicos versionados
+│   │   ├── analysis-domain.md         # Dominio y persistencia de análisis
+│   │   └── reporting-design.md        # Reporte F1.7 y disclaimer histórico
 │   ├── diagnostico-proyecto.md
 │   ├── roadmap-funcional.md
 │   └── security/
