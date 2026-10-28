@@ -36,6 +36,7 @@ export class App {
   readonly saving = signal(false);
   readonly registrationModal = signal<'registering' | 'success' | null>(null);
   readonly errorMessage = signal('');
+  readonly editErrorMessage = signal('');
   readonly analysesError = signal('');
   readonly editingUserId = signal<number | null>(null);
   readonly editingUserType = signal('STANDARD');
@@ -885,12 +886,41 @@ export class App {
     });
   }
 
+  deleteEditingUser(): void {
+    const userId = this.editingUserId();
+    if (userId === null) {
+      return;
+    }
+
+    const accepted = confirm(
+      `¿Eliminar al usuario #${userId}? Si tiene sesiones STANDARD, se conservará como inactivo.`
+    );
+    if (!accepted) {
+      return;
+    }
+
+    this.saving.set(true);
+    this.editErrorMessage.set('');
+    this.userService.delete(userId).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.cancelEdit();
+        this.loadUsers();
+      },
+      error: () => {
+        this.saving.set(false);
+        this.editErrorMessage.set('No se pudo eliminar o inactivar el usuario.');
+      }
+    });
+  }
+
   startEdit(user: User): void {
     if (!user.userId) {
       return;
     }
 
     this.editingUserId.set(user.userId);
+    this.editErrorMessage.set('');
     this.editingUserType.set(user.userType);
     this.showAdminPassword.set(false);
     const passwordControl = this.userForm.controls.password;
@@ -920,6 +950,7 @@ export class App {
 
   cancelEdit(): void {
     this.editingUserId.set(null);
+    this.editErrorMessage.set('');
     this.editingUserType.set('STANDARD');
     this.showAdminPassword.set(false);
     this.showEditModal.set(false);

@@ -377,6 +377,47 @@ describe('App', () => {
     httpTesting.expectOne(`${environment.apiBaseUrl}/users`).flush([]);
   });
 
+  it('should delete the edited user and reload the user list', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    const user = {
+      userId: 9,
+      firstName: 'Nombre',
+      paternalLastName: 'Apellido',
+      maternalLastName: 'Materno',
+      doi: '12345678',
+      doiType: 'DNI',
+      birthDate: '01/01/1990',
+      gender: 'FEMALE',
+      email: 'user@example.test',
+      phone: '016543210',
+      mobilePhone: '912345678',
+      userType: 'STANDARD',
+      profession: 'Profesión',
+      status: 'A'
+    };
+    spyOn(window, 'confirm').and.returnValue(true);
+    app.startEdit(user);
+
+    app.deleteEditingUser();
+
+    const deleteRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users/9`);
+    expect(deleteRequest.request.method).toBe('DELETE');
+    deleteRequest.flush(null, { status: 204, statusText: 'No Content' });
+
+    expect(app.showEditModal()).toBeFalse();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/users`).flush({
+      content: [],
+      page: 0,
+      size: 20,
+      totalElements: 0,
+      totalPages: 0,
+      first: true,
+      last: true
+    });
+  });
+
   it('should reactivate an inactive user through an update', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
