@@ -1,6 +1,6 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, of, switchMap } from 'rxjs';
+import { Observable, catchError, of, switchMap, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 interface CsrfResponse {
@@ -178,6 +178,21 @@ export class StandardAnalysisService {
       accessToken
         ? { headers: { Authorization: `Bearer ${accessToken}` } }
         : { withCredentials: true }
+    );
+  }
+
+  closeStandardSession(): Observable<void> {
+    return this.http.get<CsrfResponse>(`${this.endpoint}/standard-session/csrf`, {
+      withCredentials: true
+    }).pipe(
+      switchMap((csrf) => this.http.delete<void>(`${this.endpoint}/standard-session`, {
+        headers: { [csrf.headerName]: csrf.token },
+        withCredentials: true
+      }).pipe(catchError((error: unknown) =>
+        error instanceof HttpErrorResponse && error.status === 401
+          ? of(void 0)
+          : throwError(() => error)
+      )))
     );
   }
 

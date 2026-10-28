@@ -39,6 +39,50 @@ describe('App', () => {
     expect(compiled.textContent).not.toContain('Usuarios registrados');
   });
 
+  it('should close the STANDARD session before exiting without fetching the session', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.view.set('standard-result');
+
+    app.exitResult();
+
+    const csrfRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session/csrf`);
+    expect(csrfRequest.request.method).toBe('GET');
+    expect(csrfRequest.request.withCredentials).toBeTrue();
+    csrfRequest.flush({ token: 'csrf-token', headerName: 'X-XSRF-TOKEN' });
+
+    const closeRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session`);
+    expect(closeRequest.request.method).toBe('DELETE');
+    expect(closeRequest.request.headers.get('X-XSRF-TOKEN')).toBe('csrf-token');
+    expect(closeRequest.request.withCredentials).toBeTrue();
+    closeRequest.flush(null, { status: 204, statusText: 'No Content' });
+
+    httpTesting.expectNone(request =>
+      request.url === `${environment.apiBaseUrl}/standard-session` && request.method === 'GET'
+    );
+    expect(app.view()).toBe('home');
+    expect(app.navigationPending()).toBeNull();
+    expect(app.exitError()).toBe('');
+  });
+
+  it('should allow exiting when the STANDARD session has already expired', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.view.set('standard-result');
+
+    app.exitResult();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session/csrf`)
+      .flush({ token: 'csrf-token', headerName: 'X-XSRF-TOKEN' });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session`)
+      .flush({ code: 'STANDARD_SESSION_REQUIRED' }, { status: 401, statusText: 'Unauthorized' });
+
+    expect(app.view()).toBe('home');
+    expect(app.navigationPending()).toBeNull();
+    expect(app.exitError()).toBe('');
+  });
+
   it('should load and navigate paginated admin users', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;

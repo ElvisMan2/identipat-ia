@@ -288,6 +288,8 @@
       </section>
     }
 
+    @if (exitError()) { <p class="error" role="alert">{{ exitError() }}</p> }
+
     <section class="analysis-shell">
       <div class="analysis-heading">
         <p class="eyebrow">Análisis de tu creación</p>
@@ -380,6 +382,8 @@
         </div>
       </section>
     }
+
+    @if (exitError()) { <p class="error" role="alert">{{ exitError() }}</p> }
 
     <section class="analysis-shell">
       @if (analysisResult()?.status === 'COMPLETED' && analysisResult()?.result; as result) {

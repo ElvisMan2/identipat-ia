@@ -48,6 +48,7 @@ export class App {
   readonly authenticating = signal(false);
   readonly adminAuthenticated = signal(false);
   readonly navigationPending = signal<'admin' | 'predictions' | 'exit' | null>(null);
+  readonly exitError = signal('');
   readonly accessMessage = signal('');
   readonly savingProfile = signal(false);
   readonly profileMessage = signal('');
@@ -290,11 +291,35 @@ export class App {
   }
 
   exitAnalysis(): void {
-    this.scheduleNavigation('exit', () => this.backHome());
+    this.exitWithSessionClose(() => this.backHome());
   }
 
   exitResult(): void {
-    this.scheduleNavigation('exit', () => this.exitSession());
+    this.exitWithSessionClose(() => this.exitSession());
+  }
+
+  private exitWithSessionClose(navigate: () => void): void {
+    if (this.adminAuthenticated()) {
+      this.scheduleNavigation('exit', navigate);
+      return;
+    }
+
+    if (this.navigationPending()) {
+      return;
+    }
+
+    this.navigationPending.set('exit');
+    this.exitError.set('');
+    this.standardAnalysisService.closeStandardSession().subscribe({
+      next: () => {
+        this.navigationPending.set(null);
+        navigate();
+      },
+      error: () => {
+        this.navigationPending.set(null);
+        this.exitError.set('No se pudo cerrar la sesión. Comprueba tu conexión e inténtalo nuevamente.');
+      }
+    });
   }
 
   openRegistration(): void {
