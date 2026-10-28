@@ -3,6 +3,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { App } from './app';
+import { AdminAnalysisService } from './services/admin-analysis.service';
+import { StandardAnalysisService } from './services/standard-analysis.service';
 import { UserService } from './services/user.service';
 import { environment } from '../environments/environment';
 
@@ -18,6 +20,42 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     expect(app).toBeTruthy();
+  });
+
+  it('should fetch an admin diagnostic report by analysis id', () => {
+    const service = TestBed.inject(AdminAnalysisService);
+    const httpTesting = TestBed.inject(HttpTestingController);
+    service.setAccessToken('test-token');
+
+    service.getReport('analysis-123').subscribe();
+
+    const reportRequest = httpTesting.expectOne(
+      `${environment.apiBaseUrl}/analyses/analysis-123/report`
+    );
+    expect(reportRequest.request.method).toBe('GET');
+    expect(reportRequest.request.headers.get('Authorization')).toBe('Bearer test-token');
+    reportRequest.flush({});
+  });
+
+  it('should request a report PDF with ADMIN bearer or STANDARD session credentials', () => {
+    const service = TestBed.inject(StandardAnalysisService);
+    const httpTesting = TestBed.inject(HttpTestingController);
+
+    service.getReportPdf('admin-analysis', 'test-token').subscribe();
+    const adminRequest = httpTesting.expectOne(
+      `${environment.apiBaseUrl}/analyses/admin-analysis/report.pdf`
+    );
+    expect(adminRequest.request.method).toBe('GET');
+    expect(adminRequest.request.responseType).toBe('blob');
+    expect(adminRequest.request.headers.get('Authorization')).toBe('Bearer test-token');
+    adminRequest.flush(new Blob(['pdf'], { type: 'application/pdf' }));
+
+    service.getReportPdf('standard-analysis').subscribe();
+    const standardRequest = httpTesting.expectOne(
+      `${environment.apiBaseUrl}/analyses/standard-analysis/report.pdf`
+    );
+    expect(standardRequest.request.withCredentials).toBeTrue();
+    standardRequest.flush(new Blob(['pdf'], { type: 'application/pdf' }));
   });
 
   it('should remove non-numeric characters from a DNI during registration', () => {

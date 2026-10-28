@@ -181,6 +181,14 @@ export class StandardAnalysisService {
     );
   }
 
+  getReportPdf(analysisId: string, accessToken = ''): Observable<Blob> {
+    const url = `${this.endpoint}/analyses/${encodeURIComponent(analysisId)}/report.pdf`;
+    return this.http.get(url, accessToken
+      ? { headers: { Authorization: `Bearer ${accessToken}` }, responseType: 'blob' }
+      : { withCredentials: true, responseType: 'blob' }
+    );
+  }
+
   closeStandardSession(): Observable<void> {
     return this.http.get<CsrfResponse>(`${this.endpoint}/standard-session/csrf`, {
       withCredentials: true

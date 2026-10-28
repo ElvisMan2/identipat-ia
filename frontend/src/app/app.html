@@ -412,8 +412,14 @@
               <p class="eyebrow">Resultado del análisis</p>
               <h1>Orientación sobre tu creación</h1>
             </div>
-            <span class="result-status">Análisis completado</span>
+            <div class="result-download-actions">
+              <span class="result-status">Análisis completado</span>
+              <button class="outline-button" type="button" (click)="downloadReportPdf()" [disabled]="downloadingReportPdf()">
+                {{ downloadingReportPdf() ? 'Descargando PDF...' : 'Descargar reporte PDF' }}
+              </button>
+            </div>
           </div>
+          @if (reportPdfError()) { <p class="error" role="alert">{{ reportPdfError() }}</p> }
 
           <article class="result-section result-summary">
             <h2>Resumen</h2>

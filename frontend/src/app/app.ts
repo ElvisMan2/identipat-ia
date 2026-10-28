@@ -61,6 +61,8 @@ export class App {
   readonly submittingAnalysis = signal(false);
   readonly analysisMessage = signal('');
   readonly analysisResult = signal<AnalysisResponse | null>(null);
+  readonly downloadingReportPdf = signal(false);
+  readonly reportPdfError = signal('');
   readonly selectedPdf = signal<File | null>(null);
   readonly selectedAudio = signal<File | null>(null);
   readonly recordingAudio = signal(false);
@@ -823,6 +825,32 @@ export class App {
     link.download = `analysis-${analysisId}.json`;
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  downloadReportPdf(): void {
+    const analysisId = this.analysisResult()?.analysisId;
+    if (!analysisId || this.downloadingReportPdf()) {
+      return;
+    }
+
+    const accessToken = this.adminAuthenticated() ? this.userService.getAccessToken() : '';
+    this.downloadingReportPdf.set(true);
+    this.reportPdfError.set('');
+    this.standardAnalysisService.getReportPdf(analysisId, accessToken).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const link = this.document.createElement('a');
+        link.href = url;
+        link.download = `identipat-diagnostico-${analysisId}.pdf`;
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(url));
+        this.downloadingReportPdf.set(false);
+      },
+      error: () => {
+        this.downloadingReportPdf.set(false);
+        this.reportPdfError.set('No se pudo descargar el reporte PDF. Inténtalo nuevamente.');
+      }
+    });
   }
 
   private pollAnalysis(analysisId: string, accessToken = ''): void {

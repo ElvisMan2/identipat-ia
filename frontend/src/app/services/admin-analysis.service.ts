@@ -16,12 +16,36 @@ export interface AdminAnalysis {
   summary: string | null;
 }
 
+export interface DiagnosticReport {
+  reportVersion: string;
+  analysisId: string;
+  sourceResultVersion: string;
+  inputType: string;
+  analysisCompletedAt: string;
+  title: string;
+  summary: string;
+  applicabilityNote: string;
+  protectionOptions: unknown[];
+  patentScreening: unknown;
+  geneticResourceAccess: unknown;
+  historicalPatentability: unknown;
+  observations: string[];
+  warnings: string[];
+  scope: string;
+  disclaimer: {
+    id: string;
+    version: number;
+    title: string;
+    content: string;
+  };
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class AdminAnalysisService {
   private readonly http = inject(HttpClient);
-  private readonly endpoint = `${environment.apiBaseUrl}/admin/analyses`;
+  private readonly endpoint = `${environment.apiBaseUrl}/analyses`;
   private accessToken = '';
 
   setAccessToken(accessToken: string): void {
@@ -32,8 +56,9 @@ export class AdminAnalysisService {
     this.accessToken = '';
   }
 
-  findAll(): Observable<AdminAnalysis[]> {
-    return this.http.get<AdminAnalysis[]>(this.endpoint, {
+  getReport(analysisId: string): Observable<DiagnosticReport> {
+    return this.http.get<DiagnosticReport>(
+      `${this.endpoint}/${encodeURIComponent(analysisId)}/report`, {
       headers: { Authorization: `Bearer ${this.accessToken}` }
     });
   }
