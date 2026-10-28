@@ -407,7 +407,9 @@ describe('App', () => {
     deleteRequest.flush(null, { status: 204, statusText: 'No Content' });
 
     expect(app.showEditModal()).toBeFalse();
-    httpTesting.expectOne(`${environment.apiBaseUrl}/users`).flush({
+    httpTesting.expectOne(request =>
+      request.url === `${environment.apiBaseUrl}/users` && request.method === 'GET'
+    ).flush({
       content: [],
       page: 0,
       size: 20,
@@ -449,7 +451,7 @@ describe('App', () => {
     httpTesting.expectOne(`${environment.apiBaseUrl}/users`).flush([]);
   });
 
-  it('should update the authenticated administrator password', () => {
+  it('should update the administrator password from the security form', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     const httpTesting = TestBed.inject(HttpTestingController);
@@ -469,18 +471,37 @@ describe('App', () => {
       profession: 'Administrador',
       status: 'A'
     };
-    app.accessForm.setValue({ doi: admin.doi, doiType: admin.doiType });
-    app.users.set([admin]);
-    app.passwordForm.setValue({ newPassword: 'new-secret', confirmPassword: 'new-secret' });
+    app.adminProfile.set(admin);
+    app.view.set('admin');
+    app.adminSection.set('profile');
+    app.profileForm.setValue({
+      firstName: admin.firstName,
+      paternalLastName: admin.paternalLastName,
+      maternalLastName: admin.maternalLastName,
+      birthDate: '1990-01-01',
+      gender: admin.gender,
+      email: admin.email,
+      phone: admin.phone,
+      mobilePhone: admin.mobilePhone,
+      profession: admin.profession
+    });
+    app.securityForm.setValue({ password: 'new-secret', confirmPassword: 'different-secret' });
 
-    app.changeAdminPassword();
+    app.updateAdminPassword();
+    expect(app.passwordMessage()).toBe('Las contraseñas no coinciden.');
+
+    app.securityForm.controls.confirmPassword.setValue('new-secret');
+    app.updateAdminPassword();
 
     const updateRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users/admin/1`);
     expect(updateRequest.request.method).toBe('PUT');
     expect(updateRequest.request.body).toEqual({ ...admin, password: 'new-secret' });
     updateRequest.flush(admin);
-    expect(app.passwordMessage()).toBe('Contraseña actualizada correctamente.');
-    expect(app.passwordForm.getRawValue()).toEqual({ newPassword: '', confirmPassword: '' });
+    expect(app.securityForm.controls.password.value).toBe('');
+    expect(app.securityForm.controls.confirmPassword.value).toBe('');
+    expect(app.passwordSuccessModal()).toBeTrue();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('La contraseña se actualizó correctamente.');
   });
 
   it('should assign the default admin password when changing the edit form user type', () => {
@@ -511,36 +532,87 @@ describe('App', () => {
     expect(app.userForm.controls.password.valid).toBeTrue();
   });
 
-  it('should toggle visibility of the admin password in the edit form', () => {
+  it('should edit an existing admin without exposing or updating their password', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
-    const user = {
+    const httpTesting = TestBed.inject(HttpTestingController);
+    const admin = {
       userId: 11,
-      firstName: 'Usuario',
-      paternalLastName: 'Estándar',
-      maternalLastName: 'Prueba',
-      doi: '11223344',
+      firstName: 'Admin',
+      paternalLastName: 'Principal',
+      maternalLastName: 'Sistema',
+      doi: '12345678',
       doiType: 'DNI',
       birthDate: '01/01/1990',
       gender: 'FEMALE',
-      email: 'standard@example.test',
+      email: 'admin@example.test',
       phone: '016543210',
       mobilePhone: '912345678',
-      userType: 'STANDARD',
-      profession: 'Profesional',
+      userType: 'ADMIN',
+      profession: 'Administrador',
       status: 'A'
     };
-    app.startEdit(user);
-    app.changeEditingUserType({ target: { value: 'ADMIN' } } as unknown as Event);
+
+    app.view.set('admin');
+    app.adminSection.set('users');
+    app.startEdit(admin);
     fixture.detectChanges();
 
-    const passwordInput = fixture.nativeElement.querySelector('[formControlName="password"]') as HTMLInputElement;
-    const visibilityButton = fixture.nativeElement.querySelector('.password-visibility') as HTMLButtonElement;
+    expect(fixture.nativeElement.querySelector('.modal-panel input[type="password"]')).toBeNull();
+    expect(app.userForm.controls.password.valid).toBeTrue();
+    expect(app.userForm.controls.doi.disabled).toBeTrue();
+    app.userForm.controls.firstName.setValue('Admin actualizado');
+    app.submit();
+
+    const updateRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users/11`);
+    expect(updateRequest.request.method).toBe('PUT');
+    expect(updateRequest.request.body.password).toBeUndefined();
+    updateRequest.flush(admin);
+    httpTesting.expectOne(request =>
+      request.url === `${environment.apiBaseUrl}/users` && request.method === 'GET'
+    ).flush({
+      content: [],
+      page: 0,
+      size: 20,
+      totalElements: 0,
+      totalPages: 0,
+      first: true,
+      last: true
+    });
+  });
+
+  it('should toggle visibility of the administrator security password with its checkbox', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const admin = {
+      userId: 11,
+      firstName: 'Admin',
+      paternalLastName: 'Principal',
+      maternalLastName: 'Sistema',
+      doi: '12345678',
+      doiType: 'DNI',
+      birthDate: '01/01/1990',
+      gender: 'OTHER',
+      email: 'admin@example.test',
+      phone: '016543210',
+      mobilePhone: '912345678',
+      userType: 'ADMIN',
+      profession: 'Administrador',
+      status: 'A'
+    };
+    app.adminProfile.set(admin);
+    app.view.set('admin');
+    app.adminSection.set('profile');
+    app.securityForm.controls.password.setValue('admin-secret');
+    fixture.detectChanges();
+
+    const passwordInput = fixture.nativeElement.querySelector('#profile-password') as HTMLInputElement;
+    const visibilityCheckbox = fixture.nativeElement.querySelector('.terms-checkbox input[type="checkbox"]') as HTMLInputElement;
     expect(passwordInput.type).toBe('password');
-    visibilityButton.click();
+    visibilityCheckbox.click();
     fixture.detectChanges();
 
     expect(passwordInput.type).toBe('text');
-    expect(visibilityButton.getAttribute('aria-pressed')).toBe('true');
+    expect(visibilityCheckbox.checked).toBeTrue();
   });
 });

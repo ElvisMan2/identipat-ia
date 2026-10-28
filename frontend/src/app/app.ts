@@ -40,6 +40,7 @@ export class App {
   readonly analysesError = signal('');
   readonly editingUserId = signal<number | null>(null);
   readonly editingUserType = signal('STANDARD');
+  readonly editingOriginalUserType = signal('STANDARD');
   readonly showAdminPassword = signal(false);
   readonly showEditModal = signal(false);
   readonly adminSection = signal<'users' | 'predictions' | 'profile'>('users');
@@ -53,6 +54,9 @@ export class App {
   readonly accessMessage = signal('');
   readonly savingProfile = signal(false);
   readonly profileMessage = signal('');
+  readonly savingPassword = signal(false);
+  readonly passwordMessage = signal('');
+  readonly passwordSuccessModal = signal(false);
   readonly adminProfile = signal<User | null>(null);
   readonly submittingAnalysis = signal(false);
   readonly analysisMessage = signal('');
@@ -149,6 +153,11 @@ export class App {
     profession: ['', [Validators.required]]
   });
 
+  readonly securityForm = this.fb.nonNullable.group({
+    password: [''],
+    confirmPassword: ['']
+  }, { validators: this.passwordMatchValidator });
+
   readonly analysisForm = this.fb.nonNullable.group({
     description: ['', [Validators.required, Validators.minLength(20), Validators.maxLength(20000)]]
   });
@@ -161,6 +170,12 @@ export class App {
     const doiType = control.parent?.get('doiType')?.value;
     const pattern = doiType === 'DNI' ? /^\d{8}$/ : /^\d{6,11}$/;
     return pattern.test(control.value) ? null : { doiFormat: true };
+  }
+
+  private passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
+    const password = control.get('password')?.value ?? '';
+    const confirmPassword = control.get('confirmPassword')?.value ?? '';
+    return password === confirmPassword ? null : { passwordMismatch: true };
   }
 
   private dateValidator(control: AbstractControl): ValidationErrors | null {
@@ -573,15 +588,27 @@ export class App {
     this.editingUserType.set(userType);
     const passwordControl = this.userForm.controls.password;
     if (userType === 'ADMIN') {
-      if (!wasAdmin) {
+      const passwordRequired = this.editingOriginalUserType() !== 'ADMIN';
+      if (!wasAdmin && passwordRequired) {
         passwordControl.setValue(this.defaultAdminPassword);
       }
-      passwordControl.setValidators([Validators.required]);
+      if (passwordRequired) {
+        passwordControl.setValidators([Validators.required]);
+      } else {
+        passwordControl.clearValidators();
+      }
     } else {
       passwordControl.setValue('');
       passwordControl.clearValidators();
     }
     passwordControl.updateValueAndValidity({ emitEvent: false });
+    if (this.editingOriginalUserType() === 'ADMIN' && userType === 'ADMIN') {
+      this.userForm.controls.doi.disable({ emitEvent: false });
+      this.userForm.controls.doiType.disable({ emitEvent: false });
+    } else {
+      this.userForm.controls.doi.enable({ emitEvent: false });
+      this.userForm.controls.doiType.enable({ emitEvent: false });
+    }
   }
 
   toggleAdminPasswordVisibility(): void {
@@ -863,15 +890,18 @@ export class App {
 
     const formValue = this.userForm.getRawValue();
     const registrationPayload = this.registrationPayload();
+    const userData = { ...registrationPayload, userType: this.editingUserType() };
 
     this.saving.set(true);
     this.errorMessage.set('');
 
-    const request$: Observable<unknown> = this.userService.update(userId, {
-      ...registrationPayload,
-      userType: this.editingUserType(),
-      password: formValue.password || undefined
-    });
+    const request$: Observable<unknown> = this.editingOriginalUserType() === 'ADMIN'
+      && this.editingUserType() === 'ADMIN'
+      ? this.userService.updateProfile(userId, userData)
+      : this.userService.update(userId, {
+        ...userData,
+        password: formValue.password || undefined
+      });
 
     request$.subscribe({
       next: () => {
@@ -922,14 +952,18 @@ export class App {
     this.editingUserId.set(user.userId);
     this.editErrorMessage.set('');
     this.editingUserType.set(user.userType);
+    this.editingOriginalUserType.set(user.userType);
     this.showAdminPassword.set(false);
     const passwordControl = this.userForm.controls.password;
-    if (user.userType === 'ADMIN') {
-      passwordControl.setValidators([Validators.required]);
-    } else {
-      passwordControl.clearValidators();
-    }
+    passwordControl.clearValidators();
     passwordControl.updateValueAndValidity({ emitEvent: false });
+    if (user.userType === 'ADMIN') {
+      this.userForm.controls.doi.disable({ emitEvent: false });
+      this.userForm.controls.doiType.disable({ emitEvent: false });
+    } else {
+      this.userForm.controls.doi.enable({ emitEvent: false });
+      this.userForm.controls.doiType.enable({ emitEvent: false });
+    }
     this.userForm.setValue({
       firstName: user.firstName,
       paternalLastName: user.paternalLastName,
@@ -952,8 +986,11 @@ export class App {
     this.editingUserId.set(null);
     this.editErrorMessage.set('');
     this.editingUserType.set('STANDARD');
+    this.editingOriginalUserType.set('STANDARD');
     this.showAdminPassword.set(false);
     this.showEditModal.set(false);
+    this.userForm.controls.doi.enable({ emitEvent: false });
+    this.userForm.controls.doiType.enable({ emitEvent: false });
     this.userForm.controls.password.clearValidators();
     this.userForm.controls.password.updateValueAndValidity({ emitEvent: false });
     this.userForm.reset({
@@ -1006,6 +1043,9 @@ export class App {
 
   private loadProfileForm(): void {
     this.profileMessage.set('');
+    this.passwordMessage.set('');
+    this.showAdminPassword.set(false);
+    this.securityForm.reset({ password: '', confirmPassword: '' });
     const admin = this.currentAdmin();
     if (!admin) {
       return;
@@ -1037,18 +1077,26 @@ export class App {
       return;
     }
 
-    this.savingProfile.set(true);
-    this.profileMessage.set('');
-    this.userService.updateProfile(admin.userId, {
-      userId: admin.userId,
+    const formValue = this.profileForm.getRawValue();
+    const profileData: User = {
       ...admin,
-      ...this.profileForm.getRawValue(),
+      firstName: formValue.firstName,
+      paternalLastName: formValue.paternalLastName,
+      maternalLastName: formValue.maternalLastName,
       birthDate: this.toBackendDate(this.profileForm.controls.birthDate.value),
+      gender: formValue.gender,
+      email: formValue.email,
+      phone: formValue.phone,
+      mobilePhone: formValue.mobilePhone,
+      profession: formValue.profession,
       doi: admin.doi,
       doiType: admin.doiType,
       userType: admin.userType,
       status: admin.status
-    }).subscribe({
+    };
+    this.savingProfile.set(true);
+    this.profileMessage.set('');
+    this.userService.updateProfile(admin.userId, profileData).subscribe({
       next: () => {
         this.savingProfile.set(false);
         this.profileMessage.set('Tus datos se actualizaron correctamente.');
@@ -1059,6 +1107,45 @@ export class App {
         this.profileMessage.set('No se pudo actualizar tu información.');
       }
     });
+  }
+
+  updateAdminPassword(): void {
+    const admin = this.currentAdmin();
+    if (!admin?.userId) {
+      this.passwordMessage.set('No se pudo identificar al administrador autenticado.');
+      return;
+    }
+
+    if (this.securityForm.invalid || !this.securityForm.controls.password.value.trim()) {
+      this.securityForm.markAllAsTouched();
+      this.passwordMessage.set(this.securityForm.hasError('passwordMismatch')
+        ? 'Las contraseñas no coinciden.'
+        : 'Ingresa y confirma la nueva contraseña.');
+      return;
+    }
+
+    this.savingPassword.set(true);
+    this.passwordMessage.set('');
+    this.userService.update(admin.userId, {
+      ...admin,
+      password: this.securityForm.controls.password.value
+    }).subscribe({
+      next: () => {
+        this.savingPassword.set(false);
+        this.passwordSuccessModal.set(true);
+        this.securityForm.reset({ password: '', confirmPassword: '' });
+        this.showAdminPassword.set(false);
+      },
+      error: () => {
+        this.savingPassword.set(false);
+        this.passwordMessage.set('No se pudo actualizar la contraseña.');
+      }
+    });
+  }
+
+  closePasswordSuccessModal(): void {
+    this.passwordSuccessModal.set(false);
+    this.document.defaultView?.location.reload();
   }
 
   private registrationPayload(): StandardUserRegistrationRequest {
