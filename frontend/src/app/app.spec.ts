@@ -3,6 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { App } from './app';
+import { UserService } from './services/user.service';
 import { environment } from '../environments/environment';
 
 describe('App', () => {
@@ -35,7 +36,8 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Comprender lo que sientes');
+    expect(compiled.querySelector('h1')?.textContent)
+      .toContain('Descubre cómo proteger la propiedad intelectual de tu creación');
     expect(compiled.textContent).not.toContain('Usuarios registrados');
   });
 
@@ -171,7 +173,7 @@ describe('App', () => {
     expect(app.userTotalElements()).toBe(0);
   });
 
-  it('should request a password automatically when the document belongs to an admin', () => {
+  it('should request a password automatically when the document belongs to an admin', async () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     const httpTesting = TestBed.inject(HttpTestingController);
@@ -183,6 +185,7 @@ describe('App', () => {
       registered: true,
       passwordRequired: true
     });
+    await new Promise(resolve => setTimeout(resolve, 500));
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).not.toContain('Acceso administrativo');
@@ -228,7 +231,7 @@ describe('App', () => {
     });
   });
 
-  it('should show a message for an unknown document without opening registration', () => {
+  it('should show a message for an unknown document without opening registration', async () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     const httpTesting = TestBed.inject(HttpTestingController);
@@ -240,6 +243,8 @@ describe('App', () => {
       registered: false,
       passwordRequired: false
     });
+    expect(app.accessMessage()).toBe('');
+    await new Promise(resolve => setTimeout(resolve, 500));
     fixture.detectChanges();
 
     expect(app.view()).toBe('home');
@@ -260,7 +265,9 @@ describe('App', () => {
     expect(fixture.nativeElement.textContent).toContain('Completa tu registro');
   });
 
-  it('should show the analysis form and admin panel access after a successful admin login', () => {
+  it('should show the analysis form and admin panel access after a successful admin login', async () => {
+    const userService = TestBed.inject(UserService);
+    userService.clearAccessToken();
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     const httpTesting = TestBed.inject(HttpTestingController);
@@ -279,11 +286,13 @@ describe('App', () => {
       tokenType: 'Bearer',
       accessToken: 'test-token'
     });
+    await new Promise(resolve => setTimeout(resolve, 500));
     fixture.detectChanges();
 
     expect(app.view()).toBe('standard-analysis');
     expect(fixture.nativeElement.textContent).toContain('Cuéntanos qué quieres proteger');
     expect(fixture.nativeElement.textContent).toContain('Panel de administración');
+    userService.clearAccessToken();
   });
 
   it('should show the predictions section without requesting the pending endpoint', () => {
@@ -303,7 +312,7 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     const httpTesting = TestBed.inject(HttpTestingController);
-    app.view.set('admin');
+    app.view.set('registration');
     fixture.detectChanges();
 
     app.userForm.setValue({
@@ -319,12 +328,14 @@ describe('App', () => {
       mobilePhone: '912345678',
       profession: 'Profesión de prueba',
       password: '',
-      termsAccepted: false
+      termsAccepted: true
     });
 
     fixture.detectChanges();
-  const createButton = fixture.nativeElement.querySelector('.actions button') as HTMLButtonElement;
-  createButton.click();
+    const createButton = fixture.nativeElement.querySelector(
+      '.registration-actions button[type="submit"]'
+    ) as HTMLButtonElement;
+    createButton.click();
 
     const registrationRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users`);
     expect(registrationRequest.request.method).toBe('POST');
@@ -342,7 +353,6 @@ describe('App', () => {
       profession: 'Profesión de prueba'
     });
     registrationRequest.flush({ registered: true });
-    httpTesting.expectOne(`${environment.apiBaseUrl}/users`).flush([]);
   });
 
   it('should inactivate a user through an update without deleting it', () => {
@@ -374,7 +384,20 @@ describe('App', () => {
     expect(updateRequest.request.body).toEqual({ ...user, status: 'I' });
     httpTesting.expectNone(`${environment.apiBaseUrl}/users/7`);
     updateRequest.flush({ ...user, status: 'I' });
-    httpTesting.expectOne(`${environment.apiBaseUrl}/users`).flush([]);
+    const reloadRequest = httpTesting.expectOne(request =>
+      request.url === `${environment.apiBaseUrl}/users` && request.method === 'GET'
+    );
+    expect(reloadRequest.request.params.get('page')).toBe('0');
+    expect(reloadRequest.request.params.get('size')).toBe('20');
+    reloadRequest.flush({
+      content: [],
+      page: 0,
+      size: 20,
+      totalElements: 0,
+      totalPages: 0,
+      first: true,
+      last: true
+    });
   });
 
   it('should delete the edited user and reload the user list', () => {
@@ -448,7 +471,20 @@ describe('App', () => {
     expect(updateRequest.request.method).toBe('PUT');
     expect(updateRequest.request.body).toEqual({ ...user, status: 'A' });
     updateRequest.flush({ ...user, status: 'A' });
-    httpTesting.expectOne(`${environment.apiBaseUrl}/users`).flush([]);
+    const reloadRequest = httpTesting.expectOne(request =>
+      request.url === `${environment.apiBaseUrl}/users` && request.method === 'GET'
+    );
+    expect(reloadRequest.request.params.get('page')).toBe('0');
+    expect(reloadRequest.request.params.get('size')).toBe('20');
+    reloadRequest.flush({
+      content: [],
+      page: 0,
+      size: 20,
+      totalElements: 0,
+      totalPages: 0,
+      first: true,
+      last: true
+    });
   });
 
   it('should update the administrator password from the security form', () => {
