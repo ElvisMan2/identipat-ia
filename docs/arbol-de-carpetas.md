@@ -34,6 +34,12 @@ identipat-ia/
 │   │   │   │   │   ├── prompt/      # Registry, renderer y hashes
 │   │   │   │   │   ├── schema/      # Registry y validación JSON Schema
 │   │   │   │   │   └── provider/openai/ # Único boundary del SDK OpenAI
+│   │   │   │   ├── guidance/           # Catálogo F1.8, sanitización, API ADMIN y /guidance
+│   │   │   │   │   ├── controller/
+│   │   │   │   │   ├── dto/
+│   │   │   │   │   ├── model/
+│   │   │   │   │   ├── repository/
+│   │   │   │   │   └── service/
 │   │   │   │   ├── advice/
 │   │   │   │   │   └── GlobalExceptionHandler.java
 │   │   │   │   ├── config/
@@ -84,7 +90,11 @@ identipat-ia/
 │   │   │       │   └── migration/
 │   │   │       │       ├── V1__baseline_schema.sql
 │   │   │       │       ├── V2__standard_sessions_and_consent.sql
-│   │   │       │       └── V3__analysis_domain.sql
+│   │   │       │       ├── V3__analysis_domain.sql
+│   │   │       │       ├── V4__admin_analysis_access.sql
+│   │   │       │       ├── V5__diagnostic_reporting.sql
+│   │   │       │       ├── V6__protection_guidance_catalog.sql
+│   │   │       │       └── V7__seed_protection_guidance_catalog.sql
 │   │   │       ├── prompts/intellectual-property-analysis/v0.1/
 │   │   │       │   ├── system.md
 │   │   │       │   └── user.md
@@ -108,6 +118,8 @@ identipat-ia/
 │   │           │   └── SecurityConfigTest.java
 │   │           ├── ai/               # Contratos, prompts, schemas, config y adapter OpenAI
 │   │           ├── analysis/         # E2E, contratos, claim, retry, recovery y rechazo local
+│   │           ├── guidance/         # Sanitización, lifecycle, migración, guidance y concurrencia
+│   │           ├── reporting/        # Reporte web/PDF y disclaimer histórico
 │   │           ├── controller/
 │   │           │   └── UserSecurityWebMvcTest.java
 │   │           ├── dto/
@@ -135,7 +147,8 @@ identipat-ia/
 │   ├── design/
 │   │   ├── analysis-contract.md       # Contratos canónicos versionados
 │   │   ├── analysis-domain.md         # Dominio y persistencia de análisis
-│   │   └── reporting-design.md        # Reporte F1.7 y disclaimer histórico
+│   │   ├── guidance-design.md          # Catálogo enriquecido y guidance F1.8
+│   │   └── reporting-design.md         # Reporte F1.7 y disclaimer histórico
 │   ├── diagnostico-proyecto.md
 │   ├── roadmap-funcional.md
 │   └── security/

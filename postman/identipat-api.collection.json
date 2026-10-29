@@ -473,6 +473,15 @@
             "url": "{{baseUrl}}/analyses/{{analysisId}}/report.pdf",
             "description": "Descarga el PDF generado en memoria desde el mismo reporte canónico."
           }
+        },
+        {
+          "name": "Get analysis guidance",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{baseUrl}}/analyses/{{analysisId}}/guidance",
+            "description": "Resuelve analysis-guidance/1.0 con el catálogo ACTIVE vigente para la sesión propietaria."
+          }
         }
       ]
     },
@@ -494,6 +503,14 @@
             "method": "GET",
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
             "url": "{{baseUrl}}/analyses/{{adminAnalysisId}}/report.pdf"
+          }
+        },
+        {
+          "name": "Get analysis guidance",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/analyses/{{adminAnalysisId}}/guidance"
           }
         },
         {
@@ -555,6 +572,74 @@
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
             "url": "{{baseUrl}}/admin/report-disclaimers/{{disclaimerId}}/activate",
             "description": "Retira la versión ACTIVE anterior y activa este DRAFT de forma transaccional."
+          }
+        },
+        {
+          "name": "List protection guides",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/admin/protection-guides"
+          }
+        },
+        {
+          "name": "Get active protection guide",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/admin/protection-guides/active/UTILITY_MODEL"
+          }
+        },
+        {
+          "name": "Get protection guide",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/admin/protection-guides/{{protectionGuideId}}"
+          }
+        },
+        {
+          "name": "Create protection guide DRAFT",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "body": { "mode": "raw", "raw": "{\n  \"protectionType\": \"UTILITY_MODEL\",\n  \"shortDescription\": \"Protege mejoras en la forma o disposición de objetos que aportan una ventaja práctica.\",\n  \"nextStepsContentHtml\": \"<h3>Requisitos a preparar</h3><ul><li>Contenido institucional de prueba.</li></ul>\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/admin/protection-guides"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Protection guide draft is created', function () { pm.response.to.have.status(201); });",
+            "const body = pm.response.json(); if (body.guideId) { pm.collectionVariables.set('protectionGuideId', body.guideId); }"
+          ] } }]
+        },
+        {
+          "name": "Clone ACTIVE protection guide to DRAFT",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/admin/protection-guides/active/UTILITY_MODEL/draft"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Active guide is cloned', function () { pm.response.to.have.status(201); });",
+            "const body = pm.response.json(); if (body.guideId) { pm.collectionVariables.set('protectionGuideId', body.guideId); }"
+          ] } }]
+        },
+        {
+          "name": "Update protection guide DRAFT",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "body": { "mode": "raw", "raw": "{\n  \"shortDescription\": \"Protege mejoras en la forma o disposición de objetos que aportan una ventaja práctica.\",\n  \"nextStepsContentHtml\": \"<h3>Cómo avanzar</h3><ol><li>Contenido institucional actualizado.</li></ol>\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/admin/protection-guides/{{protectionGuideId}}"
+          }
+        },
+        {
+          "name": "Activate protection guide",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/admin/protection-guides/{{protectionGuideId}}/activate"
           }
         }
       ]

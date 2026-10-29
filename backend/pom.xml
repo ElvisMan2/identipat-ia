@@ -30,6 +30,7 @@
         <openai-java.version>4.63.1</openai-java.version>
         <json-schema-validator.version>1.0.88</json-schema-validator.version>
         <pdfbox.version>3.0.3</pdfbox.version>
+        <owasp-html-sanitizer.version>20261011.1</owasp-html-sanitizer.version>
     </properties>
 
     <dependencies>
@@ -141,6 +142,11 @@
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
             <version>${pdfbox.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.googlecode.owasp-java-html-sanitizer</groupId>
+            <artifactId>owasp-java-html-sanitizer</artifactId>
+            <version>${owasp-html-sanitizer.version}</version>
         </dependency>
     </dependencies>
 

@@ -1,8 +1,8 @@
 # Roadmap funcional — IDENTIPAT-IA
 
-**Estado:** F0 y F1.0 completadas; F1.1–F1.7 implementadas; F1.8 es la siguiente fase
-**Versión del roadmap:** 1.6
-**Última actualización:** 26 de octubre de 2026
+**Estado:** F0 y F1.0 completadas; F1.1–F1.8 implementadas; F1.9 es la siguiente fase
+**Versión del roadmap:** 1.7
+**Última actualización:** 29 de octubre de 2026
 **Objetivo:** mantener una visión vigente de la secuencia funcional del producto, diferenciando lo ya materializado de las fases pendientes.
 
 ---
@@ -33,7 +33,8 @@ La estabilización técnica F0 está completada. El backend también materializa
 | F1.5 | Entrada mediante PDF | ✅ Implementada |
 | F1.6 | Entrada mediante audio | ✅ Implementada |
 | F1.7 | Reporte web, PDF y disclaimer versionado | ✅ Implementada |
-| F1.8–F1.9 | Recursos e integración E2E | ⏳ Pendientes |
+| F1.8 | Catálogo institucional y guidance vigente | ✅ Implementada |
+| F1.9 | Integración frontend y E2E | ⏳ Pendiente |
 | F2 | Preparación para piloto y producción | ⏳ Pendiente |
 
 Los estados **implementada** indican que el alcance técnico existe en el backend y está cubierto por pruebas. No sustituyen la revisión funcional, jurídica, de seguridad o de aceptación que corresponda antes del piloto.
@@ -474,7 +475,7 @@ para producción.
 
 # F1.7 — Reporte web + PDF + disclaimer
 
-**Estado:** pendiente.
+**Estado:** implementada en backend.
 
 ## Objetivo
 
@@ -504,6 +505,11 @@ El disclaimer debe ser controlado y versionable. No debe existir una segunda ló
 Complementar el diagnóstico con requisitos, pasos, formularios, tutoriales, enlaces oficiales y servicios relacionados según la modalidad sugerida.
 
 Esta información debe provenir preferentemente de un catálogo institucional controlado y versionado que Java asocie al resultado. No se debe confiar exclusivamente en generación libre del LLM.
+
+La implementación usa `ProtectionGuide` versionado por modalidad, HTML enriquecido sanitizado,
+API ADMIN y `GET /analyses/{analysisId}/guidance`. Incluye siete guías iniciales `ACTIVE`, resolución
+dinámica del catálogo vigente, seguridad dual STANDARD/ADMIN, OpenAPI, Postman y pruebas con
+Testcontainers. La presentación Angular permanece en F1.9.
 
 ---
 
