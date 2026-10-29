@@ -255,8 +255,8 @@
           <button class="ghost" type="button" (click)="loadReportDisclaimers()">Reintentar</button>
         } @else if (latestReportDisclaimer(); as disclaimer) {
           <div class="report-disclaimer-details">
-            <label for="disclaimer-title">Título del disclaimer</label>
-            <input id="disclaimer-title" type="text" [value]="disclaimerTitle()" (input)="updateDisclaimerTitle($event)" [disabled]="savingDisclaimerDraft() || activatingDisclaimer()" />
+            <label for="disclaimer-title" style="margin-top: .75rem">Título del disclaimer</label>
+            <input id="disclaimer-title" type="text" [value]="disclaimerTitle()" (input)="updateDisclaimerTitle($event)" [disabled]="savingDisclaimerDraft() || activatingDisclaimer()" style="margin-bottom: .75rem" />
             <label for="disclaimer-content">Contenido del disclaimer</label>
             <textarea
               id="disclaimer-content"
@@ -265,7 +265,7 @@
               (input)="updateDisclaimerContent($event)"
               [disabled]="savingDisclaimerDraft() || activatingDisclaimer()"
               maxlength="5000"
-              rows="14"
+              rows="5"
             ></textarea>
             @if (disclaimerDraftMessage()) {
               <p class="success-message" role="status">{{ disclaimerDraftMessage() }}</p>

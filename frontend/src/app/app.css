@@ -137,7 +137,7 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .admin-bar div { display: grid; }
 .admin-bar .result-actions { display: flex; }
 .admin-bar span { color: var(--muted); font-size: .72rem; }
-.admin-title, .layout, .admin-tabs { width: min(1380px, calc(100% - 2rem)); margin-inline: auto; }
+.admin-title, .layout, .admin-tabs { width: min(1200px, calc(100% - 2rem)); margin-inline: auto; }
 .admin-title { padding: 2rem 0 1.25rem; }
 .admin-title h1 { margin: 0; font-size: clamp(1.9rem, 4vw, 2.8rem); }
 .admin-title > p:last-child { margin: .35rem 0 0; color: var(--muted); }
