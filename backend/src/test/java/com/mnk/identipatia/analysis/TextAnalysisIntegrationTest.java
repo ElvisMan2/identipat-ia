@@ -212,8 +212,21 @@ class TextAnalysisIntegrationTest {
                 .andExpect(header().string("X-Content-Type-Options", "nosniff"))
                 .andExpect(result -> assertThat(result.getResponse().getContentAsByteArray())
                         .startsWith('%', 'P', 'D', 'F', '-'));
+        mockMvc.perform(get("/identipat-ia/analyses/{analysisId}/guidance", analysisId)
+                        .contextPath("/identipat-ia")
+                        .cookie(browser.session())
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"))
+                .andExpect(jsonPath("$.guidanceVersion").value("analysis-guidance/1.0"))
+                .andExpect(jsonPath("$.analysisId").value(analysisId.toString()))
+                .andExpect(jsonPath("$.sessionId").doesNotExist())
+                .andExpect(jsonPath("$.userId").doesNotExist());
         Browser other = acceptedBrowser();
         mockMvc.perform(get("/analyses/{analysisId}/report", analysisId).cookie(other.session()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("ANALYSIS_NOT_FOUND"));
+        mockMvc.perform(get("/analyses/{analysisId}/guidance", analysisId).cookie(other.session()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("ANALYSIS_NOT_FOUND"));
         mockMvc.perform(get("/identipat-ia/analyses/{analysisId}/report.pdf", analysisId)
@@ -230,6 +243,9 @@ class TextAnalysisIntegrationTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(jsonPath("$.code").value("STANDARD_SESSION_REQUIRED"));
+        mockMvc.perform(get("/analyses/{analysisId}/guidance", analysisId))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("STANDARD_SESSION_REQUIRED"));
         mockMvc.perform(get("/identipat-ia/analyses/{analysisId}/report.pdf", analysisId)
                         .contextPath("/identipat-ia")
                         .cookie(browser.session(), browser.csrf().cookie())
@@ -238,6 +254,11 @@ class TextAnalysisIntegrationTest {
                         .accept(MediaType.APPLICATION_PDF))
                 .andExpect(status().isUnauthorized())
                 .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(jsonPath("$.code").value("ADMIN_AUTHENTICATION_REQUIRED"));
+        mockMvc.perform(get("/analyses/{analysisId}/guidance", analysisId)
+                        .cookie(browser.session())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer manipulated-token"))
+                .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("ADMIN_AUTHENTICATION_REQUIRED"));
     }
 

@@ -194,7 +194,17 @@ class IdentipatIaApplicationTests {
         assertThat(api.at("/paths/~1analyses~1{analysisId}/get").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1analyses~1{analysisId}~1report/get").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1analyses~1{analysisId}~1report.pdf/get").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1analyses~1{analysisId}~1guidance/get").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1admin~1report-disclaimers/get").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1admin~1protection-guides/get").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1admin~1protection-guides/post").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1admin~1protection-guides~1active~1{protectionType}/get").isMissingNode())
+                .isFalse();
+        assertThat(api.at("/paths/~1admin~1protection-guides~1active~1{protectionType}~1draft/post")
+                .isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1admin~1protection-guides~1{guideId}/put").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1admin~1protection-guides~1{guideId}~1activate/post").isMissingNode())
+                .isFalse();
 
         assertThat(api.at("/paths/~1users~1identify/post/security").isMissingNode()).isTrue();
         assertThat(api.at("/paths/~1users/post/security").isMissingNode()).isTrue();

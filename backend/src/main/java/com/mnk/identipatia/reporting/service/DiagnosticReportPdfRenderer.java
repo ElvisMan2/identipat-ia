@@ -77,6 +77,9 @@ public class DiagnosticReportPdfRenderer {
                 if (option.patentScreening() != null) {
                     writeScreening(cursor, option.patentScreening());
                 }
+                if (option.geneticResourceAccess() != null) {
+                    writeGeneticResources(cursor, option.geneticResourceAccess());
+                }
                 cursor.endOption();
             }
             if (report.patentScreening() != null) {
@@ -90,23 +93,11 @@ public class DiagnosticReportPdfRenderer {
             }
 
             if (report.geneticResourceAccess() != null) {
-                cursor.keepGeneticResources(report.geneticResourceAccess());
-                cursor.section("Recursos genéticos");
-                cursor.labelBadge("Evaluación", report.geneticResourceAccess().assessmentLabel(),
-                        BadgeTone.forAssessment(report.geneticResourceAccess().assessment()));
-                cursor.paragraph(report.geneticResourceAccess().rationale());
-                if (!report.geneticResourceAccess().missingInformation().isEmpty()) {
-                    cursor.keepLabelAndFirstLine("Información faltante",
-                            "• " + report.geneticResourceAccess().missingInformation().getFirst());
-                    cursor.label("Información faltante");
-                    report.geneticResourceAccess().missingInformation().forEach(cursor::bullet);
-                }
+                writeGeneticResources(cursor, report.geneticResourceAccess());
             }
 
             writeList(cursor, "Aspectos a considerar", report.observations());
             writeList(cursor, "Advertencias del caso", report.warnings());
-            cursor.section("Alcance del análisis");
-            cursor.paragraph(report.scope());
             cursor.metadata(report.analysisId().toString(), DATE_FORMAT.format(report.analysisCompletedAt()),
                     report.reportVersion());
             cursor.finish();
@@ -122,6 +113,21 @@ public class DiagnosticReportPdfRenderer {
 
     private static String legalBasisText(DiagnosticReport.LegalBasisPresentation basis) {
         return basis.instrument() + " — artículo(s) " + String.join(", ", basis.articles());
+    }
+
+    private static void writeGeneticResources(Cursor cursor,
+            DiagnosticReport.GeneticResourcePresentation genetic) {
+        cursor.keepGeneticResources(genetic);
+        cursor.section("Recursos genéticos");
+        cursor.labelBadge("Evaluación", genetic.assessmentLabel(),
+                BadgeTone.forAssessment(genetic.assessment()));
+        cursor.paragraph(genetic.rationale());
+        if (!genetic.missingInformation().isEmpty()) {
+            cursor.keepLabelAndFirstLine("Información faltante",
+                    "• " + genetic.missingInformation().getFirst());
+            cursor.label("Información faltante");
+            genetic.missingInformation().forEach(cursor::bullet);
+        }
     }
 
     private static void writeScreening(Cursor cursor, DiagnosticReport.PatentScreeningPresentation screening) {

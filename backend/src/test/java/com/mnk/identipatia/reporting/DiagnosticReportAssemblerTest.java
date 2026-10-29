@@ -213,8 +213,10 @@ class DiagnosticReportAssemblerTest {
         assertThat(screening.article15().matches().getFirst().rationale())
                 .isEqualTo("derecho de autor y COPYRIGHTABLE");
         assertThat(screening.article20().rationale()).isEqualTo("secreto empresarial sin coincidencia");
-        assertThat(report.geneticResourceAccess().rationale()).isEqualTo("diseño industrial requiere datos");
-        assertThat(report.geneticResourceAccess().missingInformation())
+        assertThat(report.geneticResourceAccess()).isNull();
+        assertThat(option.geneticResourceAccess().placement()).isEqualTo("EMBEDDED_IN_INVENTION_PATENT");
+        assertThat(option.geneticResourceAccess().rationale()).isEqualTo("diseño industrial requiere datos");
+        assertThat(option.geneticResourceAccess().missingInformation())
                 .containsExactly("Dato para modelo de utilidad");
         assertThat(report.observations())
                 .containsExactly("Observación signo distintivo y POSSIBLE_EFFECT");
@@ -249,7 +251,8 @@ class DiagnosticReportAssemblerTest {
                     .containsOnlyOnce("INICIO-RAZON")
                     .containsOnlyOnce("FIN-RAZON")
                     .containsOnlyOnce("Este screening se limita")
-                    .doesNotContain("DISTINCTIVE_SIGN", "COPYRIGHT (", "(LIKELY)", "(POSSIBLE)");
+                    .doesNotContain("Alcance del análisis", "DISTINCTIVE_SIGN", "COPYRIGHT (",
+                            "(LIKELY)", "(POSSIBLE)");
         }
     }
 
@@ -277,6 +280,42 @@ class DiagnosticReportAssemblerTest {
                     || page.contains("FIN-GENETICO") || page.contains("INICIO-FALTANTE")
                     || page.contains("FIN-FALTANTE")).hasSize(1);
         }
+    }
+
+    @Test
+    void geneticResourcesUseDeterministicAnchorPlacementWithoutDuplication() {
+        DiagnosticReport patent = assemblerV2.assemble(analysis(),
+                result(false, true, List.of(option(ProtectionType.INVENTION_PATENT))), context(), disclaimer());
+        assertThat(patent.geneticResourceAccess()).isNull();
+        assertThat(patent.protectionOptions().getFirst().geneticResourceAccess().placement())
+                .isEqualTo("EMBEDDED_IN_INVENTION_PATENT");
+
+        DiagnosticReport breeder = assemblerV2.assemble(analysis(),
+                result(false, false, List.of(option(ProtectionType.PLANT_BREEDER_CERTIFICATE))),
+                context(), disclaimer());
+        assertThat(breeder.geneticResourceAccess()).isNull();
+        assertThat(breeder.protectionOptions().getFirst().geneticResourceAccess().placement())
+                .isEqualTo("EMBEDDED_IN_PLANT_BREEDER_CERTIFICATE");
+
+        DiagnosticReport shared = assemblerV2.assemble(analysis(),
+                result(false, true, List.of(option(ProtectionType.INVENTION_PATENT),
+                        option(ProtectionType.PLANT_BREEDER_CERTIFICATE))), context(), disclaimer());
+        assertThat(shared.geneticResourceAccess().placement()).isEqualTo("SHARED");
+        assertThat(shared.protectionOptions()).allSatisfy(option ->
+                assertThat(option.geneticResourceAccess()).isNull());
+
+        DiagnosticReport standalone = assemblerV2.assemble(analysis(),
+                result(false, false, List.of(option(ProtectionType.COPYRIGHT))), context(), disclaimer());
+        assertThat(standalone.geneticResourceAccess().placement()).isEqualTo("STANDALONE");
+
+        AnalysisResultV2 base = result(false, true, List.of(option(ProtectionType.INVENTION_PATENT)));
+        AnalysisResultV2 notIndicated = new AnalysisResultV2(base.schemaVersion(), base.summary(),
+                base.protectionOptions(), base.patentScreening(),
+                new GeneticResourceAccess(GeneticResourceAssessment.NOT_INDICATED,
+                        "No hay indicios", List.of()), base.observations(), base.warnings());
+        DiagnosticReport hidden = assemblerV2.assemble(analysis(), notIndicated, context(), disclaimer());
+        assertThat(hidden.geneticResourceAccess()).isNull();
+        assertThat(hidden.protectionOptions().getFirst().geneticResourceAccess()).isNull();
     }
 
     @Test

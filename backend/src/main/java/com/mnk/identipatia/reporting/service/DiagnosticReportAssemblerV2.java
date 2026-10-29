@@ -29,33 +29,36 @@ public class DiagnosticReportAssemblerV2 implements DiagnosticReportAssembler<An
         ScreeningPlacement placement = placement(result);
         DiagnosticReport.PatentScreeningPresentation screening = placement == ScreeningPlacement.HIDDEN
                 ? null : screening(result.patentScreening(), placement);
+        GeneticPlacement geneticPlacement = geneticPlacement(result);
+        DiagnosticReport.GeneticResourcePresentation genetic = geneticPlacement == GeneticPlacement.HIDDEN
+                ? null : genetic(result, geneticPlacement);
         List<DiagnosticReport.ProtectionPresentation> options = result.protectionOptions().stream()
-                .map(option -> option(option, nestedScreening(option.type(), placement, screening)))
+                .map(option -> option(option, nestedScreening(option.type(), placement, screening),
+                        nestedGenetic(option.type(), geneticPlacement, genetic)))
                 .toList();
         DiagnosticReport.PatentScreeningPresentation independentScreening = switch (placement) {
             case SHARED_PATENT_ROUTE, STANDALONE -> screening;
             default -> null;
         };
 
-        var genetic = result.geneticResourceAccess();
-        DiagnosticReport.GeneticResourcePresentation geneticPresentation =
-                new DiagnosticReport.GeneticResourcePresentation(
-                        genetic.assessment().name(), geneticLabel(genetic.assessment().name()),
-                        DiagnosticReportPresentation.narrative(genetic.rationale()),
-                        DiagnosticReportPresentation.narratives(genetic.missingInformation()));
+        DiagnosticReport.GeneticResourcePresentation independentGenetic = switch (geneticPlacement) {
+            case SHARED, STANDALONE -> genetic;
+            default -> null;
+        };
 
         return new DiagnosticReport(context.getReportVersion(), analysis.getAnalysisId(), result.schemaVersion(),
                 analysis.getInputType(), analysis.getCompletedAt(), DiagnosticReportPresentation.TITLE,
                 DiagnosticReportPresentation.narrative(result.summary()),
                 DiagnosticReportPresentation.APPLICABILITY_NOTE, options, independentScreening,
-                geneticPresentation, null,
+                independentGenetic, null,
                 DiagnosticReportPresentation.narratives(result.observations()),
                 DiagnosticReportPresentation.narratives(result.warnings()),
                 DiagnosticReportPresentation.SCOPE, DiagnosticReportPresentation.disclaimer(disclaimer));
     }
 
     private static DiagnosticReport.ProtectionPresentation option(ProtectionOption option,
-            DiagnosticReport.PatentScreeningPresentation screening) {
+            DiagnosticReport.PatentScreeningPresentation screening,
+            DiagnosticReport.GeneticResourcePresentation genetic) {
         return new DiagnosticReport.ProtectionPresentation(
                 option.type().name(),
                 DiagnosticReportPresentation.protectionLabel(option.type().name()),
@@ -65,7 +68,16 @@ public class DiagnosticReportAssemblerV2 implements DiagnosticReportAssembler<An
                 DiagnosticReportPresentation.narrative(option.protectedSubjectMatter()),
                 DiagnosticReportPresentation.narrative(option.rationale()),
                 option.legalBasis().stream().map(DiagnosticReportAssemblerV2::legalBasis).toList(),
-                DiagnosticReportPresentation.orientation(option.applicability().name()), screening);
+                DiagnosticReportPresentation.orientation(option.applicability().name()), screening, genetic);
+    }
+
+    private static DiagnosticReport.GeneticResourcePresentation genetic(AnalysisResultV2 result,
+            GeneticPlacement placement) {
+        var genetic = result.geneticResourceAccess();
+        return new DiagnosticReport.GeneticResourcePresentation(
+                placement.name(), genetic.assessment().name(), geneticLabel(genetic.assessment().name()),
+                DiagnosticReportPresentation.narrative(genetic.rationale()),
+                DiagnosticReportPresentation.narratives(genetic.missingInformation()));
     }
 
     private static DiagnosticReport.LegalBasisPresentation legalBasis(LegalBasis basis) {
@@ -152,6 +164,36 @@ public class DiagnosticReportAssemblerV2 implements DiagnosticReportAssembler<An
         };
     }
 
+    private static GeneticPlacement geneticPlacement(AnalysisResultV2 result) {
+        if ("NOT_INDICATED".equals(result.geneticResourceAccess().assessment().name())) {
+            return GeneticPlacement.HIDDEN;
+        }
+        boolean inventionPatent = result.protectionOptions().stream()
+                .anyMatch(option -> option.type() == ProtectionType.INVENTION_PATENT);
+        boolean plantBreeder = result.protectionOptions().stream()
+                .anyMatch(option -> option.type() == ProtectionType.PLANT_BREEDER_CERTIFICATE);
+        if (inventionPatent && plantBreeder) {
+            return GeneticPlacement.SHARED;
+        }
+        if (inventionPatent) {
+            return GeneticPlacement.EMBEDDED_IN_INVENTION_PATENT;
+        }
+        if (plantBreeder) {
+            return GeneticPlacement.EMBEDDED_IN_PLANT_BREEDER_CERTIFICATE;
+        }
+        return GeneticPlacement.STANDALONE;
+    }
+
+    private static DiagnosticReport.GeneticResourcePresentation nestedGenetic(ProtectionType type,
+            GeneticPlacement placement, DiagnosticReport.GeneticResourcePresentation genetic) {
+        return switch (placement) {
+            case EMBEDDED_IN_INVENTION_PATENT -> type == ProtectionType.INVENTION_PATENT ? genetic : null;
+            case EMBEDDED_IN_PLANT_BREEDER_CERTIFICATE ->
+                    type == ProtectionType.PLANT_BREEDER_CERTIFICATE ? genetic : null;
+            default -> null;
+        };
+    }
+
     private static String screeningLabel(String assessment) {
         return switch (assessment) {
             case "NO_POTENTIAL_MATCH" -> "No se identifican coincidencias potenciales";
@@ -174,6 +216,14 @@ public class DiagnosticReportAssemblerV2 implements DiagnosticReportAssembler<An
         INVENTION_PATENT,
         UTILITY_MODEL,
         SHARED_PATENT_ROUTE,
+        STANDALONE,
+        HIDDEN
+    }
+
+    private enum GeneticPlacement {
+        EMBEDDED_IN_INVENTION_PATENT,
+        EMBEDDED_IN_PLANT_BREEDER_CERTIFICATE,
+        SHARED,
         STANDALONE,
         HIDDEN
     }
