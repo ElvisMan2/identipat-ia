@@ -59,11 +59,12 @@
 
     <section class="admin-title">
       <p class="eyebrow">Administración</p>
-      <h1>{{ adminSection() === 'users' ? 'Gestión de usuarios' : adminSection() === 'predictions' ? 'Predicciones' : 'Perfil' }}</h1>
+      <h1>{{ adminSection() === 'users' ? 'Gestión de usuarios' : adminSection() === 'predictions' ? 'Predicciones' : adminSection() === 'profile' ? 'Perfil' : 'Configuraciones' }}</h1>
       <p>
         @if (adminSection() === 'users') { Consulta, registra y actualiza la información de los usuarios. }
         @else if (adminSection() === 'predictions') { Consulta el historial de predicciones realizadas en el sistema. }
-        @else { Revisa y actualiza tu información de administrador. }
+        @else if (adminSection() === 'profile') { Revisa y actualiza tu información de administrador. }
+        @else { Administra las opciones del sistema. }
       </p>
     </section>
 
@@ -71,6 +72,7 @@
       <button type="button" [class.active]="adminSection() === 'predictions'" (click)="setAdminSection('predictions')">Predicciones</button>
       <button type="button" [class.active]="adminSection() === 'users'" (click)="setAdminSection('users')">Gestión de usuarios</button>
       <button type="button" [class.active]="adminSection() === 'profile'" (click)="setAdminSection('profile')">Perfil</button>
+      <button type="button" [class.active]="adminSection() === 'settings'" (click)="setAdminSection('settings')">Configuraciones</button>
     </nav>
 
     @if (adminSection() === 'predictions') {
@@ -231,6 +233,81 @@
                 <p role="status">La contraseña se actualizó correctamente.</p>
                 <div class="actions" style="justify-content: center">
                   <button type="button" (click)="closePasswordSuccessModal()">Cerrar</button>
+                </div>
+              </article>
+            </div>
+          }
+        }
+      </article>
+    </section>
+    }
+
+    @if (adminSection() === 'settings') {
+    <section class="layout">
+      <article class="panel table-panel">
+        <div class="table-head">
+          <h2>Disclaimer Institucional</h2>
+        </div>
+        @if (settingsLoading()) {
+          <p role="status">Cargando disclaimers...</p>
+        } @else if (settingsError()) {
+          <p class="error" role="alert">{{ settingsError() }}</p>
+          <button class="ghost" type="button" (click)="loadReportDisclaimers()">Reintentar</button>
+        } @else if (latestReportDisclaimer(); as disclaimer) {
+          <div class="report-disclaimer-details">
+            <label for="disclaimer-title">Título del disclaimer</label>
+            <input id="disclaimer-title" type="text" [value]="disclaimerTitle()" (input)="updateDisclaimerTitle($event)" [disabled]="savingDisclaimerDraft() || activatingDisclaimer()" />
+            <label for="disclaimer-content">Contenido del disclaimer</label>
+            <textarea
+              id="disclaimer-content"
+              class="report-disclaimer-editor"
+              [value]="disclaimerContent()"
+              (input)="updateDisclaimerContent($event)"
+              [disabled]="savingDisclaimerDraft() || activatingDisclaimer()"
+              maxlength="5000"
+              rows="14"
+            ></textarea>
+            @if (disclaimerDraftMessage()) {
+              <p class="success-message" role="status">{{ disclaimerDraftMessage() }}</p>
+            }
+            @if (disclaimerDraftError()) {
+              <p class="error" role="alert">{{ disclaimerDraftError() }}</p>
+            }
+            <div class="actions">
+              <button type="button" (click)="saveDisclaimerDraft()" [disabled]="!hasUnsavedDisclaimerChanges() || savingDisclaimerDraft()">
+                {{ savingDisclaimerDraft() ? 'Guardando...' : 'Guardar borrador' }}
+              </button>
+              @if (savedDisclaimerDraft(); as draft) {
+                <button type="button" class="outline-button" (click)="openPublishDisclaimerModal()" [disabled]="hasUnsavedDisclaimerChanges() || activatingDisclaimer() || savingDisclaimerDraft()">
+                  {{ activatingDisclaimer() ? 'Publicando...' : 'Publicar borrador' }}
+                </button>
+              }
+            </div>
+            @if (disclaimerActivationMessage()) {
+              <p class="success-message" role="status">{{ disclaimerActivationMessage() }}</p>
+            }
+            @if (disclaimerActivationError()) {
+              <p class="error" role="alert">{{ disclaimerActivationError() }}</p>
+            }
+          </div>
+        }
+        @if (settingsLoaded() && !latestReportDisclaimer() && !settingsError()) {
+          <p class="empty-state">No hay disclaimers registrados.</p>
+        }
+        @if (showPublishDisclaimerModal(); as publishModal) {
+          @if (savedDisclaimerDraft(); as draft) {
+            <div class="modal-backdrop" (click)="closePublishDisclaimerModal()" (keydown.escape)="closePublishDisclaimerModal()">
+              <article class="panel modal-panel" role="dialog" aria-modal="true" aria-labelledby="publish-disclaimer-title" (click)="$event.stopPropagation()" style="text-align: center">
+                <h2 id="publish-disclaimer-title">Publicar disclaimer</h2>
+                <p>¿Confirmas publicar este borrador? Reemplazará el disclaimer activo actual.</p>
+                @if (disclaimerActivationError()) {
+                  <p class="error" role="alert">{{ disclaimerActivationError() }}</p>
+                }
+                <div class="actions" style="justify-content: center">
+                  <button type="button" class="ghost" (click)="closePublishDisclaimerModal()" [disabled]="activatingDisclaimer()">Cancelar</button>
+                  <button type="button" (click)="publishDisclaimerDraft()" [disabled]="activatingDisclaimer()">
+                    {{ activatingDisclaimer() ? 'Publicando...' : 'Confirmar publicación' }}
+                  </button>
                 </div>
               </article>
             </div>

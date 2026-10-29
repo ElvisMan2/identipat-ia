@@ -6,7 +6,10 @@ import { Observable } from 'rxjs';
 import { StandardUserRegistrationRequest, UserService } from './services/user.service';
 import { User } from './models/user.model';
 import { AdminAnalysis, AnalysisStatus } from './services/admin-analysis.service';
+import { AdminReportDisclaimerService, ReportDisclaimer } from './services/admin-report-disclaimer.service';
 import { AnalysisResponse, StandardAnalysisService } from './services/standard-analysis.service';
+
+const adminSettingsReloadKey = 'identipat.admin.reloadSection';
 
 @Component({
   selector: 'app-root',
@@ -18,6 +21,7 @@ export class App {
   private readonly fb = inject(FormBuilder);
   private readonly document = inject(DOCUMENT);
   private readonly userService = inject(UserService);
+  private readonly adminReportDisclaimerService = inject(AdminReportDisclaimerService);
   private readonly standardAnalysisService = inject(StandardAnalysisService);
   private readonly defaultAdminPassword = 'admin';
 
@@ -31,6 +35,27 @@ export class App {
   readonly userTotalElements = signal(0);
   readonly downloadingUsers = signal(false);
   readonly analyses = signal<AdminAnalysis[]>([]);
+  readonly latestReportDisclaimer = signal<ReportDisclaimer | null>(null);
+  readonly disclaimerTitle = signal('');
+  readonly savedDisclaimerTitle = signal('');
+  readonly disclaimerContent = signal('');
+  readonly savedDisclaimerContent = signal('');
+  readonly hasUnsavedDisclaimerChanges = computed(() =>
+    this.latestReportDisclaimer() !== null
+    && (this.disclaimerTitle() !== this.savedDisclaimerTitle()
+      || this.disclaimerContent() !== this.savedDisclaimerContent())
+  );
+  readonly settingsLoading = signal(false);
+  readonly settingsError = signal('');
+  readonly settingsLoaded = signal(false);
+  readonly savingDisclaimerDraft = signal(false);
+  readonly disclaimerDraftMessage = signal('');
+  readonly disclaimerDraftError = signal('');
+  readonly savedDisclaimerDraft = signal<ReportDisclaimer | null>(null);
+  readonly activatingDisclaimer = signal(false);
+  readonly disclaimerActivationMessage = signal('');
+  readonly disclaimerActivationError = signal('');
+  readonly showPublishDisclaimerModal = signal(false);
   readonly loading = signal(false);
   readonly analysesLoading = signal(false);
   readonly saving = signal(false);
@@ -43,7 +68,7 @@ export class App {
   readonly editingOriginalUserType = signal('STANDARD');
   readonly showAdminPassword = signal(false);
   readonly showEditModal = signal(false);
-  readonly adminSection = signal<'users' | 'predictions' | 'profile'>('users');
+  readonly adminSection = signal<'users' | 'predictions' | 'profile' | 'settings'>('users');
   readonly view = signal<'home' | 'registration' | 'standard-analysis' | 'standard-result' | 'admin-login' | 'admin' | 'legal'>('home');
   readonly checkingDocument = signal(false);
   readonly standardAccessPending = signal(false);
@@ -84,7 +109,7 @@ export class App {
     if (adminIdentity) {
       this.accessForm.setValue(adminIdentity);
       this.adminAuthenticated.set(true);
-      this.adminSection.set('users');
+      this.adminSection.set(this.consumeAdminSettingsReloadTarget());
       this.view.set('admin');
       this.userService.findByDoi(adminIdentity.doi).subscribe({
         next: admin => {
@@ -98,6 +123,9 @@ export class App {
             this.loadProfileForm();
           }
           this.loadUsers(0);
+          if (this.adminSection() === 'settings') {
+            this.loadReportDisclaimers();
+          }
         },
         error: () => this.logout()
       });
@@ -440,13 +468,174 @@ export class App {
     }, 500);
   }
 
-  setAdminSection(section: 'users' | 'predictions' | 'profile'): void {
+  setAdminSection(section: 'users' | 'predictions' | 'profile' | 'settings'): void {
     this.adminSection.set(section);
     if (section === 'predictions') {
       this.loadAnalyses();
     } else if (section === 'profile') {
       this.loadProfileForm();
+    } else if (section === 'settings' && !this.settingsLoaded() && !this.settingsLoading()) {
+      this.loadReportDisclaimers();
     }
+  }
+
+  loadReportDisclaimers(): void {
+    if (this.hasUnsavedDisclaimerChanges() || this.savingDisclaimerDraft() || this.activatingDisclaimer()) {
+      return;
+    }
+
+    this.settingsLoading.set(true);
+    this.settingsError.set('');
+    this.adminReportDisclaimerService.getAll(this.userService.getAccessToken()).subscribe({
+      next: disclaimers => {
+        const latestDisclaimer = disclaimers.reduce<ReportDisclaimer | null>(
+          (latest, disclaimer) => !latest || disclaimer.version > latest.version ? disclaimer : latest,
+          null
+        );
+        this.latestReportDisclaimer.set(latestDisclaimer);
+        this.disclaimerTitle.set(latestDisclaimer?.title ?? '');
+        this.savedDisclaimerTitle.set(latestDisclaimer?.title ?? '');
+        this.disclaimerContent.set(latestDisclaimer?.content ?? '');
+        this.savedDisclaimerContent.set(latestDisclaimer?.content ?? '');
+        this.savedDisclaimerDraft.set(latestDisclaimer?.status === 'DRAFT' ? latestDisclaimer : null);
+        this.disclaimerDraftMessage.set('');
+        this.disclaimerDraftError.set('');
+        this.disclaimerActivationMessage.set('');
+        this.disclaimerActivationError.set('');
+        this.settingsLoaded.set(true);
+        this.settingsLoading.set(false);
+      },
+      error: () => {
+        this.settingsError.set('No se pudieron cargar los disclaimers. Inténtalo nuevamente.');
+        this.settingsLoading.set(false);
+      }
+    });
+  }
+
+  updateDisclaimerTitle(event: Event): void {
+    this.disclaimerTitle.set((event.target as HTMLInputElement).value);
+    this.disclaimerDraftMessage.set('');
+    this.disclaimerDraftError.set('');
+    this.disclaimerActivationMessage.set('');
+    this.disclaimerActivationError.set('');
+  }
+
+  updateDisclaimerContent(event: Event): void {
+    this.disclaimerContent.set((event.target as HTMLTextAreaElement).value);
+    this.disclaimerDraftMessage.set('');
+    this.disclaimerDraftError.set('');
+    this.disclaimerActivationMessage.set('');
+    this.disclaimerActivationError.set('');
+  }
+
+  saveDisclaimerDraft(): void {
+    const latestDisclaimer = this.latestReportDisclaimer();
+    if (!latestDisclaimer || !this.hasUnsavedDisclaimerChanges() || this.savingDisclaimerDraft()) {
+      return;
+    }
+
+    this.savingDisclaimerDraft.set(true);
+    this.disclaimerDraftMessage.set('');
+    this.disclaimerDraftError.set('');
+    this.adminReportDisclaimerService.createDraft(
+      this.userService.getAccessToken(),
+      this.disclaimerTitle(),
+      this.disclaimerContent()
+    ).subscribe({
+      next: draft => {
+        this.latestReportDisclaimer.set(draft);
+        this.disclaimerTitle.set(draft.title);
+        this.savedDisclaimerTitle.set(draft.title);
+        this.disclaimerContent.set(draft.content);
+        this.savedDisclaimerContent.set(draft.content);
+        this.savedDisclaimerDraft.set(draft);
+        this.disclaimerDraftMessage.set('Borrador guardado correctamente.');
+        this.savingDisclaimerDraft.set(false);
+      },
+      error: () => {
+        this.disclaimerDraftError.set('No se pudo guardar el borrador. Revisa el contenido e inténtalo nuevamente.');
+        this.savingDisclaimerDraft.set(false);
+      }
+    });
+  }
+
+  publishDisclaimerDraft(): void {
+    const draft = this.savedDisclaimerDraft();
+    if (!this.showPublishDisclaimerModal() || !draft || this.hasUnsavedDisclaimerChanges()
+      || this.savingDisclaimerDraft() || this.activatingDisclaimer()) {
+      return;
+    }
+
+    this.activatingDisclaimer.set(true);
+    this.disclaimerActivationMessage.set('');
+    this.disclaimerActivationError.set('');
+    this.adminReportDisclaimerService.activate(this.userService.getAccessToken(), draft.id).subscribe({
+      next: activeDisclaimer => {
+        this.showPublishDisclaimerModal.set(false);
+        this.latestReportDisclaimer.set(activeDisclaimer);
+        this.disclaimerTitle.set(activeDisclaimer.title);
+        this.savedDisclaimerTitle.set(activeDisclaimer.title);
+        this.disclaimerContent.set(activeDisclaimer.content);
+        this.savedDisclaimerContent.set(activeDisclaimer.content);
+        this.savedDisclaimerDraft.set(null);
+        this.disclaimerDraftMessage.set('');
+        this.disclaimerActivationMessage.set('Disclaimer publicado correctamente.');
+        this.activatingDisclaimer.set(false);
+        this.scheduleAdminSettingsReload();
+      },
+      error: () => {
+        this.disclaimerActivationError.set('No se pudo publicar el borrador. Inténtalo nuevamente.');
+        this.activatingDisclaimer.set(false);
+      }
+    });
+  }
+
+  openPublishDisclaimerModal(): void {
+    if (!this.savedDisclaimerDraft() || this.hasUnsavedDisclaimerChanges()
+      || this.savingDisclaimerDraft() || this.activatingDisclaimer()) {
+      return;
+    }
+
+    this.disclaimerActivationError.set('');
+    this.showPublishDisclaimerModal.set(true);
+  }
+
+  closePublishDisclaimerModal(): void {
+    if (!this.activatingDisclaimer()) {
+      this.showPublishDisclaimerModal.set(false);
+    }
+  }
+
+  private consumeAdminSettingsReloadTarget(): 'users' | 'settings' {
+    try {
+      const storage = this.document.defaultView?.sessionStorage;
+      const section = storage?.getItem(adminSettingsReloadKey);
+      storage?.removeItem(adminSettingsReloadKey);
+      return section === 'settings' ? 'settings' : 'users';
+    } catch {
+      return 'users';
+    }
+  }
+
+  private scheduleAdminSettingsReload(): void {
+    const browserWindow = this.document.defaultView;
+    if (!browserWindow) {
+      return;
+    }
+
+    browserWindow.setTimeout(() => {
+      if (!this.adminAuthenticated()) {
+        return;
+      }
+
+      try {
+        browserWindow.sessionStorage.setItem(adminSettingsReloadKey, 'settings');
+      } catch {
+        return;
+      }
+
+      browserWindow.location.reload();
+    }, 1000);
   }
 
   private loadAdminProfile(): void {

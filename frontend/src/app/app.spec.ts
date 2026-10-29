@@ -2,8 +2,10 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
 import { App } from './app';
 import { AdminAnalysisService } from './services/admin-analysis.service';
+import { AdminReportDisclaimerService } from './services/admin-report-disclaimer.service';
 import { StandardAnalysisService } from './services/standard-analysis.service';
 import { UserService } from './services/user.service';
 import { environment } from '../environments/environment';
@@ -35,6 +37,192 @@ describe('App', () => {
     expect(reportRequest.request.method).toBe('GET');
     expect(reportRequest.request.headers.get('Authorization')).toBe('Bearer test-token');
     reportRequest.flush({});
+  });
+
+  it('should fetch all report disclaimers with the admin bearer token', () => {
+    const service = TestBed.inject(AdminReportDisclaimerService);
+    const httpTesting = TestBed.inject(HttpTestingController);
+
+    service.getAll('test-token').subscribe();
+
+    const disclaimerRequest = httpTesting.expectOne(
+      `${environment.apiBaseUrl}/admin/report-disclaimers`
+    );
+    expect(disclaimerRequest.request.method).toBe('GET');
+    expect(disclaimerRequest.request.headers.get('Authorization')).toBe('Bearer test-token');
+    disclaimerRequest.flush([{
+      id: 'disclaimer-id',
+      version: 1,
+      title: 'Aviso legal',
+      content: 'Texto del disclaimer',
+      status: 'ACTIVE',
+      activatedAt: '2026-10-29T12:00:00Z'
+    }]);
+  });
+
+  it('should show only the latest disclaimer when entering settings', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.view.set('admin');
+    app.setAdminSection('settings');
+    fixture.detectChanges();
+
+    const disclaimersRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/admin/report-disclaimers`);
+    expect(disclaimersRequest.request.method).toBe('GET');
+    disclaimersRequest.flush([
+      {
+        id: 'old-id',
+        version: 3,
+        title: 'Aviso anterior',
+        content: 'Contenido anterior',
+        status: 'RETIRED',
+        activatedAt: null
+      },
+      {
+        id: 'latest-id',
+        version: 8,
+        title: 'Aviso más reciente',
+        content: 'Contenido más reciente',
+        status: 'DRAFT',
+        activatedAt: null
+      }
+    ]);
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(app.latestReportDisclaimer()?.id).toBe('latest-id');
+    expect(app.savedDisclaimerDraft()?.id).toBe('latest-id');
+    expect((fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>('#disclaimer-title')?.value)
+      .toBe('Aviso más reciente');
+    expect(text).not.toContain('Estado:');
+    expect(text).not.toContain('Última versión guardada:');
+    expect(text).not.toContain('Activado:');
+    expect(text).not.toContain('Aviso anterior');
+  });
+
+  it('should create a report disclaimer draft with the admin bearer token', () => {
+    const service = TestBed.inject(AdminReportDisclaimerService);
+    const httpTesting = TestBed.inject(HttpTestingController);
+
+    service.createDraft('test-token', 'Aviso legal', 'Texto actualizado').subscribe();
+
+    const draftRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/admin/report-disclaimers`);
+    expect(draftRequest.request.method).toBe('POST');
+    expect(draftRequest.request.headers.get('Authorization')).toBe('Bearer test-token');
+    expect(draftRequest.request.body).toEqual({ title: 'Aviso legal', content: 'Texto actualizado' });
+    draftRequest.flush({
+      id: 'draft-id',
+      version: 2,
+      title: 'Aviso legal',
+      content: 'Texto actualizado',
+      status: 'DRAFT',
+      activatedAt: null
+    }, { status: 201, statusText: 'Created' });
+  });
+
+  it('should activate a report disclaimer draft with the admin bearer token', () => {
+    const service = TestBed.inject(AdminReportDisclaimerService);
+    const httpTesting = TestBed.inject(HttpTestingController);
+
+    service.activate('test-token', 'draft-id').subscribe();
+
+    const activationRequest = httpTesting.expectOne(
+      `${environment.apiBaseUrl}/admin/report-disclaimers/draft-id/activate`
+    );
+    expect(activationRequest.request.method).toBe('POST');
+    expect(activationRequest.request.headers.get('Authorization')).toBe('Bearer test-token');
+    expect(activationRequest.request.body).toBeNull();
+    activationRequest.flush({
+      id: 'draft-id',
+      version: 2,
+      title: 'Aviso legal',
+      content: 'Texto actualizado',
+      status: 'ACTIVE',
+      activatedAt: '2026-10-29T13:00:00Z'
+    });
+  });
+
+  it('should save disclaimer title and content together as a draft', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const disclaimerService = TestBed.inject(AdminReportDisclaimerService);
+    const activeDisclaimer = {
+      id: 'active-id',
+      version: 1,
+      title: 'Aviso legal',
+      content: 'Texto original',
+      status: 'ACTIVE',
+      activatedAt: '2026-10-29T12:00:00Z'
+    };
+    spyOn(disclaimerService, 'createDraft').and.returnValue(of({
+      ...activeDisclaimer,
+      id: 'draft-id',
+      version: 2,
+      title: 'Aviso actualizado',
+      content: 'Texto actualizado',
+      status: 'DRAFT',
+      activatedAt: null
+    }));
+    spyOn(disclaimerService, 'activate').and.returnValue(of({
+      ...activeDisclaimer,
+      id: 'draft-id',
+      version: 2,
+      content: 'Texto actualizado',
+      status: 'ACTIVE',
+      activatedAt: '2026-10-29T13:00:00Z'
+    }));
+    const reloadSchedule = spyOn<any>(app, 'scheduleAdminSettingsReload');
+    app.view.set('admin');
+    app.adminSection.set('settings');
+    app.latestReportDisclaimer.set(activeDisclaimer);
+    app.disclaimerTitle.set(activeDisclaimer.title);
+    app.savedDisclaimerTitle.set(activeDisclaimer.title);
+    app.disclaimerContent.set(activeDisclaimer.content);
+    app.savedDisclaimerContent.set(activeDisclaimer.content);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const titleInput = root.querySelector<HTMLInputElement>('input#disclaimer-title')!;
+    const textarea = root.querySelector<HTMLTextAreaElement>('textarea#disclaimer-content')!;
+    const saveButton = Array.from(root.querySelectorAll<HTMLButtonElement>('button'))
+      .find(button => button.textContent?.includes('Guardar borrador'))!;
+    expect(saveButton.disabled).toBeTrue();
+
+    titleInput.value = 'Aviso actualizado';
+    titleInput.dispatchEvent(new Event('input'));
+    textarea.value = 'Texto actualizado';
+    textarea.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(saveButton.disabled).toBeFalse();
+
+    saveButton.click();
+    fixture.detectChanges();
+
+    expect(disclaimerService.createDraft).toHaveBeenCalledWith('', 'Aviso actualizado', 'Texto actualizado');
+    expect(saveButton.disabled).toBeTrue();
+    expect(fixture.nativeElement.textContent).toContain('Borrador guardado correctamente.');
+    expect(fixture.nativeElement.textContent).not.toContain('Borrador v2');
+
+    const publishButton = Array.from(root.querySelectorAll<HTMLButtonElement>('button'))
+      .find(button => button.textContent?.includes('Publicar borrador'))!;
+    expect(publishButton.disabled).toBeFalse();
+    publishButton.click();
+    fixture.detectChanges();
+
+    expect(root.querySelector('[role="dialog"]')).not.toBeNull();
+    expect(disclaimerService.activate).not.toHaveBeenCalled();
+    const confirmButton = Array.from(root.querySelectorAll<HTMLButtonElement>('button'))
+      .find(button => button.textContent?.includes('Confirmar publicación'))!;
+    confirmButton.click();
+    fixture.detectChanges();
+
+    expect(disclaimerService.activate).toHaveBeenCalledWith('', 'draft-id');
+    expect(root.querySelector('[role="dialog"]')).toBeNull();
+    expect(app.latestReportDisclaimer()?.status).toBe('ACTIVE');
+    expect(app.savedDisclaimerDraft()).toBeNull();
+    expect(root.textContent).toContain('Disclaimer publicado correctamente.');
+    expect(reloadSchedule).toHaveBeenCalled();
   });
 
   it('should request a report PDF with ADMIN bearer or STANDARD session credentials', () => {
