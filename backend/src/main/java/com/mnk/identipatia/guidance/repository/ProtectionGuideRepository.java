@@ -18,6 +18,8 @@ public interface ProtectionGuideRepository extends JpaRepository<ProtectionGuide
     Optional<ProtectionGuide> findByProtectionTypeAndStatus(ProtectionType protectionType,
             ProtectionGuideStatus status);
 
+    Optional<ProtectionGuide> findByProtectionTypeAndVersion(ProtectionType protectionType, Long version);
+
     List<ProtectionGuide> findAllByProtectionTypeInAndStatus(List<ProtectionType> protectionTypes,
             ProtectionGuideStatus status);
 

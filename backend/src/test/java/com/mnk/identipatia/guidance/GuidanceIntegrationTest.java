@@ -260,6 +260,24 @@ class GuidanceIntegrationTest {
     }
 
     @Test
+    void historicalV1WithOtherProtectionTypeIsRejectedAsUnsupported() throws Exception {
+        User admin = admin();
+        String token = jwtService.generateToken(admin.getDoi());
+        JsonNode historical = objectMapper.readTree("""
+                {"schemaVersion":"analysis-result/1.0","summary":"Resumen histórico",
+                 "patentabilityAssessment":{"outcome":"INSUFFICIENT_INFORMATION","rationale":"Faltan datos."},
+                 "protectionOptions":[{"type":"OTHER","applicability":"POSSIBLE","rationale":"Otra vía."}],
+                 "observations":[],"warnings":[]}
+                """);
+        UUID analysisId = completedAnalysis(admin, historical);
+
+        mockMvc.perform(get("/analyses/{id}/guidance", analysisId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("GUIDANCE_UNSUPPORTED_RESULT_VERSION"));
+    }
+
+    @Test
     void concurrentCreationAndActivationAreSerializedPerModality() throws Exception {
         User admin = admin();
         var authentication = authentication(admin);
