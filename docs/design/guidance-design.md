@@ -76,6 +76,30 @@ Las siete modalidades, descripciones breves y bloques HTML provienen del conteni
 Indecopi. Los enlaces fueron validados manualmente por el responsable del proyecto el 29/10/2026.
 La migración seed registra `createdSource=SYSTEM`, versión 1 y `lastVerifiedAt` en esa fecha.
 
+## F1.8D — Registro de apertura de próximos pasos
+
+`POST /analyses/{analysisId}/guidance/{protectionType}/view` registra que el modal de próximos pasos
+fue abierto/renderizado y que el frontend notificó exitosamente esa apertura. No demuestra lectura,
+comprensión ni duración. El frontend debe invocarlo de forma asíncrona después de mostrar el modal;
+un fallo de tracking nunca debe ocultar el contenido.
+
+La mutación admite únicamente una sesión `STANDARD` propietaria con CSRF válido. Reutiliza
+`AnalysisAccessResolver`: un Bearer presente conserva precedencia exclusiva, un Bearer inválido no
+cae a la cookie y un ADMIN válido recibe `403 GUIDANCE_VIEW_STANDARD_ONLY`.
+
+La evidencia durable se guarda en `guidance_views` con el grano
+`analysis_id + protection_type + guide_version`, sin DNI/CE, usuario, sesión, HTML ni otros datos
+personales. `first_viewed_at` se genera en el servidor mediante `Clock`. La restricción única y un
+`INSERT ... ON CONFLICT DO NOTHING` hacen idempotentes los reintentos y la concurrencia; después se
+lee la fila resultante para devolver siempre el timestamp original.
+
+Solo una modalidad explícita del resultado V1/V2 con applicability `LIKELY` o `POSSIBLE` puede
+registrarse. `UNLIKELY` se rechaza porque no tiene `nextSteps`. La versión indicada debe pertenecer a
+la modalidad y puede estar `ACTIVE` o `RETIRED`; esto preserva el evento cuando el usuario abre una
+versión cargada antes de que el ADMIN active otra. Las versiones `DRAFT` o inexistentes se rechazan.
+El contrato de `GET /analyses/{analysisId}/guidance` permanece sin cambios y no expone estado de
+visualización.
+
 ## Ajustes F1.7 asociados
 
 El DTO JSON conserva `scope` por compatibilidad, pero el PDF ya no renderiza la sección general

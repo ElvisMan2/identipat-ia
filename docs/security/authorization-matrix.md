@@ -1,7 +1,7 @@
 # Matriz de autorización vigente — IDENTIPAT-IA
 
-**Estado verificado hasta:** F1.7
-**Última actualización:** 26 de octubre de 2026
+**Estado verificado hasta:** F1.8D
+**Última actualización:** 31 de octubre de 2026
 
 Las rutas son relativas a `/identipat-ia`. Existen tres categorías separadas:
 
@@ -22,6 +22,7 @@ Las rutas son relativas a `/identipat-ia`. Existen tres categorías separadas:
 | `GET /analyses/{analysisId}` | `STANDARD_SESSION` propia **o** `ADMIN_JWT` propietario | STANDARD se aísla por `session_id`; ADMIN por `user_id` y `session_id IS NULL`. Un recurso ajeno responde `404`. |
 | `GET /analyses/{analysisId}/report[.pdf]` | `STANDARD_SESSION` propia **o** `ADMIN_JWT` propietario | Misma precedencia Bearer y aislamiento que el análisis. Solo `COMPLETED`; no expone PII ni metadata IA. |
 | `GET /analyses/{analysisId}/guidance` | `STANDARD_SESSION` propia **o** `ADMIN_JWT` propietario | Reutiliza `AnalysisAccessResolver`, solo acepta `COMPLETED` y resuelve el catálogo institucional ACTIVE vigente. |
+| `POST /analyses/{analysisId}/guidance/{protectionType}/view` | `STANDARD_SESSION` propia + `CSRF` | Registra idempotentemente la primera apertura del modal para una versión concreta. ADMIN se rechaza funcionalmente con `403 GUIDANCE_VIEW_STANDARD_ONLY`; un análisis ajeno responde `404`. |
 | `/admin/report-disclaimers/**` | `ADMIN_JWT` | Gobierno del disclaimer institucional. El actor de auditoría se deriva del JWT; no acepta identidad en el body. |
 | `/admin/protection-guides/**` | `ADMIN_JWT` | Gobierno del catálogo de orientación; creación, edición, clonado y activación auditan al actor del JWT. |
 | `POST /users/identify` | `PUBLIC` | Solo reconoce el registro; DNI/CE no autentica. |
@@ -41,6 +42,7 @@ La autorización combina la configuración HTTP de Spring Security con validacio
 - `AnalysisAccessResolver` selecciona exactamente un modo: Bearer presente implica intento `ADMIN_JWT`; sin Bearer se usa `STANDARD_SESSION`;
 - `GET /analyses/{analysisId}` consulta por `analysis_id + session_id` para STANDARD o por `analysis_id + user_id + session_id IS NULL` para ADMIN;
 - `POST /analyses/text`, `/analyses/pdf` y `/analyses/audio` exigen consentimiento vigente únicamente en modo STANDARD.
+- `POST /analyses/{analysisId}/guidance/{protectionType}/view` solo continúa en modo STANDARD, exige ownership por `session_id` y rechaza explícitamente el modo ADMIN.
 
 El `permitAll()` técnico de Spring Security para `/analyses/**` no convierte los análisis en recursos públicos: permite que el caso de uso seleccione `STANDARD_SESSION` o `ADMIN_JWT`. Todo endpoint futuro bajo ese prefijo debe conservar esta resolución explícita.
 

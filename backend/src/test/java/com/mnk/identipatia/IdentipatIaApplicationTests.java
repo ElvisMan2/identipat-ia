@@ -195,6 +195,8 @@ class IdentipatIaApplicationTests {
         assertThat(api.at("/paths/~1analyses~1{analysisId}~1report/get").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1analyses~1{analysisId}~1report.pdf/get").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1analyses~1{analysisId}~1guidance/get").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1analyses~1{analysisId}~1guidance~1{protectionType}~1view/post")
+                .isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1admin~1report-disclaimers/get").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1admin~1protection-guides/get").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1admin~1protection-guides/post").isMissingNode()).isFalse();
@@ -243,6 +245,11 @@ class IdentipatIaApplicationTests {
                 assertThat(requirement.has("standardSession")).isTrue());
         assertThat(analysisPostSecurity).anySatisfy(requirement ->
                 assertThat(requirement.has("bearerAuth")).isTrue());
+        JsonNode guidanceViewSecurity = api.at(
+                "/paths/~1analyses~1{analysisId}~1guidance~1{protectionType}~1view/post/security");
+        assertThat(guidanceViewSecurity).hasSize(1);
+        assertThat(guidanceViewSecurity.path(0).has("standardSession")).isTrue();
+        assertThat(guidanceViewSecurity.path(0).has("bearerAuth")).isFalse();
 
         JsonNode recognitionProperties = api.at("/components/schemas/DocumentRecognitionResponse/properties");
         assertThat(recognitionProperties.size()).isEqualTo(3);

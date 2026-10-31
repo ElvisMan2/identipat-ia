@@ -34,7 +34,7 @@ identipat-ia/
 │   │   │   │   │   ├── prompt/      # Registry, renderer y hashes
 │   │   │   │   │   ├── schema/      # Registry y validación JSON Schema
 │   │   │   │   │   └── provider/openai/ # Único boundary del SDK OpenAI
-│   │   │   │   ├── guidance/           # Catálogo F1.8, sanitización, API ADMIN y /guidance
+│   │   │   │   ├── guidance/           # Catálogo F1.8 y tracking idempotente F1.8D
 │   │   │   │   │   ├── controller/
 │   │   │   │   │   ├── dto/
 │   │   │   │   │   ├── model/
@@ -94,7 +94,8 @@ identipat-ia/
 │   │   │       │       ├── V4__admin_analysis_access.sql
 │   │   │       │       ├── V5__diagnostic_reporting.sql
 │   │   │       │       ├── V6__protection_guidance_catalog.sql
-│   │   │       │       └── V7__seed_protection_guidance_catalog.sql
+│   │   │       │       ├── V7__seed_protection_guidance_catalog.sql
+│   │   │       │       └── V8__guidance_views.sql
 │   │   │       ├── prompts/intellectual-property-analysis/v0.1/
 │   │   │       │   ├── system.md
 │   │   │       │   └── user.md
@@ -118,7 +119,7 @@ identipat-ia/
 │   │           │   └── SecurityConfigTest.java
 │   │           ├── ai/               # Contratos, prompts, schemas, config y adapter OpenAI
 │   │           ├── analysis/         # E2E, contratos, claim, retry, recovery y rechazo local
-│   │           ├── guidance/         # Sanitización, lifecycle, migración, guidance y concurrencia
+│   │           ├── guidance/         # Catálogo, /guidance, tracking, seguridad y concurrencia
 │   │           ├── reporting/        # Reporte web/PDF y disclaimer histórico
 │   │           ├── controller/
 │   │           │   └── UserSecurityWebMvcTest.java

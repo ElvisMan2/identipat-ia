@@ -31,4 +31,23 @@ class GlobalExceptionHandlerTest {
 
         assertThat(body).containsEntry("code", "PDF_TOO_LARGE");
     }
+
+    @Test
+    void unreadableGuidanceViewUsesEndpointSpecificCode() {
+        MockHttpServletRequest request = new MockHttpServletRequest(
+                "POST", "/analyses/00000000-0000-0000-0000-000000000000/guidance/UTILITY_MODEL/view");
+
+        Map<String, Object> body = handler.handleUnreadableRequest(request).getBody();
+
+        assertThat(body).containsEntry("code", "INVALID_GUIDANCE_VIEW_REQUEST");
+    }
+
+    @Test
+    void unreadableOtherRequestPreservesGenericCode() {
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/analyses/text");
+
+        Map<String, Object> body = handler.handleUnreadableRequest(request).getBody();
+
+        assertThat(body).containsEntry("code", "INVALID_REQUEST");
+    }
 }

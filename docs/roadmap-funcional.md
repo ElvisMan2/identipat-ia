@@ -1,8 +1,8 @@
 # Roadmap funcional — IDENTIPAT-IA
 
-**Estado:** F0 y F1.0 completadas; F1.1–F1.8 implementadas; F1.9 es la siguiente fase
-**Versión del roadmap:** 1.7
-**Última actualización:** 29 de octubre de 2026
+**Estado:** F0 y F1.0 completadas; F1.1–F1.8D implementadas; F1.9 es la siguiente fase
+**Versión del roadmap:** 1.8
+**Última actualización:** 31 de octubre de 2026
 **Objetivo:** mantener una visión vigente de la secuencia funcional del producto, diferenciando lo ya materializado de las fases pendientes.
 
 ---
@@ -34,6 +34,7 @@ La estabilización técnica F0 está completada. El backend también materializa
 | F1.6 | Entrada mediante audio | ✅ Implementada |
 | F1.7 | Reporte web, PDF y disclaimer versionado | ✅ Implementada |
 | F1.8 | Catálogo institucional y guidance vigente | ✅ Implementada |
+| F1.8D | Registro de visualización de próximos pasos | ✅ Implementada |
 | F1.9 | Integración frontend y E2E | ⏳ Pendiente |
 | F2 | Preparación para piloto y producción | ⏳ Pendiente |
 
@@ -498,7 +499,7 @@ El disclaimer debe ser controlado y versionable. No debe existir una segunda ló
 
 # F1.8 — Orientación y recursos asociados
 
-**Estado:** pendiente.
+**Estado:** implementada en backend.
 
 ## Objetivo
 
@@ -510,6 +511,16 @@ La implementación usa `ProtectionGuide` versionado por modalidad, HTML enriquec
 API ADMIN y `GET /analyses/{analysisId}/guidance`. Incluye siete guías iniciales `ACTIVE`, resolución
 dinámica del catálogo vigente, seguridad dual STANDARD/ADMIN, OpenAPI, Postman y pruebas con
 Testcontainers. La presentación Angular permanece en F1.9.
+
+## F1.8D — Registro de visualización de próximos pasos
+
+**Estado:** implementada en backend.
+
+Se agregó evidencia durable de la primera apertura del modal por un usuario STANDARD mediante
+`POST /analyses/{analysisId}/guidance/{protectionType}/view`. El registro es idempotente y seguro ante
+concurrencia, conserva la versión exacta `ACTIVE` o `RETIRED` mostrada y no incorpora PII. Exige
+sesión propietaria y CSRF; ADMIN no registra. La fase no agrega dashboard, lectura de métricas ni
+implementación Angular y no modifica el contrato de `GET /guidance`.
 
 ---
 
@@ -614,6 +625,8 @@ F0 + F1.0 + F1.1 + F1.2 + F1.3
                 F1.7
                   ↓
                 F1.8
+                  ↓
+                F1.8D
                   ↓
                 F1.9
                   ↓
