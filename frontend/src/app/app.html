@@ -322,6 +322,155 @@
           </div>
           }
         }
+        @if (utilityModelOrientationMessage()) {
+          <p class="success-message" role="status">{{ utilityModelOrientationMessage() }}</p>
+        }
+        <details class="orientation-subsection">
+          <summary>
+            <span class="orientation-summary-content">
+              <span class="orientation-summary-title">Modelo de utilidad</span>
+              <span class="status-badge" [attr.data-status]="latestUtilityModelGuide()?.status ?? 'NONE'">
+                Estado actual: {{ latestUtilityModelGuide()?.status === 'DRAFT' ? 'Borrador' : latestUtilityModelGuide()?.status === 'ACTIVE' ? 'Activo' : 'Sin versión' }}
+              </span>
+            </span>
+            <span class="orientation-chevron" aria-hidden="true"></span>
+          </summary>
+
+          <input
+            id="utility-model-orientation-short-description"
+            type="text"
+            [value]="utilityModelOrientationShortDescription()"
+            (input)="updateUtilityModelOrientationShortDescription($event)"
+            [style.border-color]="utilityModelOrientationShortDescriptionInvalid() ? 'var(--danger)' : null"
+            [attr.aria-invalid]="utilityModelOrientationShortDescriptionInvalid()"
+            minlength="30"
+            maxlength="240"
+            required
+            style="margin-top: 1rem; margin-bottom: 1rem"
+            placeholder="Orientación para Modelo de utilidad"
+          />
+          @if (utilityModelOrientationShortDescriptionInvalid()) {
+            <p class="field-error">
+              La descripción corta debe tener entre 30 y 240 caracteres.
+            </p>
+          }
+          <ckeditor
+            [editor]="utilityModelEditor"
+            [config]="patentEditorConfig"
+            (ready)="onUtilityModelEditorReady($event)"
+            (change)="updateUtilityModelOrientationHtml($event)"
+            (blur)="updateUtilityModelOrientationHtml($event)"
+            aria-label="Orientación de Modelo de utilidad"
+          ></ckeditor>
+          <div class="actions">
+            <button type="button" (click)="saveUtilityModelOrientationDraft()" [disabled]="!utilityModelOrientationCanSave() || !hasUtilityModelOrientationChanges() || savingUtilityModelOrientation()">
+              {{ savingUtilityModelOrientation() ? 'Guardando...' : 'Guardar borrador' }}
+            </button>
+            @if (savedUtilityModelOrientationDraft(); as draft) {
+              <button type="button" class="outline-button" (click)="openPublishUtilityModelOrientationModal()" [disabled]="hasUtilityModelOrientationChanges() || activatingUtilityModelOrientation() || savingUtilityModelOrientation()">
+                {{ activatingUtilityModelOrientation() ? 'Publicando...' : 'Publicar' }}
+              </button>
+            }
+          </div>
+          @if (utilityModelOrientationError()) {
+            <p class="error" role="alert">{{ utilityModelOrientationError() }}</p>
+          }
+        </details>
+        @if (showPublishUtilityModelOrientationModal(); as publishModal) {
+          @if (savedUtilityModelOrientationDraft(); as draft) {
+          <div class="modal-backdrop" (click)="closePublishUtilityModelOrientationModal()" (keydown.escape)="closePublishUtilityModelOrientationModal()">
+            <article class="panel modal-panel" role="dialog" aria-modal="true" aria-labelledby="publish-utility-model-orientation-title" (click)="$event.stopPropagation()" style="text-align: center">
+              <h2 id="publish-utility-model-orientation-title">Publicar orientación</h2>
+              <p>¿Confirmas publicar este borrador? Reemplazará la orientación activa actual.</p>
+              @if (utilityModelOrientationError()) {
+                <p class="error" role="alert">{{ utilityModelOrientationError() }}</p>
+              }
+              <div class="actions" style="justify-content: center">
+                <button type="button" class="ghost" (click)="closePublishUtilityModelOrientationModal()" [disabled]="activatingUtilityModelOrientation()">Cancelar</button>
+                <button type="button" (click)="activateUtilityModelOrientationDraft()" [disabled]="activatingUtilityModelOrientation()">
+                  {{ activatingUtilityModelOrientation() ? 'Publicando...' : 'Confirmar publicación' }}
+                </button>
+              </div>
+            </article>
+          </div>
+          }
+        }
+        @for (section of additionalOrientationSections; track section.type) {
+          @let state = orientationState(section.type);
+          <details class="orientation-subsection">
+            <summary>
+              <span class="orientation-summary-content">
+                <span class="orientation-summary-title">{{ section.label }}</span>
+                <span class="status-badge" [attr.data-status]="state.latestGuide()?.status ?? 'NONE'">
+                  Estado actual: {{ state.latestGuide()?.status === 'DRAFT' ? 'Borrador' : state.latestGuide()?.status === 'ACTIVE' ? 'Activo' : 'Sin versión' }}
+                </span>
+              </span>
+              <span class="orientation-chevron" aria-hidden="true"></span>
+            </summary>
+
+            <input
+              [id]="section.type + '-orientation-short-description'"
+              type="text"
+              [value]="state.shortDescription()"
+              (input)="updateAdditionalOrientationShortDescription(section.type, $event)"
+              [style.border-color]="state.shortDescriptionInvalid() ? 'var(--danger)' : null"
+              [attr.aria-invalid]="state.shortDescriptionInvalid()"
+              minlength="30"
+              maxlength="240"
+              required
+              style="margin-top: 1rem; margin-bottom: 1rem"
+              [placeholder]="'Orientación para ' + section.label"
+            />
+            @if (state.shortDescriptionInvalid()) {
+              <p class="field-error">
+                La descripción corta debe tener entre 30 y 240 caracteres.
+              </p>
+            }
+            <ckeditor
+              [editor]="additionalOrientationEditor"
+              [config]="patentEditorConfig"
+              (ready)="onAdditionalOrientationEditorReady(section.type, $event)"
+              (change)="updateAdditionalOrientationHtml(section.type, $event)"
+              (blur)="updateAdditionalOrientationHtml(section.type, $event)"
+              [attr.aria-label]="'Orientación de ' + section.label"
+            ></ckeditor>
+            <div class="actions">
+              <button type="button" (click)="saveAdditionalOrientationDraft(section.type)" [disabled]="!state.canSave() || !state.hasChanges() || state.saving()">
+                {{ state.saving() ? 'Guardando...' : 'Guardar borrador' }}
+              </button>
+              @if (state.savedDraft()) {
+                <button type="button" class="outline-button" (click)="openPublishAdditionalOrientationModal(section.type)" [disabled]="state.hasChanges() || state.activating() || state.saving()">
+                  {{ state.activating() ? 'Publicando...' : 'Publicar' }}
+                </button>
+              }
+            </div>
+            @if (state.error()) {
+              <p class="error" role="alert">{{ state.error() }}</p>
+            }
+          </details>
+          @if (state.message()) {
+            <p class="success-message" role="status">{{ state.message() }}</p>
+          }
+          @if (state.showPublishModal()) {
+            @if (state.savedDraft()) {
+              <div class="modal-backdrop" (click)="closePublishAdditionalOrientationModal(section.type)" (keydown.escape)="closePublishAdditionalOrientationModal(section.type)">
+                <article class="panel modal-panel" role="dialog" aria-modal="true" [attr.aria-labelledby]="'publish-' + section.type + '-orientation-title'" (click)="$event.stopPropagation()" style="text-align: center">
+                  <h2 [id]="'publish-' + section.type + '-orientation-title'">Publicar orientación</h2>
+                  <p>¿Confirmas publicar este borrador? Reemplazará la orientación activa actual.</p>
+                  @if (state.error()) {
+                    <p class="error" role="alert">{{ state.error() }}</p>
+                  }
+                  <div class="actions" style="justify-content: center">
+                    <button type="button" class="ghost" (click)="closePublishAdditionalOrientationModal(section.type)" [disabled]="state.activating()">Cancelar</button>
+                    <button type="button" (click)="activateAdditionalOrientationDraft(section.type)" [disabled]="state.activating()">
+                      {{ state.activating() ? 'Publicando...' : 'Confirmar publicación' }}
+                    </button>
+                  </div>
+                </article>
+              </div>
+            }
+          }
+        }
       </article>
       <article class="panel table-panel">
         <div class="table-head">

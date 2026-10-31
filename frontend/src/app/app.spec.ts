@@ -302,6 +302,33 @@ describe('App', () => {
     expect(app.patentOrientationHtml()).toContain('rel="noopener noreferrer"');
   });
 
+  it('should create a utility model orientation draft with the utility model type', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    const shortDescription = 'Descripción suficientemente extensa para el modelo de utilidad.';
+
+    app.utilityModelOrientationShortDescription.set(shortDescription);
+    app.utilityModelOrientationHtml.set('<p>Pasos del modelo de utilidad.</p>');
+    app.saveUtilityModelOrientationDraft();
+
+    const draftRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/admin/protection-guides`);
+    expect(draftRequest.request.method).toBe('POST');
+    expect(draftRequest.request.body).toEqual({
+      protectionType: 'UTILITY_MODEL',
+      shortDescription,
+      nextStepsContentHtml: '<p>Pasos del modelo de utilidad.</p>'
+    });
+    draftRequest.flush({
+      guideId: 'utility-model-guide',
+      protectionType: 'UTILITY_MODEL',
+      version: 1,
+      shortDescription,
+      nextStepsContentHtml: '<p>Pasos del modelo de utilidad.</p>',
+      status: 'DRAFT'
+    }, { status: 201, statusText: 'Created' });
+  });
+
   it('should render the home as the first screen', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();

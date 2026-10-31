@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { DOCUMENT } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, Signal, signal, WritableSignal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { CKEditorModule } from '@ckeditor/ckeditor5-angular';
 import { Alignment, Bold, ClassicEditor, Essentials, FindAndReplace, Heading, Image, ImageInsert, Italic, Link, List, Paragraph, RemoveFormat, SourceEditing, Strikethrough, Underline } from 'ckeditor5';
@@ -14,6 +14,25 @@ import { AdminProtectionGuideService, ProtectionGuide } from './services/admin-p
 import { AnalysisResponse, StandardAnalysisService } from './services/standard-analysis.service';
 
 const adminSettingsReloadKey = 'identipat.admin.reloadSection';
+type AdditionalOrientationType = 'INDUSTRIAL_DESIGN' | 'COPYRIGHT' | 'DISTINCTIVE_SIGN' | 'PLANT_BREEDER_CERTIFICATE' | 'TRADE_SECRET';
+
+interface OrientationEditorState {
+  shortDescription: WritableSignal<string>;
+  savedShortDescription: WritableSignal<string>;
+  shortDescriptionInvalid: Signal<boolean>;
+  html: WritableSignal<string>;
+  savedHtml: WritableSignal<string>;
+  hasChanges: Signal<boolean>;
+  canSave: Signal<boolean>;
+  saving: WritableSignal<boolean>;
+  message: WritableSignal<string>;
+  error: WritableSignal<string>;
+  latestGuide: WritableSignal<ProtectionGuide | null>;
+  savedDraft: WritableSignal<ProtectionGuide | null>;
+  activating: WritableSignal<boolean>;
+  showPublishModal: WritableSignal<boolean>;
+  editorInstance: { setData(data: string): void } | null;
+}
 
 @Component({
   selector: 'app-root',
@@ -84,8 +103,43 @@ export class App {
   readonly savedPatentOrientationDraft = signal<ProtectionGuide | null>(null);
   readonly activatingPatentOrientation = signal(false);
   readonly showPublishPatentOrientationModal = signal(false);
+  readonly utilityModelOrientationShortDescription = signal('');
+  readonly savedUtilityModelOrientationShortDescription = signal('');
+  readonly utilityModelOrientationShortDescriptionInvalid = computed(() => {
+    const length = this.utilityModelOrientationShortDescription().trim().length;
+    return length > 0 && (length < 30 || length > 240);
+  });
+  readonly utilityModelOrientationHtml = signal('');
+  readonly savedUtilityModelOrientationHtml = signal('');
+  readonly hasUtilityModelOrientationChanges = computed(() =>
+    this.utilityModelOrientationShortDescription() !== this.savedUtilityModelOrientationShortDescription()
+    || this.utilityModelOrientationHtml() !== this.savedUtilityModelOrientationHtml()
+  );
+  readonly utilityModelOrientationCanSave = computed(() => {
+    const descriptionLength = this.utilityModelOrientationShortDescription().trim().length;
+    return descriptionLength >= 30 && descriptionLength <= 240 && this.utilityModelOrientationHtml().trim().length > 0;
+  });
+  readonly savingUtilityModelOrientation = signal(false);
+  readonly utilityModelOrientationMessage = signal('');
+  readonly utilityModelOrientationError = signal('');
+  readonly latestUtilityModelGuide = signal<ProtectionGuide | null>(null);
+  readonly savedUtilityModelOrientationDraft = signal<ProtectionGuide | null>(null);
+  readonly activatingUtilityModelOrientation = signal(false);
+  readonly showPublishUtilityModelOrientationModal = signal(false);
+  readonly additionalOrientationSections: ReadonlyArray<{ type: AdditionalOrientationType; label: string }> = [
+    { type: 'INDUSTRIAL_DESIGN', label: 'Diseño industrial' },
+    { type: 'COPYRIGHT', label: 'Derecho de autor' },
+    { type: 'DISTINCTIVE_SIGN', label: 'Signo distintivo' },
+    { type: 'PLANT_BREEDER_CERTIFICATE', label: 'Certificado de obtentor' },
+    { type: 'TRADE_SECRET', label: 'Secreto empresarial' }
+  ];
+  private readonly additionalOrientationStates = new Map<AdditionalOrientationType, OrientationEditorState>(
+    this.additionalOrientationSections.map(section => [section.type, this.createOrientationEditorState()])
+  );
   readonly patentEditor = ClassicEditor;
   private patentEditorInstance: { setData(data: string): void } | null = null;
+  readonly utilityModelEditor = ClassicEditor;
+  private utilityModelEditorInstance: { setData(data: string): void } | null = null;
   readonly patentEditorConfig = {
     licenseKey: 'GPL',
     plugins: [Essentials, Paragraph, Heading, Bold, Italic, Underline, Strikethrough, RemoveFormat, Alignment, List, Link, Image, ImageInsert, FindAndReplace, SourceEditing],
@@ -99,6 +153,7 @@ export class App {
       }
     }
   };
+  readonly additionalOrientationEditor = ClassicEditor;
   readonly loading = signal(false);
   readonly analysesLoading = signal(false);
   readonly saving = signal(false);
@@ -672,6 +727,7 @@ export class App {
     this.patentOrientationHtml.set(normalizedHtml);
     this.adminProtectionGuideService.createDraft(
       this.userService.getAccessToken(),
+      'INVENTION_PATENT',
       this.patentOrientationShortDescription(),
       normalizedHtml
     ).subscribe({
@@ -708,11 +764,144 @@ export class App {
         this.patentOrientationHtml.set(html);
         this.savedPatentOrientationHtml.set(html);
         this.patentEditorInstance?.setData(html);
+
+        const latestUtilityModelGuide = guides
+          .filter(guide => guide.protectionType === 'UTILITY_MODEL')
+          .sort((left, right) => right.version - left.version)[0] ?? null;
+        this.latestUtilityModelGuide.set(latestUtilityModelGuide);
+        this.savedUtilityModelOrientationDraft.set(latestUtilityModelGuide?.status === 'DRAFT' ? latestUtilityModelGuide : null);
+        this.utilityModelOrientationShortDescription.set(latestUtilityModelGuide?.shortDescription ?? '');
+        this.savedUtilityModelOrientationShortDescription.set(latestUtilityModelGuide?.shortDescription ?? '');
+        const utilityModelHtml = this.normalizePatentOrientationHtml(latestUtilityModelGuide?.nextStepsContentHtml ?? '');
+        this.utilityModelOrientationHtml.set(utilityModelHtml);
+        this.savedUtilityModelOrientationHtml.set(utilityModelHtml);
+        this.utilityModelEditorInstance?.setData(utilityModelHtml);
+
+        this.additionalOrientationSections.forEach(section => {
+          const state = this.orientationState(section.type);
+          const latestGuide = guides
+            .filter(guide => guide.protectionType === section.type)
+            .sort((left, right) => right.version - left.version)[0] ?? null;
+          state.latestGuide.set(latestGuide);
+          state.savedDraft.set(latestGuide?.status === 'DRAFT' ? latestGuide : null);
+          state.shortDescription.set(latestGuide?.shortDescription ?? '');
+          state.savedShortDescription.set(latestGuide?.shortDescription ?? '');
+          const html = this.normalizePatentOrientationHtml(latestGuide?.nextStepsContentHtml ?? '');
+          state.html.set(html);
+          state.savedHtml.set(html);
+          state.editorInstance?.setData(html);
+        });
       },
       error: () => {
         this.patentOrientationError.set('No se pudo consultar el estado de la orientación.');
       }
     });
+  }
+
+  updateUtilityModelOrientationHtml(event: { editor: { getData(): string } }): void {
+    this.utilityModelOrientationHtml.set(this.normalizePatentOrientationHtml(event.editor.getData()));
+    this.utilityModelOrientationMessage.set('');
+    this.utilityModelOrientationError.set('');
+  }
+
+  updateUtilityModelOrientationShortDescription(event: Event): void {
+    this.utilityModelOrientationShortDescription.set((event.target as HTMLInputElement).value);
+    this.utilityModelOrientationMessage.set('');
+    this.utilityModelOrientationError.set('');
+  }
+
+  onUtilityModelEditorReady(editor: { setData(data: string): void }): void {
+    this.utilityModelEditorInstance = editor;
+    const html = this.utilityModelOrientationHtml();
+    if (html) {
+      editor.setData(html);
+    }
+  }
+
+  saveUtilityModelOrientationDraft(): void {
+    if (this.savingUtilityModelOrientation()) {
+      return;
+    }
+
+    this.savingUtilityModelOrientation.set(true);
+    this.utilityModelOrientationMessage.set('');
+    this.utilityModelOrientationError.set('');
+    const normalizedHtml = this.normalizePatentOrientationHtml(this.utilityModelOrientationHtml());
+    this.utilityModelOrientationHtml.set(normalizedHtml);
+    this.adminProtectionGuideService.createDraft(
+      this.userService.getAccessToken(),
+      'UTILITY_MODEL',
+      this.utilityModelOrientationShortDescription(),
+      normalizedHtml
+    ).subscribe({
+      next: draft => {
+        this.latestUtilityModelGuide.set(draft);
+        this.utilityModelOrientationShortDescription.set(draft.shortDescription);
+        this.savedUtilityModelOrientationShortDescription.set(draft.shortDescription);
+        const normalizedDraftHtml = this.normalizePatentOrientationHtml(draft.nextStepsContentHtml);
+        this.utilityModelOrientationHtml.set(normalizedDraftHtml);
+        this.savedUtilityModelOrientationHtml.set(normalizedDraftHtml);
+        this.utilityModelEditorInstance?.setData(normalizedDraftHtml);
+        this.savedUtilityModelOrientationDraft.set(draft);
+        this.utilityModelOrientationMessage.set('Borrador de orientación guardado correctamente.');
+        this.savingUtilityModelOrientation.set(false);
+      },
+      error: () => {
+        this.utilityModelOrientationError.set('No se pudo guardar el borrador de orientación. Inténtalo nuevamente.');
+        this.savingUtilityModelOrientation.set(false);
+      }
+    });
+  }
+
+  activateUtilityModelOrientationDraft(): void {
+    const draft = this.savedUtilityModelOrientationDraft();
+    if (draft) {
+      const sanitizedHtml = this.normalizePatentOrientationHtml(draft.nextStepsContentHtml);
+      const sanitizedDraft = { ...draft, nextStepsContentHtml: sanitizedHtml };
+      this.savedUtilityModelOrientationDraft.set(sanitizedDraft);
+      this.utilityModelOrientationHtml.set(sanitizedHtml);
+      this.savedUtilityModelOrientationHtml.set(sanitizedHtml);
+    }
+
+    const guide = this.savedUtilityModelOrientationDraft();
+    if (!this.showPublishUtilityModelOrientationModal() || !guide
+      || this.hasUtilityModelOrientationChanges() || this.activatingUtilityModelOrientation()) {
+      return;
+    }
+
+    this.activatingUtilityModelOrientation.set(true);
+    this.utilityModelOrientationMessage.set('');
+    this.utilityModelOrientationError.set('');
+    this.adminProtectionGuideService.activate(this.userService.getAccessToken(), guide.guideId).subscribe({
+      next: activeGuide => {
+        this.showPublishUtilityModelOrientationModal.set(false);
+        this.latestUtilityModelGuide.set(activeGuide);
+        this.savedUtilityModelOrientationDraft.set(null);
+        this.utilityModelOrientationMessage.set('Orientación publicada correctamente.');
+        this.activatingUtilityModelOrientation.set(false);
+        this.scheduleAdminSettingsReload();
+      },
+      error: () => {
+        this.utilityModelOrientationError.set('No se pudo publicar la orientación. Inténtalo nuevamente.');
+        this.activatingUtilityModelOrientation.set(false);
+      }
+    });
+  }
+
+  openPublishUtilityModelOrientationModal(): void {
+    if (!this.savedUtilityModelOrientationDraft() || this.hasUtilityModelOrientationChanges()
+      || this.savingUtilityModelOrientation() || this.activatingUtilityModelOrientation()) {
+      return;
+    }
+
+    this.utilityModelOrientationError.set('');
+    this.showPublishUtilityModelOrientationModal.set(true);
+  }
+
+  closePublishUtilityModelOrientationModal(): void {
+    if (!this.activatingUtilityModelOrientation()) {
+      this.showPublishUtilityModelOrientationModal.set(false);
+    }
   }
 
   activatePatentOrientationDraft(): void {
@@ -918,6 +1107,151 @@ export class App {
     link.download = `predicciones-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  private createOrientationEditorState(): OrientationEditorState {
+    const shortDescription = signal('');
+    const savedShortDescription = signal('');
+    const html = signal('');
+    const savedHtml = signal('');
+    return {
+      shortDescription,
+      savedShortDescription,
+      shortDescriptionInvalid: computed(() => {
+        const length = shortDescription().trim().length;
+        return length > 0 && (length < 30 || length > 240);
+      }),
+      html,
+      savedHtml,
+      hasChanges: computed(() => shortDescription() !== savedShortDescription() || html() !== savedHtml()),
+      canSave: computed(() => {
+        const descriptionLength = shortDescription().trim().length;
+        return descriptionLength >= 30 && descriptionLength <= 240 && html().trim().length > 0;
+      }),
+      saving: signal(false),
+      message: signal(''),
+      error: signal(''),
+      latestGuide: signal<ProtectionGuide | null>(null),
+      savedDraft: signal<ProtectionGuide | null>(null),
+      activating: signal(false),
+      showPublishModal: signal(false),
+      editorInstance: null
+    };
+  }
+
+  orientationState(type: AdditionalOrientationType): OrientationEditorState {
+    return this.additionalOrientationStates.get(type)!;
+  }
+
+  updateAdditionalOrientationHtml(type: AdditionalOrientationType, event: { editor: { getData(): string } }): void {
+    const state = this.orientationState(type);
+    state.html.set(this.normalizePatentOrientationHtml(event.editor.getData()));
+    state.message.set('');
+    state.error.set('');
+  }
+
+  updateAdditionalOrientationShortDescription(type: AdditionalOrientationType, event: Event): void {
+    const state = this.orientationState(type);
+    state.shortDescription.set((event.target as HTMLInputElement).value);
+    state.message.set('');
+    state.error.set('');
+  }
+
+  onAdditionalOrientationEditorReady(type: AdditionalOrientationType, editor: { setData(data: string): void }): void {
+    const state = this.orientationState(type);
+    state.editorInstance = editor;
+    const html = state.html();
+    if (html) {
+      editor.setData(html);
+    }
+  }
+
+  saveAdditionalOrientationDraft(type: AdditionalOrientationType): void {
+    const state = this.orientationState(type);
+    if (state.saving()) {
+      return;
+    }
+
+    state.saving.set(true);
+    state.message.set('');
+    state.error.set('');
+    const normalizedHtml = this.normalizePatentOrientationHtml(state.html());
+    state.html.set(normalizedHtml);
+    this.adminProtectionGuideService.createDraft(
+      this.userService.getAccessToken(),
+      type,
+      state.shortDescription(),
+      normalizedHtml
+    ).subscribe({
+      next: draft => {
+        state.latestGuide.set(draft);
+        state.shortDescription.set(draft.shortDescription);
+        state.savedShortDescription.set(draft.shortDescription);
+        const normalizedDraftHtml = this.normalizePatentOrientationHtml(draft.nextStepsContentHtml);
+        state.html.set(normalizedDraftHtml);
+        state.savedHtml.set(normalizedDraftHtml);
+        state.editorInstance?.setData(normalizedDraftHtml);
+        state.savedDraft.set(draft);
+        state.message.set('Borrador de orientación guardado correctamente.');
+        state.saving.set(false);
+      },
+      error: () => {
+        state.error.set('No se pudo guardar el borrador de orientación. Inténtalo nuevamente.');
+        state.saving.set(false);
+      }
+    });
+  }
+
+  activateAdditionalOrientationDraft(type: AdditionalOrientationType): void {
+    const state = this.orientationState(type);
+    const draft = state.savedDraft();
+    if (draft) {
+      const sanitizedHtml = this.normalizePatentOrientationHtml(draft.nextStepsContentHtml);
+      const sanitizedDraft = { ...draft, nextStepsContentHtml: sanitizedHtml };
+      state.savedDraft.set(sanitizedDraft);
+      state.html.set(sanitizedHtml);
+      state.savedHtml.set(sanitizedHtml);
+    }
+
+    const guide = state.savedDraft();
+    if (!state.showPublishModal() || !guide || state.hasChanges() || state.activating()) {
+      return;
+    }
+
+    state.activating.set(true);
+    state.message.set('');
+    state.error.set('');
+    this.adminProtectionGuideService.activate(this.userService.getAccessToken(), guide.guideId).subscribe({
+      next: activeGuide => {
+        state.showPublishModal.set(false);
+        state.latestGuide.set(activeGuide);
+        state.savedDraft.set(null);
+        state.message.set('Orientación publicada correctamente.');
+        state.activating.set(false);
+        this.scheduleAdminSettingsReload();
+      },
+      error: () => {
+        state.error.set('No se pudo publicar la orientación. Inténtalo nuevamente.');
+        state.activating.set(false);
+      }
+    });
+  }
+
+  openPublishAdditionalOrientationModal(type: AdditionalOrientationType): void {
+    const state = this.orientationState(type);
+    if (!state.savedDraft() || state.hasChanges() || state.saving() || state.activating()) {
+      return;
+    }
+
+    state.error.set('');
+    state.showPublishModal.set(true);
+  }
+
+  closePublishAdditionalOrientationModal(type: AdditionalOrientationType): void {
+    const state = this.orientationState(type);
+    if (!state.activating()) {
+      state.showPublishModal.set(false);
+    }
   }
 
   downloadUsersCsv(): void {

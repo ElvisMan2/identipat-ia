@@ -25,9 +25,9 @@ export class AdminProtectionGuideService {
     });
   }
 
-  createDraft(accessToken: string, shortDescription: string, nextStepsContentHtml: string): Observable<ProtectionGuide> {
+  createDraft(accessToken: string, protectionType: string, shortDescription: string, nextStepsContentHtml: string): Observable<ProtectionGuide> {
     return this.http.post<ProtectionGuide>(this.endpoint, {
-      protectionType: 'INVENTION_PATENT',
+      protectionType,
       shortDescription,
       nextStepsContentHtml
     }, {
