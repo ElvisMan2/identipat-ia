@@ -298,8 +298,27 @@ describe('App', () => {
     expect(service.activate).toHaveBeenCalledWith('', 'guide-id');
     expect(app.patentOrientationHtml()).not.toContain('<br');
     expect(app.patentOrientationHtml()).toContain('href="https://example.com/"');
+    expect(app.patentOrientationHtml()).not.toContain('target="_blank"');
+    expect(app.patentOrientationHtml()).not.toContain('rel="noopener noreferrer"');
+  });
+
+  it('should preserve the manual new-tab link setting', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    app.updatePatentOrientationHtml({
+      editor: { getData: () => '<p><a href="https://example.com/" target="_blank" rel="noopener noreferrer">enlace</a></p>' }
+    });
+
     expect(app.patentOrientationHtml()).toContain('target="_blank"');
     expect(app.patentOrientationHtml()).toContain('rel="noopener noreferrer"');
+
+    app.updatePatentOrientationHtml({
+      editor: { getData: () => '<p><a href="https://example.com/">enlace</a></p>' }
+    });
+
+    expect(app.patentOrientationHtml()).not.toContain('target="_blank"');
+    expect(app.patentOrientationHtml()).not.toContain('rel="noopener noreferrer"');
   });
 
   it('should create a utility model orientation draft with the utility model type', () => {

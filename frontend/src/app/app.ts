@@ -145,7 +145,16 @@ export class App {
     plugins: [Essentials, Paragraph, Heading, Bold, Italic, Underline, Strikethrough, RemoveFormat, Alignment, List, Link, Image, ImageInsert, FindAndReplace, SourceEditing],
     toolbar: ['undo', 'redo', '|', 'heading', '|', 'bold', 'italic', 'underline', 'strikethrough', '|', 'removeFormat', '|', 'alignment', '|', 'bulletedList', 'numberedList', 'link', 'insertImage', '|', 'findAndReplace', '|', 'sourceEditing'],
     link: {
-      addTargetToExternalLinks: true
+      decorators: {
+        openInNewTab: {
+          mode: 'manual',
+          label: 'Abrir en una pestaña nueva',
+          attributes: {
+            target: '_blank',
+            rel: 'noopener noreferrer'
+          }
+        }
+      }
     },
     image: {
       insert: {
@@ -667,7 +676,7 @@ export class App {
         }
 
         const allowed = attributeName === 'style'
-          || (elementName === 'a' && attributeName === 'target')
+          || (elementName === 'a' && (attributeName === 'target' || attributeName === 'rel'))
           || (elementName === 'a' && attributeName === 'href')
           || (elementName === 'img' && (attributeName === 'src' || attributeName === 'alt'));
         if (!allowed) {
@@ -680,8 +689,12 @@ export class App {
         if (!href || !this.isAllowedPatentOrientationUrl(href)) {
           element.setAttribute('href', 'https://example.com/');
         }
-        element.setAttribute('target', '_blank');
-        element.setAttribute('rel', 'noopener noreferrer');
+        if (element.getAttribute('target') === '_blank') {
+          element.setAttribute('rel', 'noopener noreferrer');
+        } else {
+          element.removeAttribute('target');
+          element.removeAttribute('rel');
+        }
       } else if (elementName === 'img') {
         const src = element.getAttribute('src');
         if (src && !this.isAllowedPatentOrientationUrl(src)) {
