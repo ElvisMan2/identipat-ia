@@ -205,7 +205,7 @@ describe('App', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Borrador v2');
 
     const publishButton = Array.from(root.querySelectorAll<HTMLButtonElement>('button'))
-      .find(button => button.textContent?.includes('Publicar borrador'))!;
+      .find(button => button.textContent?.includes('Publicar'))!;
     expect(publishButton.disabled).toBeFalse();
     publishButton.click();
     fixture.detectChanges();

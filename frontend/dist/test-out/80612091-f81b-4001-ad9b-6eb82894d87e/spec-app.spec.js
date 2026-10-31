@@ -2978,7 +2978,7 @@ var init_app = __esm({
               </button>\r
               @if (savedDisclaimerDraft(); as draft) {\r
                 <button type="button" class="outline-button" (click)="openPublishDisclaimerModal()" [disabled]="hasUnsavedDisclaimerChanges() || activatingDisclaimer() || savingDisclaimerDraft()">\r
-                  {{ activatingDisclaimer() ? 'Publicando...' : 'Publicar borrador' }}\r
+                  {{ activatingDisclaimer() ? 'Publicando...' : 'Publicar' }}\r
                 </button>\r
               }\r
             </div>\r
@@ -11051,7 +11051,7 @@ var require_app_spec = __commonJS({
         expect(saveButton.disabled).toBeTrue();
         expect(fixture.nativeElement.textContent).toContain("Borrador guardado correctamente.");
         expect(fixture.nativeElement.textContent).not.toContain("Borrador v2");
-        const publishButton = Array.from(root.querySelectorAll("button")).find((button) => button.textContent?.includes("Publicar borrador"));
+        const publishButton = Array.from(root.querySelectorAll("button")).find((button) => button.textContent?.includes("Publicar"));
         expect(publishButton.disabled).toBeFalse();
         publishButton.click();
         fixture.detectChanges();

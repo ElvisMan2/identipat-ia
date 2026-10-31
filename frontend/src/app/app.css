@@ -147,6 +147,7 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
 .panel { border: 1px solid var(--line); border-radius: 7px; padding: 1rem; background: #fff; box-shadow: 0 10px 25px rgb(24 51 47 / .06); }
 .panel h2 { margin-top: 0; font-size: 1.2rem; }
+.orientation-subsection .ck-editor__editable { min-height: 180px; }
 .empty-state { color: var(--muted); }
 .profile-readonly { display: grid; gap: .25rem; margin-bottom: 1rem; color: var(--muted); }
 .profile-readonly p { margin: 0; }

@@ -2,18 +2,22 @@ import { CommonModule } from '@angular/common';
 import { DOCUMENT } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { CKEditorModule } from '@ckeditor/ckeditor5-angular';
+import { Alignment, Bold, ClassicEditor, Essentials, Italic, Link, List, Paragraph, SourceEditing, Underline } from 'ckeditor5';
+import 'ckeditor5/ckeditor5.css';
 import { Observable } from 'rxjs';
 import { StandardUserRegistrationRequest, UserService } from './services/user.service';
 import { User } from './models/user.model';
 import { AdminAnalysis, AnalysisStatus } from './services/admin-analysis.service';
 import { AdminReportDisclaimerService, ReportDisclaimer } from './services/admin-report-disclaimer.service';
+import { AdminProtectionGuideService, ProtectionGuide } from './services/admin-protection-guide.service';
 import { AnalysisResponse, StandardAnalysisService } from './services/standard-analysis.service';
 
 const adminSettingsReloadKey = 'identipat.admin.reloadSection';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, CKEditorModule],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -22,6 +26,7 @@ export class App {
   private readonly document = inject(DOCUMENT);
   private readonly userService = inject(UserService);
   private readonly adminReportDisclaimerService = inject(AdminReportDisclaimerService);
+  private readonly adminProtectionGuideService = inject(AdminProtectionGuideService);
   private readonly standardAnalysisService = inject(StandardAnalysisService);
   private readonly defaultAdminPassword = 'admin';
 
@@ -56,6 +61,36 @@ export class App {
   readonly disclaimerActivationMessage = signal('');
   readonly disclaimerActivationError = signal('');
   readonly showPublishDisclaimerModal = signal(false);
+  readonly patentOrientationShortDescription = signal('');
+  readonly savedPatentOrientationShortDescription = signal('');
+  readonly patentOrientationShortDescriptionInvalid = computed(() => {
+    const length = this.patentOrientationShortDescription().trim().length;
+    return length > 0 && (length < 30 || length > 240);
+  });
+  readonly patentOrientationHtml = signal('');
+  readonly savedPatentOrientationHtml = signal('');
+  readonly hasPatentOrientationChanges = computed(() =>
+    this.patentOrientationShortDescription() !== this.savedPatentOrientationShortDescription()
+    || this.patentOrientationHtml() !== this.savedPatentOrientationHtml()
+  );
+  readonly patentOrientationCanSave = computed(() => {
+    const descriptionLength = this.patentOrientationShortDescription().trim().length;
+    return descriptionLength >= 30 && descriptionLength <= 240 && this.patentOrientationHtml().trim().length > 0;
+  });
+  readonly savingPatentOrientation = signal(false);
+  readonly patentOrientationMessage = signal('');
+  readonly patentOrientationError = signal('');
+  readonly latestPatentGuide = signal<ProtectionGuide | null>(null);
+  readonly savedPatentOrientationDraft = signal<ProtectionGuide | null>(null);
+  readonly activatingPatentOrientation = signal(false);
+  readonly showPublishPatentOrientationModal = signal(false);
+  readonly patentEditor = ClassicEditor;
+  private patentEditorInstance: { setData(data: string): void } | null = null;
+  readonly patentEditorConfig = {
+    licenseKey: 'GPL',
+    plugins: [Essentials, Paragraph, Bold, Italic, Underline, Alignment, List, Link, SourceEditing],
+    toolbar: ['undo', 'redo', '|', 'bold', 'italic', 'underline', '|', 'alignment', '|', 'bulletedList', 'numberedList', 'link', '|', 'sourceEditing']
+  };
   readonly loading = signal(false);
   readonly analysesLoading = signal(false);
   readonly saving = signal(false);
@@ -125,6 +160,7 @@ export class App {
           this.loadUsers(0);
           if (this.adminSection() === 'settings') {
             this.loadReportDisclaimers();
+            this.loadPatentOrientationGuide();
           }
         },
         error: () => this.logout()
@@ -476,6 +512,7 @@ export class App {
       this.loadProfileForm();
     } else if (section === 'settings' && !this.settingsLoaded() && !this.settingsLoading()) {
       this.loadReportDisclaimers();
+      this.loadPatentOrientationGuide();
     }
   }
 
@@ -526,6 +563,121 @@ export class App {
     this.disclaimerDraftError.set('');
     this.disclaimerActivationMessage.set('');
     this.disclaimerActivationError.set('');
+  }
+
+  updatePatentOrientationHtml(event: { editor: { getData(): string } }): void {
+    this.patentOrientationHtml.set(event.editor.getData());
+    this.patentOrientationMessage.set('');
+    this.patentOrientationError.set('');
+  }
+
+  updatePatentOrientationShortDescription(event: Event): void {
+    this.patentOrientationShortDescription.set((event.target as HTMLInputElement).value);
+    this.patentOrientationMessage.set('');
+    this.patentOrientationError.set('');
+  }
+
+  onPatentEditorReady(editor: { setData(data: string): void }): void {
+    this.patentEditorInstance = editor;
+    const html = this.patentOrientationHtml();
+    if (html) {
+      editor.setData(html);
+    }
+  }
+
+  savePatentOrientationDraft(): void {
+    if (this.savingPatentOrientation()) {
+      return;
+    }
+
+    this.savingPatentOrientation.set(true);
+    this.patentOrientationMessage.set('');
+    this.patentOrientationError.set('');
+    this.adminProtectionGuideService.createDraft(
+      this.userService.getAccessToken(),
+      this.patentOrientationShortDescription(),
+      this.patentOrientationHtml()
+    ).subscribe({
+      next: draft => {
+        this.latestPatentGuide.set(draft);
+        this.savedPatentOrientationShortDescription.set(draft.shortDescription);
+        this.savedPatentOrientationHtml.set(draft.nextStepsContentHtml);
+        this.savedPatentOrientationDraft.set(draft);
+        this.showPatentOrientationMessage('Borrador de orientación guardado correctamente.');
+        this.savingPatentOrientation.set(false);
+      },
+      error: () => {
+        this.patentOrientationError.set('No se pudo guardar el borrador de orientación. Inténtalo nuevamente.');
+        this.savingPatentOrientation.set(false);
+      }
+    });
+  }
+
+  loadPatentOrientationGuide(): void {
+    this.adminProtectionGuideService.getAll(this.userService.getAccessToken()).subscribe({
+      next: guides => {
+        const latestPatentGuide = guides
+          .filter(guide => guide.protectionType === 'INVENTION_PATENT')
+          .sort((left, right) => right.version - left.version)[0] ?? null;
+        this.latestPatentGuide.set(latestPatentGuide);
+        this.savedPatentOrientationDraft.set(latestPatentGuide?.status === 'DRAFT' ? latestPatentGuide : null);
+        this.patentOrientationShortDescription.set(latestPatentGuide?.shortDescription ?? '');
+        this.savedPatentOrientationShortDescription.set(latestPatentGuide?.shortDescription ?? '');
+        const html = latestPatentGuide?.nextStepsContentHtml ?? '';
+        this.patentOrientationHtml.set(html);
+        this.savedPatentOrientationHtml.set(html);
+        this.patentEditorInstance?.setData(html);
+      },
+      error: () => {
+        this.patentOrientationError.set('No se pudo consultar el estado de la orientación.');
+      }
+    });
+  }
+
+  activatePatentOrientationDraft(): void {
+    const guide = this.savedPatentOrientationDraft();
+    if (!this.showPublishPatentOrientationModal() || !guide
+      || this.hasPatentOrientationChanges() || this.activatingPatentOrientation()) {
+      return;
+    }
+
+    this.activatingPatentOrientation.set(true);
+    this.patentOrientationMessage.set('');
+    this.patentOrientationError.set('');
+    this.adminProtectionGuideService.activate(this.userService.getAccessToken(), guide.guideId).subscribe({
+      next: activeGuide => {
+        this.showPublishPatentOrientationModal.set(false);
+        this.latestPatentGuide.set(activeGuide);
+        this.savedPatentOrientationDraft.set(null);
+        this.showPatentOrientationMessage('Orientación publicada correctamente.');
+        this.activatingPatentOrientation.set(false);
+        this.scheduleAdminSettingsReload();
+      },
+      error: () => {
+        this.patentOrientationError.set('No se pudo publicar la orientación. Inténtalo nuevamente.');
+        this.activatingPatentOrientation.set(false);
+      }
+    });
+  }
+
+  openPublishPatentOrientationModal(): void {
+    if (!this.savedPatentOrientationDraft() || this.hasPatentOrientationChanges()
+      || this.savingPatentOrientation() || this.activatingPatentOrientation()) {
+      return;
+    }
+
+    this.patentOrientationError.set('');
+    this.showPublishPatentOrientationModal.set(true);
+  }
+
+  closePublishPatentOrientationModal(): void {
+    if (!this.activatingPatentOrientation()) {
+      this.showPublishPatentOrientationModal.set(false);
+    }
+  }
+
+  private showPatentOrientationMessage(message: string): void {
+    this.patentOrientationMessage.set(message);
   }
 
   saveDisclaimerDraft(): void {

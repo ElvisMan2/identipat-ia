@@ -154,7 +154,7 @@
                 <tr [class.editing]="isEditing(user)">
                   <td>{{ user.userId }}</td><td>{{ user.firstName }} {{ user.paternalLastName }} {{ user.maternalLastName }}</td>
                   <td>{{ user.doiType }}</td><td>{{ user.doi }}</td><td>{{ user.gender }}</td><td>{{ user.email }}</td>
-                  <td>{{ user.userType?.toUpperCase() === 'ADMIN' ? 'Administrador' : '' }}</td><td>{{ user.profession }}</td><td>{{ user.status }}</td>
+                  <td>{{ user.userType.toUpperCase() === 'ADMIN' ? 'Administrador' : '' }}</td><td>{{ user.profession }}</td><td>{{ user.status }}</td>
                   <td class="row-actions">
                     <button type="button" class="ghost" (click)="startEdit(user)">Editar</button>
                   </td>
@@ -243,7 +243,81 @@
     }
 
     @if (adminSection() === 'settings') {
-    <section class="layout">
+    <section class="layout" style="margin-bottom: 1.5rem">
+      <article class="panel table-panel">
+        <div class="table-head">
+          <h2>Orientación</h2>
+        </div>
+        <p class="empty-state">Orientación personalizada por cada tipo de registro.</p>
+        <section class="orientation-subsection">
+          <h3>Patente de Invención</h3>
+          <p class="status-badge" [attr.data-status]="latestPatentGuide()?.status ?? 'NONE'">
+            Estado actual: {{ latestPatentGuide()?.status === 'DRAFT' ? 'Borrador' : latestPatentGuide()?.status === 'ACTIVE' ? 'Activo' : 'Sin versión' }}
+          </p>
+
+          <input
+            id="patent-orientation-short-description"
+            type="text"
+            [value]="patentOrientationShortDescription()"
+            (input)="updatePatentOrientationShortDescription($event)"
+            [style.border-color]="patentOrientationShortDescriptionInvalid() ? 'var(--danger)' : null"
+            [attr.aria-invalid]="patentOrientationShortDescriptionInvalid()"
+            minlength="30"
+            maxlength="240"
+            required
+            style="margin-bottom: 1rem"
+            placeholder="Orientación para Patente de Invención"
+          />
+          @if (patentOrientationShortDescriptionInvalid()) {
+            <p class="field-error">
+              La descripción corta debe tener entre 30 y 240 caracteres.
+            </p>
+          }
+          <ckeditor
+            [editor]="patentEditor"
+            [config]="patentEditorConfig"
+            (ready)="onPatentEditorReady($event)"
+            (change)="updatePatentOrientationHtml($event)"
+            (blur)="updatePatentOrientationHtml($event)"
+            aria-label="Orientación de Patente de Invención"
+          ></ckeditor>
+          <div class="actions">
+            <button type="button" (click)="savePatentOrientationDraft()" [disabled]="!patentOrientationCanSave() || !hasPatentOrientationChanges() || savingPatentOrientation()">
+              {{ savingPatentOrientation() ? 'Guardando...' : 'Guardar borrador' }}
+            </button>
+            @if (savedPatentOrientationDraft(); as draft) {
+              <button type="button" class="outline-button" (click)="openPublishPatentOrientationModal()" [disabled]="hasPatentOrientationChanges() || activatingPatentOrientation() || savingPatentOrientation()">
+                {{ activatingPatentOrientation() ? 'Publicando...' : 'Publicar' }}
+              </button>
+            }
+          </div>
+          @if (patentOrientationError()) {
+            <p class="error" role="alert">{{ patentOrientationError() }}</p>
+          }
+        </section>
+        @if (patentOrientationMessage()) {
+          <p class="success-message" role="status">{{ patentOrientationMessage() }}</p>
+        }
+        @if (showPublishPatentOrientationModal(); as publishModal) {
+          @if (savedPatentOrientationDraft(); as draft) {
+          <div class="modal-backdrop" (click)="closePublishPatentOrientationModal()" (keydown.escape)="closePublishPatentOrientationModal()">
+            <article class="panel modal-panel" role="dialog" aria-modal="true" aria-labelledby="publish-patent-orientation-title" (click)="$event.stopPropagation()" style="text-align: center">
+              <h2 id="publish-patent-orientation-title">Publicar orientación</h2>
+              <p>¿Confirmas publicar este borrador? Reemplazará la orientación activa actual.</p>
+              @if (patentOrientationError()) {
+                <p class="error" role="alert">{{ patentOrientationError() }}</p>
+              }
+              <div class="actions" style="justify-content: center">
+                <button type="button" class="ghost" (click)="closePublishPatentOrientationModal()" [disabled]="activatingPatentOrientation()">Cancelar</button>
+                <button type="button" (click)="activatePatentOrientationDraft()" [disabled]="activatingPatentOrientation()">
+                  {{ activatingPatentOrientation() ? 'Publicando...' : 'Confirmar publicación' }}
+                </button>
+              </div>
+            </article>
+          </div>
+          }
+        }
+      </article>
       <article class="panel table-panel">
         <div class="table-head">
           <h2>Disclaimer Institucional</h2>
@@ -279,7 +353,7 @@
               </button>
               @if (savedDisclaimerDraft(); as draft) {
                 <button type="button" class="outline-button" (click)="openPublishDisclaimerModal()" [disabled]="hasUnsavedDisclaimerChanges() || activatingDisclaimer() || savingDisclaimerDraft()">
-                  {{ activatingDisclaimer() ? 'Publicando...' : 'Publicar borrador' }}
+                  {{ activatingDisclaimer() ? 'Publicando...' : 'Publicar' }}
                 </button>
               }
             </div>
