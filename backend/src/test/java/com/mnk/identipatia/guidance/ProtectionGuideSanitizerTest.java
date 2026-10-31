@@ -18,13 +18,19 @@ class ProtectionGuideSanitizerTest {
     @Test
     void keepsOnlyPolicyElementsAndNormalizesHttpsLinks() {
         String sanitized = sanitizer.sanitize("""
-                <h3>Título</h3><p>Texto <strong>fuerte</strong> <em>énfasis</em><br></p>
+                <h1>Título principal</h1><h2>Sección</h2><h3>Título</h3><h4>Recursos</h4>
+                <div style="color: red; position: fixed">Texto <u>subrayado</u> <s>tachado</s></div>
+                <p><strong>fuerte</strong> <em>énfasis</em><br /></p>
                 <ul><li>Uno</li></ul><ol><li>Dos</li></ol><h4>Recursos</h4>
+                <img src="https://www.indecopi.gob.pe/logo.png" alt="Logo">
                 <a href="https://www.indecopi.gob.pe/">Enlace</a>
                 """);
 
         assertThat(sanitized)
-                .contains("<h3>Título</h3>", "<strong>fuerte</strong>", "<em>énfasis</em>",
+                .contains("<h1>Título principal</h1>", "<h2>Sección</h2>", "<h3>Título</h3>",
+                        "<h4>Recursos</h4>", "<u>subrayado</u>", "<s>tachado</s>", "color",
+                        "<img", "alt=\"Logo\"",
+                        "<strong>fuerte</strong>", "<em>énfasis</em>",
                         "href=\"https://www.indecopi.gob.pe/\"", "target=\"_blank\"",
                         "rel=\"noopener noreferrer\"");
         assertThat(sanitizer.extractVisibleText(sanitized)).contains("Título", "Texto", "Enlace");

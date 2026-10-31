@@ -19,7 +19,11 @@ public class ProtectionGuideSanitizer {
     public static final String POLICY_VERSION = "protection-guide-html/1.0";
 
     private static final PolicyFactory POLICY = new HtmlPolicyBuilder()
-            .allowElements("p", "br", "h3", "h4", "strong", "em", "ul", "ol", "li")
+            .allowElements("p", "br", "h1", "h2", "h3", "h4", "div", "strong", "em", "u", "s", "ul", "ol", "li", "img")
+            .allowStyling()
+            .allowAttributes("alt").onElements("img")
+            .allowAttributes("src").matching((elementName, attributeName, value) ->
+                isAllowedHttps(value) ? value : null).onElements("img")
             .allowElements((elementName, attributes) -> {
                 removeAttribute(attributes, "target");
                 removeAttribute(attributes, "rel");
