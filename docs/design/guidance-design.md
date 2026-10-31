@@ -32,10 +32,11 @@ protectionType + LF + shortDescription.trim() + LF + sanitizedNextStepsContentHt
 
 ## Seguridad del contenido
 
-El backend usa OWASP Java HTML Sanitizer. Solo admite `p`, `br`, `h3`, `h4`, `strong`, `em`, `ul`,
-`ol`, `li` y `a`. En enlaces solo se conserva `href` con protocolo HTTPS; todos se normalizan a
-`target="_blank" rel="noopener noreferrer"`. No se persisten estilos, clases, IDs, handlers,
-contenido multimedia, formularios ni protocolos ejecutables.
+El backend usa OWASP Java HTML Sanitizer. Admite `p`, `br`, `h1`, `h2`, `h3`, `h4`, `div`, `strong`,
+`em`, `u`, `s`, `ul`, `ol`, `li`, `img` y `a`. Se conservan estilos inline mediante la política CSS
+de OWASP. Las imágenes solo aceptan `src` con protocolo HTTPS y `alt`. En enlaces solo se conserva
+`href` con protocolo HTTPS; todos se normalizan a `target="_blank" rel="noopener noreferrer"`.
+No se persisten clases, IDs, handlers, etiquetas `<style>`, formularios ni protocolos ejecutables.
 
 El HTML se sanitiza antes de guardar y nuevamente al activar. Debe conservar texto visible. La
 descripción breve exige 30–240 caracteres, texto plano y ausencia de URLs.

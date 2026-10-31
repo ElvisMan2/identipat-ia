@@ -566,9 +566,68 @@ export class App {
   }
 
   updatePatentOrientationHtml(event: { editor: { getData(): string } }): void {
-    this.patentOrientationHtml.set(event.editor.getData());
+    this.patentOrientationHtml.set(this.normalizePatentOrientationHtml(event.editor.getData()));
     this.patentOrientationMessage.set('');
     this.patentOrientationError.set('');
+  }
+
+  private normalizePatentOrientationHtml(html: string): string {
+    if (!html.trim() || typeof DOMParser === 'undefined') {
+      return html;
+    }
+
+    const parsedDocument = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
+    const allowedElements = new Set(['p', 'br', 'h1', 'h2', 'h3', 'h4', 'div', 'strong', 'em', 'u', 's', 'ul', 'ol', 'li', 'a', 'img']);
+    const removedContentElements = new Set(['script', 'style', 'iframe', 'object', 'embed', 'template', 'form']);
+
+    Array.from(parsedDocument.body.querySelectorAll('*')).reverse().forEach(element => {
+      const elementName = element.tagName.toLowerCase();
+      if (removedContentElements.has(elementName)) {
+        element.remove();
+      } else if (!allowedElements.has(elementName)) {
+        while (element.firstChild) {
+          element.parentNode?.insertBefore(element.firstChild, element);
+        }
+        element.remove();
+      }
+    });
+
+    parsedDocument.body.querySelectorAll('*').forEach(element => {
+      const elementName = element.tagName.toLowerCase();
+      Array.from(element.attributes).forEach(attribute => {
+        const attributeName = attribute.name.toLowerCase();
+        const allowed = attributeName === 'style'
+          || (elementName === 'a' && attributeName === 'href')
+          || (elementName === 'img' && (attributeName === 'src' || attributeName === 'alt'));
+        if (!allowed) {
+          element.removeAttribute(attribute.name);
+        }
+      });
+
+      if (elementName === 'a') {
+        const href = element.getAttribute('href');
+        if (href && !this.isAllowedPatentOrientationUrl(href)) {
+          element.removeAttribute('href');
+        }
+        element.setAttribute('target', '_blank');
+        element.setAttribute('rel', 'noopener noreferrer');
+      } else if (elementName === 'img') {
+        const src = element.getAttribute('src');
+        if (src && !this.isAllowedPatentOrientationUrl(src)) {
+          element.removeAttribute('src');
+        }
+      }
+    });
+    return parsedDocument.body.innerHTML;
+  }
+
+  private isAllowedPatentOrientationUrl(value: string): boolean {
+    try {
+      const url = new URL(value);
+      return url.protocol === 'https:' && url.hostname.length > 0;
+    } catch {
+      return false;
+    }
   }
 
   updatePatentOrientationShortDescription(event: Event): void {
@@ -593,15 +652,21 @@ export class App {
     this.savingPatentOrientation.set(true);
     this.patentOrientationMessage.set('');
     this.patentOrientationError.set('');
+    const normalizedHtml = this.normalizePatentOrientationHtml(this.patentOrientationHtml());
+    this.patentOrientationHtml.set(normalizedHtml);
     this.adminProtectionGuideService.createDraft(
       this.userService.getAccessToken(),
       this.patentOrientationShortDescription(),
-      this.patentOrientationHtml()
+      normalizedHtml
     ).subscribe({
       next: draft => {
         this.latestPatentGuide.set(draft);
+        this.patentOrientationShortDescription.set(draft.shortDescription);
         this.savedPatentOrientationShortDescription.set(draft.shortDescription);
-        this.savedPatentOrientationHtml.set(draft.nextStepsContentHtml);
+        const normalizedDraftHtml = this.normalizePatentOrientationHtml(draft.nextStepsContentHtml);
+        this.patentOrientationHtml.set(normalizedDraftHtml);
+        this.savedPatentOrientationHtml.set(normalizedDraftHtml);
+        this.patentEditorInstance?.setData(normalizedDraftHtml);
         this.savedPatentOrientationDraft.set(draft);
         this.showPatentOrientationMessage('Borrador de orientación guardado correctamente.');
         this.savingPatentOrientation.set(false);
@@ -623,7 +688,7 @@ export class App {
         this.savedPatentOrientationDraft.set(latestPatentGuide?.status === 'DRAFT' ? latestPatentGuide : null);
         this.patentOrientationShortDescription.set(latestPatentGuide?.shortDescription ?? '');
         this.savedPatentOrientationShortDescription.set(latestPatentGuide?.shortDescription ?? '');
-        const html = latestPatentGuide?.nextStepsContentHtml ?? '';
+        const html = this.normalizePatentOrientationHtml(latestPatentGuide?.nextStepsContentHtml ?? '');
         this.patentOrientationHtml.set(html);
         this.savedPatentOrientationHtml.set(html);
         this.patentEditorInstance?.setData(html);
