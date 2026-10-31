@@ -249,11 +249,16 @@
           <h2>Orientación</h2>
         </div>
         <p class="empty-state">Orientación personalizada por cada tipo de registro.</p>
-        <section class="orientation-subsection">
-          <h3>Patente de Invención</h3>
-          <p class="status-badge" [attr.data-status]="latestPatentGuide()?.status ?? 'NONE'">
-            Estado actual: {{ latestPatentGuide()?.status === 'DRAFT' ? 'Borrador' : latestPatentGuide()?.status === 'ACTIVE' ? 'Activo' : 'Sin versión' }}
-          </p>
+        <details class="orientation-subsection">
+          <summary>
+            <span class="orientation-summary-content">
+              <span class="orientation-summary-title">Patente de Invención</span>
+              <span class="status-badge" [attr.data-status]="latestPatentGuide()?.status ?? 'NONE'">
+                Estado actual: {{ latestPatentGuide()?.status === 'DRAFT' ? 'Borrador' : latestPatentGuide()?.status === 'ACTIVE' ? 'Activo' : 'Sin versión' }}
+              </span>
+            </span>
+            <span class="orientation-chevron" aria-hidden="true"></span>
+          </summary>
 
           <input
             id="patent-orientation-short-description"
@@ -265,7 +270,7 @@
             minlength="30"
             maxlength="240"
             required
-            style="margin-bottom: 1rem"
+            style="margin-top: 1rem; margin-bottom: 1rem"
             placeholder="Orientación para Patente de Invención"
           />
           @if (patentOrientationShortDescriptionInvalid()) {
@@ -294,7 +299,7 @@
           @if (patentOrientationError()) {
             <p class="error" role="alert">{{ patentOrientationError() }}</p>
           }
-        </section>
+        </details>
         @if (patentOrientationMessage()) {
           <p class="success-message" role="status">{{ patentOrientationMessage() }}</p>
         }
