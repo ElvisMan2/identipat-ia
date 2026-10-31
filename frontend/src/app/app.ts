@@ -3,7 +3,7 @@ import { DOCUMENT } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { CKEditorModule } from '@ckeditor/ckeditor5-angular';
-import { Alignment, Bold, ClassicEditor, Essentials, Italic, Link, List, Paragraph, SourceEditing, Underline } from 'ckeditor5';
+import { Alignment, Bold, ClassicEditor, Essentials, FindAndReplace, Heading, Image, ImageInsert, Italic, Link, List, Paragraph, RemoveFormat, SourceEditing, Strikethrough, Underline } from 'ckeditor5';
 import 'ckeditor5/ckeditor5.css';
 import { Observable } from 'rxjs';
 import { StandardUserRegistrationRequest, UserService } from './services/user.service';
@@ -88,8 +88,16 @@ export class App {
   private patentEditorInstance: { setData(data: string): void } | null = null;
   readonly patentEditorConfig = {
     licenseKey: 'GPL',
-    plugins: [Essentials, Paragraph, Bold, Italic, Underline, Alignment, List, Link, SourceEditing],
-    toolbar: ['undo', 'redo', '|', 'bold', 'italic', 'underline', '|', 'alignment', '|', 'bulletedList', 'numberedList', 'link', '|', 'sourceEditing']
+    plugins: [Essentials, Paragraph, Heading, Bold, Italic, Underline, Strikethrough, RemoveFormat, Alignment, List, Link, Image, ImageInsert, FindAndReplace, SourceEditing],
+    toolbar: ['undo', 'redo', '|', 'heading', '|', 'bold', 'italic', 'underline', 'strikethrough', '|', 'removeFormat', '|', 'alignment', '|', 'bulletedList', 'numberedList', 'link', 'insertImage', '|', 'findAndReplace', '|', 'sourceEditing'],
+    link: {
+      addTargetToExternalLinks: true
+    },
+    image: {
+      insert: {
+        integrations: ['insertImageViaUrl']
+      }
+    }
   };
   readonly loading = signal(false);
   readonly analysesLoading = signal(false);
@@ -577,12 +585,14 @@ export class App {
     }
 
     const parsedDocument = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
-    const allowedElements = new Set(['p', 'br', 'h1', 'h2', 'h3', 'h4', 'div', 'strong', 'em', 'u', 's', 'ul', 'ol', 'li', 'a', 'img']);
+    const allowedElements = new Set(['p', 'h1', 'h2', 'h3', 'h4', 'div', 'strong', 'em', 'u', 's', 'ul', 'ol', 'li', 'a', 'img']);
     const removedContentElements = new Set(['script', 'style', 'iframe', 'object', 'embed', 'template', 'form']);
 
     Array.from(parsedDocument.body.querySelectorAll('*')).reverse().forEach(element => {
       const elementName = element.tagName.toLowerCase();
-      if (removedContentElements.has(elementName)) {
+      if (elementName === 'br') {
+        element.replaceWith(parsedDocument.createTextNode('\u00A0'));
+      } else if (removedContentElements.has(elementName)) {
         element.remove();
       } else if (!allowedElements.has(elementName)) {
         while (element.firstChild) {
@@ -596,7 +606,13 @@ export class App {
       const elementName = element.tagName.toLowerCase();
       Array.from(element.attributes).forEach(attribute => {
         const attributeName = attribute.name.toLowerCase();
+        if (attributeName === 'data-list-item-id') {
+          element.removeAttribute(attribute.name);
+          return;
+        }
+
         const allowed = attributeName === 'style'
+          || (elementName === 'a' && attributeName === 'target')
           || (elementName === 'a' && attributeName === 'href')
           || (elementName === 'img' && (attributeName === 'src' || attributeName === 'alt'));
         if (!allowed) {
@@ -606,8 +622,8 @@ export class App {
 
       if (elementName === 'a') {
         const href = element.getAttribute('href');
-        if (href && !this.isAllowedPatentOrientationUrl(href)) {
-          element.removeAttribute('href');
+        if (!href || !this.isAllowedPatentOrientationUrl(href)) {
+          element.setAttribute('href', 'https://example.com/');
         }
         element.setAttribute('target', '_blank');
         element.setAttribute('rel', 'noopener noreferrer');
@@ -700,6 +716,15 @@ export class App {
   }
 
   activatePatentOrientationDraft(): void {
+    const draft = this.savedPatentOrientationDraft();
+    if (draft) {
+      const sanitizedHtml = this.normalizePatentOrientationHtml(draft.nextStepsContentHtml);
+      const sanitizedDraft = { ...draft, nextStepsContentHtml: sanitizedHtml };
+      this.savedPatentOrientationDraft.set(sanitizedDraft);
+      this.patentOrientationHtml.set(sanitizedHtml);
+      this.savedPatentOrientationHtml.set(sanitizedHtml);
+    }
+
     const guide = this.savedPatentOrientationDraft();
     if (!this.showPublishPatentOrientationModal() || !guide
       || this.hasPatentOrientationChanges() || this.activatingPatentOrientation()) {

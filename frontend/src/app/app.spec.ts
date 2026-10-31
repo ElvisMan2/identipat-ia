@@ -6,6 +6,7 @@ import { of } from 'rxjs';
 import { App } from './app';
 import { AdminAnalysisService } from './services/admin-analysis.service';
 import { AdminReportDisclaimerService } from './services/admin-report-disclaimer.service';
+import { AdminProtectionGuideService } from './services/admin-protection-guide.service';
 import { StandardAnalysisService } from './services/standard-analysis.service';
 import { UserService } from './services/user.service';
 import { environment } from '../environments/environment';
@@ -256,6 +257,49 @@ describe('App', () => {
 
     expect(input.value).toBe('12345678');
     expect(app.userForm.controls.doi.value).toBe('12345678');
+  });
+
+  it('should replace editor line breaks with non-breaking spaces before storing HTML', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    app.updatePatentOrientationHtml({
+      editor: { getData: () => '<p>Primero<br>Segundo<br></p>' }
+    });
+
+    expect(app.patentOrientationHtml()).toBe('<p>Primero&nbsp;Segundo&nbsp;</p>');
+    expect(app.patentOrientationHtml()).not.toContain('<br');
+  });
+
+  it('should sanitize the orientation HTML before publishing a draft', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const service = TestBed.inject(AdminProtectionGuideService);
+    const draft = {
+      guideId: 'guide-id',
+      protectionType: 'INVENTION_PATENT',
+      version: 1,
+      shortDescription: 'Descripción suficientemente extensa para la orientación.',
+      nextStepsContentHtml: '<p><a target="_self" href="javascript:alert(1)">enlace</a><br></p>',
+      status: 'DRAFT'
+    };
+    spyOn(service, 'activate').and.returnValue(of({ ...draft, status: 'ACTIVE' }));
+    spyOn<any>(app, 'scheduleAdminSettingsReload');
+
+    app.savedPatentOrientationDraft.set(draft);
+    app.patentOrientationHtml.set(draft.nextStepsContentHtml);
+    app.savedPatentOrientationHtml.set(draft.nextStepsContentHtml);
+    app.patentOrientationShortDescription.set(draft.shortDescription);
+    app.savedPatentOrientationShortDescription.set(draft.shortDescription);
+    app.showPublishPatentOrientationModal.set(true);
+
+    app.activatePatentOrientationDraft();
+
+    expect(service.activate).toHaveBeenCalledWith('', 'guide-id');
+    expect(app.patentOrientationHtml()).not.toContain('<br');
+    expect(app.patentOrientationHtml()).toContain('href="https://example.com/"');
+    expect(app.patentOrientationHtml()).toContain('target="_blank"');
+    expect(app.patentOrientationHtml()).toContain('rel="noopener noreferrer"');
   });
 
   it('should render the home as the first screen', () => {
