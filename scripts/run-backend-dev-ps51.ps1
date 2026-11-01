@@ -163,7 +163,7 @@ if (Test-Path -LiteralPath $frontendBrowserDir -PathType Container) {
 Write-Host "Building frontend..."
 Push-Location $frontendDir
 try {
-    & npm run build:dev
+    & npm run build:prod
     if ($LASTEXITCODE -ne 0) {
         throw "Frontend build failed (exit code $LASTEXITCODE)."
     }
