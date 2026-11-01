@@ -17,6 +17,8 @@
     { "key": "consentVersion", "value": "personal-data/1.0" },
     { "key": "analysisId", "value": "" },
     { "key": "adminAnalysisId", "value": "" },
+    { "key": "protectionType", "value": "UTILITY_MODEL" },
+    { "key": "guideVersion", "value": "1" },
     { "key": "disclaimerId", "value": "" }
   ],
   "item": [
@@ -481,7 +483,37 @@
             "auth": { "type": "noauth" },
             "url": "{{baseUrl}}/analyses/{{analysisId}}/guidance",
             "description": "Resuelve analysis-guidance/1.0 con el catálogo ACTIVE vigente para la sesión propietaria."
-          }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Guidance is returned', function () { pm.response.to.have.status(200); });",
+            "const body = pm.response.json();",
+            "const modality = (body.modalities || []).find(item => item.nextSteps);",
+            "if (modality) { pm.collectionVariables.set('protectionType', modality.protectionType); pm.collectionVariables.set('guideVersion', modality.guideVersion); }"
+          ] } }]
+        },
+        {
+          "name": "Record guidance view",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }
+            ],
+            "auth": { "type": "noauth" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"guideVersion\": {{guideVersion}}\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/analyses/{{analysisId}}/guidance/{{protectionType}}/view",
+            "description": "Registra idempotentemente la primera apertura del modal. Requiere cookie STANDARD propietaria y CSRF; el cookie jar conserva la sesión."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Guidance view is registered', function () { pm.response.to.have.status(200); });",
+            "const body = pm.response.json();",
+            "pm.test('Response matches the tracked modality and version', function () { pm.expect(body.protectionType).to.eql(pm.collectionVariables.get('protectionType')); pm.expect(String(body.guideVersion)).to.eql(String(pm.collectionVariables.get('guideVersion'))); pm.expect(body.firstViewedAt).to.be.a('string'); });",
+            "pm.test('Response does not expose internal identifiers', function () { pm.expect(body).not.to.have.property('guidanceViewId'); pm.expect(body).not.to.have.property('sessionId'); pm.expect(body).not.to.have.property('userId'); });"
+          ] } }]
         }
       ]
     },

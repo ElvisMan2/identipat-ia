@@ -109,13 +109,17 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<Map<String, Object>> handleUnreadableRequest() {
+    public ResponseEntity<Map<String, Object>> handleUnreadableRequest(HttpServletRequest request) {
+        boolean guidanceView = request.getRequestURI().contains("/guidance/")
+                && request.getRequestURI().endsWith("/view");
         Map<String, Object> error = new HashMap<>();
         error.put("timestamp", LocalDateTime.now());
         error.put("status", HttpStatus.BAD_REQUEST.value());
         error.put("error", "Bad Request");
-        error.put("code", "INVALID_REQUEST");
-        error.put("message", "Request body is invalid");
+        error.put("code", guidanceView ? "INVALID_GUIDANCE_VIEW_REQUEST" : "INVALID_REQUEST");
+        error.put("message", guidanceView
+                ? "guideVersion must be a positive integer"
+                : "Request body is invalid");
         return ResponseEntity.badRequest().body(error);
     }
 
