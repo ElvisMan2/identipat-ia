@@ -163,6 +163,8 @@ if (Test-Path -LiteralPath $frontendBrowserDir -PathType Container) {
 Write-Host "Building frontend..."
 Push-Location $frontendDir
 try {
+    # El backend sigue usando Spring profile dev; el frontend se compila en modo production
+    # porque sus archivos se sirven como recursos estaticos desde Spring Boot.
     & npm run build:prod
     if ($LASTEXITCODE -ne 0) {
         throw "Frontend build failed (exit code $LASTEXITCODE)."
