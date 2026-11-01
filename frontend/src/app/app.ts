@@ -147,7 +147,7 @@ export class App {
     link: {
       decorators: {
         openInNewTab: {
-          mode: 'manual',
+          mode: 'manual' as const,
           label: 'Abrir en una pestaña nueva',
           attributes: {
             target: '_blank',
