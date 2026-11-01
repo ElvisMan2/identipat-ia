@@ -148,7 +148,7 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .panel { border: 1px solid var(--line); border-radius: 7px; padding: 1rem; background: #fff; box-shadow: 0 10px 25px rgb(24 51 47 / .06); }
 .panel h2 { margin-top: 0; font-size: 1.2rem; }
 .orientation-subsection { margin-top: 1rem; }
-.orientation-subsection summary { display: flex; align-items: center; justify-content: space-between; gap: .75rem; cursor: pointer; list-style: none; }
+.orientation-subsection summary { display: flex; align-items: center; justify-content: space-between; gap: .75rem; min-height: 1.5rem; padding: .75rem 1rem; border-bottom: 1px solid var(--line); cursor: pointer; list-style: none; }
 .orientation-subsection summary::-webkit-details-marker { display: none; }
 .orientation-subsection summary:focus-visible { outline: 2px solid var(--teal); outline-offset: 4px; }
 .orientation-summary-content { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; }
