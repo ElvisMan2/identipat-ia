@@ -4,7 +4,6 @@ import { Component, computed, inject, Signal, signal, WritableSignal } from '@an
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { CKEditorModule } from '@ckeditor/ckeditor5-angular';
 import { Alignment, Bold, ClassicEditor, Essentials, FindAndReplace, Heading, Image, ImageInsert, Italic, Link, List, Paragraph, RemoveFormat, SourceEditing, Strikethrough, Underline } from 'ckeditor5';
-import 'ckeditor5/ckeditor5.css';
 import { Observable } from 'rxjs';
 import { StandardUserRegistrationRequest, UserService } from './services/user.service';
 import { User } from './models/user.model';

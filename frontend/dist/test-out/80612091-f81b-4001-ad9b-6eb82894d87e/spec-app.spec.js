@@ -2780,7 +2780,7 @@ var init_app = __esm({
         <div class="table-head">\r
           <h2>Historial de predicciones</h2>\r
           <div class="table-actions">\r
-            <button class="ghost" type="button" (click)="downloadAnalysesCsv()" [disabled]="!analyses().length">Descargar CSV</button>\r
+            <button class="ghost" type="button" (click)="downloadAnalysesCsv()" [disabled]="!analyses().length">Descargar</button>\r
             <button class="ghost" type="button" (click)="loadAnalyses()" [disabled]="analysesLoading()">{{ analysesLoading() ? 'Cargando...' : 'Refrescar' }}</button>\r
           </div>\r
         </div>\r
@@ -2840,7 +2840,7 @@ var init_app = __esm({
                 <option value="100">100</option>\r
               </select>\r
             </label>\r
-            <button class="ghost" type="button" (click)="downloadUsersCsv()" [disabled]="downloadingUsers()">{{ downloadingUsers() ? 'Descargando...' : 'Descargar CSV' }}</button>\r
+            <button class="ghost" type="button" (click)="downloadUsersCsv()" [disabled]="downloadingUsers()">{{ downloadingUsers() ? 'Descargando...' : 'Descargar' }}</button>\r
             <button class="ghost" type="button" (click)="loadUsers()" [disabled]="loading()">{{ loading() ? 'Cargando...' : 'Refrescar' }}</button>\r
           </div>\r
         </div>\r

@@ -81,7 +81,7 @@
         <div class="table-head">
           <h2>Historial de predicciones</h2>
           <div class="table-actions">
-            <button class="ghost" type="button" (click)="downloadAnalysesCsv()" [disabled]="!analyses().length">Descargar CSV</button>
+            <button class="ghost" type="button" (click)="downloadAnalysesCsv()" [disabled]="!analyses().length">Descargar</button>
             <button class="ghost" type="button" (click)="loadAnalyses()" [disabled]="analysesLoading()">{{ analysesLoading() ? 'Cargando...' : 'Refrescar' }}</button>
           </div>
         </div>
@@ -141,7 +141,7 @@
                 <option value="100">100</option>
               </select>
             </label>
-            <button class="ghost" type="button" (click)="downloadUsersCsv()" [disabled]="downloadingUsers()">{{ downloadingUsers() ? 'Descargando...' : 'Descargar CSV' }}</button>
+            <button class="ghost" type="button" (click)="downloadUsersCsv()" [disabled]="downloadingUsers()">{{ downloadingUsers() ? 'Descargando...' : 'Descargar' }}</button>
             <button class="ghost" type="button" (click)="loadUsers()" [disabled]="loading()">{{ loading() ? 'Cargando...' : 'Refrescar' }}</button>
           </div>
         </div>

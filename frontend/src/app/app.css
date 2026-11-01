@@ -155,7 +155,6 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .orientation-summary-title { font-size: 1rem; font-weight: 700; }
 .orientation-chevron { width: .65rem; height: .65rem; flex: 0 0 auto; border-right: 2px solid var(--teal-dark); border-bottom: 2px solid var(--teal-dark); transform: rotate(45deg) translateY(-2px); transition: transform .2s ease; }
 .orientation-subsection[open] .orientation-chevron { transform: rotate(225deg) translate(-2px, -2px); }
-.orientation-subsection .ck-editor__editable { min-height: 180px; }
 .empty-state { color: var(--muted); }
 .profile-readonly { display: grid; gap: .25rem; margin-bottom: 1rem; color: var(--muted); }
 .profile-readonly p { margin: 0; }
