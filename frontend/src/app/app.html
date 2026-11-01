@@ -252,7 +252,7 @@
         <details class="orientation-subsection">
           <summary>
             <span class="orientation-summary-content">
-              <span class="orientation-summary-title">Patente de Invención</span>
+              <span class="orientation-summary-title">Patente de invención</span>
               <span class="status-badge" [attr.data-status]="latestPatentGuide()?.status ?? 'NONE'">
                 Estado actual: {{ latestPatentGuide()?.status === 'DRAFT' ? 'Borrador' : latestPatentGuide()?.status === 'ACTIVE' ? 'Activo' : 'Sin versión' }}
               </span>
@@ -271,7 +271,7 @@
             maxlength="240"
             required
             style="margin-top: 1rem; margin-bottom: 1rem"
-            placeholder="Orientación para Patente de Invención"
+            placeholder="Orientación para Patente de invención"
           />
           @if (patentOrientationShortDescriptionInvalid()) {
             <p class="field-error">
@@ -284,7 +284,7 @@
             (ready)="onPatentEditorReady($event)"
             (change)="updatePatentOrientationHtml($event)"
             (blur)="updatePatentOrientationHtml($event)"
-            aria-label="Orientación de Patente de Invención"
+            aria-label="Orientación de Patente de invención"
           ></ckeditor>
           <div class="actions">
             <button type="button" (click)="savePatentOrientationDraft()" [disabled]="!patentOrientationCanSave() || !hasPatentOrientationChanges() || savingPatentOrientation()">

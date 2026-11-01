@@ -764,6 +764,12 @@ export class App {
   }
 
   loadPatentOrientationGuide(): void {
+    this.patentOrientationMessage.set('');
+    this.utilityModelOrientationMessage.set('');
+    this.additionalOrientationSections.forEach(section => {
+      this.orientationState(section.type).message.set('');
+    });
+
     this.adminProtectionGuideService.getAll(this.userService.getAccessToken()).subscribe({
       next: guides => {
         const latestPatentGuide = guides
