@@ -170,7 +170,7 @@ public class ProtectionGuideService {
         }
         String description = rawDescription.trim();
         int length = description.codePointCount(0, description.length());
-        if (length < 30 || length > 240 || FORBIDDEN_DESCRIPTION_CONTENT.matcher(description).find()) {
+        if (length < 20 || length > 240 || FORBIDDEN_DESCRIPTION_CONTENT.matcher(description).find()) {
             throw invalidGuide();
         }
         String sanitized;

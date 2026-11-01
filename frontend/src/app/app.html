@@ -267,7 +267,7 @@
             (input)="updatePatentOrientationShortDescription($event)"
             [style.border-color]="patentOrientationShortDescriptionInvalid() ? 'var(--danger)' : null"
             [attr.aria-invalid]="patentOrientationShortDescriptionInvalid()"
-            minlength="30"
+            minlength="20"
             maxlength="240"
             required
             style="margin-top: 1rem; margin-bottom: 1rem"
@@ -275,7 +275,7 @@
           />
           @if (patentOrientationShortDescriptionInvalid()) {
             <p class="field-error">
-              La descripción corta debe tener entre 30 y 240 caracteres.
+              La descripción corta debe tener entre 20 y 240 caracteres.
             </p>
           }
           <ckeditor
@@ -343,7 +343,7 @@
             (input)="updateUtilityModelOrientationShortDescription($event)"
             [style.border-color]="utilityModelOrientationShortDescriptionInvalid() ? 'var(--danger)' : null"
             [attr.aria-invalid]="utilityModelOrientationShortDescriptionInvalid()"
-            minlength="30"
+            minlength="20"
             maxlength="240"
             required
             style="margin-top: 1rem; margin-bottom: 1rem"
@@ -351,7 +351,7 @@
           />
           @if (utilityModelOrientationShortDescriptionInvalid()) {
             <p class="field-error">
-              La descripción corta debe tener entre 30 y 240 caracteres.
+              La descripción corta debe tener entre 20 y 240 caracteres.
             </p>
           }
           <ckeditor
@@ -415,7 +415,7 @@
               (input)="updateAdditionalOrientationShortDescription(section.type, $event)"
               [style.border-color]="state.shortDescriptionInvalid() ? 'var(--danger)' : null"
               [attr.aria-invalid]="state.shortDescriptionInvalid()"
-              minlength="30"
+              minlength="20"
               maxlength="240"
               required
               style="margin-top: 1rem; margin-bottom: 1rem"
@@ -423,7 +423,7 @@
             />
             @if (state.shortDescriptionInvalid()) {
               <p class="field-error">
-                La descripción corta debe tener entre 30 y 240 caracteres.
+                La descripción corta debe tener entre 20 y 240 caracteres.
               </p>
             }
             <ckeditor

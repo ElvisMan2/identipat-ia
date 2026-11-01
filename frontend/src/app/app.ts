@@ -94,7 +94,7 @@ export class App {
   );
   readonly patentOrientationCanSave = computed(() => {
     const descriptionLength = this.patentOrientationShortDescription().trim().length;
-    return descriptionLength >= 30 && descriptionLength <= 240 && this.patentOrientationHtml().trim().length > 0;
+    return descriptionLength >= 20 && descriptionLength <= 240 && this.patentOrientationHtml().trim().length > 0;
   });
   readonly savingPatentOrientation = signal(false);
   readonly patentOrientationMessage = signal('');
@@ -117,7 +117,7 @@ export class App {
   );
   readonly utilityModelOrientationCanSave = computed(() => {
     const descriptionLength = this.utilityModelOrientationShortDescription().trim().length;
-    return descriptionLength >= 30 && descriptionLength <= 240 && this.utilityModelOrientationHtml().trim().length > 0;
+    return descriptionLength >= 20 && descriptionLength <= 240 && this.utilityModelOrientationHtml().trim().length > 0;
   });
   readonly savingUtilityModelOrientation = signal(false);
   readonly utilityModelOrientationMessage = signal('');
@@ -1145,7 +1145,7 @@ export class App {
       hasChanges: computed(() => shortDescription() !== savedShortDescription() || html() !== savedHtml()),
       canSave: computed(() => {
         const descriptionLength = shortDescription().trim().length;
-        return descriptionLength >= 30 && descriptionLength <= 240 && html().trim().length > 0;
+        return descriptionLength >= 20 && descriptionLength <= 240 && html().trim().length > 0;
       }),
       saving: signal(false),
       message: signal(''),
