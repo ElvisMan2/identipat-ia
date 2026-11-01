@@ -710,90 +710,204 @@
     @if (exitError()) { <p class="error" role="alert">{{ exitError() }}</p> }
 
     <section class="analysis-shell">
-      @if (analysisResult()?.status === 'COMPLETED' && analysisResult()?.result; as result) {
+      @if (analysisResult()?.status === 'COMPLETED' && diagnosticReport(); as report) {
         <section class="analysis-result" aria-live="polite">
-          <div class="result-heading">
-            <div>
-              <p class="eyebrow">Resultado del análisis</p>
-              <h1>Orientación sobre tu creación</h1>
+          <section class="report-hero">
+            <div class="report-hero-main">
+              <div class="report-hero-left">
+                <p class="report-eyebrow">Resultado del análisis</p>
+                <h1>{{ reportField(report.title) }}</h1>
+              </div>
+              <div class="report-header-actions">
+                <span class="report-status">Análisis completado</span>
+                <button class="report-secondary-button" type="button" (click)="downloadReportPdf()" [disabled]="downloadingReportPdf()">
+                  {{ downloadingReportPdf() ? 'Descargando PDF...' : 'Descargar reporte PDF' }}
+                </button>
+              </div>
             </div>
-            <div class="result-download-actions">
-              <span class="result-status">Análisis completado</span>
-              <button class="outline-button" type="button" (click)="downloadReportPdf()" [disabled]="downloadingReportPdf()">
-                {{ downloadingReportPdf() ? 'Descargando PDF...' : 'Descargar reporte PDF' }}
-              </button>
+            <div class="report-meta">
+              <div><span>Entrada</span><strong>{{ reportInputTypeLabel(report.inputType) }}</strong></div>
+              <div><span>Análisis completado</span><strong>{{ reportDateLabel(report.analysisCompletedAt) }}</strong></div>
+              <div><span>Modalidades</span><strong>{{ report.protectionOptions?.length ?? 0 }}</strong></div>
             </div>
-          </div>
+          </section>
           @if (reportPdfError()) { <p class="error" role="alert">{{ reportPdfError() }}</p> }
 
           <article class="result-section result-summary">
-            <h2>Resumen</h2>
-            <p>{{ result.summary }}</p>
-          </article>
-
-          <article class="result-section">
-            <h2>Evaluación legal</h2>
-            <p>Screening de posibles restricciones conforme a la Decisión 486.</p>
-            <div class="legal-screening">
-              <div class="screening-item">
-                <h3>Artículo 15</h3>
-                <p class="result-outcome">{{ applicabilityLabel(result.patentScreening.article15.assessment) }}</p>
-                <p>{{ result.patentScreening.article15.rationale }}</p>
-              </div>
-              <div class="screening-item">
-                <h3>Artículo 20</h3>
-                <p class="result-outcome">{{ applicabilityLabel(result.patentScreening.article20.assessment) }}</p>
-                <p>{{ result.patentScreening.article20.rationale }}</p>
-              </div>
+            <span class="summary-icon" aria-hidden="true">i</span>
+            <div class="summary-content">
+              <div class="summary-kicker">Resumen</div>
+              <p>{{ reportField(report.summary) }}</p>
             </div>
           </article>
 
-          <article class="result-section">
-            <h2>Acceso a recursos genéticos</h2>
-            <p class="result-outcome">{{ applicabilityLabel(result.geneticResourceAccess.assessment) }}</p>
-            <p>{{ result.geneticResourceAccess.rationale }}</p>
-            @if (result.geneticResourceAccess.missingInformation.length) {
-              <h3>Información faltante</h3>
-              <ul>
-                @for (item of result.geneticResourceAccess.missingInformation; track item) { <li>{{ item }}</li> }
-              </ul>
-            }
-          </article>
-
-          <article class="result-section">
-            <h2>Modalidades de protección</h2>
-            <div class="protection-options">
-              @for (option of result.protectionOptions; track option.type) {
-                <div class="protection-option">
-                  <div class="option-heading">
-                    <h3>{{ protectionTypeLabel(option.type) }}</h3>
-                    <span [attr.data-applicability]="option.applicability">{{ applicabilityLabel(option.applicability) }}</span>
+          <section class="result-section report-modalities">
+            <div class="report-section-heading">
+              <div>
+                <h2>Modalidades identificadas</h2>
+                <p>{{ report.protectionOptions?.length ?? 0 }} modalidades</p>
+              </div>
+            </div>
+            <p class="contract-note">{{ reportField(report.applicabilityNote) }}</p>
+            <div class="modalities-grid">
+              @for (option of report.protectionOptions ?? []; track option.type; let index = $index) {
+                <details class="modality-card" [open]="index === 0">
+                  <summary>
+                    <span>
+                      <strong>{{ reportField(option.name || protectionTypeLabel(option.type)) }}</strong>
+                      @if (guidanceFor(option.type ?? ''); as guidance) {
+                        <small>{{ reportField(guidance.shortDescription) }}</small>
+                      } @else {
+                        <small>campo faltante</small>
+                      }
+                    </span>
+                    <b [attr.data-applicability]="option.applicability">{{ reportField(option.applicabilityLabel || applicabilityLabel(option.applicability)) }}</b>
+                  </summary>
+                  <div class="modality-content">
+                    <div class="diagnosis-item">
+                      <strong>{{ reportField(option.relationshipQuestion) }}</strong>
+                      <p>{{ reportField(option.protectedSubjectMatter) }}</p>
+                    </div>
+                    <div class="diagnosis-item">
+                      <strong>¿Por qué se identificó?</strong>
+                      <p>{{ reportField(option.rationale) }}</p>
+                    </div>
+                    <div class="diagnosis-item">
+                      <strong>Orientación diagnóstica</strong>
+                      <p>{{ reportField(option.orientation) }}</p>
+                    </div>
+                    <div class="diagnosis-item">
+                      <strong>Base legal</strong>
+                      @if (option.legalBasis?.length) {
+                        @for (basis of option.legalBasis; track basis.instrument) {
+                          <p><b>{{ reportField(basis.instrument) }}</b>: {{ (basis.articles ?? []).length ? (basis.articles ?? []).join(', ') : 'campo faltante' }}</p>
+                        }
+                      } @else {
+                        <p>campo faltante</p>
+                      }
+                    </div>
+                    @if (option.patentScreening; as screening) {
+                      <div class="diagnosis-item screening-box">
+                        <strong>{{ reportField(screening.title) }}</strong>
+                        <p>{{ reportField(screening.context) }}</p>
+                        @for (article of [screening.article15, screening.article20]; track article?.article) {
+                          @if (article; as screeningArticle) {
+                            <div class="screening-article">
+                              <b>{{ reportField(screeningArticle.article) }} · {{ reportField(screeningArticle.assessmentLabel) }}</b>
+                              <p>{{ reportField(screeningArticle.rationale) }}</p>
+                              @if (screeningArticle.matches?.length) {
+                                <ul>
+                                  @for (match of screeningArticle.matches; track match.literal) {
+                                    <li><b>{{ reportField(match.literal) }}</b>: {{ reportField(match.rationale) }}</li>
+                                  }
+                                </ul>
+                              }
+                            </div>
+                          }
+                        }
+                        <p class="scope-note">{{ reportField(screening.scopeNote) }}</p>
+                      </div>
+                    }
+                    @if (option.geneticResourceAccess; as genetic) {
+                      <div class="diagnosis-item genetic-box">
+                        <strong>{{ reportField(genetic.assessmentLabel) }}</strong>
+                        <p>{{ reportField(genetic.rationale) }}</p>
+                        @if (genetic.missingInformation?.length) {
+                          <p><b>Información faltante</b></p>
+                          <ul>
+                            @for (item of genetic.missingInformation; track item) { <li>{{ reportField(item) }}</li> }
+                          </ul>
+                        }
+                      </div>
+                    }
+                    @if (guidanceFor(option.type ?? ''); as guidance) {
+                      <div class="guidance-box">
+                        <strong>Próximos pasos</strong>
+                        @if (guidance.nextSteps?.contentHtml; as contentHtml) {
+                          <div class="rich-content" [innerHTML]="contentHtml"></div>
+                        } @else {
+                          <p>campo faltante</p>
+                        }
+                      </div>
+                    } @else {
+                      <div class="guidance-box"><strong>Próximos pasos</strong><p>campo faltante</p></div>
+                    }
                   </div>
-                  <p class="protected-subject"><strong>Materia protegible:</strong> {{ option.protectedSubjectMatter }}</p>
-                  <p>{{ option.rationale }}</p>
-                </div>
+                </details>
+              } @empty {
+                <p>campo faltante</p>
               }
             </div>
+          </section>
+
+          @if (report.patentScreening || report.geneticResourceAccess || report.historicalPatentability) {
+            <section class="result-section complementary-section">
+              <h2>Información complementaria del diagnóstico</h2>
+              @if (report.patentScreening; as screening) {
+                <div class="complementary-card">
+                  <h3>{{ reportField(screening.title) }}</h3>
+                  <p>{{ reportField(screening.context) }}</p>
+                  @for (article of [screening.article15, screening.article20]; track article?.article) {
+                    @if (article; as screeningArticle) {
+                      <div class="screening-article">
+                        <b>{{ reportField(screeningArticle.article) }} · {{ reportField(screeningArticle.assessmentLabel) }}</b>
+                        <p>{{ reportField(screeningArticle.rationale) }}</p>
+                      </div>
+                    }
+                  }
+                  <p class="scope-note">{{ reportField(screening.scopeNote) }}</p>
+                </div>
+              }
+              @if (report.geneticResourceAccess; as genetic) {
+                <div class="complementary-card genetic-box">
+                  <h3>Acceso a recursos genéticos</h3>
+                  <p><b>{{ reportField(genetic.assessmentLabel) }}</b></p>
+                  <p>{{ reportField(genetic.rationale) }}</p>
+                  @if (genetic.missingInformation?.length) {
+                    <p><b>Información faltante</b></p>
+                    <ul>@for (item of genetic.missingInformation; track item) { <li>{{ reportField(item) }}</li> }</ul>
+                  }
+                </div>
+              }
+              @if (report.historicalPatentability; as historical) {
+                <div class="complementary-card">
+                  <h3>Antecedente histórico de patentabilidad</h3>
+                  <p><b>{{ reportField(historical.outcome) }}</b></p>
+                  <p>{{ reportField(historical.rationale) }}</p>
+                </div>
+              }
+            </section>
+          }
+
+          @if (report.observations?.length || report.warnings?.length) {
+            <div class="result-columns">
+              @if (report.observations?.length) {
+                <article class="result-section">
+                  <h2>Observaciones</h2>
+                  <ul>@for (observation of report.observations; track observation) { <li>{{ reportField(observation) }}</li> }</ul>
+                </article>
+              }
+              @if (report.warnings?.length) {
+                <article class="result-section warning-section">
+                  <h2>Advertencias del caso</h2>
+                  <ul>@for (warning of report.warnings; track warning) { <li>{{ reportField(warning) }}</li> }</ul>
+                </article>
+              }
+            </div>
+          }
+
+          <article class="disclaimer-card">
+            <h2>{{ reportField(report.disclaimer?.title) }}</h2>
+            <p>{{ reportField(report.disclaimer?.content) }}</p>
+            <small>Versión institucional {{ report.disclaimer?.version ?? 'campo faltante' }}</small>
           </article>
 
-          <div class="result-columns">
-            <article class="result-section">
-              <h2>Observaciones</h2>
-              <ul>
-                @for (observation of result.observations; track observation) { <li>{{ observation }}</li> }
-              </ul>
-            </article>
-            <article class="result-section warning-section">
-              <h2>Advertencias</h2>
-              <ul>
-                @for (warning of result.warnings; track warning) { <li>{{ warning }}</li> }
-              </ul>
-            </article>
-          </div>
-
-          <aside class="report-warning" role="note">
-            <strong>Advertencia:</strong> el presente análisis ha sido realizado con una herramienta de Inteligencia Artificial y puede cometer errores, por lo cual la opinión es de naturaleza orientativa y no es vinculante ante una eventual solicitud de registro de la creación analizada.
-          </aside>
+          <footer class="report-footer-bar">
+            <p>El PDF corresponde al reporte diagnóstico histórico de F1.7.</p>
+            <button class="report-download-cta" type="button" (click)="downloadReportPdf()" [disabled]="downloadingReportPdf()">
+              {{ downloadingReportPdf() ? 'Descargando PDF...' : 'Descargar reporte PDF' }}
+            </button>
+          </footer>
         </section>
       }
 
@@ -804,6 +918,7 @@
           <p>{{ failure.message }}</p>
         </section>
       }
+      @if (reportLoadError()) { <p class="error" role="alert">{{ reportLoadError() }}</p> }
     </section>
 
     <footer class="trust-strip" aria-label="Características del servicio">

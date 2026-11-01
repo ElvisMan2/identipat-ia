@@ -10,7 +10,7 @@ import { User } from './models/user.model';
 import { AdminAnalysis, AnalysisStatus } from './services/admin-analysis.service';
 import { AdminReportDisclaimerService, ReportDisclaimer } from './services/admin-report-disclaimer.service';
 import { AdminProtectionGuideService, ProtectionGuide } from './services/admin-protection-guide.service';
-import { AnalysisResponse, StandardAnalysisService } from './services/standard-analysis.service';
+import { AnalysisGuidanceResponse, AnalysisResponse, DiagnosticReport, StandardAnalysisService } from './services/standard-analysis.service';
 
 const adminSettingsReloadKey = 'identipat.admin.reloadSection';
 type AdditionalOrientationType = 'INDUSTRIAL_DESIGN' | 'COPYRIGHT' | 'DISTINCTIVE_SIGN' | 'PLANT_BREEDER_CERTIFICATE' | 'TRADE_SECRET';
@@ -192,6 +192,9 @@ export class App {
   readonly submittingAnalysis = signal(false);
   readonly analysisMessage = signal('');
   readonly analysisResult = signal<AnalysisResponse | null>(null);
+  readonly diagnosticReport = signal<DiagnosticReport | null>(null);
+  readonly analysisGuidance = signal<AnalysisGuidanceResponse | null>(null);
+  readonly reportLoadError = signal('');
   readonly downloadingReportPdf = signal(false);
   readonly reportPdfError = signal('');
   readonly selectedPdf = signal<File | null>(null);
@@ -440,6 +443,9 @@ export class App {
     this.analysisForm.reset({ description: '' });
     this.analysisMessage.set('');
     this.analysisResult.set(null);
+    this.diagnosticReport.set(null);
+    this.analysisGuidance.set(null);
+    this.reportLoadError.set('');
     this.backHome();
   }
 
@@ -485,6 +491,9 @@ export class App {
     this.analysisForm.reset({ description: '' });
     this.analysisMessage.set('');
     this.analysisResult.set(null);
+    this.diagnosticReport.set(null);
+    this.analysisGuidance.set(null);
+    this.reportLoadError.set('');
     this.view.set('standard-analysis');
     this.scrollToTop();
   }
@@ -1466,6 +1475,9 @@ export class App {
     this.submittingAnalysis.set(true);
     this.analysisMessage.set('');
     this.analysisResult.set(null);
+    this.diagnosticReport.set(null);
+    this.analysisGuidance.set(null);
+    this.reportLoadError.set('');
 
     const adminAccessToken = this.adminAuthenticated() ? this.userService.getAccessToken() : '';
     const request = selectedPdf
@@ -1597,10 +1609,10 @@ export class App {
     this.analysisMessage.set('');
   }
 
-  private downloadAnalysisJson(analysisId: string, analysis: unknown): void {
+  private downloadAnalysisJson(analysisId: string, report: DiagnosticReport): void {
     const link = this.document.createElement('a');
     const url = URL.createObjectURL(new Blob([
-      JSON.stringify(analysis, null, 2)
+      JSON.stringify(report, null, 2)
     ], { type: 'application/json;charset=utf-8' }));
 
     link.href = url;
@@ -1639,31 +1651,54 @@ export class App {
     this.standardAnalysisService.getAnalysis(analysisId, accessToken).subscribe({
       next: (analysis) => {
         this.analysisResult.set(analysis);
-        console.log('JSON del análisis:', analysis);
         if (analysis.status === 'COMPLETED' || analysis.status === 'FAILED') {
           this.selectedPdf.set(null);
           this.selectedAudio.set(null);
-          this.submittingAnalysis.set(false);
-          this.analysisMessage.set(analysis.status === 'COMPLETED'
-            ? ''
-            : 'El análisis no pudo completarse.');
-          this.downloadAnalysisJson(analysisId, analysis);
-          this.view.set('standard-result');
-          this.scrollToTop();
+          if (analysis.status === 'FAILED') {
+            this.submittingAnalysis.set(false);
+            this.analysisMessage.set('El análisis no pudo completarse.');
+            this.view.set('standard-result');
+            this.scrollToTop();
+            return;
+          }
+
+          this.loadDiagnosticReport(analysisId, accessToken);
           return;
         }
 
         window.setTimeout(() => this.pollAnalysis(analysisId, accessToken), 2000);
       },
-      error: (error) => {
+      error: () => {
         this.submittingAnalysis.set(false);
         this.analysisMessage.set('No se pudo consultar el resultado del análisis.');
-        console.error('No se pudo consultar el análisis:', error);
       }
     });
   }
 
-  protectionTypeLabel(type: string): string {
+  private loadDiagnosticReport(analysisId: string, accessToken: string): void {
+    this.standardAnalysisService.getReport(analysisId, accessToken).subscribe({
+      next: report => {
+        this.diagnosticReport.set(report);
+        this.downloadAnalysisJson(analysisId, report);
+        this.standardAnalysisService.getGuidance(analysisId, accessToken).subscribe({
+          next: guidance => this.analysisGuidance.set(guidance),
+          error: () => this.analysisGuidance.set(null)
+        });
+        this.submittingAnalysis.set(false);
+        this.analysisMessage.set('');
+        this.reportLoadError.set('');
+        this.view.set('standard-result');
+        this.scrollToTop();
+      },
+      error: () => {
+        this.submittingAnalysis.set(false);
+        this.reportLoadError.set('No se pudo cargar el reporte diagnóstico. Inténtalo nuevamente.');
+        this.analysisMessage.set('No se pudo cargar el reporte diagnóstico.');
+      }
+    });
+  }
+
+  protectionTypeLabel(type: string | null | undefined): string {
     const labels: Record<string, string> = {
       INVENTION_PATENT: 'Patente de invención',
       UTILITY_MODEL: 'Modelo de utilidad',
@@ -1672,10 +1707,42 @@ export class App {
       COPYRIGHT: 'Derechos de autor',
       OTHER: 'Otra modalidad'
     };
-    return labels[type] ?? type;
+    return type ? labels[type] ?? type : 'campo faltante';
   }
 
-  applicabilityLabel(applicability: string): string {
+  reportField(value: string | null | undefined): string {
+    return value?.trim() || 'campo faltante';
+  }
+
+  reportInputTypeLabel(type: string | null | undefined): string {
+    const labels: Record<string, string> = {
+      TEXT: 'Texto',
+      PDF: 'PDF',
+      AUDIO: 'Audio'
+    };
+    return type ? labels[type] ?? type : 'campo faltante';
+  }
+
+  reportDateLabel(value: string | null | undefined): string {
+    if (!value) {
+      return 'campo faltante';
+    }
+
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? 'campo faltante'
+      : new Intl.DateTimeFormat('es-PE', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+        timeZone: 'America/Lima'
+      }).format(date);
+  }
+
+  guidanceFor(type: string): AnalysisGuidanceResponse['modalities'][number] | null {
+    return this.analysisGuidance()?.modalities.find(modality => modality.protectionType === type) ?? null;
+  }
+
+  applicabilityLabel(applicability: string | null | undefined): string {
     const labels: Record<string, string> = {
       POSSIBLE: 'Posible',
       LIKELY: 'Probable',
@@ -1683,7 +1750,7 @@ export class App {
       NO_POTENTIAL_MATCH: 'Sin coincidencia potencial',
       INSUFFICIENT_INFORMATION: 'Información insuficiente'
     };
-    return labels[applicability] ?? applicability;
+    return applicability ? labels[applicability] ?? applicability : 'campo faltante';
   }
 
   submit(): void {

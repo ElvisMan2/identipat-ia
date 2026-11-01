@@ -247,6 +247,27 @@ describe('App', () => {
     standardRequest.flush(new Blob(['pdf'], { type: 'application/pdf' }));
   });
 
+  it('should request the diagnostic report and guidance with the matching credentials', () => {
+    const service = TestBed.inject(StandardAnalysisService);
+    const httpTesting = TestBed.inject(HttpTestingController);
+
+    service.getReport('admin-analysis', 'test-token').subscribe();
+    const adminReportRequest = httpTesting.expectOne(
+      `${environment.apiBaseUrl}/analyses/admin-analysis/report`
+    );
+    expect(adminReportRequest.request.method).toBe('GET');
+    expect(adminReportRequest.request.headers.get('Authorization')).toBe('Bearer test-token');
+    adminReportRequest.flush({});
+
+    service.getGuidance('standard-analysis').subscribe();
+    const standardGuidanceRequest = httpTesting.expectOne(
+      `${environment.apiBaseUrl}/analyses/standard-analysis/guidance`
+    );
+    expect(standardGuidanceRequest.request.method).toBe('GET');
+    expect(standardGuidanceRequest.request.withCredentials).toBeTrue();
+    standardGuidanceRequest.flush({});
+  });
+
   it('should remove non-numeric characters from a DNI during registration', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
