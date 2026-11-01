@@ -752,7 +752,6 @@ export class App {
         this.savedPatentOrientationHtml.set(normalizedDraftHtml);
         this.patentEditorInstance?.setData(normalizedDraftHtml);
         this.savedPatentOrientationDraft.set(draft);
-        this.showPatentOrientationMessage('Borrador de orientación guardado correctamente.');
         this.savingPatentOrientation.set(false);
       },
       error: () => {
