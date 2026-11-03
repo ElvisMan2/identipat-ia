@@ -216,6 +216,7 @@ class IdentipatIaApplicationTests {
         assertThat(api.at("/paths/~1admin~1protection-guides~1{guideId}/put").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1admin~1protection-guides~1{guideId}~1activate/post").isMissingNode())
                 .isFalse();
+        assertThat(api.at("/paths/~1admin~1analyses/get").isMissingNode()).isFalse();
 
         assertThat(api.at("/paths/~1users~1identify/post/security").isMissingNode()).isTrue();
         assertThat(api.at("/paths/~1users/post/security").isMissingNode()).isTrue();
@@ -229,6 +230,19 @@ class IdentipatIaApplicationTests {
         JsonNode listingParameters = api.at("/paths/~1users/get/parameters");
         assertThat(listingParameters).extracting(parameter -> parameter.path("name").asText())
                 .containsExactlyInAnyOrder("page", "size", "search", "userType", "status", "doiType", "sort");
+        assertThat(api.at("/paths/~1admin~1analyses/get/security/0/bearerAuth").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1admin~1analyses/get/responses/200/content/application~1json/schema/$ref")
+                .asText()).endsWith("/PagedResponseOperationalAnalysisListItem");
+        assertThat(api.at("/components/schemas/PagedResponseOperationalAnalysisListItem/properties/content/items/$ref")
+                .asText()).contains("OperationalAnalysisListItem");
+        JsonNode analysisListingParameters = api.at("/paths/~1admin~1analyses/get/parameters");
+        assertThat(analysisListingParameters).extracting(parameter -> parameter.path("name").asText())
+                .containsExactlyInAnyOrder(
+                        "page", "size", "search", "from", "to", "status", "origin", "inputType", "sort");
+        assertThat(api.at("/paths/~1admin~1analyses/get/responses/400").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1admin~1analyses/get/responses/401").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1admin~1analyses/get/responses/403").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1admin~1analyses/get/responses/500").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1users~1export/get/security/0/bearerAuth").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1users~1export/get/responses/200/content/text~1csv/schema/type").asText())
                 .isEqualTo("string");

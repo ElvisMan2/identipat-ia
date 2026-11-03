@@ -566,6 +566,44 @@
       "description": "Ejecute primero Login ADMIN. Las operaciones usan exclusivamente Bearer JWT y no requieren CSRF.",
       "item": [
         {
+          "name": "List operational analyses",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/admin/analyses?page=0&size=20&sort=createdAt,desc",
+            "description": "Listado ADMIN paginado. La respuesta liviana alimentará la tabla Angular de F1.10A3."
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Operational analysis list succeeds', function () { pm.response.to.have.status(200); });",
+                "const body = pm.response.json();",
+                "pm.test('Paged contract is complete', function () { pm.expect(body.content).to.be.an('array'); pm.expect(body.page).to.be.a('number'); pm.expect(body.size).to.be.a('number'); pm.expect(body.totalElements).to.be.a('number'); pm.expect(body.totalPages).to.be.a('number'); pm.expect(body.first).to.be.a('boolean'); pm.expect(body.last).to.be.a('boolean'); });"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Search operational analyses by user and date",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/admin/analyses?page=0&size=20&search=jose&from={{reportFrom}}&to={{reportTo}}&sort=createdAt,desc",
+            "description": "Ejemplo de búsqueda por perfil actual y rango calendario America/Lima."
+          }
+        },
+        {
+          "name": "Filter operational analyses by status origin and input type",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/admin/analyses?page=0&size=20&status=COMPLETED&origin=STANDARD&inputType=PDF&sort=createdAt,desc",
+            "description": "Ejemplo de filtros de dominio combinados; origin se deriva de sessionId, no del tipo actual de User."
+          }
+        },
+        {
           "name": "Export operational analysis report CSV",
           "request": {
             "method": "GET",

@@ -17,7 +17,6 @@ import com.mnk.identipatia.reporting.dto.DiagnosticReport;
 import com.mnk.identipatia.reporting.dto.OperationalAnalysisOrigin;
 import com.mnk.identipatia.reporting.dto.OperationalAnalysisReportCriteria;
 import com.mnk.identipatia.reporting.dto.OperationalAnalysisReportRow;
-import com.mnk.identipatia.reporting.dto.OperationalModalityApplicability;
 import com.mnk.identipatia.reporting.model.AnalysisReportContext;
 import com.mnk.identipatia.reporting.model.ReportDisclaimer;
 import com.mnk.identipatia.reporting.repository.AnalysisReportContextRepository;
@@ -49,6 +48,7 @@ public class OperationalAnalysisDatasetService {
     private final DiagnosticReportAssemblerV1 assemblerV1;
     private final DiagnosticReportAssemblerV2 assemblerV2;
     private final OperationalDiagnosticReportTextRenderer textRenderer;
+    private final OperationalAnalysisResultPresenter resultPresenter;
 
     public OperationalAnalysisDatasetService(
             AnalysisRepository analysisRepository,
@@ -60,7 +60,8 @@ public class OperationalAnalysisDatasetService {
             ObjectMapper objectMapper,
             DiagnosticReportAssemblerV1 assemblerV1,
             DiagnosticReportAssemblerV2 assemblerV2,
-            OperationalDiagnosticReportTextRenderer textRenderer) {
+            OperationalDiagnosticReportTextRenderer textRenderer,
+            OperationalAnalysisResultPresenter resultPresenter) {
         this.analysisRepository = analysisRepository;
         this.userRepository = userRepository;
         this.resultRepository = resultRepository;
@@ -71,6 +72,7 @@ public class OperationalAnalysisDatasetService {
         this.assemblerV1 = assemblerV1;
         this.assemblerV2 = assemblerV2;
         this.textRenderer = textRenderer;
+        this.resultPresenter = resultPresenter;
     }
 
     @Transactional(readOnly = true)
@@ -123,7 +125,9 @@ public class OperationalAnalysisDatasetService {
         if (analysis.getStatus() == AnalysisStatus.COMPLETED && result == null) {
             throw structural(analysisId, "Stored analysis result is unavailable");
         }
-        PresentedResult presented = result == null ? PresentedResult.empty() : present(result);
+        OperationalAnalysisResultPresenter.PresentedResult presented = result == null
+                ? new OperationalAnalysisResultPresenter.PresentedResult(null, List.of(), List.of())
+                : resultPresenter.present(result);
 
         String reportText = null;
         boolean reportPdfAvailable = false;
@@ -201,34 +205,6 @@ public class OperationalAnalysisDatasetService {
         return Collections.unmodifiableMap(results);
     }
 
-    private PresentedResult present(AnalysisResult result) {
-        if (result instanceof AnalysisResultV1 v1) {
-            return new PresentedResult(
-                    DiagnosticReportPresentation.narrative(v1.summary()),
-                    v1.protectionOptions().stream()
-                            .map(option -> DiagnosticReportPresentation.protectionLabel(option.type().name()))
-                            .toList(),
-                    v1.protectionOptions().stream()
-                            .map(option -> new OperationalModalityApplicability(
-                                    DiagnosticReportPresentation.protectionLabel(option.type().name()),
-                                    DiagnosticReportPresentation.applicabilityLabel(option.applicability().name())))
-                            .toList());
-        }
-        if (result instanceof AnalysisResultV2 v2) {
-            return new PresentedResult(
-                    DiagnosticReportPresentation.narrative(v2.summary()),
-                    v2.protectionOptions().stream()
-                            .map(option -> DiagnosticReportPresentation.protectionLabel(option.type().name()))
-                            .toList(),
-                    v2.protectionOptions().stream()
-                            .map(option -> new OperationalModalityApplicability(
-                                    DiagnosticReportPresentation.protectionLabel(option.type().name()),
-                                    DiagnosticReportPresentation.applicabilityLabel(option.applicability().name())))
-                            .toList());
-        }
-        throw new OperationalAnalysisDatasetException("Unsupported in-memory analysis result type");
-    }
-
     private DiagnosticReport assemble(
             Analysis analysis,
             AnalysisResult result,
@@ -269,12 +245,4 @@ public class OperationalAnalysisDatasetService {
                 message + " for analysisId=" + analysisId, cause);
     }
 
-    private record PresentedResult(
-            String conclusion,
-            List<String> modalities,
-            List<OperationalModalityApplicability> applicability) {
-        private static PresentedResult empty() {
-            return new PresentedResult(null, List.of(), List.of());
-        }
-    }
 }
