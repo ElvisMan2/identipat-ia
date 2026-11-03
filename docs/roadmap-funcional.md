@@ -1,7 +1,7 @@
 # Roadmap funcional — IDENTIPAT-IA
 
-**Estado:** F1.10A1/A2 implementadas; F1.10A3 y F1.9 pendientes
-**Versión del roadmap:** 1.10
+**Estado:** F1.10A1/A2/A2B implementadas; F1.10A3 y F1.9 pendientes
+**Versión del roadmap:** 1.11
 **Última actualización:** 3 de noviembre de 2026
 **Objetivo:** mantener una visión vigente de la secuencia funcional del producto, diferenciando lo ya materializado de las fases pendientes.
 
@@ -39,7 +39,8 @@ La estabilización técnica F0 está completada. El backend también materializa
 | F1.9 | Integración frontend y E2E | ⏳ Pendiente |
 | F1.10A1 | Dataset operacional backend de análisis | ✅ Implementada |
 | F1.10A2 | Serialización y endpoint CSV ADMIN | ✅ Implementada |
-| F1.10A3 | Descarga CSV en Angular ADMIN | ⏳ Pendiente |
+| F1.10A2B | API paginada administrativa de análisis | ✅ Implementada |
+| F1.10A3 | Tabla y descarga CSV en Angular ADMIN | ⏳ Pendiente |
 | F2 | Preparación para piloto y producción | ⏳ Pendiente |
 
 Los estados **implementada** indican que el alcance técnico existe en el backend y está cubierto por pruebas. No sustituyen la revisión funcional, jurídica, de seguridad o de aceptación que corresponda antes del piloto.
@@ -604,9 +605,24 @@ registros CRLF, quoting y escape deterministas, protección contra formula injec
 según el rango y `Cache-Control: no-store, private`. No se agregó ownership por análisis, acceso
 STANDARD, consulta por fila, migración ni cambio Angular.
 
-## F1.10A3 — Descarga Angular ADMIN
+## F1.10A2B — API paginada ADMIN
+
+**Estado:** implementada.
+
+El endpoint `GET /admin/analyses` ofrece `PagedResponse` para la futura tabla Angular, con búsqueda
+por perfil actual, rango calendario peruano, estado, origen, tipo de entrada y ordenamiento estable.
+La selección, el count y la paginación se ejecutan en PostgreSQL mediante `Specification`; la
+búsqueda usa un `EXISTS` correlacionado sobre `users` sin agregar una relación JPA. Solo los IDs de
+la página se enriquecen en batch con usuarios, resultados V1/V2 y existencia de guidance. La
+presentación de conclusión y modalidades fue extraída como pieza compartida con A1, preservando
+OTHER y el contrato CSV A2 de 21 columnas.
+
+## F1.10A3 — Tabla y descarga Angular ADMIN
 
 **Estado:** pendiente.
+
+Angular deberá consumir `GET /admin/analyses` para filtros, tabla, paginación y ordenamiento, y
+`GET /admin/analyses/export.csv` para la descarga completa. A2B no implementa frontend.
 
 F1.10A completa permanece pendiente hasta cerrar A3.
 

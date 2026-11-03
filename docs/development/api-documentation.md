@@ -49,6 +49,14 @@ La respuesta `200` usa `Content-Type: text/csv; charset=UTF-8` y `Content-Dispos
 
 Las columnas, en orden, son: `ID`, `Nombre completo`, `Documento`, `Nacimiento`, `Género`, `Correo`, `Teléfono`, `Celular`, `Tipo`, `Profesión` y `Estado`. La contraseña y la metadata interna no se exportan.
 
+## Listado operacional paginado de análisis
+
+`GET /admin/analyses` requiere Bearer JWT de un usuario `ADMIN` y devuelve un `PagedResponse` para la tabla administrativa. Los parámetros opcionales son `page` (default `0`), `size` (default `20`, máximo `100`), `search`, `from`, `to`, `status`, `origin`, `inputType` y `sort` (default `createdAt,desc`). La respuesta expone exactamente `analysisId`, `createdAt`, `status`, `firstName`, `lastNames`, `doiType`, `doi`, `inputType`, `conclusion`, `identifiedModalities`, `analysisOrigin` y `guidanceConsulted`; no incluye reporte completo, datos de contacto ni identificadores de sesión/consentimiento.
+
+La paginación, el count y los filtros se ejecutan en PostgreSQL. `search` separa términos por whitespace, combina los términos con AND y busca cada uno con OR, sin distinguir mayúsculas, en nombre, apellidos, DOI y email del perfil actual. La búsqueda usa un `EXISTS` correlacionado sobre `users`, porque `Analysis` conserva `userId` sin asociación JPA. `%`, `_` y `\` se escapan como literales. `from`/`to` representan días calendario de `America/Lima` con intervalo `[fromInclusive, toExclusive)`; `status` acepta los cinco estados de análisis, `origin` usa `STANDARD`/`ADMIN` según la presencia de `sessionId`, e `inputType` acepta `TEXT`, `PDF` o `AUDIO`.
+
+Los campos de orden permitidos son `createdAt`, `status`, `inputType` y `analysisId`, con dirección `asc` o `desc`; `analysisId` se agrega como desempate estable con la misma dirección. Parámetros inválidos responden `400 INVALID_ANALYSIS_QUERY`, salvo `from > to`, que responde `400 INVALID_DATE_RANGE`. JWT ausente o inválido responde `401`, y un actor autenticado no ADMIN recibe `403`. Los resultados V1/V2 se presentan con la misma semántica de A1; el enriquecimiento de usuarios, resultados y existencia de guidance se limita a la página y se realiza en batch.
+
 ## Exportación operacional de análisis
 
 `GET /admin/analyses/export.csv` requiere Bearer JWT de un usuario `ADMIN`; no aplica ownership por análisis ni acepta la cookie STANDARD como autorización. Los parámetros opcionales `from` y `to` usan `YYYY-MM-DD` y representan días calendario de Perú. El límite inicial es inclusivo y el final incluye todo el día indicado. Un rango con `from > to` responde `400 INVALID_DATE_RANGE`.

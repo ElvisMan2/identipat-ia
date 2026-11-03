@@ -1,6 +1,6 @@
 # Matriz de autorización vigente — IDENTIPAT-IA
 
-**Estado verificado hasta:** F1.10A2 backend sobre F1.1B/F1.8D
+**Estado verificado hasta:** F1.10A2B backend sobre F1.1B/F1.8D
 **Última actualización:** 3 de noviembre de 2026
 
 Las rutas son relativas a `/identipat-ia`. Existen tres categorías separadas:
@@ -26,6 +26,7 @@ Las rutas son relativas a `/identipat-ia`. Existen tres categorías separadas:
 | `GET /analyses/{analysisId}/report[.pdf]` | `STANDARD_SESSION` propia **o** `ADMIN_JWT` propietario | Misma precedencia Bearer y aislamiento que el análisis. Solo `COMPLETED`; no expone PII ni metadata IA. |
 | `GET /analyses/{analysisId}/guidance` | `STANDARD_SESSION` propia **o** `ADMIN_JWT` propietario | Reutiliza `AnalysisAccessResolver`, solo acepta `COMPLETED` y resuelve el catálogo institucional ACTIVE vigente. |
 | `POST /analyses/{analysisId}/guidance/{protectionType}/view` | `STANDARD_SESSION` propia + `CSRF` | Registra idempotentemente la primera apertura del modal para una versión concreta. ADMIN se rechaza funcionalmente con `403 GUIDANCE_VIEW_STANDARD_ONLY`; un análisis ajeno responde `404`. |
+| `GET /admin/analyses` | `ADMIN_JWT` | Listado transversal paginado para la tabla administrativa. No usa ownership ni `AnalysisAccessResolver`; pagina y filtra en PostgreSQL, y por ser GET no requiere CSRF. |
 | `GET /admin/analyses/export.csv` | `ADMIN_JWT` | Exportación transversal del dataset operacional. No usa ownership, `AnalysisAccessResolver` ni fallback a cookie STANDARD; por ser GET no requiere CSRF. |
 | `/admin/report-disclaimers/**` | `ADMIN_JWT` | Gobierno del disclaimer institucional. El actor de auditoría se deriva del JWT; no acepta identidad en el body. |
 | `/admin/protection-guides/**` | `ADMIN_JWT` | Gobierno del catálogo de orientación; creación, edición, clonado y activación auditan al actor del JWT. |
@@ -41,7 +42,7 @@ Las rutas son relativas a `/identipat-ia`. Existen tres categorías separadas:
 La autorización combina la configuración HTTP de Spring Security con validaciones explícitas en los casos de uso:
 
 - las rutas administrativas bajo `/users/**` quedan protegidas mediante `ADMIN_JWT`, excepto los tres endpoints públicos enumerados;
-- las rutas bajo `/admin/**`, incluida la exportación operacional de análisis, exigen rol `ADMIN`; la exportación no filtra por el actor JWT, `user_id` ni `session_id`;
+- las rutas bajo `/admin/**`, incluidos el listado paginado y la exportación operacional de análisis, exigen rol `ADMIN`; ninguno filtra por el actor JWT ni aplica ownership;
 - las rutas `/standard-session/**`, `/standard-sessions` y `/analyses/**` llegan al controller sin una regla JWT única porque el análisis admite dos mecanismos;
 - los servicios de sesión temporal solo aceptan usuarios `STANDARD` activos; una sesión histórica de un usuario cuyo tipo actual no sea `STANDARD` se considera inválida para consulta, consentimiento y análisis;
 - `AnalysisAccessResolver` selecciona exactamente un modo: Bearer presente implica intento `ADMIN_JWT`; sin Bearer se usa `STANDARD_SESSION`;
