@@ -16,6 +16,10 @@ V{n}__descripcion.sql
 
 `V2__standard_sessions_and_consent.sql` crea `standard_sessions` y `consent_events`. La primera conserva solo HMAC del token, estados/TTL y FK restrictiva a usuario; la segunda conserva decisiones inmutables con versión/hash y FK compuesta `(session_id, user_id)`. No existe `ON DELETE CASCADE`. Una migración aplicada nunca se edita ni se reemplaza: cualquier modificación requiere otra migración. No se insertan secretos ni datos personales en migraciones estructurales.
 
+`V9__persistent_user_consent.sql` crea el singleton `legal_document`, `legal_document_history` y `user_terms_acceptances`, y agrega `terms_acceptance_id` a `analyses`. Cada aceptación conserva `accepted_document_updated_at`; la unicidad `(user_id, accepted_content_sha256, accepted_document_updated_at)` permite reaceptar el mismo hash en una vigencia posterior sin duplicarlo dentro de la misma vigencia. `consent_events` y `consent_event_id` permanecen exclusivamente para filas legacy y no se convierten en aceptaciones vigentes.
+
+V9 aún pertenece al cambio local F1.1B no integrado, por lo que esta definición coherente reemplaza su borrador anterior. Si una base DEV local ejecutó ese borrador, debe recrearse o resetearse de forma controlada antes de iniciar el backend; no se crea V10 para adaptar datos locales no integrados.
+
 `V3__analysis_domain.sql` crea `analyses`, `analysis_inputs`, `ai_invocations` y `analysis_results`.
 Añade una clave única auxiliar sobre consentimiento para que FK compuestas garanticen que análisis,
 sesión, usuario y evidencia pertenecen al mismo contexto. Incluye el índice parcial

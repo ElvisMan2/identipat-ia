@@ -13,7 +13,11 @@ import com.mnk.identipatia.guidance.dto.ProtectionGuideCreateRequest;
 import com.mnk.identipatia.guidance.repository.GuidanceViewRepository;
 import com.mnk.identipatia.guidance.repository.ProtectionGuideRepository;
 import com.mnk.identipatia.guidance.service.ProtectionGuideService;
-import com.mnk.identipatia.model.ConsentEvent;
+import com.mnk.identipatia.TestLegalDocumentFixture;
+import com.mnk.identipatia.legal.model.UserTermsAcceptance;
+import com.mnk.identipatia.legal.repository.LegalDocumentHistoryRepository;
+import com.mnk.identipatia.legal.repository.LegalDocumentRepository;
+import com.mnk.identipatia.legal.repository.UserTermsAcceptanceRepository;
 import com.mnk.identipatia.model.StandardSession;
 import com.mnk.identipatia.model.User;
 import com.mnk.identipatia.repository.ConsentEventRepository;
@@ -67,6 +71,9 @@ class GuidanceViewIntegrationTest {
     @Autowired UserRepository userRepository;
     @Autowired StandardSessionRepository sessionRepository;
     @Autowired ConsentEventRepository consentRepository;
+    @Autowired UserTermsAcceptanceRepository acceptanceRepository;
+    @Autowired LegalDocumentRepository legalDocumentRepository;
+    @Autowired LegalDocumentHistoryRepository legalHistoryRepository;
     @Autowired AnalysisRepository analysisRepository;
     @Autowired StoredAnalysisResultRepository resultRepository;
     @Autowired ProtectionGuideRepository guideRepository;
@@ -82,12 +89,14 @@ class GuidanceViewIntegrationTest {
         jdbc.update("delete from ai_invocations");
         jdbc.update("delete from analysis_inputs");
         analysisRepository.deleteAll();
+        acceptanceRepository.deleteAll();
         consentRepository.deleteAll();
         sessionRepository.deleteAll();
         jdbc.update("delete from protection_guides where created_source='ADMIN'");
         jdbc.update("update protection_guides set status='ACTIVE', retired_at=null where created_source='SYSTEM'");
         jdbc.update("update protection_guide_version_counters set next_version=2");
         userRepository.deleteAll();
+        TestLegalDocumentFixture.ensureCurrent(legalDocumentRepository, legalHistoryRepository);
     }
 
     @Test
@@ -315,12 +324,15 @@ class GuidanceViewIntegrationTest {
                 .filter(value -> value.getUser().getUserId().equals(savedUser.getUserId())).findFirst().orElseThrow();
         mockMvc.perform(post("/standard-session/consent").cookie(sessionCookie, csrf.cookie())
                         .header("X-XSRF-TOKEN", csrf.token()).contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"consentVersion\":\"personal-data/1.0\",\"decision\":\"ACCEPTED\"}"))
+                        .content("{\"contentHash\":\"" + TestLegalDocumentFixture.HASH
+                                + "\",\"decision\":\"ACCEPTED\"}"))
                 .andExpect(status().isOk());
-        ConsentEvent consent = consentRepository.findAll().stream()
-                .filter(value -> value.getSession().getSessionId().equals(session.getSessionId()))
-                .findFirst().orElseThrow();
-        return new Browser(sessionCookie, csrf, savedUser, session, consent.getConsentEventId());
+        UserTermsAcceptance acceptance = acceptanceRepository
+                .findByUserIdAndAcceptedContentSha256AndAcceptedDocumentUpdatedAt(
+                        savedUser.getUserId(), TestLegalDocumentFixture.HASH,
+                        legalDocumentRepository.findCurrent().orElseThrow().getUpdatedAt())
+                .orElseThrow();
+        return new Browser(sessionCookie, csrf, savedUser, session, acceptance.getAcceptanceId());
     }
 
     private Csrf csrf() throws Exception {
@@ -335,7 +347,7 @@ class GuidanceViewIntegrationTest {
         analysis.setAnalysisId(UUID.randomUUID());
         analysis.setUserId(owner.user().getUserId());
         analysis.setSessionId(owner.standardSession().getSessionId());
-        analysis.setConsentEventId(owner.consentEventId());
+        analysis.setTermsAcceptanceId(owner.termsAcceptanceId());
         analysis.setInputType(AnalysisInputType.TEXT);
         analysis.setStatus(status);
         analysis.setCreatedAt(now);
@@ -425,6 +437,6 @@ class GuidanceViewIntegrationTest {
     }
 
     private record Browser(Cookie session, Csrf csrf, User user,
-            StandardSession standardSession, UUID consentEventId) {
+            StandardSession standardSession, UUID termsAcceptanceId) {
     }
 }

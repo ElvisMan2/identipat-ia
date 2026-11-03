@@ -46,6 +46,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
 @WebMvcTest(UserController.class)
 @Import({SecurityConfig.class, JwtAuthenticationFilter.class, GlobalExceptionHandler.class})
@@ -65,6 +66,10 @@ class UserSecurityWebMvcTest {
               "phone": "016543210",
               "mobilePhone": "912345678",
               "profession": "Abogada",
+              "legalAcceptance": {
+                "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "accepted": true
+              },
               "userType": "ADMIN",
               "status": "I",
               "password": "untrusted-password"
@@ -100,6 +105,7 @@ class UserSecurityWebMvcTest {
         when(userService.registerStandard(any())).thenReturn(new StandardUserRegistrationResponse(true));
 
         mockMvc.perform(post("/users")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(STANDARD_REGISTRATION))
                 .andExpect(status().isCreated())
@@ -110,6 +116,23 @@ class UserSecurityWebMvcTest {
                 .andExpect(jsonPath("$.status").doesNotExist());
 
         verify(userService).registerStandard(any());
+    }
+
+    @Test
+    void standardRegistrationRequiresCsrf() throws Exception {
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(STANDARD_REGISTRATION))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void standardRegistrationRejectsInvalidCsrfToken() throws Exception {
+        mockMvc.perform(post("/users")
+                        .with(csrf().useInvalidToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(STANDARD_REGISTRATION))
+                .andExpect(status().isForbidden());
     }
 
     @Test

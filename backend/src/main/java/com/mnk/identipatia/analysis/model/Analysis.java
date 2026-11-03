@@ -27,14 +27,20 @@ public class Analysis {
     private Long userId;
 
     /**
-     * Access-context invariant: sessionId and consentEventId are both present
+     * New access-context invariant: sessionId and termsAcceptanceId are both present
      * for STANDARD_SESSION analyses and both absent for ADMIN_JWT analyses.
+     * The database retains consent_event_id only for legacy rows.
      */
     @Column(name = "session_id")
     private UUID sessionId;
 
+    /** Legacy evidence reference retained only to read pre-F1.1B analyses. */
+    @Deprecated(forRemoval = false)
     @Column(name = "consent_event_id")
     private UUID consentEventId;
+
+    @Column(name = "terms_acceptance_id")
+    private UUID termsAcceptanceId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "input_type", nullable = false, length = 16)

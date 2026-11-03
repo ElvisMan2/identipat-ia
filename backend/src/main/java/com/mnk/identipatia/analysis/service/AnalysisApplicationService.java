@@ -18,17 +18,15 @@ import com.mnk.identipatia.analysis.repository.AnalysisRepository;
 import com.mnk.identipatia.analysis.repository.StoredAnalysisResultRepository;
 import com.mnk.identipatia.analysis.result.AnalysisResult;
 import com.mnk.identipatia.analysis.result.AnalysisResultReader;
-import com.mnk.identipatia.config.StandardSessionProperties;
 import com.mnk.identipatia.exception.ApiException;
-import com.mnk.identipatia.model.ConsentDecision;
-import com.mnk.identipatia.model.ConsentEvent;
+import com.mnk.identipatia.legal.model.UserTermsAcceptance;
+import com.mnk.identipatia.legal.service.TermsAcceptanceService;
 import com.mnk.identipatia.preprocessing.client.PdfExtractionResponse;
 import com.mnk.identipatia.preprocessing.client.AudioTranscriptionResponse;
 import com.mnk.identipatia.preprocessing.client.PreprocessingAudioException;
 import com.mnk.identipatia.preprocessing.client.PreprocessingPdfException;
 import com.mnk.identipatia.preprocessing.client.PreprocessingServiceClient;
 import com.mnk.identipatia.preprocessing.client.PreprocessingServiceUnavailableException;
-import com.mnk.identipatia.repository.ConsentEventRepository;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -63,8 +61,7 @@ public class AnalysisApplicationService {
 
     private final AnalysisRepository analysisRepository;
     private final StoredAnalysisResultRepository resultRepository;
-    private final ConsentEventRepository consentRepository;
-    private final StandardSessionProperties sessionProperties;
+    private final TermsAcceptanceService termsAcceptanceService;
     private final AnalysisProperties analysisProperties;
     private final AiProperties aiProperties;
     private final ObjectProvider<GenerativeAiProvider> provider;
@@ -75,8 +72,7 @@ public class AnalysisApplicationService {
     public AnalysisApplicationService(
             AnalysisRepository analysisRepository,
             StoredAnalysisResultRepository resultRepository,
-            ConsentEventRepository consentRepository,
-            StandardSessionProperties sessionProperties,
+            TermsAcceptanceService termsAcceptanceService,
             AnalysisProperties analysisProperties,
             AiProperties aiProperties,
             ObjectProvider<GenerativeAiProvider> provider,
@@ -85,8 +81,7 @@ public class AnalysisApplicationService {
             AnalysisCreationPersistenceService creationService) {
         this.analysisRepository = analysisRepository;
         this.resultRepository = resultRepository;
-        this.consentRepository = consentRepository;
-        this.sessionProperties = sessionProperties;
+        this.termsAcceptanceService = termsAcceptanceService;
         this.analysisProperties = analysisProperties;
         this.aiProperties = aiProperties;
         this.provider = provider;
@@ -97,19 +92,19 @@ public class AnalysisApplicationService {
 
     @Transactional
     public AnalysisCreatedResponse createText(AnalysisAccessContext access, String originalText) {
-        ConsentEvent consent = access.mode() == AnalysisAccessContext.Mode.STANDARD_SESSION
-                ? requireCurrentConsent(access) : null;
+        UserTermsAcceptance acceptance = access.mode() == AnalysisAccessContext.Mode.STANDARD_SESSION
+                ? termsAcceptanceService.requireCurrentAcceptance(access.user().getUserId()) : null;
         ensureAiAvailable();
 
         String processedText = TextNormalizer.normalize(originalText);
         validateTextLength(processedText);
         return creationService.create(access, AnalysisInputType.TEXT, originalText, processedText,
-                objectMapper.createObjectNode(), consent);
+                objectMapper.createObjectNode(), acceptance);
     }
 
     public AnalysisCreatedResponse createPdf(AnalysisAccessContext access, MultipartFile file) {
-        ConsentEvent consent = access.mode() == AnalysisAccessContext.Mode.STANDARD_SESSION
-                ? requireCurrentConsent(access) : null;
+        UserTermsAcceptance acceptance = access.mode() == AnalysisAccessContext.Mode.STANDARD_SESSION
+                ? termsAcceptanceService.requireCurrentAcceptance(access.user().getUserId()) : null;
         byte[] pdfBytes = validateAndReadPdf(file);
 
         PdfExtractionResponse extraction;
@@ -137,12 +132,12 @@ public class AnalysisApplicationService {
         metadata.put("extractionMethod", extraction.extractionMethod());
         metadata.put("sha256", sha256(pdfBytes));
         return creationService.create(access, AnalysisInputType.PDF, extraction.text(), processedText,
-                metadata, consent);
+                metadata, acceptance);
     }
 
     public AnalysisCreatedResponse createAudio(AnalysisAccessContext access, MultipartFile file) {
-        ConsentEvent consent = access.mode() == AnalysisAccessContext.Mode.STANDARD_SESSION
-                ? requireCurrentConsent(access) : null;
+        UserTermsAcceptance acceptance = access.mode() == AnalysisAccessContext.Mode.STANDARD_SESSION
+                ? termsAcceptanceService.requireCurrentAcceptance(access.user().getUserId()) : null;
         ValidatedAudio audio = validateAndReadAudio(file);
 
         AudioTranscriptionResponse transcription;
@@ -172,17 +167,7 @@ public class AnalysisApplicationService {
         metadata.put("model", transcription.model());
         metadata.put("sha256", sha256(audio.bytes()));
         return creationService.create(access, AnalysisInputType.AUDIO, transcription.text(), processedText,
-                metadata, consent);
-    }
-
-    private ConsentEvent requireCurrentConsent(AnalysisAccessContext access) {
-        return consentRepository
-                .findBySessionSessionIdAndUserUserIdAndConsentVersionAndConsentDocumentHashAndDecision(
-                        access.session().getSessionId(), access.user().getUserId(),
-                        sessionProperties.getConsentCurrentVersion(),
-                        sessionProperties.getConsentDocumentSha256(), ConsentDecision.ACCEPTED)
-                .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "CONSENT_REQUIRED",
-                        "Current consent must be accepted before creating an analysis"));
+                metadata, acceptance);
     }
 
     @Transactional(readOnly = true)

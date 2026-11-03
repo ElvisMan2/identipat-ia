@@ -1,19 +1,21 @@
 package com.mnk.identipatia;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mnk.identipatia.model.ConsentDecision;
+import com.mnk.identipatia.legal.repository.LegalDocumentHistoryRepository;
+import com.mnk.identipatia.legal.repository.LegalDocumentRepository;
+import com.mnk.identipatia.legal.repository.UserTermsAcceptanceRepository;
 import com.mnk.identipatia.model.StandardSession;
 import com.mnk.identipatia.model.StandardSessionCloseReason;
 import com.mnk.identipatia.model.StandardSessionStatus;
 import com.mnk.identipatia.model.User;
 import com.mnk.identipatia.analysis.repository.AnalysisRepository;
-import com.mnk.identipatia.repository.ConsentEventRepository;
 import com.mnk.identipatia.repository.StandardSessionRepository;
 import com.mnk.identipatia.repository.UserRepository;
 import com.mnk.identipatia.service.StandardSessionTokenService;
 import com.mnk.identipatia.service.UserService;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -58,10 +60,17 @@ class StandardSessionIntegrationTest {
     @Autowired ObjectMapper objectMapper;
     @Autowired UserRepository userRepository;
     @Autowired StandardSessionRepository sessionRepository;
-    @Autowired ConsentEventRepository consentRepository;
+    @Autowired UserTermsAcceptanceRepository acceptanceRepository;
+    @Autowired LegalDocumentRepository legalDocumentRepository;
+    @Autowired LegalDocumentHistoryRepository legalHistoryRepository;
     @Autowired StandardSessionTokenService tokenService;
     @Autowired UserService userService;
     @Autowired AnalysisRepository analysisRepository;
+
+    @BeforeEach
+    void ensureLegalDocument() {
+        TestLegalDocumentFixture.ensureCurrent(legalDocumentRepository, legalHistoryRepository);
+    }
 
     @Test
     void textAnalysisReturns503AndPersistsNothingWhenAiIsDisabled() throws Exception {
@@ -69,7 +78,7 @@ class StandardSessionIntegrationTest {
         Csrf csrf = csrf();
         Cookie standard = createSession(user, csrf, null).getResponse()
                 .getCookie("IDENTIPAT_STANDARD_SESSION");
-        mockMvc.perform(consentPost(standard, csrf, "ACCEPTED", "personal-data/1.0"))
+        mockMvc.perform(consentPost(standard, csrf, "ACCEPTED", TestLegalDocumentFixture.HASH))
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/analyses/text").cookie(standard, csrf.cookie())
@@ -101,7 +110,7 @@ class StandardSessionIntegrationTest {
                 .andExpect(status().isForbidden());
         mockMvc.perform(post("/standard-session/consent")
                         .cookie(csrf.cookie()).header("X-XSRF-TOKEN", csrf.token())
-                        .contentType(MediaType.APPLICATION_JSON).content(consentBody("ACCEPTED", "personal-data/1.0")))
+                        .contentType(MediaType.APPLICATION_JSON).content(consentBody("ACCEPTED", TestLegalDocumentFixture.HASH)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("STANDARD_SESSION_REQUIRED"));
 
@@ -115,11 +124,11 @@ class StandardSessionIntegrationTest {
         assertThat(created.getResponse().getContentAsString()).doesNotContain(standard.getValue());
 
         mockMvc.perform(post("/standard-session/consent").cookie(standard)
-                        .contentType(MediaType.APPLICATION_JSON).content(consentBody("ACCEPTED", "personal-data/1.0")))
+                        .contentType(MediaType.APPLICATION_JSON).content(consentBody("ACCEPTED", TestLegalDocumentFixture.HASH)))
                 .andExpect(status().isForbidden());
         mockMvc.perform(post("/standard-session/consent")
                         .cookie(standard, csrf.cookie()).header("X-XSRF-TOKEN", csrf.token())
-                        .contentType(MediaType.APPLICATION_JSON).content(consentBody("ACCEPTED", "personal-data/1.0")))
+                        .contentType(MediaType.APPLICATION_JSON).content(consentBody("ACCEPTED", TestLegalDocumentFixture.HASH)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.decision").value("ACCEPTED"))
                 .andExpect(jsonPath("$.consentRequired").value(false))
@@ -159,7 +168,7 @@ class StandardSessionIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.consentRequired").value(true))
-                .andExpect(jsonPath("$.requiredConsentVersion").value("personal-data/1.0"))
+                .andExpect(jsonPath("$.requiredConsentVersion").doesNotExist())
                 .andExpect(jsonPath("$.doi").doesNotExist())
                 .andExpect(jsonPath("$.token").doesNotExist());
         StandardSession renewed = sessionRepository.findById(stored.getSessionId()).orElseThrow();
@@ -198,17 +207,17 @@ class StandardSessionIntegrationTest {
 
         Cookie cookie = new Cookie("IDENTIPAT_STANDARD_SESSION", rawToken);
         Csrf csrf = csrf();
-        long consentsBefore = consentRepository.count();
+        long consentsBefore = acceptanceRepository.count();
         long analysesBefore = analysisRepository.count();
         mockMvc.perform(get("/standard-session").cookie(cookie))
                 .andExpect(status().isUnauthorized());
-        mockMvc.perform(consentPost(cookie, csrf, "ACCEPTED", "personal-data/1.0"))
+        mockMvc.perform(consentPost(cookie, csrf, "ACCEPTED", TestLegalDocumentFixture.HASH))
                 .andExpect(status().isUnauthorized());
         mockMvc.perform(post("/analyses/text").cookie(cookie, csrf.cookie())
                         .header("X-XSRF-TOKEN", csrf.token()).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"description\":\"Descripción suficientemente extensa para analizar.\"}"))
                 .andExpect(status().isUnauthorized());
-        assertThat(consentRepository.count()).isEqualTo(consentsBefore);
+        assertThat(acceptanceRepository.count()).isEqualTo(consentsBefore);
         assertThat(analysisRepository.count()).isEqualTo(analysesBefore);
     }
 
@@ -251,40 +260,47 @@ class StandardSessionIntegrationTest {
     }
 
     @Test
-    void consentIsVersionedIdempotentConflictingAndRejectionCloses() throws Exception {
+    void consentIsHashBasedIdempotentAndRejectionKeepsSessionActive() throws Exception {
         User user = saveUser("STANDARD", "A");
         Csrf csrf = csrf();
         Cookie standard = createSession(user, csrf, null).getResponse().getCookie("IDENTIPAT_STANDARD_SESSION");
 
-        mockMvc.perform(consentPost(standard, csrf, "UNKNOWN", "personal-data/1.0"))
+        mockMvc.perform(consentPost(standard, csrf, "UNKNOWN", TestLegalDocumentFixture.HASH))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_CONSENT_DECISION"));
-        mockMvc.perform(consentPost(standard, csrf, "ACCEPTED", "old/0.9"))
-                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("CONSENT_VERSION_OUTDATED"));
+        mockMvc.perform(consentPost(standard, csrf, "ACCEPTED", "0000000000000000000000000000000000000000000000000000000000000000"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("LEGAL_DOCUMENT_CHANGED"));
+        String acceptedAt = null;
         for (int i = 0; i < 2; i++) {
-            mockMvc.perform(consentPost(standard, csrf, "ACCEPTED", "personal-data/1.0"))
-                    .andExpect(status().isOk());
+            MvcResult acceptedResult = mockMvc.perform(consentPost(standard, csrf, "ACCEPTED", TestLegalDocumentFixture.HASH))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.contentHash").value(TestLegalDocumentFixture.HASH))
+                    .andReturn();
+            String currentAcceptedAt = objectMapper.readTree(acceptedResult.getResponse().getContentAsString())
+                    .path("acceptedAt").asText();
+            if (acceptedAt == null) acceptedAt = currentAcceptedAt;
+            assertThat(currentAcceptedAt).isEqualTo(acceptedAt);
         }
-        StandardSession accepted = sessionRepository.findByTokenHash(tokenService.hash(standard.getValue())).orElseThrow();
-        assertThat(consentRepository.findBySessionAndConsentVersion(accepted, "personal-data/1.0"))
-                .get().satisfies(event -> {
-                    assertThat(event.getDecision()).isEqualTo(ConsentDecision.ACCEPTED);
-                    assertThat(event.getConsentDocumentHash()).matches("[0-9a-f]{64}");
-                    assertThat(event.getSource()).isEqualTo("STANDARD_WEB");
-                });
+        assertThat(acceptanceRepository.findByUserIdAndAcceptedContentSha256AndAcceptedDocumentUpdatedAt(
+                user.getUserId(), TestLegalDocumentFixture.HASH,
+                legalDocumentRepository.findCurrent().orElseThrow().getUpdatedAt())).get()
+                .extracting("source").isEqualTo("STANDARD_WEB");
         mockMvc.perform(get("/standard-session").cookie(standard))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.consentRequired").value(false));
-        mockMvc.perform(consentPost(standard, csrf, "REJECTED", "personal-data/1.0"))
-                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("CONSENT_ALREADY_DECIDED"));
 
-        Cookie rejectedCookie = createSession(user, csrf, null).getResponse().getCookie("IDENTIPAT_STANDARD_SESSION");
-        mockMvc.perform(consentPost(rejectedCookie, csrf, "REJECTED", "personal-data/1.0"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.sessionStatus").value("CLOSED"))
-                .andExpect(cookie().maxAge("IDENTIPAT_STANDARD_SESSION", 0));
-        mockMvc.perform(consentPost(rejectedCookie, csrf, "REJECTED", "personal-data/1.0"))
+        User rejectingUser = saveUser("STANDARD", "A");
+        Cookie rejectedCookie = createSession(rejectingUser, csrf, null).getResponse().getCookie("IDENTIPAT_STANDARD_SESSION");
+        mockMvc.perform(consentPost(rejectedCookie, csrf, "REJECTED", TestLegalDocumentFixture.HASH))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.decision").value("REJECTED"))
-                .andExpect(cookie().maxAge("IDENTIPAT_STANDARD_SESSION", 0));
+                .andExpect(jsonPath("$.acceptedAt").isEmpty())
+                .andExpect(jsonPath("$.sessionStatus").value("ACTIVE"))
+                .andExpect(jsonPath("$.consentRequired").value(true))
+                .andExpect(cookie().doesNotExist("IDENTIPAT_STANDARD_SESSION"));
         StandardSession rejected = sessionRepository.findByTokenHash(tokenService.hash(rejectedCookie.getValue())).orElseThrow();
-        assertThat(rejected.getCloseReason()).isEqualTo(StandardSessionCloseReason.CONSENT_REJECTED);
+        assertThat(rejected.getStatus()).isEqualTo(StandardSessionStatus.ACTIVE);
+        assertThat(rejected.getCloseReason()).isNull();
+        assertThat(acceptanceRepository.findByUserIdAndAcceptedContentSha256AndAcceptedDocumentUpdatedAt(
+                rejectingUser.getUserId(), TestLegalDocumentFixture.HASH,
+                legalDocumentRepository.findCurrent().orElseThrow().getUpdatedAt())).isEmpty();
     }
 
     @Test
@@ -356,8 +372,7 @@ class StandardSessionIntegrationTest {
         var request = csrfPost("/standard-sessions", csrf).content(sessionBody(user));
         if (presented != null) request.cookie(presented);
         return mockMvc.perform(request).andExpect(status().isCreated())
-                .andExpect(jsonPath("$.status").value("ACTIVE"))
-                .andExpect(jsonPath("$.consentRequired").value(true)).andReturn();
+                .andExpect(jsonPath("$.status").value("ACTIVE")).andReturn();
     }
 
     private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder csrfPost(String path, Csrf csrf) {
@@ -366,10 +381,10 @@ class StandardSessionIntegrationTest {
     }
 
     private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder consentPost(
-            Cookie standard, Csrf csrf, String decision, String version) {
+            Cookie standard, Csrf csrf, String decision, String contentHash) {
         return post("/standard-session/consent").cookie(standard, csrf.cookie())
                 .header("X-XSRF-TOKEN", csrf.token()).contentType(MediaType.APPLICATION_JSON)
-                .content(consentBody(decision, version));
+                .content(consentBody(decision, contentHash));
     }
 
     private User saveUser(String type, String status) {
@@ -385,8 +400,8 @@ class StandardSessionIntegrationTest {
         return "{\"doi\":\"" + user.getDoi() + "\",\"doiType\":\"DNI\"}";
     }
 
-    private static String consentBody(String decision, String version) {
-        return "{\"consentVersion\":\"" + version + "\",\"decision\":\"" + decision + "\"}";
+    private static String consentBody(String decision, String contentHash) {
+        return "{\"contentHash\":\"" + contentHash + "\",\"decision\":\"" + decision + "\"}";
     }
 
     private record Csrf(Cookie cookie, String token) { }

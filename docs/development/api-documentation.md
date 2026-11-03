@@ -60,22 +60,24 @@ Las variables de colección no contienen secretos reales:
 - `adminJwt`: vacío inicialmente; el request **Login ADMIN and save JWT** lo guarda automáticamente al recibir una respuesta correcta.
 - `standardDoi`, `standardDoiType` y `adminUserId`: datos de prueba ajustables.
 - `csrfToken`: se guarda dinámicamente desde **Get CSRF and save token**.
-- `consentVersion`: versión esperada por el backend.
+- `legalContentHash`: hash vigente guardado desde `GET /legal-document` o `PUT /admin/legal-document`.
 - `analysisId`: se guarda desde la respuesta `202` del flujo STANDARD.
 - `adminAnalysisId`: se guarda por separado desde la respuesta `202` del flujo ADMIN.
 
 Ejecuta primero **Login ADMIN and save JWT** y luego las operaciones en `Admin - Users`, que envían `Authorization: Bearer {{adminJwt}}`. El grupo incluye ejemplos paginados, de búsqueda, filtros, ordenamiento y exportación CSV completa. Las solicitudes que crean, actualizan o eliminan datos requieren valores de prueba únicos y son intencionalmente manuales.
 
-El flujo STANDARD no usa Bearer token: primero **Recognize document** y, si aplica, **Register STANDARD**. Después ejecuta **Get CSRF**, crea sesión, registra consentimiento, crea el análisis TEXT, PDF o AUDIO y realiza un GET manual. El flujo ADMIN ejecuta **Login ADMIN and save JWT** y luego crea/consulta el análisis con `Authorization: Bearer {{adminJwt}}`, sin DNI/CE en el body, cookie requerida, CSRF ni consentimiento STANDARD. Los grupos PDF/audio usan selección manual de archivo y no almacenan archivos en el repositorio. No hay polling infinito. No deben guardarse DNI, voz o documentos reales, cookies, pepper, JWT ni secretos en variables compartidas.
+El flujo STANDARD no usa Bearer token: obtiene CSRF y `GET /legal-document`; si registra usuario, envía `legalAcceptance`; después crea sesión y acepta el hash solo cuando `consentRequired=true`. El flujo ADMIN incluye gobierno de `/admin/legal-document` y análisis con Bearer, sin consentimiento STANDARD. Los grupos PDF/audio usan selección manual de archivo y no almacenan archivos en el repositorio. No hay polling infinito. No deben guardarse DNI, voz o documentos reales, cookies, pepper, JWT ni secretos en variables compartidas.
 
 ## Endpoints STANDARD
 
 | Método y ruta | Resultado principal |
 | --- | --- |
 | `GET /standard-session/csrf` | Cookie `XSRF-TOKEN` y `{token, headerName}`; no autentica. |
+| `GET /legal-document` | Contenido legal vigente y `contentHash`; público y sin PII. |
+| `POST /users` | Registro atómico User + acceptance; exige CSRF y `legalAcceptance`. |
 | `POST /standard-sessions` | `201`, cookie HttpOnly para STANDARD activo; ADMIN recibe `409`. |
 | `GET /standard-session` | Estado vigente y renovación de inactividad. |
-| `POST /standard-session/consent` | Evento `ACCEPTED`/`REJECTED`; nunca recibe hash/IDs. |
+| `POST /standard-session/consent` | Recibe `contentHash`; `ACCEPTED` es idempotente y `REJECTED` no persiste ni cierra sesión. |
 | `DELETE /standard-session` | `204`, revocación y borrado de cookie. |
 | `POST /analyses/text` | `202`, `Location`, `Retry-After` y UUID; STANDARD usa sesión/consentimiento/CSRF y ADMIN usa Bearer. |
 | `POST /analyses/pdf` | Multipart `file`; mismo `202` después de extracción exitosa. STANDARD usa sesión/consentimiento/CSRF y ADMIN usa Bearer. |

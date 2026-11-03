@@ -47,4 +47,7 @@ public class StandardUserRegistrationRequest {
 
     @NotBlank
     private String profession;
+
+    @Schema(description = "Aceptación expresa del hash legal vigente; no es una versión funcional.")
+    private LegalAcceptanceRequest legalAcceptance;
 }

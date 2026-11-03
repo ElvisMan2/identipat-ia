@@ -1,8 +1,8 @@
 # Roadmap funcional — IDENTIPAT-IA
 
-**Estado:** F0 y F1.0 completadas; F1.1–F1.8D implementadas; F1.9 es la siguiente fase
-**Versión del roadmap:** 1.8
-**Última actualización:** 31 de octubre de 2026
+**Estado:** F1.1B backend implementado sobre F1.8D; frontend F1.1B pendiente; F1.9 no completada
+**Versión del roadmap:** 1.9
+**Última actualización:** 2 de noviembre de 2026
 **Objetivo:** mantener una visión vigente de la secuencia funcional del producto, diferenciando lo ya materializado de las fases pendientes.
 
 ---
@@ -24,6 +24,7 @@ La estabilización técnica F0 está completada. El backend también materializa
 | F0.8 | CI con GitHub Actions | ✅ Completada |
 | F1.0 | Diseño del dominio de análisis | ✅ Completada |
 | F1.1 | Sesión STANDARD + consentimiento | ✅ Implementada |
+| F1.1B | Consentimiento legal persistente por usuario | 🟡 Backend implementado; frontend pendiente |
 | F1.2 | Capa de IA generativa en Java | ✅ Implementada |
 | F1.3 | Análisis end-to-end desde texto | ✅ Implementada |
 | F1.4 | Diagnóstico de propiedad intelectual | ✅ Implementada |
@@ -52,7 +53,7 @@ La base actual incluye:
 - identificación STANDARD sin login;
 - sesión STANDARD temporal mediante cookie segura y estado server-side;
 - protección CSRF para las mutaciones STANDARD implementadas;
-- consentimiento versionado con evidencia persistente;
+- contenido legal único con aceptación persistente por usuario, hash canónico y vigencia efectiva;
 - análisis de texto asíncrono y durable;
 - abstracción `GenerativeAiProvider` con OpenAI como adapter actual;
 - prompts y JSON Schemas versionados;
@@ -95,16 +96,17 @@ Disclaimer
 → naturaleza orientativa del resultado generado con IA
 ```
 
-El consentimiento vigente:
+La aceptación legal vigente:
 
-- se registra mediante eventos inmutables;
-- queda asociado al usuario y a la sesión STANDARD;
-- conserva versión y hash del documento aceptado;
-- se valida antes de admitir un análisis.
+- pertenece al usuario STANDARD y al SHA-256 del contenido saneado;
+- se reutiliza entre sesiones mientras el contenido no cambie;
+- se crea atómicamente junto con el registro para usuarios nuevos;
+- se valida antes de TEXT/PDF/AUDIO y antes de preprocessing o IA;
+- no usa números de versión, drafts, estados ni publicación manual.
 
 El disclaimer se incorporará como contenido institucional controlado por la aplicación en F1.7. No debe confundirse con `AnalysisResult.warnings[]` ni generarse libremente por el modelo.
 
-Debe confirmarse con el responsable funcional/legal el momento exacto del consentimiento respecto al registro inicial de datos personales.
+F1.1B fija la aceptación expresa antes de completar el registro STANDARD. El texto institucional definitivo y las decisiones de go-live siguen pendientes de validación legal.
 
 ## 2.3 Persistencia amplia de las consultas
 
@@ -245,19 +247,28 @@ El modelo implementado incorpora además control de concurrencia mediante lease,
 - persistencia del token únicamente mediante HMAC;
 - TTL de inactividad y absoluto;
 - invalidación por expiración o usuario inactivo;
-- eventos inmutables de consentimiento;
-- versión y hash del documento de consentimiento;
+- tabla `consent_events` histórica para el contrato pre-F1.1B;
 - bloqueo del análisis sin aceptación vigente;
 - protección CSRF con `CookieCsrfTokenRepository` y patrón SPA de Spring Security;
 - separación entre sesión STANDARD y autenticación ADMIN con JWT Bearer.
 
 F1.4C cerró la compatibilidad temporal para ADMIN: `POST /standard-sessions` devuelve `409 STANDARD_SESSION_NOT_AVAILABLE` para ese tipo y las sesiones ADMIN históricas no son resolubles.
 
-La mutación `POST /analyses/text` ya está incluida en la estrategia CSRF. Las futuras mutaciones PDF/audio deberán quedar igualmente cubiertas, preferiblemente mediante una regla general aplicable a `/analyses/**`.
+Las mutaciones `POST /analyses/**` sin Bearer están incluidas en la estrategia CSRF.
 
-## Pendiente funcional/legal
+## Evolución F1.1B
 
-Confirmar si el consentimiento debe producirse antes de persistir los datos personales del registro inicial y, de ser necesario, ajustar el flujo.
+El modelo por sesión quedó sustituido para operaciones nuevas por aceptación persistente `user_id + accepted_content_sha256 + accepted_document_updated_at`. Coincidir con un hash previamente aceptado no basta: la aceptación debe corresponder además a la vigencia efectiva actual del documento. `consent_events` se conserva como tabla legacy y no se convierte automáticamente en aceptación vigente.
+
+---
+
+# F1.1B — Consentimiento legal persistente por usuario
+
+**Estado:** backend implementado; frontend pendiente.
+
+Incluye `legal_document` singleton, historial técnico inmutable por hash, `user_terms_acceptances`, sanitización `legal-document-html/1.0`, hash `SHA-256(title.trim() + "\n" + sanitizedContentHtml)`, registro atómico, CSRF en `POST /users`, aceptación idempotente por vigencia efectiva y `terms_acceptance_id` en análisis nuevos. A→B→A exige reaceptar A porque A2 tiene un nuevo `legal_document.updated_at`; un PUT idéntico conserva ese valor. No existe versionado legal funcional, drafts ni publicación.
+
+Angular debe adoptar el contrato antes de declarar E2E de navegador completado.
 
 ---
 
@@ -395,7 +406,7 @@ Java debe:
 
 - ADMIN crea y consulta análisis en los endpoints comunes con Bearer JWT;
 - la identidad se deriva del JWT y se valida contra un ADMIN activo en PostgreSQL;
-- los análisis ADMIN conservan `user_id` y guardan `session_id`/`consent_event_id` como `NULL`;
+- los análisis ADMIN conservan `user_id` y guardan `session_id`/`terms_acceptance_id` como `NULL`;
 - STANDARD permanece sin JWT, con sesión, consentimiento y CSRF;
 - Bearer tiene precedencia sobre cookie y un Bearer inválido nunca hace fallback;
 - ADMIN ya no puede crear una sesión pública por DNI/CE y las sesiones ADMIN históricas quedan inutilizables.

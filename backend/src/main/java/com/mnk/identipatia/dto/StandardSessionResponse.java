@@ -10,6 +10,5 @@ public record StandardSessionResponse(
         StandardSessionStatus status,
         Instant expiresAt,
         Instant absoluteExpiresAt,
-        boolean consentRequired,
-        String requiredConsentVersion) {
+        boolean consentRequired) {
 }

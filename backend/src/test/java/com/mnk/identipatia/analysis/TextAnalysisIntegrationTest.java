@@ -23,6 +23,10 @@ import com.mnk.identipatia.analysis.worker.AnalysisClaimService;
 import com.mnk.identipatia.analysis.worker.AnalysisWorker;
 import com.mnk.identipatia.model.StandardSession;
 import com.mnk.identipatia.model.User;
+import com.mnk.identipatia.TestLegalDocumentFixture;
+import com.mnk.identipatia.legal.repository.LegalDocumentHistoryRepository;
+import com.mnk.identipatia.legal.repository.LegalDocumentRepository;
+import com.mnk.identipatia.legal.repository.UserTermsAcceptanceRepository;
 import com.mnk.identipatia.repository.ConsentEventRepository;
 import com.mnk.identipatia.repository.StandardSessionRepository;
 import com.mnk.identipatia.repository.UserRepository;
@@ -96,6 +100,9 @@ class TextAnalysisIntegrationTest {
     @Autowired UserRepository userRepository;
     @Autowired StandardSessionRepository sessionRepository;
     @Autowired ConsentEventRepository consentRepository;
+    @Autowired UserTermsAcceptanceRepository acceptanceRepository;
+    @Autowired LegalDocumentRepository legalDocumentRepository;
+    @Autowired LegalDocumentHistoryRepository legalHistoryRepository;
     @Autowired AnalysisRepository analysisRepository;
     @Autowired AnalysisInputRepository inputRepository;
     @Autowired AiInvocationRepository invocationRepository;
@@ -118,9 +125,11 @@ class TextAnalysisIntegrationTest {
         invocationRepository.deleteAll();
         inputRepository.deleteAll();
         analysisRepository.deleteAll();
+        acceptanceRepository.deleteAll();
         consentRepository.deleteAll();
         sessionRepository.deleteAll();
         userRepository.deleteAll();
+        TestLegalDocumentFixture.ensureCurrent(legalDocumentRepository, legalHistoryRepository);
         reset(provider);
         when(provider.providerId()).thenReturn("fake");
     }
@@ -142,7 +151,8 @@ class TextAnalysisIntegrationTest {
         verify(provider, never()).generate(any());
         Analysis received = analysisRepository.findById(analysisId).orElseThrow();
         assertThat(received.getStatus()).isEqualTo(AnalysisStatus.RECEIVED);
-        assertThat(received.getConsentEventId()).isNotNull();
+        assertThat(received.getConsentEventId()).isNull();
+        assertThat(received.getTermsAcceptanceId()).isNotNull();
         assertThat(inputRepository.findById(analysisId).orElseThrow())
                 .satisfies(input -> {
                     assertThat(input.getOriginalText()).isEqualTo(original);
@@ -263,6 +273,31 @@ class TextAnalysisIntegrationTest {
     }
 
     @Test
+    void newEffectivePeriodForSameHashRequiresReacceptanceBeforeTextAnalysis() throws Exception {
+        Browser browser = acceptedBrowser();
+        UUID acceptanceA1 = acceptanceRepository.findAll().get(0).getAcceptanceId();
+        jdbcTemplate.update("update legal_document set updated_at = updated_at + interval '1 microsecond'");
+
+        postAnalysis(browser, "Descripción suficientemente extensa para comprobar la nueva vigencia.")
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CONSENT_REQUIRED"));
+        verify(provider, never()).generate(any());
+
+        acceptCurrent(browser);
+        var document = legalDocumentRepository.findCurrent().orElseThrow();
+        var acceptanceA2 = acceptanceRepository
+                .findByUserIdAndAcceptedContentSha256AndAcceptedDocumentUpdatedAt(
+                        browser.userId(), document.getContentSha256(), document.getUpdatedAt())
+                .orElseThrow();
+        MvcResult created = postAnalysis(browser,
+                "Descripción suficientemente extensa para comprobar la reaceptación.")
+                .andExpect(status().isAccepted()).andReturn();
+        Analysis analysis = analysisRepository.findById(id(created)).orElseThrow();
+        assertThat(acceptanceA2.getAcceptanceId()).isNotEqualTo(acceptanceA1);
+        assertThat(analysis.getTermsAcceptanceId()).isEqualTo(acceptanceA2.getAcceptanceId());
+    }
+
+    @Test
     void unexpectedPdfRendererFailureReturnsControlledJsonErrorForStandardSession() throws Exception {
         Browser browser = acceptedBrowser();
         UUID analysisId = id(postAnalysis(browser,
@@ -299,6 +334,7 @@ class TextAnalysisIntegrationTest {
         assertThat(analysis.getUserId()).isEqualTo(admin.getUserId());
         assertThat(analysis.getSessionId()).isNull();
         assertThat(analysis.getConsentEventId()).isNull();
+        assertThat(analysis.getTermsAcceptanceId()).isNull();
         assertThat(sessionRepository.count()).isZero();
         assertThat(consentRepository.count()).isZero();
 
@@ -358,6 +394,7 @@ class TextAnalysisIntegrationTest {
         assertThat(analysis.getUserId()).isEqualTo(admin.getUserId());
         assertThat(analysis.getSessionId()).isNull();
         assertThat(analysis.getConsentEventId()).isNull();
+        assertThat(analysis.getTermsAcceptanceId()).isNull();
     }
 
     @Test
@@ -430,7 +467,8 @@ class TextAnalysisIntegrationTest {
                 .andExpect(status().isAccepted()).andReturn());
         Analysis standardAnalysis = analysisRepository.findById(standardId).orElseThrow();
         assertThat(standardAnalysis.getSessionId()).isNotNull();
-        assertThat(standardAnalysis.getConsentEventId()).isNotNull();
+        assertThat(standardAnalysis.getConsentEventId()).isNull();
+        assertThat(standardAnalysis.getTermsAcceptanceId()).isNotNull();
     }
 
     @Test
@@ -451,6 +489,7 @@ class TextAnalysisIntegrationTest {
                 .andExpect(status().isForbidden());
         postAnalysis(withoutConsent, " corto ")
                 .andExpect(status().isConflict());
+        verify(provider, never()).generate(any());
 
         Browser accepted = acceptedBrowser();
         postAnalysis(accepted, " corto ")
@@ -693,10 +732,20 @@ class TextAnalysisIntegrationTest {
         if (acceptConsent) {
             mockMvc.perform(post("/standard-session/consent").cookie(sessionCookie, csrf.cookie())
                             .header("X-XSRF-TOKEN", csrf.token()).contentType(MediaType.APPLICATION_JSON)
-                            .content("{\"consentVersion\":\"personal-data/1.0\",\"decision\":\"ACCEPTED\"}"))
+                            .content("{\"contentHash\":\"" + TestLegalDocumentFixture.HASH
+                                    + "\",\"decision\":\"ACCEPTED\"}"))
                     .andExpect(status().isOk());
         }
-        return new Browser(sessionCookie, csrf, session.getSessionId());
+        return new Browser(sessionCookie, csrf, session.getSessionId(), user.getUserId());
+    }
+
+    private void acceptCurrent(Browser browser) throws Exception {
+        mockMvc.perform(post("/standard-session/consent")
+                        .cookie(browser.session(), browser.csrf().cookie())
+                        .header("X-XSRF-TOKEN", browser.csrf().token()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"contentHash\":\"" + TestLegalDocumentFixture.HASH
+                                + "\",\"decision\":\"ACCEPTED\"}"))
+                .andExpect(status().isOk());
     }
 
     private Csrf csrf() throws Exception {
@@ -767,6 +816,6 @@ class TextAnalysisIntegrationTest {
     private record Csrf(Cookie cookie, String token) {
     }
 
-    private record Browser(Cookie session, Csrf csrf, UUID sessionId) {
+    private record Browser(Cookie session, Csrf csrf, UUID sessionId, Long userId) {
     }
 }

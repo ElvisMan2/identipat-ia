@@ -146,7 +146,7 @@ Request hacia `develop` y `main`. El flujo no despliega ni publica imágenes. Co
 
 El perfil se selecciona con `SPRING_PROFILES_ACTIVE`; no hay un perfil activo por defecto. DEV ofrece valores locales no productivos para `DB_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`, `CORS_ALLOWED_ORIGINS` y `SERVER_PORT`. Las variables siempre pueden reemplazarlos desde el entorno, IDE o mecanismo de despliegue.
 
-PROD exige `SPRING_PROFILES_ACTIVE=prod` y valores externos para `DB_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`, `STANDARD_SESSION_PEPPER`, `CONSENT_CURRENT_VERSION`, `CONSENT_DOCUMENT_SHA256` y `CORS_ALLOWED_ORIGINS`. No existen fallbacks productivos para secretos, credenciales ni evidencia legal versionada.
+PROD exige `SPRING_PROFILES_ACTIVE=prod` y valores externos para `DB_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`, `STANDARD_SESSION_PEPPER` y `CORS_ALLOWED_ORIGINS`. El contenido legal y su hash ya no provienen de configuración: se administran en PostgreSQL mediante `/admin/legal-document`.
 
 La IA se controla con `IDENTIPAT_AI_ENABLED` y `IDENTIPAT_AI_PROVIDER`. DEV habilita OpenAI por
 defecto, usa `gpt-5-mini` y `60s` como defaults reemplazables, y exige `OPENAI_API_KEY` local.

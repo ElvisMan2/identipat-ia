@@ -6,11 +6,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.Instant;
 
-@Schema(description = "Evidencia funcional de la decisión, sin PII, IDs internos ni hash documental.")
+@Schema(description = "Resultado de la decisión, sin PII ni IDs internos.")
 public record ConsentResponse(
-        String consentVersion,
+        String contentHash,
         ConsentDecision decision,
-        Instant decidedAt,
+        Instant acceptedAt,
         StandardSessionStatus sessionStatus,
         boolean consentRequired) {
 }

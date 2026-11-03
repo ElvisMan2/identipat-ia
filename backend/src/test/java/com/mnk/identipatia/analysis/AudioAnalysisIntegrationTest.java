@@ -18,6 +18,10 @@ import com.mnk.identipatia.analysis.repository.StoredAnalysisResultRepository;
 import com.mnk.identipatia.analysis.worker.AnalysisWorker;
 import com.mnk.identipatia.model.StandardSession;
 import com.mnk.identipatia.model.User;
+import com.mnk.identipatia.TestLegalDocumentFixture;
+import com.mnk.identipatia.legal.repository.LegalDocumentHistoryRepository;
+import com.mnk.identipatia.legal.repository.LegalDocumentRepository;
+import com.mnk.identipatia.legal.repository.UserTermsAcceptanceRepository;
 import com.mnk.identipatia.preprocessing.client.AudioTranscriptionResponse;
 import com.mnk.identipatia.preprocessing.client.PreprocessingAudioException;
 import com.mnk.identipatia.preprocessing.client.PreprocessingServiceClient;
@@ -39,6 +43,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -94,6 +99,9 @@ class AudioAnalysisIntegrationTest {
     @Autowired UserRepository userRepository;
     @Autowired StandardSessionRepository sessionRepository;
     @Autowired ConsentEventRepository consentRepository;
+    @Autowired UserTermsAcceptanceRepository acceptanceRepository;
+    @Autowired LegalDocumentRepository legalDocumentRepository;
+    @Autowired LegalDocumentHistoryRepository legalHistoryRepository;
     @Autowired AnalysisRepository analysisRepository;
     @Autowired AnalysisInputRepository inputRepository;
     @Autowired AiInvocationRepository invocationRepository;
@@ -101,6 +109,7 @@ class AudioAnalysisIntegrationTest {
     @Autowired AnalysisReportContextRepository reportContextRepository;
     @Autowired AnalysisWorker worker;
     @Autowired JwtService jwtService;
+    @Autowired JdbcTemplate jdbcTemplate;
 
     @MockBean GenerativeAiProvider provider;
     @MockBean PreprocessingServiceClient preprocessingClient;
@@ -113,9 +122,11 @@ class AudioAnalysisIntegrationTest {
         invocationRepository.deleteAll();
         inputRepository.deleteAll();
         analysisRepository.deleteAll();
+        acceptanceRepository.deleteAll();
         consentRepository.deleteAll();
         sessionRepository.deleteAll();
         userRepository.deleteAll();
+        TestLegalDocumentFixture.ensureCurrent(legalDocumentRepository, legalHistoryRepository);
         reset(provider, preprocessingClient, aiProperties);
         when(provider.providerId()).thenReturn("fake");
         when(aiProperties.enabled()).thenReturn(true);
@@ -140,6 +151,8 @@ class AudioAnalysisIntegrationTest {
         Analysis analysis = analysisRepository.findById(analysisId).orElseThrow();
         AnalysisInput input = inputRepository.findById(analysisId).orElseThrow();
         assertThat(analysis.getInputType()).isEqualTo(AnalysisInputType.AUDIO);
+        assertThat(analysis.getConsentEventId()).isNull();
+        assertThat(analysis.getTermsAcceptanceId()).isNotNull();
         assertThat(input.getOriginalText()).isEqualTo(TRANSCRIPT);
         assertThat(input.getProcessedText())
                 .isEqualTo("Sistema de riego inteligente con sensores y válvulas independientes.");
@@ -168,6 +181,31 @@ class AudioAnalysisIntegrationTest {
     }
 
     @Test
+    void newEffectivePeriodForSameHashRequiresReacceptanceBeforeAudioTranscription() throws Exception {
+        Browser browser = browser(true);
+        UUID acceptanceA1 = acceptanceRepository.findAll().get(0).getAcceptanceId();
+        jdbcTemplate.update("update legal_document set updated_at = updated_at + interval '1 microsecond'");
+
+        postAudio(browser, audio(VALID_AUDIO, "audio/wav"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CONSENT_REQUIRED"));
+        verify(preprocessingClient, never()).transcribeAudio(any(), anyString());
+        verify(provider, never()).generate(any());
+
+        acceptCurrent(browser);
+        var document = legalDocumentRepository.findCurrent().orElseThrow();
+        var acceptanceA2 = acceptanceRepository
+                .findByUserIdAndAcceptedContentSha256AndAcceptedDocumentUpdatedAt(
+                        browser.userId(), document.getContentSha256(), document.getUpdatedAt())
+                .orElseThrow();
+        MvcResult created = postAudio(browser, audio(VALID_AUDIO, "audio/wav"))
+                .andExpect(status().isAccepted()).andReturn();
+        Analysis analysis = analysisRepository.findById(id(created)).orElseThrow();
+        assertThat(acceptanceA2.getAcceptanceId()).isNotEqualTo(acceptanceA1);
+        assertThat(analysis.getTermsAcceptanceId()).isEqualTo(acceptanceA2.getAcceptanceId());
+    }
+
+    @Test
     void standardRequiresSessionConsentAndCsrfBeforeTranscription() throws Exception {
         Browser accepted = browser(true);
         mockMvc.perform(multipart("/analyses/audio")
@@ -186,6 +224,7 @@ class AudioAnalysisIntegrationTest {
                         .cookie(csrf.cookie()).header("X-XSRF-TOKEN", csrf.token()))
                 .andExpect(status().isUnauthorized());
         verify(preprocessingClient, never()).transcribeAudio(any(), anyString());
+        verify(provider, never()).generate(any());
         assertThat(analysisRepository.count()).isZero();
     }
 
@@ -204,6 +243,7 @@ class AudioAnalysisIntegrationTest {
         assertThat(analysis.getUserId()).isEqualTo(admin.getUserId());
         assertThat(analysis.getSessionId()).isNull();
         assertThat(analysis.getConsentEventId()).isNull();
+        assertThat(analysis.getTermsAcceptanceId()).isNull();
         mockMvc.perform(get("/analyses/{analysisId}", analysisId)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
                 .andExpect(status().isOk())
@@ -340,10 +380,20 @@ class AudioAnalysisIntegrationTest {
         if (acceptConsent) {
             mockMvc.perform(post("/standard-session/consent").cookie(sessionCookie, csrf.cookie())
                             .header("X-XSRF-TOKEN", csrf.token()).contentType(MediaType.APPLICATION_JSON)
-                            .content("{\"consentVersion\":\"personal-data/1.0\",\"decision\":\"ACCEPTED\"}"))
+                            .content("{\"contentHash\":\"" + TestLegalDocumentFixture.HASH
+                                    + "\",\"decision\":\"ACCEPTED\"}"))
                     .andExpect(status().isOk());
         }
-        return new Browser(sessionCookie, csrf, session.getSessionId());
+        return new Browser(sessionCookie, csrf, session.getSessionId(), user.getUserId());
+    }
+
+    private void acceptCurrent(Browser browser) throws Exception {
+        mockMvc.perform(post("/standard-session/consent")
+                        .cookie(browser.session(), browser.csrf().cookie())
+                        .header("X-XSRF-TOKEN", browser.csrf().token()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"contentHash\":\"" + TestLegalDocumentFixture.HASH
+                                + "\",\"decision\":\"ACCEPTED\"}"))
+                .andExpect(status().isOk());
     }
 
     private User user(String type, String status) {
@@ -431,6 +481,6 @@ class AudioAnalysisIntegrationTest {
     private record Csrf(Cookie cookie, String token) {
     }
 
-    private record Browser(Cookie session, Csrf csrf, UUID sessionId) {
+    private record Browser(Cookie session, Csrf csrf, UUID sessionId, Long userId) {
     }
 }

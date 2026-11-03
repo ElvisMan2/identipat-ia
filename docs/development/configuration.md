@@ -65,8 +65,6 @@ Producción requiere `SPRING_PROFILES_ACTIVE=prod` además de todas las variable
 | `STANDARD_SESSION_INACTIVITY_TIMEOUT` | `30m` | `30m` | `30m` si no se reemplaza | Timeout renovable por actividad |
 | `STANDARD_SESSION_ABSOLUTE_TIMEOUT` | `8h` | `8h` | `8h` si no se reemplaza | Límite absoluto no renovable |
 | `STANDARD_SESSION_COOKIE_SECURE` | `false` | `false` | Forzado a `true` | Permite HTTP solo en desarrollo/pruebas |
-| `CONSENT_CURRENT_VERSION` | `personal-data/1.0` de prueba | Igual | Obligatoria | Versión del documento legal vigente |
-| `CONSENT_DOCUMENT_SHA256` | 64 ceros como placeholder | Igual | Obligatoria | SHA-256 hex lowercase del documento aprobado externamente |
 | `SERVER_PORT` | `8082` | `0` (puerto aleatorio) | `8082` | Puerto HTTP |
 | `APP_TIME_ZONE` | `America/Lima` | `America/Lima` | `America/Lima` | Zona de Jackson y JDBC/Hibernate |
 | `STATIC_LOCATIONS` | Classpath y build Angular local | Solo classpath | Solo classpath | Ubicaciones de recursos, separadas por coma |

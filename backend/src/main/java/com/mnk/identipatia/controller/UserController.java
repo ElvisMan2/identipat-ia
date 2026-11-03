@@ -93,10 +93,13 @@ public class UserController {
     }
 
     @PostMapping
-    @Operation(summary = "Registrar usuario STANDARD", description = "Crea un usuario STANDARD activo; el tipo, estado y contraseña se determinan exclusivamente en el servidor.")
+    @Operation(summary = "Registrar usuario STANDARD", description = "Requiere CSRF y aceptación expresa de contentHash. Crea User + acceptance en una transacción; no acepta versión legal.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Registro STANDARD creado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = StandardUserRegistrationResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Datos inválidos o DOI duplicado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Map.class)))
+            @ApiResponse(responseCode = "400", description = "Datos inválidos, DOI duplicado o LEGAL_ACCEPTANCE_REQUIRED", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Map.class))),
+            @ApiResponse(responseCode = "403", description = "CSRF ausente o inválido"),
+            @ApiResponse(responseCode = "404", description = "LEGAL_DOCUMENT_NOT_FOUND"),
+            @ApiResponse(responseCode = "409", description = "LEGAL_DOCUMENT_CHANGED")
     })
     public ResponseEntity<StandardUserRegistrationResponse> registerStandard(
             @Valid @RequestBody StandardUserRegistrationRequest request) {

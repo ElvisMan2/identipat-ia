@@ -4,6 +4,7 @@ import com.mnk.identipatia.dto.DocumentRecognitionRequest;
 import com.mnk.identipatia.dto.DocumentRecognitionResponse;
 import com.mnk.identipatia.dto.StandardUserRegistrationRequest;
 import com.mnk.identipatia.dto.StandardUserRegistrationResponse;
+import com.mnk.identipatia.dto.LegalAcceptanceRequest;
 import com.mnk.identipatia.dto.UserDTO;
 import com.mnk.identipatia.dto.PagedResponse;
 import com.mnk.identipatia.exception.InvalidUserDataException;
@@ -12,6 +13,8 @@ import com.mnk.identipatia.mapper.UserMapper;
 import com.mnk.identipatia.model.User;
 import com.mnk.identipatia.repository.UserRepository;
 import com.mnk.identipatia.repository.StandardSessionRepository;
+import com.mnk.identipatia.legal.repository.UserTermsAcceptanceRepository;
+import com.mnk.identipatia.legal.service.TermsAcceptanceService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
@@ -56,6 +59,12 @@ class UserServiceTest {
     @Mock
     private StandardSessionRepository standardSessionRepository;
 
+    @Mock
+    private TermsAcceptanceService termsAcceptanceService;
+
+    @Mock
+    private UserTermsAcceptanceRepository termsAcceptanceRepository;
+
     @InjectMocks
     private UserService userService;
 
@@ -70,7 +79,7 @@ class UserServiceTest {
         StandardUserRegistrationResponse response = userService.registerStandard(request);
 
         ArgumentCaptor<User> savedUser = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(savedUser.capture());
+        verify(userRepository).saveAndFlush(savedUser.capture());
         assertEquals("STANDARD", savedUser.getValue().getUserType());
         assertEquals("A", savedUser.getValue().getStatus());
         assertNull(savedUser.getValue().getPassword());
@@ -78,6 +87,9 @@ class UserServiceTest {
         assertNotNull(savedUser.getValue().getCreationDate());
         assertEquals(true, response.isRegistered());
         verifyNoInteractions(passwordEncoder);
+        verify(termsAcceptanceService).acceptCurrent(null,
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                TermsAcceptanceService.STANDARD_REGISTRATION);
     }
 
     @Test
@@ -88,7 +100,7 @@ class UserServiceTest {
         assertThrows(InvalidUserDataException.class, () -> userService.registerStandard(request));
 
         verify(userMapper, never()).toEntity(any(StandardUserRegistrationRequest.class));
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, never()).saveAndFlush(any(User.class));
         verifyNoInteractions(passwordEncoder);
     }
 
@@ -262,6 +274,8 @@ class UserServiceTest {
         request.setPhone("016543210");
         request.setMobilePhone("912345678");
         request.setProfession("Abogada");
+        request.setLegalAcceptance(new LegalAcceptanceRequest(
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", true));
         return request;
     }
 

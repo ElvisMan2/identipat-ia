@@ -40,6 +40,13 @@ identipat-ia/
 │   │   │   │   │   ├── model/
 │   │   │   │   │   ├── repository/
 │   │   │   │   │   └── service/
+│   │   │   │   ├── legal/              # F1.1B: contenido legal único y aceptación por usuario+hash+vigencia efectiva
+│   │   │   │   │   ├── controller/     # GET público y GET/PUT ADMIN
+│   │   │   │   │   ├── dto/
+│   │   │   │   │   ├── html/           # Política legal-document-html/1.0
+│   │   │   │   │   ├── model/          # LegalDocument, historial y UserTermsAcceptance
+│   │   │   │   │   ├── repository/
+│   │   │   │   │   └── service/        # Hash/canonicalización y aceptación vigente
 │   │   │   │   ├── advice/
 │   │   │   │   │   └── GlobalExceptionHandler.java
 │   │   │   │   ├── config/
@@ -60,6 +67,7 @@ identipat-ia/
 │   │   │   │   │   ├── DocumentRecognitionResponse.java
 │   │   │   │   │   ├── StandardUserRegistrationRequest.java
 │   │   │   │   │   ├── StandardUserRegistrationResponse.java
+│   │   │   │   │   ├── LegalAcceptanceRequest.java
 │   │   │   │   │   ├── UserDTO.java
 │   │   │   │   │   ├── StandardSessionCreateRequest.java
 │   │   │   │   │   ├── StandardSessionResponse.java
@@ -95,7 +103,8 @@ identipat-ia/
 │   │   │       │       ├── V5__diagnostic_reporting.sql
 │   │   │       │       ├── V6__protection_guidance_catalog.sql
 │   │   │       │       ├── V7__seed_protection_guidance_catalog.sql
-│   │   │       │       └── V8__guidance_views.sql
+│   │   │       │       ├── V8__guidance_views.sql
+│   │   │       │       └── V9__persistent_user_consent.sql
 │   │   │       ├── prompts/intellectual-property-analysis/v0.1/
 │   │   │       │   ├── system.md
 │   │   │       │   └── user.md
