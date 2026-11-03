@@ -19,7 +19,9 @@
     { "key": "adminAnalysisId", "value": "" },
     { "key": "protectionType", "value": "UTILITY_MODEL" },
     { "key": "guideVersion", "value": "1" },
-    { "key": "disclaimerId", "value": "" }
+    { "key": "disclaimerId", "value": "" },
+    { "key": "reportFrom", "value": "2026-10-01" },
+    { "key": "reportTo", "value": "2026-10-31" }
   ],
   "item": [
     {
@@ -563,6 +565,27 @@
       "name": "ADMIN - Diagnostic reports and disclaimers",
       "description": "Ejecute primero Login ADMIN. Las operaciones usan exclusivamente Bearer JWT y no requieren CSRF.",
       "item": [
+        {
+          "name": "Export operational analysis report CSV",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/admin/analyses/export.csv?from={{reportFrom}}&to={{reportTo}}",
+            "description": "Descarga el reporte operacional de 21 columnas como CSV UTF-8 con BOM. Los filtros from/to (YYYY-MM-DD) son opcionales; elimínelos de la URL para exportar todo."
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Operational CSV export succeeds', function () { pm.response.to.have.status(200); });",
+                "pm.test('Response is CSV', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('text/csv'); });",
+                "pm.test('Response is an attachment with the operational filename', function () { const value = pm.response.headers.get('Content-Disposition'); pm.expect(value).to.include('attachment'); pm.expect(value).to.include('identipat-analisis_'); });",
+                "pm.test('Response is not cacheable', function () { pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store'); });"
+              ]
+            }
+          }]
+        },
         {
           "name": "Get diagnostic report",
           "request": {

@@ -40,8 +40,9 @@ identipat-ia/
 │   │   │   │   │   ├── model/
 │   │   │   │   │   ├── repository/
 │   │   │   │   │   └── service/
-│   │   │   │   ├── reporting/          # Reporte F1.7 y dataset operacional F1.10A1
+│   │   │   │   ├── reporting/          # Reporte F1.7 y exportación operacional F1.10A1/A2
 │   │   │   │   │   ├── controller/
+│   │   │   │   │   │   └── AdminOperationalAnalysisExportController.java
 │   │   │   │   │   ├── dto/            # DiagnosticReport y contratos HTTP
 │   │   │   │   │   │   ├── OperationalAnalysisOrigin.java
 │   │   │   │   │   │   ├── OperationalAnalysisReportCriteria.java
@@ -52,6 +53,7 @@ identipat-ia/
 │   │   │   │   │   └── service/        # Assemblers V1/V2 y PDF
 │   │   │   │   │       ├── OperationalAnalysisDatasetException.java
 │   │   │   │   │       ├── OperationalAnalysisDatasetService.java
+│   │   │   │   │       ├── OperationalAnalysisCsvExporter.java
 │   │   │   │   │       └── OperationalDiagnosticReportTextRenderer.java
 │   │   │   │   ├── legal/              # F1.1B: contenido legal único y aceptación por usuario+hash+vigencia efectiva
 │   │   │   │   │   ├── controller/     # GET público y GET/PUT ADMIN
@@ -142,7 +144,9 @@ identipat-ia/
 │   │           ├── ai/               # Contratos, prompts, schemas, config y adapter OpenAI
 │   │           ├── analysis/         # E2E, contratos, claim, retry, recovery y rechazo local
 │   │           ├── guidance/         # Catálogo, /guidance, tracking, seguridad y concurrencia
-│   │           ├── reporting/        # Reporte web/PDF, disclaimer histórico y dataset operacional F1.10A1
+│   │           ├── reporting/        # Reporte web/PDF y dataset/exportación operacional F1.10A1/A2
+│   │           │   ├── AdminOperationalAnalysisExportControllerWebMvcTest.java
+│   │           │   ├── OperationalAnalysisCsvExporterTest.java
 │   │           │   └── OperationalAnalysisDatasetIntegrationTest.java
 │   │           ├── controller/
 │   │           │   └── UserSecurityWebMvcTest.java
