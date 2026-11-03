@@ -8,7 +8,7 @@ import com.mnk.identipatia.analysis.model.AnalysisInputType;
 import com.mnk.identipatia.analysis.model.AnalysisStatus;
 import com.mnk.identipatia.analysis.repository.AnalysisInputRepository;
 import com.mnk.identipatia.analysis.repository.AnalysisRepository;
-import com.mnk.identipatia.model.ConsentEvent;
+import com.mnk.identipatia.legal.model.UserTermsAcceptance;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,7 +38,7 @@ public class AnalysisCreationPersistenceService {
             String originalText,
             String processedText,
             JsonNode sourceMetadata,
-            ConsentEvent consent) {
+            UserTermsAcceptance acceptance) {
         Instant now = clock.instant();
         UUID analysisId = UUID.randomUUID();
 
@@ -46,7 +46,7 @@ public class AnalysisCreationPersistenceService {
         analysis.setAnalysisId(analysisId);
         analysis.setUserId(access.user().getUserId());
         analysis.setSessionId(access.session() == null ? null : access.session().getSessionId());
-        analysis.setConsentEventId(consent == null ? null : consent.getConsentEventId());
+        analysis.setTermsAcceptanceId(acceptance == null ? null : acceptance.getAcceptanceId());
         analysis.setInputType(inputType);
         analysis.setStatus(AnalysisStatus.RECEIVED);
         analysis.setCreatedAt(now);

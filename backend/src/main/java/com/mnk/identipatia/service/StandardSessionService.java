@@ -7,13 +7,13 @@ import com.mnk.identipatia.dto.StandardSessionCreateRequest;
 import com.mnk.identipatia.dto.StandardSessionResponse;
 import com.mnk.identipatia.exception.ApiException;
 import com.mnk.identipatia.exception.StandardSessionRequiredException;
+import com.mnk.identipatia.legal.model.UserTermsAcceptance;
+import com.mnk.identipatia.legal.service.TermsAcceptanceService;
 import com.mnk.identipatia.model.ConsentDecision;
-import com.mnk.identipatia.model.ConsentEvent;
 import com.mnk.identipatia.model.StandardSession;
 import com.mnk.identipatia.model.StandardSessionCloseReason;
 import com.mnk.identipatia.model.StandardSessionStatus;
 import com.mnk.identipatia.model.User;
-import com.mnk.identipatia.repository.ConsentEventRepository;
 import com.mnk.identipatia.repository.StandardSessionRepository;
 import com.mnk.identipatia.repository.UserRepository;
 import org.springframework.http.HttpStatus;
@@ -30,11 +30,10 @@ import java.util.UUID;
 public class StandardSessionService {
     private static final String STANDARD = "STANDARD";
     private static final String ACTIVE = "A";
-    private static final String SOURCE = "STANDARD_WEB";
 
     private final UserRepository userRepository;
     private final StandardSessionRepository sessionRepository;
-    private final ConsentEventRepository consentRepository;
+    private final TermsAcceptanceService termsAcceptanceService;
     private final StandardSessionTokenService tokenService;
     private final StandardSessionResolver resolver;
     private final StandardSessionProperties properties;
@@ -42,14 +41,14 @@ public class StandardSessionService {
 
     public StandardSessionService(UserRepository userRepository,
             StandardSessionRepository sessionRepository,
-            ConsentEventRepository consentRepository,
+            TermsAcceptanceService termsAcceptanceService,
             StandardSessionTokenService tokenService,
             StandardSessionResolver resolver,
             StandardSessionProperties properties,
             Clock clock) {
         this.userRepository = userRepository;
         this.sessionRepository = sessionRepository;
-        this.consentRepository = consentRepository;
+        this.termsAcceptanceService = termsAcceptanceService;
         this.tokenService = tokenService;
         this.resolver = resolver;
         this.properties = properties;
@@ -110,48 +109,19 @@ public class StandardSessionService {
     public ConsentResult decideConsent(String rawToken, ConsentRequest request) {
         StandardSessionContext context = resolver.resolveForConsent(rawToken)
                 .orElseThrow(StandardSessionRequiredException::new);
-        if (!properties.getConsentCurrentVersion().equals(request.getConsentVersion())) {
-            throw new ApiException(HttpStatus.CONFLICT, "CONSENT_VERSION_OUTDATED",
-                    "The displayed consent version is no longer current");
-        }
-
         ConsentDecision requestedDecision = parseDecision(request.getDecision());
-        Optional<ConsentEvent> previous = consentRepository.findBySessionAndConsentVersion(
-                context.session(), properties.getConsentCurrentVersion());
-        if (previous.isPresent()) {
-            ConsentEvent existing = previous.get();
-            if (existing.getDecision() != requestedDecision) {
-                throw new ApiException(HttpStatus.CONFLICT, "CONSENT_ALREADY_DECIDED",
-                        "Consent was already decided for this session and version");
-            }
-            return new ConsentResult(toResponse(existing, context.session()),
-                    existing.getDecision() == ConsentDecision.REJECTED);
-        }
-
         if (context.session().getStatus() != StandardSessionStatus.ACTIVE) {
             throw new StandardSessionRequiredException();
         }
-
-        Instant now = clock.instant();
-        ConsentEvent event = new ConsentEvent();
-        event.setConsentEventId(UUID.randomUUID());
-        event.setSession(context.session());
-        event.setUser(context.user());
-        event.setConsentVersion(properties.getConsentCurrentVersion());
-        event.setConsentDocumentHash(properties.getConsentDocumentSha256());
-        event.setDecision(requestedDecision);
-        event.setSource(SOURCE);
-        event.setDecidedAt(now);
-        consentRepository.save(event);
-
-        boolean clearCookie = requestedDecision == ConsentDecision.REJECTED;
-        if (clearCookie) {
-            context.session().setStatus(StandardSessionStatus.CLOSED);
-            context.session().setClosedAt(now);
-            context.session().setCloseReason(StandardSessionCloseReason.CONSENT_REJECTED);
-            sessionRepository.save(context.session());
-        }
-        return new ConsentResult(toResponse(event, context.session()), clearCookie);
+        termsAcceptanceService.requireMatchingCurrent(request.getContentHash());
+        UserTermsAcceptance acceptance = requestedDecision == ConsentDecision.ACCEPTED
+                ? termsAcceptanceService.acceptCurrent(context.user().getUserId(), request.getContentHash(),
+                        TermsAcceptanceService.STANDARD_WEB)
+                : null;
+        ConsentResponse response = new ConsentResponse(request.getContentHash(), requestedDecision,
+                acceptance == null ? null : acceptance.getAcceptedAt(), context.session().getStatus(),
+                requestedDecision != ConsentDecision.ACCEPTED);
+        return new ConsentResult(response, false);
     }
 
     @Transactional
@@ -168,15 +138,9 @@ public class StandardSessionService {
     }
 
     private StandardSessionResponse sessionResponse(StandardSession session) {
-        boolean accepted = consentRepository.existsBySessionAndConsentVersionAndDecision(
-                session, properties.getConsentCurrentVersion(), ConsentDecision.ACCEPTED);
+        boolean accepted = termsAcceptanceService.hasCurrentAcceptance(session.getUser().getUserId());
         return new StandardSessionResponse(session.getStatus(), session.getExpiresAt(),
-                session.getAbsoluteExpiresAt(), !accepted, properties.getConsentCurrentVersion());
-    }
-
-    private ConsentResponse toResponse(ConsentEvent event, StandardSession session) {
-        return new ConsentResponse(event.getConsentVersion(), event.getDecision(), event.getDecidedAt(),
-                session.getStatus(), event.getDecision() != ConsentDecision.ACCEPTED);
+                session.getAbsoluteExpiresAt(), !accepted);
     }
 
     private static ConsentDecision parseDecision(String value) {

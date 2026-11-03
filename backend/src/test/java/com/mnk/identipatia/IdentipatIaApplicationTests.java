@@ -1,6 +1,9 @@
 package com.mnk.identipatia;
 
 import com.mnk.identipatia.dto.StandardUserRegistrationRequest;
+import com.mnk.identipatia.dto.LegalAcceptanceRequest;
+import com.mnk.identipatia.legal.repository.LegalDocumentHistoryRepository;
+import com.mnk.identipatia.legal.repository.LegalDocumentRepository;
 import com.mnk.identipatia.model.User;
 import com.mnk.identipatia.repository.UserRepository;
 import com.mnk.identipatia.service.UserService;
@@ -56,6 +59,12 @@ class IdentipatIaApplicationTests {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private LegalDocumentRepository legalDocumentRepository;
+
+    @Autowired
+    private LegalDocumentHistoryRepository legalDocumentHistoryRepository;
 
     @Autowired
     private Environment environment;
@@ -269,6 +278,7 @@ class IdentipatIaApplicationTests {
     @Test
     @Transactional
     void standardRegistrationPersistsWithoutPassword() {
+        TestLegalDocumentFixture.ensureCurrent(legalDocumentRepository, legalDocumentHistoryRepository);
         String doi = "F03-" + UUID.randomUUID();
         StandardUserRegistrationRequest request = new StandardUserRegistrationRequest();
         request.setFirstName("Prueba");
@@ -282,6 +292,7 @@ class IdentipatIaApplicationTests {
         request.setPhone("016543210");
         request.setMobilePhone("912345678");
         request.setProfession("Prueba");
+        request.setLegalAcceptance(new LegalAcceptanceRequest(TestLegalDocumentFixture.HASH, true));
 
         userService.registerStandard(request);
 

@@ -54,6 +54,7 @@ public class SecurityConfig {
                 .sameSite("Lax"));
 
         OrRequestMatcher standardMutations = new OrRequestMatcher(
+                new AntPathRequestMatcher("/users", "POST"),
                 new AntPathRequestMatcher("/standard-sessions", "POST"),
                 new AntPathRequestMatcher("/standard-session/consent", "POST"),
                 new AntPathRequestMatcher("/standard-session", "DELETE"),
@@ -73,6 +74,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/users").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users/identify").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users/login").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/legal-document").permitAll()
                         .requestMatchers("/standard-session", "/standard-session/**", "/standard-sessions").permitAll()
                         // STANDARD uses a server-side cookie rather than Spring Authentication;
                         // functional authorization for both modes is enforced by AnalysisAccessResolver.

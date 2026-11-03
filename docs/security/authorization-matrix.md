@@ -1,7 +1,7 @@
 # Matriz de autorización vigente — IDENTIPAT-IA
 
-**Estado verificado hasta:** F1.8D
-**Última actualización:** 31 de octubre de 2026
+**Estado verificado hasta:** F1.1B backend sobre F1.8D
+**Última actualización:** 2 de noviembre de 2026
 
 Las rutas son relativas a `/identipat-ia`. Existen tres categorías separadas:
 
@@ -12,9 +12,12 @@ Las rutas son relativas a `/identipat-ia`. Existen tres categorías separadas:
 | Endpoint | Acceso | Observaciones |
 |---|---|---|
 | `GET /standard-session/csrf` | `PUBLIC` | Emite `XSRF-TOKEN`; CSRF no autentica. |
+| `GET /legal-document` | `PUBLIC` | Devuelve solo contenido legal vigente y hash backend; sin sesión ni PII. |
+| `GET /admin/legal-document` | `ADMIN_JWT` | Obtiene el único documento legal vigente. |
+| `PUT /admin/legal-document` | `ADMIN_JWT` | Edición directa; sanitiza y calcula SHA-256. No hay drafts, publicación ni versiones funcionales. |
 | `POST /standard-sessions` | `PUBLIC + CSRF` | Exige `X-XSRF-TOKEN`; solo un STANDARD activo puede obtener `IDENTIPAT_STANDARD_SESSION`. Un ADMIN recibe `409 STANDARD_SESSION_NOT_AVAILABLE`. |
 | `GET /standard-session` | `STANDARD_SESSION` | Renueva inactividad sin superar el límite absoluto. |
-| `POST /standard-session/consent` | `STANDARD_SESSION + CSRF` | Persiste una decisión inmutable; `REJECTED` cierra la sesión. |
+| `POST /standard-session/consent` | `STANDARD_SESSION + CSRF` | `ACCEPTED` crea/reutiliza aceptación user+hash+momento efectivo; `REJECTED` no persiste ni cierra la sesión. |
 | `DELETE /standard-session` | `STANDARD_SESSION + CSRF` | Revoca server-side y elimina la cookie. |
 | `POST /analyses/text` | `STANDARD_SESSION + consentimiento + CSRF` **o** `ADMIN_JWT` | STANDARD conserva el flujo de sesión. ADMIN se deriva del JWT, no requiere sesión ni consentimiento STANDARD y persiste ambos IDs de contexto como `NULL`. |
 | `POST /analyses/pdf` | `STANDARD_SESSION + consentimiento + CSRF` **o** `ADMIN_JWT` | Extrae antes de persistir; aplica la misma resolución dual y no conserva el binario. |
@@ -26,7 +29,7 @@ Las rutas son relativas a `/identipat-ia`. Existen tres categorías separadas:
 | `/admin/report-disclaimers/**` | `ADMIN_JWT` | Gobierno del disclaimer institucional. El actor de auditoría se deriva del JWT; no acepta identidad en el body. |
 | `/admin/protection-guides/**` | `ADMIN_JWT` | Gobierno del catálogo de orientación; creación, edición, clonado y activación auditan al actor del JWT. |
 | `POST /users/identify` | `PUBLIC` | Solo reconoce el registro; DNI/CE no autentica. |
-| `POST /users` | `PUBLIC` | Registra un usuario STANDARD activo sin contraseña. |
+| `POST /users` | `PUBLIC + CSRF` | Exige aceptación expresa del hash vigente y crea User + acceptance atómicamente. |
 | `POST /users/login` | `PUBLIC` | Solo un ADMIN activo recibe JWT. |
 | `GET /users/**` | `ADMIN_JWT` | Consulta administrativa. |
 | `PUT /users/**` | `ADMIN_JWT` | Mutación administrativa; no depende de la cookie STANDARD. |
@@ -41,7 +44,7 @@ La autorización combina la configuración HTTP de Spring Security con validacio
 - los servicios de sesión temporal solo aceptan usuarios `STANDARD` activos; una sesión histórica de un usuario cuyo tipo actual no sea `STANDARD` se considera inválida para consulta, consentimiento y análisis;
 - `AnalysisAccessResolver` selecciona exactamente un modo: Bearer presente implica intento `ADMIN_JWT`; sin Bearer se usa `STANDARD_SESSION`;
 - `GET /analyses/{analysisId}` consulta por `analysis_id + session_id` para STANDARD o por `analysis_id + user_id + session_id IS NULL` para ADMIN;
-- `POST /analyses/text`, `/analyses/pdf` y `/analyses/audio` exigen consentimiento vigente únicamente en modo STANDARD.
+- `POST /analyses/text`, `/analyses/pdf` y `/analyses/audio` exigen aceptación para `user_id + current legal hash + current legal updated_at` únicamente en modo STANDARD, antes de preprocessing o IA.
 - `POST /analyses/{analysisId}/guidance/{protectionType}/view` solo continúa en modo STANDARD, exige ownership por `session_id` y rechaza explícitamente el modo ADMIN.
 
 El `permitAll()` técnico de Spring Security para `/analyses/**` no convierte los análisis en recursos públicos: permite que el caso de uso seleccione `STANDARD_SESSION` o `ADMIN_JWT`. Todo endpoint futuro bajo ese prefijo debe conservar esta resolución explícita.
@@ -61,6 +64,7 @@ Spring Security 6.2 usa `CookieCsrfTokenRepository` con:
 La protección es selectiva para las mutaciones STANDARD implementadas:
 
 - `POST /standard-sessions`;
+- `POST /users`;
 - `POST /standard-session/consent`;
 - `DELETE /standard-session`;
 - `POST /analyses/**` cuando no presenta Bearer.
@@ -86,8 +90,8 @@ reporte nunca utiliza automáticamente una versión activa posterior.
 
 ## Acceso ADMIN formalizado
 
-F1.4C eliminó el acceso público de ADMIN mediante DNI/CE. El flujo es `POST /users/login` → Bearer JWT → `POST /analyses/text|pdf|audio` / `GET /analyses/{id}`. La identidad se vuelve a resolver en PostgreSQL por el subject del JWT y debe conservar `user_type=ADMIN` y `status=A`. Los análisis ADMIN tienen `user_id` obligatorio y `session_id`/`consent_event_id` nulos; no se crean sesiones ni consentimientos ficticios.
+F1.4C eliminó el acceso público de ADMIN mediante DNI/CE. El flujo es `POST /users/login` → Bearer JWT → `POST /analyses/text|pdf|audio` / `GET /analyses/{id}`. La identidad se vuelve a resolver en PostgreSQL por el subject del JWT y debe conservar `user_type=ADMIN` y `status=A`. Los análisis ADMIN tienen `user_id` obligatorio y `session_id`/`terms_acceptance_id` nulos; no se crean sesiones ni aceptaciones ficticias.
 
-Impacto frontend: la experiencia ADMIN debe dejar de invocar `POST /standard-sessions` y `POST /standard-session/consent` para inferencia. El flujo STANDARD no cambia.
+Impacto frontend: F1.1B backend está implementado, pero Angular todavía debe adoptar `GET /legal-document`, `contentHash`, el registro con `legalAcceptance` y el nuevo response de sesión. No se declara E2E de navegador cerrado.
 
 La política definitiva de acceso administrativo a consultas/resultados, retención, anonimización y borrado físico debe cerrarse antes de producción.

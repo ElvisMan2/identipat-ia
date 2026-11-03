@@ -74,13 +74,13 @@ public class StandardSessionController {
     }
 
     @PostMapping("/standard-session/consent")
-    @Operation(summary = "Registrar consentimiento", description = "Requiere sesión STANDARD activa y CSRF. El hash lo determina el servidor.")
+    @Operation(summary = "Registrar decisión legal", description = "Requiere sesión STANDARD activa y CSRF. contentHash debe coincidir con el contenido vigente.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Decisión persistida o respuesta idempotente"),
+            @ApiResponse(responseCode = "200", description = "Aceptación idempotente o rechazo no persistido"),
             @ApiResponse(responseCode = "400", description = "INVALID_CONSENT_DECISION"),
             @ApiResponse(responseCode = "401", description = "STANDARD_SESSION_REQUIRED"),
             @ApiResponse(responseCode = "403", description = "CSRF ausente o inválido"),
-            @ApiResponse(responseCode = "409", description = "Versión desactualizada o decisión previa distinta")
+            @ApiResponse(responseCode = "409", description = "LEGAL_DOCUMENT_CHANGED")
     })
     public ConsentResponse consent(@Valid @RequestBody ConsentRequest body,
             HttpServletRequest request, HttpServletResponse response) {

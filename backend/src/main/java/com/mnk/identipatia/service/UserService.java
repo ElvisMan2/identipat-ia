@@ -9,12 +9,17 @@ import com.mnk.identipatia.dto.PagedResponse;
 import com.mnk.identipatia.exception.InvalidUserDataException;
 import com.mnk.identipatia.exception.UserNotFoundException;
 import com.mnk.identipatia.mapper.UserMapper;
+import com.mnk.identipatia.exception.ApiException;
+import com.mnk.identipatia.legal.repository.UserTermsAcceptanceRepository;
+import com.mnk.identipatia.legal.service.TermsAcceptanceService;
 import com.mnk.identipatia.model.User;
 import com.mnk.identipatia.repository.UserRepository;
 import com.mnk.identipatia.repository.UserSpecifications;
 import com.mnk.identipatia.repository.StandardSessionRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
 
 import java.time.LocalDateTime;
 
@@ -30,18 +35,24 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final StandardSessionRepository standardSessionRepository;
     private final UserCsvExporter userCsvExporter;
+    private final TermsAcceptanceService termsAcceptanceService;
+    private final UserTermsAcceptanceRepository termsAcceptanceRepository;
 
     public UserService(
             UserRepository userRepository,
             UserMapper userMapper,
             PasswordEncoder passwordEncoder,
             StandardSessionRepository standardSessionRepository,
-            UserCsvExporter userCsvExporter) {
+            UserCsvExporter userCsvExporter,
+            TermsAcceptanceService termsAcceptanceService,
+            UserTermsAcceptanceRepository termsAcceptanceRepository) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
         this.standardSessionRepository = standardSessionRepository;
         this.userCsvExporter = userCsvExporter;
+        this.termsAcceptanceService = termsAcceptanceService;
+        this.termsAcceptanceRepository = termsAcceptanceRepository;
     }
 
     public DocumentRecognitionResponse identifyDocument(DocumentRecognitionRequest request) {
@@ -54,7 +65,16 @@ public class UserService {
             .orElseGet(() -> new DocumentRecognitionResponse(false, false));
     }
 
+    @Transactional
     public StandardUserRegistrationResponse registerStandard(StandardUserRegistrationRequest request) {
+        if (request.getLegalAcceptance() == null
+                || !Boolean.TRUE.equals(request.getLegalAcceptance().accepted())
+                || request.getLegalAcceptance().contentHash() == null
+                || request.getLegalAcceptance().contentHash().isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "LEGAL_ACCEPTANCE_REQUIRED",
+                    "Explicit acceptance of the current legal content is required");
+        }
+        termsAcceptanceService.requireMatchingCurrent(request.getLegalAcceptance().contentHash());
         validateUniqueDoi(request.getDoi());
         User user = userMapper.toEntity(request);
         user.setUserId(null);
@@ -62,7 +82,9 @@ public class UserService {
         user.setStatus(ACTIVE_STATUS);
         user.setPassword(null);
         user.setCreationDate(LocalDateTime.now());
-        userRepository.save(user);
+        userRepository.saveAndFlush(user);
+        termsAcceptanceService.acceptCurrent(user.getUserId(), request.getLegalAcceptance().contentHash(),
+                TermsAcceptanceService.STANDARD_REGISTRATION);
         return new StandardUserRegistrationResponse(true);
     }
 
@@ -132,7 +154,8 @@ public class UserService {
 
     public void delete(Long userId) {
         User user = getUser(userId);
-        if (standardSessionRepository.existsByUserUserId(userId)) {
+        if (standardSessionRepository.existsByUserUserId(userId)
+                || termsAcceptanceRepository.existsByUserId(userId)) {
             user.setStatus("I");
             userRepository.save(user);
         } else {

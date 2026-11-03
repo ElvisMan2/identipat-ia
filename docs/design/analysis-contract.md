@@ -5,6 +5,8 @@
 **Última actualización:** 23 de octubre de 2026
 **Ámbito:** contratos HTTP consumidos por Angular exclusivamente a través de Java/Spring Boot y contrato canónico `AnalysisResult`.
 
+> F1.1B backend está implementado. La adaptación Angular al contrato de aceptación persistente queda pendiente y no se declara E2E de navegador cerrado.
+
 ## 1. Propósito
 
 Este documento define el contrato externo vigente para:
@@ -58,8 +60,10 @@ Flujo:
 
 Actualmente requieren CSRF:
 
+- `POST /users`;
 - `POST /standard-sessions`;
 - `POST /standard-session/consent`;
+- `POST /users`;
 - `DELETE /standard-session`;
 - `POST /analyses/text` cuando no existe un Bearer.
 
@@ -128,9 +132,28 @@ Respuesta `200 OK`:
 
 También se emite la cookie `XSRF-TOKEN`. El valor no autentica al usuario; únicamente protege las mutaciones frente a CSRF.
 
-## 6. Sesión temporal STANDARD
+## 6. Documento legal y registro STANDARD
 
-### 6.1 Crear sesión
+`GET /legal-document` es público y devuelve `documentId`, `title`, `contentHtml`, `contentHash` y `updatedAt`; responde `404 LEGAL_DOCUMENT_NOT_FOUND` mientras ADMIN no configure contenido. `GET` y `PUT /admin/legal-document` exigen JWT ADMIN. `PUT` recibe únicamente `title` y `contentHtml`, sanitiza con `legal-document-html/1.0` y calcula el hash en backend. `updatedAt` identifica el momento efectivo vigente: un PUT canónicamente idéntico no lo cambia y un cambio real siempre inicia una nueva vigencia, incluso al volver a un hash histórico. No existen versiones numéricas, drafts, estados ni publicación separada.
+
+`POST /users` requiere CSRF y agrega al contrato de registro:
+
+```json
+{
+  "firstName": "Usuario",
+  "...": "campos de registro STANDARD",
+  "legalAcceptance": {
+    "contentHash": "3af...64-caracteres-lowercase...",
+    "accepted": true
+  }
+}
+```
+
+La validación del hash, la creación del `User` y la aceptación `STANDARD_REGISTRATION` ocurren en una sola transacción. Sin aceptación responde `400 LEGAL_ACCEPTANCE_REQUIRED`; sin documento, `404 LEGAL_DOCUMENT_NOT_FOUND`; con hash obsoleto, `409 LEGAL_DOCUMENT_CHANGED`.
+
+## 7. Sesión temporal STANDARD
+
+### 7.1 Crear sesión
 
 ```http
 POST /standard-sessions
@@ -162,8 +185,7 @@ Set-Cookie: IDENTIPAT_STANDARD_SESSION=<token-opaco>; Path=/identipat-ia; HttpOn
   "status": "ACTIVE",
   "expiresAt": "2030-01-15T14:30:00Z",
   "absoluteExpiresAt": "2030-01-15T22:00:00Z",
-  "consentRequired": true,
-  "requiredConsentVersion": "personal-data/1.0"
+  "consentRequired": true
 }
 ```
 
@@ -181,7 +203,7 @@ Errores:
 | `409` | `STANDARD_REGISTRATION_REQUIRED` | No existe un `STANDARD` activo con ese documento. |
 | `409` | `STANDARD_SESSION_NOT_AVAILABLE` | El registro existe, pero no puede iniciar la experiencia. |
 
-### 6.2 Consultar sesión actual
+### 7.2 Consultar sesión actual
 
 ```http
 GET /standard-session
@@ -200,7 +222,7 @@ Una cookie ausente, inválida, cerrada o expirada responde:
 
 El backend ordena limpiar la cookie cuando corresponde y no revela si existió una sesión anterior.
 
-### 6.3 Cerrar sesión
+### 7.3 Cerrar sesión
 
 ```http
 DELETE /standard-session
@@ -221,9 +243,9 @@ El servidor revoca la sesión y elimina la cookie.
 | `401` | `STANDARD_SESSION_REQUIRED` |
 | `403` | CSRF ausente o inválido |
 
-## 7. Consentimiento
+## 8. Consentimiento
 
-### 7.1 Registrar decisión
+### 8.1 Registrar decisión
 
 ```http
 POST /standard-session/consent
@@ -232,13 +254,13 @@ X-XSRF-TOKEN: <csrf-token>
 Cookie: IDENTIPAT_STANDARD_SESSION=<token-opaco>
 ```
 
-La sesión se obtiene exclusivamente de la cookie. El cliente no envía `sessionId`, `userId` ni hash documental.
+La sesión se obtiene exclusivamente de la cookie. El cliente no envía `sessionId` ni `userId`; `contentHash` solo identifica el contenido que el backend le mostró.
 
 Request:
 
 ```json
 {
-  "consentVersion": "personal-data/1.0",
+  "contentHash": "3af...64-caracteres-lowercase...",
   "decision": "ACCEPTED"
 }
 ```
@@ -249,29 +271,29 @@ Respuesta `200 OK` para aceptación:
 
 ```json
 {
-  "consentVersion": "personal-data/1.0",
+  "contentHash": "3af...64-caracteres-lowercase...",
   "decision": "ACCEPTED",
-  "decidedAt": "2030-01-15T14:05:00Z",
+  "acceptedAt": "2030-01-15T14:05:00Z",
   "sessionStatus": "ACTIVE",
   "consentRequired": false
 }
 ```
 
-Para `REJECTED`, el backend persiste la decisión, cierra la sesión y elimina la cookie. La respuesta mantiene `200 OK`, con:
+Para `REJECTED`, el backend no crea aceptación, no cierra la sesión y no elimina la cookie. La respuesta mantiene `200 OK`, con:
 
 ```json
 {
-  "consentVersion": "personal-data/1.0",
+  "contentHash": "3af...64-caracteres-lowercase...",
   "decision": "REJECTED",
-  "decidedAt": "2030-01-15T14:05:00Z",
-  "sessionStatus": "CLOSED",
+  "acceptedAt": null,
+  "sessionStatus": "ACTIVE",
   "consentRequired": true
 }
 ```
 
-El servidor determina el hash del documento vigente y lo guarda internamente. No se registran por este contrato IP, geolocalización, huella del dispositivo ni user-agent.
+El servidor compara el hash recibido con el hash vigente calculado sobre `title.trim() + "\n" + sanitizedContentHtml`. Una aceptación vigente debe coincidir por `user_id + accepted_content_sha256 + accepted_document_updated_at`, donde el último valor es igual a `legal_document.updated_at`. Dentro de la misma vigencia, `ACCEPTED` se persiste una sola vez, conserva su `acceptedAt` original y se reutiliza entre sesiones. Coincidir con un hash previamente aceptado no basta: la aceptación debe corresponder además a la vigencia efectiva actual del documento. No se registran IP, geolocalización, huella del dispositivo ni user-agent.
 
-Una repetición con la misma decisión puede responder de forma idempotente. Una decisión distinta para la misma sesión/versión produce conflicto.
+Una repetición de `ACCEPTED` es idempotente dentro de la misma vigencia. En A→B→A, A2 exige una nueva aceptación y nunca reutiliza A1. No existe versión legal funcional, draft ni acción de publicación.
 
 Errores:
 
@@ -281,12 +303,12 @@ Errores:
 | `400` | `INVALID_CONSENT_DECISION` | La decisión no es `ACCEPTED` ni `REJECTED`. |
 | `401` | `STANDARD_SESSION_REQUIRED` | No existe sesión activa válida. |
 | `403` | — | CSRF ausente o inválido. |
-| `409` | `CONSENT_VERSION_OUTDATED` | La pantalla utiliza una versión que ya no es vigente. |
-| `409` | `CONSENT_ALREADY_DECIDED` | Existe una decisión previa diferente. |
+| `404` | `LEGAL_DOCUMENT_NOT_FOUND` | Aún no existe contenido legal configurado. |
+| `409` | `LEGAL_DOCUMENT_CHANGED` | El hash mostrado ya no coincide con el vigente. |
 
-## 8. Análisis por texto
+## 9. Análisis por texto
 
-### 8.1 Crear análisis
+### 9.1 Crear análisis
 
 ```http
 POST /analyses/text
@@ -299,7 +321,7 @@ Modo STANDARD:
 
 - sesión `STANDARD` activa;
 - usuario asociado de tipo `STANDARD` y activo;
-- consentimiento `ACCEPTED` para la versión y hash vigentes;
+- aceptación persistente para el usuario, hash y momento efectivo vigentes;
 - CSRF válido.
 
 Modo ADMIN:
@@ -321,12 +343,12 @@ Request:
 }
 ```
 
-El cliente no aporta `userId`, `sessionId`, `consentEventId`, `analysisId`, proveedor, modelo, prompt ni estado.
+El cliente no aporta `userId`, `sessionId`, `termsAcceptanceId`, `analysisId`, proveedor, modelo, prompt ni estado.
 
 El backend selecciona primero el modo con precedencia Bearer y luego:
 
 1. resuelve la sesión STANDARD o el ADMIN autenticado;
-2. verifica el consentimiento vigente solo para STANDARD;
+2. verifica la aceptación vigente solo para STANDARD y obtiene su `terms_acceptance_id`;
 3. comprueba la disponibilidad de IA;
 4. normaliza técnicamente la descripción;
 5. valida su longitud por code points;
@@ -358,11 +380,11 @@ Errores:
 | `401` | `STANDARD_SESSION_REQUIRED` | Falta sesión activa o la cookie es inválida. |
 | `401` | `ADMIN_AUTHENTICATION_REQUIRED` | Bearer ausente de autenticación válida, expirado, inactivo o no ADMIN. |
 | `403` | — | CSRF STANDARD ausente o inválido. |
-| `409` | `CONSENT_REQUIRED` | No existe aceptación para versión y hash vigentes. |
+| `409` | `CONSENT_REQUIRED` | No existe aceptación para el hash y la vigencia efectiva actuales. |
 | `422` | `INVALID_ANALYSIS_DESCRIPTION` | Descripción normalizada fuera de límites. |
 | `503` | `ANALYSIS_AI_UNAVAILABLE` | IA deshabilitada o sin provider disponible; no se crea el análisis. |
 
-### 8.2 Consultar estado o resultado
+### 9.2 Consultar estado o resultado
 
 ```http
 GET /analyses/{analysisId}
@@ -474,7 +496,7 @@ Los detalles técnicos quedan restringidos en `AiInvocation`. El cliente recibe 
 | `ANALYSIS_CONFIGURATION_ERROR` | Autenticación o request inválido hacia el proveedor. |
 | `ANALYSIS_INTERNAL_ERROR` | Error del worker o código interno no reconocido. |
 
-## 9. Contrato `AnalysisResult`
+## 10. Contrato `AnalysisResult`
 
 `AnalysisResult` es una interfaz de dominio con implementaciones explícitas por major. Java persiste el JSON validado en `analysis_results.result_json` y su versión en `schema_version`; no es la respuesta cruda del proveedor.
 
@@ -532,7 +554,7 @@ El disclaimer:
 
 F1.4 adopta el major 2.0 porque reemplaza `patentabilityAssessment` por `protectionOptions`, `patentScreening` y `geneticResourceAccess`. Además de los límites patentarios ya indicados, no ejecuta exámenes completos de registrabilidad, originalidad, titularidad, anterioridades, disponibilidad o confundibilidad. El disclaimer institucional continúa fuera del LLM y se implementará en F1.7.
 
-## 10. Estados y tipos públicos
+## 11. Estados y tipos públicos
 
 | Tipo | Valores vigentes |
 |---|---|
@@ -549,7 +571,7 @@ F1.4 adopta el major 2.0 porque reemplaza `patentabilityAssessment` por `protect
 
 `AiInvocationStatus` no se expone al usuario STANDARD. Los retries permanecen dentro de `ANALYZING` y se reflejan únicamente como intentos internos.
 
-## 11. Asincronía, retry y recuperación
+## 12. Asincronía, retry y recuperación
 
 El contrato de texto está implementado sobre estado durable:
 
@@ -575,7 +597,7 @@ Los fallos retryable se programan con `next_attempt_at`; no bloquean threads con
 
 Una sesión puede vencer después de autorizar el `POST`. El procesamiento puede terminar y persistirse para trazabilidad, pero el usuario STANDARD no puede consultar el resultado sin una sesión vigente. No existe recuperación de sesiones históricas mediante DNI/CE.
 
-## 12. PDF y audio
+## 13. PDF y audio
 
 PDF y audio utilizan el mismo `Analysis` y el mismo endpoint de consulta. El preprocesamiento es
 síncrono y ocurre antes de crear `Analysis`; por eso no agrega un estado durable `PREPROCESSING`.
@@ -598,7 +620,7 @@ Ambas rutas:
 F1.5/F1.6 definieron MIME, formatos y límites; no persisten binarios. PDF usa `pypdf` sin OCR y
 audio usa `faster-whisper` local, español, sin STT cloud ni realtime.
 
-## 13. Visibilidad STANDARD y administración futura
+## 14. Visibilidad STANDARD y administración futura
 
 STANDARD puede consultar únicamente una ejecución concreta de la sesión vigente que la creó.
 
@@ -613,7 +635,7 @@ No existen contratos para:
 
 La persistencia habilita evaluación, QA, métricas y auditoría internas futuras. F1.4C permite al ADMIN consultar únicamente sus propios análisis creados en contexto JWT; no crea un historial administrativo global ni acceso a consultas de terceros. Cualquier contrato administrativo adicional debe diseñarse con autorización, minimización, retención y auditoría específicas.
 
-## 14. Evolución por fases
+## 15. Evolución por fases
 
 ### Implementado
 

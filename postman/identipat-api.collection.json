@@ -14,7 +14,7 @@
     { "key": "standardDoiType", "value": "DNI" },
     { "key": "adminUserId", "value": "1" },
     { "key": "csrfToken", "value": "" },
-    { "key": "consentVersion", "value": "personal-data/1.0" },
+    { "key": "legalContentHash", "value": "" },
     { "key": "analysisId", "value": "" },
     { "key": "adminAnalysisId", "value": "" },
     { "key": "protectionType", "value": "UTILITY_MODEL" },
@@ -29,7 +29,7 @@
           "name": "Recognize document",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }],
             "auth": { "type": "noauth" },
             "body": {
               "mode": "raw",
@@ -59,11 +59,11 @@
             "auth": { "type": "noauth" },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"Nombre de prueba\",\n  \"paternalLastName\": \"Apellido paterno\",\n  \"maternalLastName\": \"Apellido materno\",\n  \"doi\": \"{{standardDoi}}\",\n  \"doiType\": \"{{standardDoiType}}\",\n  \"birthDate\": \"01/01/1990\",\n  \"gender\": \"FEMALE\",\n  \"email\": \"standard.placeholder@example.test\",\n  \"phone\": \"016543210\",\n  \"mobilePhone\": \"912345678\",\n  \"profession\": \"Profesión de prueba\"\n}",
+              "raw": "{\n  \"firstName\": \"Nombre de prueba\",\n  \"paternalLastName\": \"Apellido paterno\",\n  \"maternalLastName\": \"Apellido materno\",\n  \"doi\": \"{{standardDoi}}\",\n  \"doiType\": \"{{standardDoiType}}\",\n  \"birthDate\": \"01/01/1990\",\n  \"gender\": \"FEMALE\",\n  \"email\": \"standard.placeholder@example.test\",\n  \"phone\": \"016543210\",\n  \"mobilePhone\": \"912345678\",\n  \"profession\": \"Profesión de prueba\",\n  \"legalAcceptance\": {\n    \"contentHash\": \"{{legalContentHash}}\",\n    \"accepted\": true\n  }\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{baseUrl}}/users",
-            "description": "Público. El body coincide con StandardUserRegistrationRequest y no contiene userType, status ni password. Use un DOI de prueba único."
+            "description": "Público con CSRF. Ejecute antes Get CSRF y Get legal document. Crea User + acceptance atómicamente y no contiene userType, status ni password."
           },
           "event": [{
             "listen": "test",
@@ -102,10 +102,19 @@
           }
         },
         {
+          "name": "2B. Get legal document and save hash",
+          "request": { "method": "GET", "auth": { "type": "noauth" }, "url": "{{baseUrl}}/legal-document", "description": "Público y sin PII. No existen versiones legales funcionales." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Legal document is available', function () { pm.response.to.have.status(200); });",
+            "const body = pm.response.json();",
+            "pm.collectionVariables.set('legalContentHash', body.contentHash);"
+          ] } }]
+        },
+        {
           "name": "3. Register STANDARD if needed",
           "request": {
-            "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "auth": { "type": "noauth" },
-            "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Nombre de prueba\",\n  \"paternalLastName\": \"Apellido\",\n  \"maternalLastName\": \"Prueba\",\n  \"doi\": \"{{standardDoi}}\",\n  \"doiType\": \"{{standardDoiType}}\",\n  \"birthDate\": \"01/01/1990\",\n  \"gender\": \"FEMALE\",\n  \"email\": \"standard.placeholder@example.test\",\n  \"phone\": \"016543210\",\n  \"mobilePhone\": \"912345678\",\n  \"profession\": \"Prueba\"\n}", "options": { "raw": { "language": "json" } } },
+            "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }], "auth": { "type": "noauth" },
+            "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Nombre de prueba\",\n  \"paternalLastName\": \"Apellido\",\n  \"maternalLastName\": \"Prueba\",\n  \"doi\": \"{{standardDoi}}\",\n  \"doiType\": \"{{standardDoiType}}\",\n  \"birthDate\": \"01/01/1990\",\n  \"gender\": \"FEMALE\",\n  \"email\": \"standard.placeholder@example.test\",\n  \"phone\": \"016543210\",\n  \"mobilePhone\": \"912345678\",\n  \"profession\": \"Prueba\",\n  \"legalAcceptance\": {\"contentHash\": \"{{legalContentHash}}\", \"accepted\": true}\n}", "options": { "raw": { "language": "json" } } },
             "url": "{{baseUrl}}/users",
             "description": "Ejecutar solo si Identify devuelve registered=false. Use datos ficticios y un DOI de prueba."
           }
@@ -132,7 +141,7 @@
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }],
             "auth": { "type": "noauth" },
-            "body": { "mode": "raw", "raw": "{\n  \"consentVersion\": \"{{consentVersion}}\",\n  \"decision\": \"ACCEPTED\"\n}", "options": { "raw": { "language": "json" } } },
+            "body": { "mode": "raw", "raw": "{\n  \"contentHash\": \"{{legalContentHash}}\",\n  \"decision\": \"ACCEPTED\"\n}", "options": { "raw": { "language": "json" } } },
             "url": "{{baseUrl}}/standard-session/consent"
           }
         },
@@ -151,9 +160,9 @@
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }],
             "auth": { "type": "noauth" },
-            "body": { "mode": "raw", "raw": "{\n  \"consentVersion\": \"{{consentVersion}}\",\n  \"decision\": \"REJECTED\"\n}", "options": { "raw": { "language": "json" } } },
+            "body": { "mode": "raw", "raw": "{\n  \"contentHash\": \"{{legalContentHash}}\",\n  \"decision\": \"REJECTED\"\n}", "options": { "raw": { "language": "json" } } },
             "url": "{{baseUrl}}/standard-session/consent",
-            "description": "Caso separado: ejecutar Get CSRF y Create STANDARD session antes de este request. REJECTED cierra la sesión y elimina su cookie."
+            "description": "Caso separado: REJECTED no crea acceptance, no cierra la sesión y no elimina la cookie."
           }
         },
         {
@@ -171,15 +180,15 @@
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Session is required', function () { pm.response.to.have.status(401); });"] } }]
         },
         {
-          "name": "12. Negative - outdated consent version",
+          "name": "12. Negative - stale legal hash",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }],
             "auth": { "type": "noauth" },
-            "body": { "mode": "raw", "raw": "{\n  \"consentVersion\": \"personal-data/obsolete\",\n  \"decision\": \"ACCEPTED\"\n}", "options": { "raw": { "language": "json" } } },
+            "body": { "mode": "raw", "raw": "{\n  \"contentHash\": \"0000000000000000000000000000000000000000000000000000000000000000\",\n  \"decision\": \"ACCEPTED\"\n}", "options": { "raw": { "language": "json" } } },
             "url": "{{baseUrl}}/standard-session/consent"
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Outdated version conflicts', function () { pm.response.to.have.status(409); });"] } }]
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Stale hash conflicts', function () { pm.response.to.have.status(409); pm.expect(pm.response.json().code).to.eql('LEGAL_DOCUMENT_CHANGED'); });"] } }]
         }
       ]
     },
@@ -338,6 +347,39 @@
       }]
     },
     {
+      "name": "ADMIN - Legal document",
+      "description": "Único contenido legal vigente. No existen versiones, drafts ni publicación separada. Caso manual A→B→A: guarde A y acéptelo como STANDARD; guarde B; vuelva a guardar exactamente A. Aunque contentHash vuelva a A, GET /standard-session debe mantener consentRequired=true hasta una nueva aceptación, porque updatedAt identifica una nueva vigencia efectiva. Reenviar contenido idéntico al actualmente vigente no cambia updatedAt ni invalida la aceptación.",
+      "item": [
+        {
+          "name": "1. Get legal document as ADMIN",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/admin/legal-document"
+          }
+        },
+        {
+          "name": "2. Put legal document and save hash",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Términos de uso y Política de Privacidad\",\n  \"contentHtml\": \"<h1>Contenido institucional</h1><p>Reemplace este fixture por contenido aprobado.</p>\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/admin/legal-document"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Legal document is updated', function () { pm.response.to.have.status(200); });",
+            "const body = pm.response.json();",
+            "pm.collectionVariables.set('legalContentHash', body.contentHash);"
+          ] } }]
+        },
+        {
+          "name": "3. Public legal document",
+          "request": { "method": "GET", "auth": { "type": "noauth" }, "url": "{{baseUrl}}/legal-document" }
+        }
+      ]
+    },
+    {
       "name": "ADMIN - Text analysis",
       "description": "Ejecute primero Login ADMIN and save JWT. Este recorrido usa exclusivamente Bearer JWT: no envía DOI/CE, consentimiento, X-XSRF-TOKEN ni requiere cookie STANDARD.",
       "item": [
@@ -353,7 +395,7 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{baseUrl}}/analyses/text",
-            "description": "El backend deriva el ADMIN del JWT. Responde 202 sin crear standard_session ni ConsentEvent."
+            "description": "El backend deriva el ADMIN del JWT. Responde 202 sin crear standard_session ni aceptación STANDARD."
           },
           "event": [{
             "listen": "test",

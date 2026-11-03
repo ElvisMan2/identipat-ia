@@ -235,11 +235,11 @@ F1.1 implementa una capacidad temporal server-side asociada al registro STANDARD
 
 Las mutaciones STANDARD implementadas usan CSRF de Spring Security mediante cookie `XSRF-TOKEN` y header `X-XSRF-TOKEN`, con el patrón SPA de Spring Security 6.2. CORS admite credenciales solo desde orígenes explícitos. `SameSite` y CORS son controles complementarios, no sustitutos de CSRF.
 
-El consentimiento de tratamiento de datos se persiste como evento inmutable y versionado. La evidencia vincula sesión, usuario, decisión, versión y hash SHA-256 del documento aprobado externamente. Antes de crear un análisis, el backend verifica que exista una aceptación correspondiente a la versión y al hash vigentes.
+La aceptación legal se persiste por usuario STANDARD, SHA-256 canónico y momento efectivo `legal_document.updated_at`. Se reutiliza entre sesiones mientras coincidan el hash y la vigencia efectiva actuales, y se valida antes de todo análisis. `consent_events` queda como tabla legacy; no existe versionado legal funcional, draft ni publicación separada.
 
 El disclaimer es un concepto distinto: informa sobre la naturaleza orientativa del diagnóstico y se implementará como contenido institucional controlado en F1.7. No se genera libremente por el LLM ni equivale a `AnalysisResult.warnings[]`.
 
-La evidencia de sesión y consentimiento no prueba la identidad real de quien utiliza el navegador. También permanece pendiente la confirmación funcional/legal sobre el momento exacto en que debe obtenerse el consentimiento respecto al registro inicial de datos personales.
+La evidencia de sesión y aceptación no prueba la identidad real de quien utiliza el navegador. Para usuarios nuevos, el backend exige aceptación expresa antes de completar el registro.
 
 ## Seguridad y límites de confianza
 

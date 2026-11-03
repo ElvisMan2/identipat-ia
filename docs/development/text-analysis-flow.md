@@ -10,8 +10,8 @@ permanecen fuera de alcance.
 ## Contrato HTTP
 
 `POST /identipat-ia/analyses/text` recibe únicamente `description`. Requiere la cookie
-`IDENTIPAT_STANDARD_SESSION`, sesión activa, usuario STANDARD activo, consentimiento `ACCEPTED` para
-la versión y hash vigentes, y el par CSRF `XSRF-TOKEN`/`X-XSRF-TOKEN`. Si la IA está deshabilitada,
+`IDENTIPAT_STANDARD_SESSION`, sesión activa, usuario STANDARD activo, aceptación para el usuario y
+hash legal vigente, y el par CSRF `XSRF-TOKEN`/`X-XSRF-TOKEN`. Si la IA está deshabilitada,
 responde `503` sin crear filas. La descripción se normaliza a Unicode NFC, finales LF y trim de
 extremos; el original se conserva sin cambios. Los límites se aplican al texto procesado.
 
@@ -30,8 +30,9 @@ vigente y nunca expone prompts, payloads del proveedor, modelo, tokens, lease ni
 
 ## Persistencia y estados
 
-Flyway V3 crea `analyses`, `analysis_inputs`, `ai_invocations` y `analysis_results`. Las FK compuestas
-aseguran que `Analysis.user_id`, `session_id` y `consent_event_id` pertenecen a la misma evidencia.
+Flyway V3 crea `analyses`, `analysis_inputs`, `ai_invocations` y `analysis_results`; V9 agrega
+`terms_acceptance_id`. La FK compuesta asegura que `Analysis.user_id` y la aceptación corresponden
+al mismo usuario. `consent_event_id` queda solo para análisis legacy.
 No hay `ON DELETE CASCADE` hacia el historial.
 
 F1.3 usa `RECEIVED → ANALYZING → COMPLETED|FAILED`. Cada llamada a `generate` tiene previamente una

@@ -41,11 +41,10 @@ F1.0 produjo el diseño conceptual. F1.1 materializó sesión y consentimiento; 
 ```mermaid
 erDiagram
     USERS ||--o{ STANDARD_SESSIONS : "tiene"
-    STANDARD_SESSIONS ||--o{ CONSENT_EVENTS : "registra"
-    USERS ||--o{ CONSENT_EVENTS : "decide"
+    USERS ||--o{ USER_TERMS_ACCEPTANCES : "acepta"
     STANDARD_SESSIONS ||--o{ ANALYSES : "contextualiza"
     USERS ||--o{ ANALYSES : "realiza"
-    CONSENT_EVENTS ||--o{ ANALYSES : "habilita"
+    USER_TERMS_ACCEPTANCES ||--o{ ANALYSES : "habilita"
     ANALYSES ||--|| ANALYSIS_INPUTS : "contiene"
     ANALYSES ||--o{ AI_INVOCATIONS : "intenta"
     ANALYSES ||--o| ANALYSIS_RESULTS : "produce"
@@ -63,19 +62,18 @@ erDiagram
         timestamptz expires_at
         timestamptz absolute_expires_at
     }
-    CONSENT_EVENTS {
-        uuid consent_event_id PK
-        uuid session_id FK
+    USER_TERMS_ACCEPTANCES {
+        uuid acceptance_id PK
         bigint user_id FK
-        varchar consent_version
-        varchar consent_document_hash
-        varchar decision
+        char accepted_content_sha256 FK
+        timestamptz accepted_at
+        varchar source
     }
     ANALYSES {
         uuid analysis_id PK
         bigint user_id FK
         uuid session_id FK
-        uuid consent_event_id FK
+        uuid terms_acceptance_id FK
         varchar input_type
         varchar status
         timestamptz next_attempt_at
@@ -182,27 +180,25 @@ La migración V2 garantiza:
 
 Las reglas adicionales —que el usuario sea `STANDARD` y esté activo— se aplican en el servicio y en cada resolución de la cookie.
 
-## 5. Consentimiento
+## 5. Aceptación legal persistente
 
-`ConsentEvent` representa una decisión inmutable vinculada simultáneamente con la sesión y el usuario.
+F1.1B sustituye el modelo activo por `UserTermsAcceptance`, vinculado al usuario y al hash legal vigente. `ConsentEvent`/`consent_events` permanece únicamente para lectura de análisis legacy.
 
 Campos relevantes:
 
 | Campo | Propósito |
 |---|---|
-| `consent_event_id` | UUID de la evidencia. |
-| `session_id`, `user_id` | Contexto que realizó la decisión. |
-| `consent_version` | Versión lógica del documento. |
-| `consent_document_hash` | SHA-256 hexadecimal del contenido aprobado. |
-| `decision` | `ACCEPTED` o `REJECTED`. |
+| `acceptance_id` | UUID de la evidencia. |
+| `user_id` | Usuario STANDARD que aceptó. |
+| `accepted_content_sha256` | SHA-256 canónico del contenido saneado. |
 | `source` | Canal o fuente controlada. |
-| `decided_at` | Instante de la decisión. |
+| `accepted_at` | Instante original de aceptación. |
 
-La tabla impide asociaciones cruzadas mediante una FK compuesta a `(session_id, user_id)` y limita a una decisión por `(session_id, consent_version)`.
+La tabla impide duplicados dentro de una misma vigencia mediante `UNIQUE(user_id, accepted_content_sha256, accepted_document_updated_at)` y permite una FK compuesta desde Analysis mediante `UNIQUE(acceptance_id, user_id)`.
 
-Antes de admitir un análisis STANDARD, el backend verifica que exista una decisión `ACCEPTED` correspondiente tanto a la versión como al hash del documento vigente. La versión sola no es suficiente. El modo ADMIN JWT no crea ni requiere un `ConsentEvent` STANDARD.
+Antes de admitir un análisis STANDARD, el backend verifica la aceptación para el usuario, hash y momento efectivo vigentes. El modo ADMIN JWT no crea ni requiere aceptación STANDARD.
 
-El `Analysis` STANDARD conserva `consent_event_id`; por ello puede determinarse qué evidencia concreta habilitó su creación incluso después de que la sesión expire o cambie la versión vigente. En un análisis ADMIN ese campo es nulo por diseño.
+El `Analysis` STANDARD nuevo conserva `terms_acceptance_id`; en un análisis ADMIN es nulo. `consent_event_id` solo identifica evidencia pre-F1.1B.
 
 La evidencia no prueba la identidad real de quien opera el navegador. Permanece pendiente la confirmación funcional/legal sobre si el consentimiento debe obtenerse antes de persistir los datos personales del registro inicial.
 
@@ -219,7 +215,8 @@ Una regeneración solicitada explícitamente crea una nueva `Analysis`. Los rein
 | `analysis_id` | UUID público del análisis. |
 | `user_id` | Usuario propietario, siempre obligatorio. |
 | `session_id` | Sesión propietaria para STANDARD; `NULL` para ADMIN JWT. |
-| `consent_event_id` | Evidencia STANDARD; `NULL` para ADMIN JWT. |
+| `terms_acceptance_id` | Evidencia STANDARD nueva; `NULL` para ADMIN JWT. |
+| `consent_event_id` | Evidencia STANDARD legacy; nunca se escribe para análisis nuevos. |
 | `input_type` | `TEXT`, `PDF` o `AUDIO`. |
 | `status` | Lifecycle funcional. |
 | `created_at` | Recepción persistida. |
@@ -231,7 +228,7 @@ Una regeneración solicitada explícitamente crea una nueva `Analysis`. Los rein
 | `next_attempt_at` | Instante desde el cual puede reintentarse. |
 | `lease_owner`, `lease_until` | Propiedad temporal del trabajo. |
 
-La migración V3 exige que `lease_owner` y `lease_until` sean ambos nulos o ambos no nulos. También exige el timestamp correspondiente cuando el estado es `COMPLETED` o `FAILED`. La migración V4 hace nullable el contexto de sesión y agrega `ck_analyses_access_context` para exigir que `session_id` y `consent_event_id` estén ambos presentes o ambos ausentes.
+La migración V9 reemplaza el invariante activo: STANDARD nuevo usa sesión + aceptación, ADMIN no usa ninguna y STANDARD legacy conserva sesión + evento. Nunca pueden coexistir ambas evidencias.
 
 ### 6.2 Integridad de contexto
 
@@ -245,15 +242,16 @@ V3 utiliza FKs compuestas para garantizar que un análisis STANDARD no pueda com
 (session_id, user_id)
     → standard_sessions
 
-(consent_event_id, session_id, user_id)
-    → consent_events
+(terms_acceptance_id, user_id)
+    → user_terms_acceptances
 ```
 
-Estas restricciones se conservan en V4. PostgreSQL `MATCH SIMPLE` omite su comprobación en el contexto ADMIN nulo y el nuevo CHECK impide estados parciales. La semántica resultante es:
+La semántica resultante es:
 
 ```text
-session_id + consent_event_id presentes → STANDARD_SESSION
-session_id + consent_event_id ausentes  → ADMIN_JWT
+session_id + terms_acceptance_id presentes → STANDARD_SESSION nuevo
+session_id + consent_event_id presentes    → STANDARD_SESSION legacy
+sin sesión ni evidencias                    → ADMIN_JWT
 ```
 
 La consulta STANDARD usa `analysis_id + session_id`; la ADMIN usa `analysis_id + user_id + session_id IS NULL`. Así, ninguno de los actores puede atravesar el contexto del otro y todo acceso ajeno responde `404`.
@@ -529,8 +527,10 @@ PostgreSQL normaliza los datos usados para integridad, operación y consulta fre
 | Tabla | Propósito | Claves e invariantes principales | Fase |
 |---|---|---|---|
 | `standard_sessions` | Capacidad temporal STANDARD | PK UUID; token HMAC único; FK a usuario; expiraciones coherentes | F1.1 / V2 |
-| `consent_events` | Evidencia inmutable | PK UUID; FK compuesta a sesión/usuario; versión + hash; decisión controlada | F1.1 / V2 |
-| `analyses` | Consulta funcional y trabajo durable | PK UUID; FKs compuestas a sesión y consentimiento; lifecycle, retry y lease | F1.3 / V3 |
+| `legal_document` / `legal_document_history` | Contenido vigente singleton e historial técnico por hash | Singleton DB; SHA-256 lowercase; snapshots inmutables | F1.1B / V9 |
+| `user_terms_acceptances` | Aceptación persistente | Única por usuario+hash+momento efectivo; FK al usuario y snapshot | F1.1B / V9 |
+| `consent_events` | Evidencia legacy sin uso nuevo | Conservada sin conversión automática | F1.1 / V2 |
+| `analyses` | Consulta funcional y trabajo durable | PK UUID; contexto nuevo o legacy excluyente; lifecycle, retry y lease | F1.3 / V3; F1.1B / V9 |
 | `analysis_inputs` | Entrada 1:1 | PK/FK `analysis_id`; textos y metadata JSONB objeto | F1.3 / V3 |
 | `ai_invocations` | Intentos técnicos 1:N | PK UUID; intento único por análisis; hashes, estados y métricas controlados | F1.3 / V3 |
 | `analysis_results` | Resultado canónico 0..1 | PK/FK `analysis_id`; schema y JSONB objeto | F1.3 / V3 |
@@ -567,7 +567,7 @@ La anonimización de PII, derecho de eliminación, retención y condiciones exce
 Para cada análisis debe ser posible reconstruir:
 
 - usuario y sesión;
-- evento de consentimiento;
+- aceptación legal (o evento legacy);
 - entrada original y procesada;
 - prompt y schema utilizados;
 - proveedor y modelo;
@@ -599,8 +599,8 @@ Las decisiones definitivas de cifrado, retención, minimización, anonimización
 | Protección del token | HMAC-SHA-256 con pepper | Implementada F1.1 |
 | TTL | Inactividad + límite absoluto configurables | Implementada F1.1 |
 | Creación de sesión | `POST /standard-sessions` acepta solo STANDARD activo, separado del reconocimiento/registro | Implementada F1.1 y formalizada en F1.4C |
-| Consentimiento | Eventos `ACCEPTED`/`REJECTED` vinculados a sesión y usuario | Implementada F1.1 |
-| Vigencia del consentimiento | Coincidencia de versión y hash del documento | Implementada F1.1 |
+| Consentimiento | Aceptación persistente por usuario, hash y momento efectivo; rechazo no persistido | Implementada F1.1B backend |
+| Vigencia del consentimiento | Coincidencia de usuario, SHA-256 canónico y `legal_document.updated_at` vigentes | Implementada F1.1B backend |
 | CSRF STANDARD | Repositorio de cookie + header y handler SPA para `POST /analyses/**` sin Bearer | Implementada para TEXT/PDF/AUDIO |
 | PK del dominio | UUID; resultado/input reutilizan `analysis_id` en 1:1 | Implementada V2/V3 |
 | Analysis/Input | Un `Analysis` + `analysis_inputs` 1:1 | Implementada F1.3 |
