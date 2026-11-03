@@ -1,8 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpResponse } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, switchMap } from 'rxjs';
 import { User } from '../models/user.model';
 import { environment } from '../../environments/environment';
+import { CsrfService } from './csrf.service';
 
 export interface DocumentRecognitionResponse {
   registered: boolean;
@@ -27,6 +28,10 @@ export interface StandardUserRegistrationRequest {
   phone: string;
   mobilePhone: string;
   profession: string;
+  legalAcceptance: {
+    contentHash: string;
+    accepted: true;
+  };
 }
 
 export interface StandardUserRegistrationResponse {
@@ -48,6 +53,7 @@ export interface PagedResponse<T> {
 })
 export class UserService {
   private readonly http = inject(HttpClient);
+  private readonly csrf = inject(CsrfService);
   private readonly endpoint = `${environment.apiBaseUrl}/users`;
   private readonly adminTokenKey = 'identipat.admin.accessToken';
   private readonly adminDoiKey = 'identipat.admin.doi';
@@ -156,7 +162,12 @@ export class UserService {
   }
 
   create(user: StandardUserRegistrationRequest): Observable<StandardUserRegistrationResponse> {
-    return this.http.post<StandardUserRegistrationResponse>(this.endpoint, user);
+    return this.csrf.ensureToken().pipe(
+      switchMap(() => this.http.post<StandardUserRegistrationResponse>(this.endpoint, user, {
+        headers: this.csrf.headers(),
+        withCredentials: true
+      }))
+    );
   }
 
   update(userId: number, user: User): Observable<User> {

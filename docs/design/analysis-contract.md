@@ -2,10 +2,10 @@
 
 **Estado:** contrato jurídico-funcional F1.4 con acceso ADMIN formalizado en F1.4C
 **Versión:** 2.1
-**Última actualización:** 23 de octubre de 2026
+**Última actualización:** 3 de noviembre de 2026
 **Ámbito:** contratos HTTP consumidos por Angular exclusivamente a través de Java/Spring Boot y contrato canónico `AnalysisResult`.
 
-> F1.1B backend está implementado. La adaptación Angular al contrato de aceptación persistente queda pendiente y no se declara E2E de navegador cerrado.
+> F1.1B está integrado en backend y frontend. No se declara completada F1.9 ni cerrado el E2E de navegador.
 
 ## 1. Propósito
 

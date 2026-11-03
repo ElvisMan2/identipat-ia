@@ -1,8 +1,8 @@
 # Roadmap funcional — IDENTIPAT-IA
 
-**Estado:** F1.1B backend implementado sobre F1.8D; frontend F1.1B pendiente; F1.9 no completada
+**Estado:** F1.1B backend y frontend implementados sobre F1.8D; F1.9 no completada
 **Versión del roadmap:** 1.9
-**Última actualización:** 2 de noviembre de 2026
+**Última actualización:** 3 de noviembre de 2026
 **Objetivo:** mantener una visión vigente de la secuencia funcional del producto, diferenciando lo ya materializado de las fases pendientes.
 
 ---
@@ -24,7 +24,7 @@ La estabilización técnica F0 está completada. El backend también materializa
 | F0.8 | CI con GitHub Actions | ✅ Completada |
 | F1.0 | Diseño del dominio de análisis | ✅ Completada |
 | F1.1 | Sesión STANDARD + consentimiento | ✅ Implementada |
-| F1.1B | Consentimiento legal persistente por usuario | 🟡 Backend implementado; frontend pendiente |
+| F1.1B | Consentimiento legal persistente por usuario | ✅ Backend y frontend implementados |
 | F1.2 | Capa de IA generativa en Java | ✅ Implementada |
 | F1.3 | Análisis end-to-end desde texto | ✅ Implementada |
 | F1.4 | Diagnóstico de propiedad intelectual | ✅ Implementada |
@@ -264,11 +264,11 @@ El modelo por sesión quedó sustituido para operaciones nuevas por aceptación 
 
 # F1.1B — Consentimiento legal persistente por usuario
 
-**Estado:** backend implementado; frontend pendiente.
+**Estado:** backend y frontend implementados; F1.9 y el E2E de navegador continúan pendientes.
 
 Incluye `legal_document` singleton, historial técnico inmutable por hash, `user_terms_acceptances`, sanitización `legal-document-html/1.0`, hash `SHA-256(title.trim() + "\n" + sanitizedContentHtml)`, registro atómico, CSRF en `POST /users`, aceptación idempotente por vigencia efectiva y `terms_acceptance_id` en análisis nuevos. A→B→A exige reaceptar A porque A2 tiene un nuevo `legal_document.updated_at`; un PUT idéntico conserva ese valor. No existe versionado legal funcional, drafts ni publicación.
 
-Angular debe adoptar el contrato antes de declarar E2E de navegador completado.
+Angular adopta el contrato de esta fase. Esto no declara completada F1.9 ni el E2E de navegador.
 
 ---
 

@@ -1,20 +1,8 @@
-import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, of, switchMap, throwError } from 'rxjs';
+import { Observable, switchMap } from 'rxjs';
 import { environment } from '../../environments/environment';
-
-interface CsrfResponse {
-  token: string;
-  headerName: string;
-}
-
-interface StandardSessionResponse {
-  status: string;
-  expiresAt: string;
-  absoluteExpiresAt: string;
-  consentRequired: boolean;
-  requiredConsentVersion: string;
-}
+import { CsrfService } from './csrf.service';
 
 export interface AnalysisCreatedResponse {
   analysisId: string;
@@ -159,9 +147,10 @@ export interface AnalysisGuidanceResponse {
 })
 export class StandardAnalysisService {
   private readonly http = inject(HttpClient);
+  private readonly csrf = inject(CsrfService);
   private readonly endpoint = environment.apiBaseUrl;
 
-  createTextAnalysis(doi: string, doiType: string, description: string, accessToken = ''): Observable<AnalysisCreatedResponse> {
+  createTextAnalysis(description: string, accessToken = ''): Observable<AnalysisCreatedResponse> {
     if (accessToken) {
       return this.http.post<AnalysisCreatedResponse>(
         `${this.endpoint}/analyses/text`,
@@ -170,30 +159,16 @@ export class StandardAnalysisService {
       );
     }
 
-    return this.http.get<CsrfResponse>(`${this.endpoint}/standard-session/csrf`, {
-      withCredentials: true
-    }).pipe(
-      switchMap((csrf) => this.http.post<StandardSessionResponse>(
-        `${this.endpoint}/standard-sessions`,
-        { doi, doiType },
-        { headers: this.csrfHeaders(csrf), withCredentials: true }
-      )),
-      switchMap((session) => {
-        return this.http.post<unknown>(
-          `${this.endpoint}/standard-session/consent`,
-          { consentVersion: session.requiredConsentVersion, decision: 'ACCEPTED' },
-          { headers: this.csrfHeadersFromToken(), withCredentials: true }
-        ).pipe(switchMap(() => of(session)));
-      }),
+    return this.csrf.ensureToken().pipe(
       switchMap(() => this.http.post<AnalysisCreatedResponse>(
         `${this.endpoint}/analyses/text`,
         { description },
-        { headers: this.csrfHeadersFromToken(), withCredentials: true }
+        { headers: this.csrf.headers(), withCredentials: true }
       ))
     );
   }
 
-  createPdfAnalysis(doi: string, doiType: string, file: File, accessToken = ''): Observable<AnalysisCreatedResponse> {
+  createPdfAnalysis(file: File, accessToken = ''): Observable<AnalysisCreatedResponse> {
     const body = new FormData();
     body.append('file', file, file.name);
 
@@ -205,28 +180,16 @@ export class StandardAnalysisService {
       );
     }
 
-    return this.http.get<CsrfResponse>(`${this.endpoint}/standard-session/csrf`, {
-      withCredentials: true
-    }).pipe(
-      switchMap((csrf) => this.http.post<StandardSessionResponse>(
-        `${this.endpoint}/standard-sessions`,
-        { doi, doiType },
-        { headers: this.csrfHeaders(csrf), withCredentials: true }
-      )),
-      switchMap((session) => this.http.post<unknown>(
-        `${this.endpoint}/standard-session/consent`,
-        { consentVersion: session.requiredConsentVersion, decision: 'ACCEPTED' },
-        { headers: this.csrfHeadersFromToken(), withCredentials: true }
-      ).pipe(switchMap(() => of(session)))),
+    return this.csrf.ensureToken().pipe(
       switchMap(() => this.http.post<AnalysisCreatedResponse>(
         `${this.endpoint}/analyses/pdf`,
         body,
-        { headers: this.csrfHeadersFromToken(), withCredentials: true }
+        { headers: this.csrf.headers(), withCredentials: true }
       ))
     );
   }
 
-  createAudioAnalysis(doi: string, doiType: string, file: File, accessToken = ''): Observable<AnalysisCreatedResponse> {
+  createAudioAnalysis(file: File, accessToken = ''): Observable<AnalysisCreatedResponse> {
     const body = new FormData();
     body.append('file', file, file.name);
 
@@ -238,23 +201,11 @@ export class StandardAnalysisService {
       );
     }
 
-    return this.http.get<CsrfResponse>(`${this.endpoint}/standard-session/csrf`, {
-      withCredentials: true
-    }).pipe(
-      switchMap((csrf) => this.http.post<StandardSessionResponse>(
-        `${this.endpoint}/standard-sessions`,
-        { doi, doiType },
-        { headers: this.csrfHeaders(csrf), withCredentials: true }
-      )),
-      switchMap((session) => this.http.post<unknown>(
-        `${this.endpoint}/standard-session/consent`,
-        { consentVersion: session.requiredConsentVersion, decision: 'ACCEPTED' },
-        { headers: this.csrfHeadersFromToken(), withCredentials: true }
-      ).pipe(switchMap(() => of(session)))),
+    return this.csrf.ensureToken().pipe(
       switchMap(() => this.http.post<AnalysisCreatedResponse>(
         `${this.endpoint}/analyses/audio`,
         body,
-        { headers: this.csrfHeadersFromToken(), withCredentials: true }
+        { headers: this.csrf.headers(), withCredentials: true }
       ))
     );
   }
@@ -294,29 +245,4 @@ export class StandardAnalysisService {
     );
   }
 
-  closeStandardSession(): Observable<void> {
-    return this.http.get<CsrfResponse>(`${this.endpoint}/standard-session/csrf`, {
-      withCredentials: true
-    }).pipe(
-      switchMap((csrf) => this.http.delete<void>(`${this.endpoint}/standard-session`, {
-        headers: { [csrf.headerName]: csrf.token },
-        withCredentials: true
-      }).pipe(catchError((error: unknown) =>
-        error instanceof HttpErrorResponse && error.status === 401
-          ? of(void 0)
-          : throwError(() => error)
-      )))
-    );
-  }
-
-  private csrfToken = '';
-
-  private csrfHeaders(csrf: CsrfResponse): HttpHeaders {
-    this.csrfToken = csrf.token;
-    return new HttpHeaders({ [csrf.headerName]: csrf.token });
-  }
-
-  private csrfHeadersFromToken(): HttpHeaders {
-    return new HttpHeaders({ 'X-XSRF-TOKEN': this.csrfToken });
-  }
 }

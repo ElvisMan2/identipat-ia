@@ -1,7 +1,7 @@
 # Matriz de autorización vigente — IDENTIPAT-IA
 
-**Estado verificado hasta:** F1.1B backend sobre F1.8D
-**Última actualización:** 2 de noviembre de 2026
+**Estado verificado hasta:** F1.1B backend y frontend sobre F1.8D
+**Última actualización:** 3 de noviembre de 2026
 
 Las rutas son relativas a `/identipat-ia`. Existen tres categorías separadas:
 
@@ -92,6 +92,6 @@ reporte nunca utiliza automáticamente una versión activa posterior.
 
 F1.4C eliminó el acceso público de ADMIN mediante DNI/CE. El flujo es `POST /users/login` → Bearer JWT → `POST /analyses/text|pdf|audio` / `GET /analyses/{id}`. La identidad se vuelve a resolver en PostgreSQL por el subject del JWT y debe conservar `user_type=ADMIN` y `status=A`. Los análisis ADMIN tienen `user_id` obligatorio y `session_id`/`terms_acceptance_id` nulos; no se crean sesiones ni aceptaciones ficticias.
 
-Impacto frontend: F1.1B backend está implementado, pero Angular todavía debe adoptar `GET /legal-document`, `contentHash`, el registro con `legalAcceptance` y el nuevo response de sesión. No se declara E2E de navegador cerrado.
+Impacto frontend: Angular adopta `GET /legal-document`, `contentHash`, el registro con `legalAcceptance` y el nuevo response de sesión. Esto no declara completada F1.9 ni cerrado el E2E de navegador.
 
 La política definitiva de acceso administrativo a consultas/resultados, retención, anonimización y borrado físico debe cerrarse antes de producción.

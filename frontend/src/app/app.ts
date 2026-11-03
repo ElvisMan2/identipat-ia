@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { DOCUMENT } from '@angular/common';
 import { Component, computed, inject, Signal, signal, WritableSignal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { CKEditorModule } from '@ckeditor/ckeditor5-angular';
-import { Alignment, Bold, ClassicEditor, Essentials, FindAndReplace, Heading, Image, ImageInsert, Italic, Link, List, Paragraph, RemoveFormat, SourceEditing, Strikethrough, Underline } from 'ckeditor5';
+import { Alignment, Bold, ClassicEditor, EditorConfig, Essentials, FindAndReplace, Heading, Image, ImageInsert, Italic, Link, List, Paragraph, RemoveFormat, SourceEditing, Strikethrough, Underline } from 'ckeditor5';
 import { Observable } from 'rxjs';
 import { StandardUserRegistrationRequest, UserService } from './services/user.service';
 import { User } from './models/user.model';
@@ -11,9 +12,13 @@ import { AdminAnalysis, AnalysisStatus } from './services/admin-analysis.service
 import { AdminReportDisclaimerService, ReportDisclaimer } from './services/admin-report-disclaimer.service';
 import { AdminProtectionGuideService, ProtectionGuide } from './services/admin-protection-guide.service';
 import { AnalysisGuidanceResponse, AnalysisResponse, DiagnosticReport, StandardAnalysisService } from './services/standard-analysis.service';
+import { CsrfService } from './services/csrf.service';
+import { LegalDocument, LegalDocumentService } from './services/legal-document.service';
+import { StandardSessionResponse, StandardSessionService } from './services/standard-session.service';
 
 const adminSettingsReloadKey = 'identipat.admin.reloadSection';
 type AdditionalOrientationType = 'INDUSTRIAL_DESIGN' | 'COPYRIGHT' | 'DISTINCTIVE_SIGN' | 'PLANT_BREEDER_CERTIFICATE' | 'TRADE_SECRET';
+type StandardAccessState = 'UNIDENTIFIED' | 'IDENTIFYING' | 'SESSION_CREATING' | 'CONSENT_REQUIRED' | 'READY' | 'BLOCKED';
 
 interface OrientationEditorState {
   shortDescription: WritableSignal<string>;
@@ -46,6 +51,9 @@ export class App {
   private readonly adminReportDisclaimerService = inject(AdminReportDisclaimerService);
   private readonly adminProtectionGuideService = inject(AdminProtectionGuideService);
   private readonly standardAnalysisService = inject(StandardAnalysisService);
+  private readonly standardSessionService = inject(StandardSessionService);
+  private readonly legalDocumentService = inject(LegalDocumentService);
+  private readonly csrfService = inject(CsrfService);
   private readonly defaultAdminPassword = 'admin';
 
   readonly users = signal<User[]>([]);
@@ -79,6 +87,25 @@ export class App {
   readonly disclaimerActivationMessage = signal('');
   readonly disclaimerActivationError = signal('');
   readonly showPublishDisclaimerModal = signal(false);
+  readonly legalDocument = signal<LegalDocument | null>(null);
+  readonly legalLoading = signal(false);
+  readonly legalError = signal('');
+  readonly consentChecked = signal(false);
+  readonly consentSaving = signal(false);
+  readonly consentMessage = signal('');
+  readonly standardAccessState = signal<StandardAccessState>('UNIDENTIFIED');
+  readonly legalAdminDocument = signal<LegalDocument | null>(null);
+  readonly legalAdminTitle = signal('');
+  readonly legalAdminHtml = signal('');
+  readonly legalAdminLoading = signal(false);
+  readonly legalAdminSaving = signal(false);
+  readonly legalAdminMessage = signal('');
+  readonly legalAdminError = signal('');
+  readonly legalAdminHasChanges = computed(() => {
+    const current = this.legalAdminDocument();
+    return this.legalAdminTitle().trim() !== (current?.title ?? '')
+      || this.legalAdminHtml() !== (current?.contentHtml ?? '');
+  });
   readonly patentOrientationShortDescription = signal('');
   readonly savedPatentOrientationShortDescription = signal('');
   readonly patentOrientationShortDescriptionInvalid = computed(() => {
@@ -162,6 +189,32 @@ export class App {
     }
   };
   readonly additionalOrientationEditor = ClassicEditor;
+  readonly legalAdminEditor = ClassicEditor;
+  private legalAdminEditorInstance: { setData(data: string): void } | null = null;
+  readonly legalAdminEditorConfig: EditorConfig = {
+    licenseKey: 'GPL',
+    plugins: [Essentials, Paragraph, Heading, Bold, Italic, Underline, List, Link],
+    toolbar: ['undo', 'redo', '|', 'heading', '|', 'bold', 'italic', 'underline', '|', 'bulletedList', 'numberedList', 'link'],
+    heading: {
+      options: [
+        { model: 'paragraph', title: 'Párrafo', class: 'ck-heading_paragraph' },
+        { model: 'heading1', view: 'h2', title: 'Título 2', class: 'ck-heading_heading1' },
+        { model: 'heading2', view: 'h3', title: 'Título 3', class: 'ck-heading_heading2' },
+        { model: 'heading3', view: 'h4', title: 'Título 4', class: 'ck-heading_heading3' }
+      ]
+    },
+    link: {
+      defaultProtocol: 'https://',
+      allowedProtocols: ['https'],
+      decorators: {
+        openInNewTab: {
+          mode: 'automatic' as const,
+          callback: (url: string | null) => /^https:\/\//i.test(url ?? ''),
+          attributes: { target: '_blank', rel: 'noopener noreferrer' }
+        }
+      }
+    }
+  };
   readonly loading = signal(false);
   readonly analysesLoading = signal(false);
   readonly saving = signal(false);
@@ -208,8 +261,9 @@ export class App {
   private recordingStartedAt = 0;
 
   constructor() {
-    if (this.document.location.pathname === '/terminos-y-privacidad') {
+    if (this.document.location.pathname.endsWith('/terminos-y-privacidad')) {
       this.view.set('legal');
+      this.loadPublicLegalDocument();
     }
     this.accessForm.controls.doiType.valueChanges.subscribe(() => this.accessForm.controls.doi.updateValueAndValidity());
     this.userForm.controls.doiType.valueChanges.subscribe(() => this.userForm.controls.doi.updateValueAndValidity());
@@ -235,6 +289,7 @@ export class App {
           if (this.adminSection() === 'settings') {
             this.loadReportDisclaimers();
             this.loadPatentOrientationGuide();
+            this.loadAdminLegalDocument();
           }
         },
         error: () => this.logout()
@@ -391,23 +446,25 @@ export class App {
     const accessStartedAt = Date.now();
     this.checkingDocument.set(true);
     this.standardAccessPending.set(false);
+    this.standardAccessState.set('IDENTIFYING');
     this.accessMessage.set('');
     this.userService.identify(doi, doiType).subscribe({
       next: ({ registered, passwordRequired, active }) => {
         this.standardAccessPending.set(registered && !passwordRequired);
         this.finishAccess(accessStartedAt, () => {
           if (registered && active === false) {
+            this.standardAccessState.set('UNIDENTIFIED');
             this.accessMessage.set('Usuario inactivo');
           } else if (passwordRequired) {
+            this.standardAccessState.set('UNIDENTIFIED');
             this.view.set('admin-login');
             this.loginForm.reset({ password: '' });
           } else if (!registered) {
+            this.standardAccessState.set('UNIDENTIFIED');
             this.accessMessage.set('Usuario no registrado');
           } else {
-            this.analysisForm.reset({ description: '' });
-            this.analysisMessage.set('');
-            this.view.set('standard-analysis');
-            this.scrollToTop();
+            this.createStandardSession(doi, doiType);
+            return;
           }
           this.standardAccessPending.set(false);
           this.checkingDocument.set(false);
@@ -415,6 +472,7 @@ export class App {
       },
       error: () => {
         this.finishAccess(accessStartedAt, () => {
+          this.standardAccessState.set('UNIDENTIFIED');
           this.standardAccessPending.set(false);
           this.accessMessage.set('No pudimos verificar el documento. Inténtalo nuevamente.');
           this.checkingDocument.set(false);
@@ -426,6 +484,154 @@ export class App {
   private finishAccess(startedAt: number, complete: () => void): void {
     const remainingMinimumTime = Math.max(0, 500 - (Date.now() - startedAt));
     setTimeout(complete, remainingMinimumTime);
+  }
+
+  private createStandardSession(doi: string, doiType: string, afterRegistration = false): void {
+    this.standardAccessState.set('SESSION_CREATING');
+    this.standardAccessPending.set(true);
+    this.standardSessionService.createSession(doi, doiType).subscribe({
+      next: session => {
+        this.checkingDocument.set(false);
+        this.standardAccessPending.set(false);
+        this.saving.set(false);
+        if (afterRegistration) {
+          this.registrationModal.set('success');
+          window.setTimeout(() => {
+            this.registrationModal.set(null);
+            this.finishStandardSessionAccess(session);
+          }, 800);
+          return;
+        }
+        this.finishStandardSessionAccess(session);
+      },
+      error: error => {
+        this.checkingDocument.set(false);
+        this.standardAccessPending.set(false);
+        this.saving.set(false);
+        this.registrationModal.set(null);
+        this.standardAccessState.set('UNIDENTIFIED');
+        if (this.apiErrorCode(error) === 'STANDARD_REGISTRATION_REQUIRED') {
+          this.accessMessage.set('Completa tu registro antes de iniciar una sesión.');
+        } else {
+          this.accessMessage.set('No se pudo iniciar tu sesión. Inténtalo nuevamente.');
+        }
+        if (afterRegistration) {
+          this.view.set('registration');
+        }
+      }
+    });
+  }
+
+  private finishStandardSessionAccess(session: StandardSessionResponse): void {
+    this.analysisMessage.set('');
+    this.analysisResult.set(null);
+    this.diagnosticReport.set(null);
+    this.analysisGuidance.set(null);
+    this.view.set('standard-analysis');
+    this.scrollToTop();
+    if (session.consentRequired) {
+      this.loadConsentDocument();
+      return;
+    }
+    this.standardAccessState.set('READY');
+  }
+
+  private loadConsentDocument(message = ''): void {
+    this.standardAccessState.set('CONSENT_REQUIRED');
+    this.legalLoading.set(true);
+    this.legalError.set('');
+    this.consentMessage.set(message);
+    this.consentChecked.set(false);
+    this.legalDocumentService.getCurrent().subscribe({
+      next: document => {
+        this.legalDocument.set(document);
+        this.legalLoading.set(false);
+      },
+      error: () => {
+        this.legalDocument.set(null);
+        this.legalLoading.set(false);
+        this.standardAccessState.set('BLOCKED');
+        this.legalError.set('Los Términos de uso y la Política de Privacidad aún no están disponibles. Inténtalo nuevamente más tarde.');
+      }
+    });
+  }
+
+  updateConsentChecked(event: Event): void {
+    this.consentChecked.set((event.target as HTMLInputElement).checked);
+    this.consentMessage.set('');
+  }
+
+  acceptLegalDocument(): void {
+    const document = this.legalDocument();
+    if (!document || !this.consentChecked() || this.consentSaving()) {
+      return;
+    }
+
+    this.consentSaving.set(true);
+    this.consentMessage.set('');
+    this.standardSessionService.accept(document.contentHash).subscribe({
+      next: response => {
+        this.consentSaving.set(false);
+        if (!response.consentRequired) {
+          this.standardAccessState.set('READY');
+          this.consentChecked.set(false);
+          this.consentMessage.set('');
+          return;
+        }
+        this.standardAccessState.set('CONSENT_REQUIRED');
+        this.consentMessage.set('Todavía es necesario aceptar el documento vigente para continuar.');
+      },
+      error: error => {
+        this.consentSaving.set(false);
+        const code = this.apiErrorCode(error);
+        if (code === 'LEGAL_DOCUMENT_CHANGED') {
+          this.loadConsentDocument('Los Términos de uso y la Política de Privacidad fueron actualizados. Revísalos nuevamente antes de continuar.');
+        } else if (code === 'STANDARD_SESSION_REQUIRED') {
+          this.handleExpiredStandardSession();
+        } else {
+          this.consentMessage.set('No se pudo registrar tu aceptación. Inténtalo nuevamente.');
+        }
+      }
+    });
+  }
+
+  rejectLegalDocument(): void {
+    const document = this.legalDocument();
+    if (!document || this.consentSaving()) {
+      return;
+    }
+
+    this.consentSaving.set(true);
+    this.consentMessage.set('');
+    this.standardSessionService.reject(document.contentHash).subscribe({
+      next: () => {
+        this.consentSaving.set(false);
+        this.consentChecked.set(false);
+        this.standardAccessState.set('BLOCKED');
+        this.consentMessage.set('Para utilizar IDENTIPAT-IA es necesario aceptar los Términos de uso y la Política de Privacidad vigentes.');
+      },
+      error: error => {
+        this.consentSaving.set(false);
+        const code = this.apiErrorCode(error);
+        if (code === 'LEGAL_DOCUMENT_CHANGED') {
+          this.loadConsentDocument('Los Términos de uso y la Política de Privacidad fueron actualizados. Revísalos nuevamente antes de continuar.');
+        } else if (code === 'STANDARD_SESSION_REQUIRED') {
+          this.handleExpiredStandardSession();
+        } else {
+          this.consentMessage.set('No se pudo registrar tu decisión. Inténtalo nuevamente.');
+        }
+      }
+    });
+  }
+
+  reviewLegalDocument(): void {
+    if (!this.legalDocument()) {
+      this.loadConsentDocument();
+      return;
+    }
+    this.consentChecked.set(false);
+    this.consentMessage.set('');
+    this.standardAccessState.set('CONSENT_REQUIRED');
   }
 
   private scrollToTop(): void {
@@ -446,6 +652,7 @@ export class App {
     this.diagnosticReport.set(null);
     this.analysisGuidance.set(null);
     this.reportLoadError.set('');
+    this.clearStandardState();
     this.backHome();
   }
 
@@ -469,9 +676,10 @@ export class App {
 
     this.navigationPending.set('exit');
     this.exitError.set('');
-    this.standardAnalysisService.closeStandardSession().subscribe({
+    this.standardSessionService.closeSession().subscribe({
       next: () => {
         this.navigationPending.set(null);
+        this.clearStandardState();
         navigate();
       },
       error: () => {
@@ -484,7 +692,10 @@ export class App {
   openRegistration(): void {
     this.cancelEdit();
     this.accessMessage.set('');
+    this.userForm.controls.termsAccepted.setValue(false);
+    this.userForm.controls.termsAccepted.markAsUntouched();
     this.view.set('registration');
+    this.loadLegalDocumentForRegistration();
   }
 
   startNewAnalysis(): void {
@@ -494,6 +705,9 @@ export class App {
     this.diagnosticReport.set(null);
     this.analysisGuidance.set(null);
     this.reportLoadError.set('');
+    if (!this.adminAuthenticated()) {
+      this.standardAccessState.set('READY');
+    }
     this.view.set('standard-analysis');
     this.scrollToTop();
   }
@@ -593,6 +807,7 @@ export class App {
     } else if (section === 'settings' && !this.settingsLoaded() && !this.settingsLoading()) {
       this.loadReportDisclaimers();
       this.loadPatentOrientationGuide();
+      this.loadAdminLegalDocument();
     }
   }
 
@@ -627,6 +842,140 @@ export class App {
         this.settingsLoading.set(false);
       }
     });
+  }
+
+  loadPublicLegalDocument(): void {
+    this.legalLoading.set(true);
+    this.legalError.set('');
+    this.legalDocumentService.getCurrent().subscribe({
+      next: document => {
+        this.legalDocument.set(document);
+        this.legalLoading.set(false);
+      },
+      error: () => {
+        this.legalDocument.set(null);
+        this.legalLoading.set(false);
+        this.legalError.set('Los Términos de uso y la Política de Privacidad aún no están disponibles. Inténtalo nuevamente más tarde.');
+      }
+    });
+  }
+
+  private loadLegalDocumentForRegistration(message = ''): void {
+    this.legalLoading.set(true);
+    this.legalError.set('');
+    this.accessMessage.set(message);
+    this.userForm.controls.termsAccepted.setValue(false);
+    this.userForm.controls.termsAccepted.markAsUntouched();
+    this.userForm.controls.termsAccepted.disable({ emitEvent: false });
+    this.legalDocumentService.getCurrent().subscribe({
+      next: document => {
+        this.legalDocument.set(document);
+        this.legalLoading.set(false);
+        this.userForm.controls.termsAccepted.enable({ emitEvent: false });
+      },
+      error: () => {
+        this.legalDocument.set(null);
+        this.legalLoading.set(false);
+        this.userForm.controls.termsAccepted.disable({ emitEvent: false });
+        this.legalError.set('Los Términos de uso y la Política de Privacidad aún no están disponibles. Inténtalo nuevamente más tarde.');
+      }
+    });
+  }
+
+  loadAdminLegalDocument(): void {
+    if (this.legalAdminLoading() || this.legalAdminSaving()) {
+      return;
+    }
+    this.legalAdminLoading.set(true);
+    this.legalAdminError.set('');
+    this.legalAdminMessage.set('');
+    this.legalDocumentService.getAdminCurrent(this.userService.getAccessToken()).subscribe({
+      next: document => {
+        this.setAdminLegalDocument(document);
+        this.legalAdminLoading.set(false);
+      },
+      error: error => {
+        this.legalAdminLoading.set(false);
+        if (error instanceof HttpErrorResponse && error.status === 404
+          || this.apiErrorCode(error) === 'LEGAL_DOCUMENT_NOT_FOUND') {
+          this.legalAdminDocument.set(null);
+          this.legalAdminTitle.set('');
+          this.legalAdminHtml.set('');
+          this.legalAdminEditorInstance?.setData('');
+          this.legalAdminMessage.set('Aún no existe un documento legal. Completa los campos para realizar la primera configuración.');
+          return;
+        }
+        this.legalAdminError.set('No se pudo cargar el documento legal. Inténtalo nuevamente.');
+      }
+    });
+  }
+
+  onLegalAdminEditorReady(editor: { setData(data: string): void }): void {
+    this.legalAdminEditorInstance = editor;
+    editor.setData(this.legalAdminHtml());
+  }
+
+  updateLegalAdminTitle(event: Event): void {
+    this.legalAdminTitle.set((event.target as HTMLInputElement).value);
+    this.legalAdminMessage.set('');
+    this.legalAdminError.set('');
+  }
+
+  updateLegalAdminHtml(event: { editor: { getData(): string } }): void {
+    this.legalAdminHtml.set(event.editor.getData());
+    this.legalAdminMessage.set('');
+    this.legalAdminError.set('');
+  }
+
+  saveAdminLegalDocument(): void {
+    const title = this.legalAdminTitle().trim();
+    const contentHtml = this.legalAdminHtml().trim();
+    if (this.legalAdminSaving()) {
+      return;
+    }
+    if (!title || !contentHtml) {
+      this.legalAdminError.set('Ingresa el título y el contenido del documento legal.');
+      return;
+    }
+
+    this.legalAdminSaving.set(true);
+    this.legalAdminError.set('');
+    this.legalAdminMessage.set('');
+    this.legalDocumentService.updateAdmin(
+      this.userService.getAccessToken(),
+      { title, contentHtml }
+    ).subscribe({
+      next: document => {
+        this.setAdminLegalDocument(document);
+        this.legalAdminSaving.set(false);
+        this.legalAdminMessage.set('Documento legal guardado correctamente.');
+      },
+      error: () => {
+        this.legalAdminSaving.set(false);
+        this.legalAdminError.set('No se pudo guardar el documento legal. Revisa el contenido e inténtalo nuevamente.');
+      }
+    });
+  }
+
+  private setAdminLegalDocument(document: LegalDocument): void {
+    this.legalAdminDocument.set(document);
+    this.legalAdminTitle.set(document.title);
+    this.legalAdminHtml.set(document.contentHtml);
+    this.legalAdminEditorInstance?.setData(document.contentHtml);
+  }
+
+  legalDateLabel(value: string | null | undefined): string {
+    if (!value) {
+      return 'No disponible';
+    }
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? 'No disponible'
+      : new Intl.DateTimeFormat('es-PE', {
+        dateStyle: 'long',
+        timeStyle: 'short',
+        timeZone: 'America/Lima'
+      }).format(date);
   }
 
   updateDisclaimerTitle(event: Event): void {
@@ -1429,40 +1778,53 @@ export class App {
   }
 
   registerStandard(): void {
-    if (this.userForm.invalid) {
+    if (this.saving()) {
+      return;
+    }
+    if (this.userForm.invalid || !this.legalDocument() || this.legalLoading()) {
       this.userForm.markAllAsTouched();
-      this.accessMessage.set('Completa correctamente todos los campos obligatorios.');
+      this.accessMessage.set(this.legalDocument()
+        ? 'Completa correctamente todos los campos obligatorios.'
+        : 'El documento legal debe estar disponible antes de completar el registro.');
       return;
     }
 
     this.saving.set(true);
-    const registrationStartedAt = Date.now();
+    this.registrationModal.set('registering');
     this.accessMessage.set('');
     this.userService.create(this.registrationPayload()).subscribe({
       next: () => {
-        this.saving.set(false);
-        const remainingMinimumTime = Math.max(0, 500 - (Date.now() - registrationStartedAt));
-        setTimeout(() => {
-          this.registrationModal.set('success');
-          setTimeout(() => {
-            this.registrationModal.set(null);
-            this.cancelEdit();
-            this.analysisForm.reset({ description: '' });
-            this.analysisMessage.set('');
-            this.view.set('standard-analysis');
-            this.scrollToTop();
-          }, 2000);
-        }, remainingMinimumTime);
+        const { doi, doiType } = this.userForm.getRawValue();
+        this.accessForm.setValue({ doi, doiType });
+        this.createStandardSession(doi, doiType, true);
       },
-      error: () => {
+      error: error => {
         this.saving.set(false);
         this.registrationModal.set(null);
+        if (this.apiErrorCode(error) === 'LEGAL_DOCUMENT_CHANGED') {
+          this.loadLegalDocumentForRegistration('Los términos fueron actualizados mientras completabas el registro. Revísalos nuevamente para continuar.');
+          return;
+        }
+        if (this.apiErrorCode(error) === 'LEGAL_DOCUMENT_NOT_FOUND') {
+          this.legalDocument.set(null);
+          this.legalError.set('Los Términos de uso y la Política de Privacidad aún no están disponibles. Inténtalo nuevamente más tarde.');
+          this.userForm.controls.termsAccepted.setValue(false);
+          this.userForm.controls.termsAccepted.disable({ emitEvent: false });
+          return;
+        }
         this.accessMessage.set('No se pudo completar el registro. Verifica los datos e inténtalo nuevamente.');
       }
     });
   }
 
   submitAnalysis(): void {
+    if (this.submittingAnalysis()) {
+      return;
+    }
+    if (!this.adminAuthenticated() && this.standardAccessState() !== 'READY') {
+      this.analysisMessage.set('Debes aceptar el documento legal vigente antes de iniciar un análisis.');
+      return;
+    }
     const selectedPdf = this.selectedPdf();
     const selectedAudio = this.selectedAudio();
     if (!selectedPdf && !selectedAudio && this.analysisForm.invalid) {
@@ -1470,7 +1832,6 @@ export class App {
       return;
     }
 
-    const { doi, doiType } = this.accessForm.getRawValue();
     const { description } = this.analysisForm.getRawValue();
     this.submittingAnalysis.set(true);
     this.analysisMessage.set('');
@@ -1481,17 +1842,27 @@ export class App {
 
     const adminAccessToken = this.adminAuthenticated() ? this.userService.getAccessToken() : '';
     const request = selectedPdf
-      ? this.standardAnalysisService.createPdfAnalysis(doi, doiType, selectedPdf, adminAccessToken)
+      ? this.standardAnalysisService.createPdfAnalysis(selectedPdf, adminAccessToken)
       : selectedAudio
-        ? this.standardAnalysisService.createAudioAnalysis(doi, doiType, selectedAudio, adminAccessToken)
-        : this.standardAnalysisService.createTextAnalysis(doi, doiType, description, adminAccessToken);
+        ? this.standardAnalysisService.createAudioAnalysis(selectedAudio, adminAccessToken)
+        : this.standardAnalysisService.createTextAnalysis(description, adminAccessToken);
     request.subscribe({
       next: ({ analysisId }) => {
         this.analysisMessage.set('');
         this.pollAnalysis(analysisId, adminAccessToken);
       },
-      error: () => {
+      error: error => {
         this.submittingAnalysis.set(false);
+        const code = this.apiErrorCode(error);
+        if (!this.adminAuthenticated() && code === 'CONSENT_REQUIRED') {
+          this.analysisMessage.set('');
+          this.loadConsentDocument('Los términos vigentes cambiaron. Revísalos antes de volver a enviar tu análisis.');
+          return;
+        }
+        if (!this.adminAuthenticated() && code === 'STANDARD_SESSION_REQUIRED') {
+          this.handleExpiredStandardSession();
+          return;
+        }
         this.analysisMessage.set('No se pudo iniciar el análisis. Verifica tu sesión, consentimiento e intenta nuevamente.');
       }
     });
@@ -1640,8 +2011,12 @@ export class App {
         window.setTimeout(() => URL.revokeObjectURL(url));
         this.downloadingReportPdf.set(false);
       },
-      error: () => {
+      error: error => {
         this.downloadingReportPdf.set(false);
+        if (!this.adminAuthenticated() && this.apiErrorCode(error) === 'STANDARD_SESSION_REQUIRED') {
+          this.handleExpiredStandardSession();
+          return;
+        }
         this.reportPdfError.set('No se pudo descargar el reporte PDF. Inténtalo nuevamente.');
       }
     });
@@ -1668,8 +2043,12 @@ export class App {
 
         window.setTimeout(() => this.pollAnalysis(analysisId, accessToken), 2000);
       },
-      error: () => {
+      error: error => {
         this.submittingAnalysis.set(false);
+        if (!this.adminAuthenticated() && this.apiErrorCode(error) === 'STANDARD_SESSION_REQUIRED') {
+          this.handleExpiredStandardSession();
+          return;
+        }
         this.analysisMessage.set('No se pudo consultar el resultado del análisis.');
       }
     });
@@ -1682,7 +2061,13 @@ export class App {
         this.downloadAnalysisJson(analysisId, report);
         this.standardAnalysisService.getGuidance(analysisId, accessToken).subscribe({
           next: guidance => this.analysisGuidance.set(guidance),
-          error: () => this.analysisGuidance.set(null)
+          error: error => {
+            if (!this.adminAuthenticated() && this.apiErrorCode(error) === 'STANDARD_SESSION_REQUIRED') {
+              this.handleExpiredStandardSession();
+              return;
+            }
+            this.analysisGuidance.set(null);
+          }
         });
         this.submittingAnalysis.set(false);
         this.analysisMessage.set('');
@@ -1690,8 +2075,12 @@ export class App {
         this.view.set('standard-result');
         this.scrollToTop();
       },
-      error: () => {
+      error: error => {
         this.submittingAnalysis.set(false);
+        if (!this.adminAuthenticated() && this.apiErrorCode(error) === 'STANDARD_SESSION_REQUIRED') {
+          this.handleExpiredStandardSession();
+          return;
+        }
         this.reportLoadError.set('No se pudo cargar el reporte diagnóstico. Inténtalo nuevamente.');
         this.analysisMessage.set('No se pudo cargar el reporte diagnóstico.');
       }
@@ -1766,8 +2155,7 @@ export class App {
     }
 
     const formValue = this.userForm.getRawValue();
-    const registrationPayload = this.registrationPayload();
-    const userData = { ...registrationPayload, userType: this.editingUserType() };
+    const userData = { ...this.personalDataPayload(), userType: this.editingUserType() };
 
     this.saving.set(true);
     this.errorMessage.set('');
@@ -2026,6 +2414,21 @@ export class App {
   }
 
   private registrationPayload(): StandardUserRegistrationRequest {
+    const document = this.legalDocument();
+    if (!document) {
+      throw new Error('Legal document is required for registration.');
+    }
+
+    return {
+      ...this.personalDataPayload(),
+      legalAcceptance: {
+        contentHash: document.contentHash,
+        accepted: true
+      }
+    };
+  }
+
+  private personalDataPayload(): Omit<StandardUserRegistrationRequest, 'legalAcceptance'> {
     const formValue = this.userForm.getRawValue();
     return {
       firstName: formValue.firstName,
@@ -2040,5 +2443,41 @@ export class App {
       mobilePhone: formValue.mobilePhone,
       profession: formValue.profession
     };
+  }
+
+  private apiErrorCode(error: unknown): string | null {
+    if (!(error instanceof HttpErrorResponse)) {
+      return null;
+    }
+    const body = error.error as { code?: unknown } | null;
+    return typeof body?.code === 'string' ? body.code : null;
+  }
+
+  private handleExpiredStandardSession(): void {
+    this.clearStandardState();
+    this.accessForm.reset({ doiType: 'DNI', doi: '' });
+    this.view.set('home');
+    this.accessMessage.set('Tu sesión expiró. Identifícate nuevamente.');
+    this.scrollToTop();
+  }
+
+  private clearStandardState(): void {
+    this.csrfService.clear();
+    this.standardAccessState.set('UNIDENTIFIED');
+    this.legalDocument.set(null);
+    this.legalLoading.set(false);
+    this.legalError.set('');
+    this.consentChecked.set(false);
+    this.consentSaving.set(false);
+    this.consentMessage.set('');
+    this.analysisForm.reset({ description: '' });
+    this.analysisMessage.set('');
+    this.analysisResult.set(null);
+    this.diagnosticReport.set(null);
+    this.analysisGuidance.set(null);
+    this.reportLoadError.set('');
+    this.selectedPdf.set(null);
+    this.selectedAudio.set(null);
+    this.submittingAnalysis.set(false);
   }
 }
