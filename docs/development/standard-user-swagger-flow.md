@@ -1,6 +1,6 @@
 # Flujo backend STANDARD desde Swagger UI
 
-**Estado:** F1.1B backend implementado; Angular pendiente
+**Estado:** F1.1B integrado en backend y frontend; este documento conserva el flujo de verificación backend por Swagger
 **Base local:** `http://localhost:8082/identipat-ia`
 
 ## Preparación

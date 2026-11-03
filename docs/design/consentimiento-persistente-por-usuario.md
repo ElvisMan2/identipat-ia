@@ -1,7 +1,7 @@
 # Consentimiento legal persistente por usuario STANDARD
 
-**Estado:** F1.1B backend implementado; frontend pendiente
-**Fecha:** 2 de noviembre de 2026
+**Estado:** F1.1B backend y frontend implementados
+**Fecha:** 3 de noviembre de 2026
 
 ## Regla funcional
 
@@ -66,4 +66,4 @@ La autorización histórica de lectura no cambia: STANDARD sigue aislado por la 
 
 ## Handoff frontend
 
-Angular aún debe adoptar los nuevos contratos y eliminar la autoaceptación del flujo anterior. Esta entrega no modifica `frontend/**` y no declara cerrado el E2E de navegador.
+Angular adopta los nuevos contratos y elimina la autoaceptación del flujo anterior. Esta integración no declara completada F1.9 ni cerrado el E2E de navegador.

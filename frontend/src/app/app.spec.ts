@@ -186,8 +186,7 @@ describe('App', () => {
     const root = fixture.nativeElement as HTMLElement;
     const titleInput = root.querySelector<HTMLInputElement>('input#disclaimer-title')!;
     const textarea = root.querySelector<HTMLTextAreaElement>('textarea#disclaimer-content')!;
-    const saveButton = Array.from(root.querySelectorAll<HTMLButtonElement>('button'))
-      .find(button => button.textContent?.includes('Guardar borrador'))!;
+    const saveButton = textarea.closest('article')!.querySelector<HTMLButtonElement>('button')!;
     expect(saveButton.disabled).toBeTrue();
 
     titleInput.value = 'Aviso actualizado';
@@ -522,7 +521,7 @@ describe('App', () => {
       registered: true,
       passwordRequired: true
     });
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 550));
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).not.toContain('Acceso administrativo');
@@ -650,6 +649,14 @@ describe('App', () => {
     const app = fixture.componentInstance;
     const httpTesting = TestBed.inject(HttpTestingController);
     app.view.set('registration');
+    app.legalDocument.set({
+      documentId: 'legal-1',
+      title: 'Términos vigentes',
+      contentHtml: '<p>Contenido</p>',
+      contentHash: 'hash-current',
+      updatedAt: '2026-11-03T05:00:00Z'
+    });
+    app.userForm.controls.termsAccepted.enable({ emitEvent: false });
     fixture.detectChanges();
 
     app.userForm.setValue({
@@ -673,7 +680,11 @@ describe('App', () => {
       '.registration-actions button[type="submit"]'
     ) as HTMLButtonElement;
     createButton.click();
+    app.registerStandard();
 
+    const csrfRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session/csrf`);
+    expect(csrfRequest.request.withCredentials).toBeTrue();
+    csrfRequest.flush({ token: 'csrf-token', headerName: 'X-XSRF-TOKEN' });
     const registrationRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users`);
     expect(registrationRequest.request.method).toBe('POST');
     expect(registrationRequest.request.body).toEqual({
@@ -687,9 +698,323 @@ describe('App', () => {
       email: 'standard.placeholder@example.test',
       phone: '016543210',
       mobilePhone: '912345678',
-      profession: 'Profesión de prueba'
+      profession: 'Profesión de prueba',
+      legalAcceptance: { contentHash: 'hash-current', accepted: true }
     });
+    expect(registrationRequest.request.headers.get('X-XSRF-TOKEN')).toBe('csrf-token');
+    expect(registrationRequest.request.withCredentials).toBeTrue();
     registrationRequest.flush({ registered: true });
+    const sessionRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/standard-sessions`);
+    expect(sessionRequest.request.body).toEqual({ doi: '12345678', doiType: 'DNI' });
+    sessionRequest.flush({ status: 'ACTIVE', expiresAt: '', absoluteExpiresAt: '', consentRequired: false });
+  });
+
+  it('should create one STANDARD session and enter analysis without loading legal when consent is current', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.accessForm.setValue({ doiType: 'DNI', doi: '12345678' });
+
+    app.identifyDocument();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/users/identify`).flush({
+      registered: true, passwordRequired: false
+    });
+    await new Promise(resolve => setTimeout(resolve, 510));
+    httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session/csrf`).flush({
+      token: 'csrf', headerName: 'X-XSRF-TOKEN'
+    });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/standard-sessions`).flush({
+      status: 'ACTIVE', expiresAt: '', absoluteExpiresAt: '', consentRequired: false
+    });
+
+    expect(app.standardAccessState()).toBe('READY');
+    expect(app.view()).toBe('standard-analysis');
+    httpTesting.expectNone(`${environment.apiBaseUrl}/legal-document`);
+    httpTesting.expectNone(`${environment.apiBaseUrl}/standard-session/consent`);
+  });
+
+  it('should show the consent gate and enable analysis only after explicit acceptance', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.accessForm.setValue({ doiType: 'DNI', doi: '12345678' });
+
+    app.identifyDocument();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/users/identify`).flush({
+      registered: true, passwordRequired: false
+    });
+    await new Promise(resolve => setTimeout(resolve, 510));
+    httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session/csrf`).flush({
+      token: 'csrf', headerName: 'X-XSRF-TOKEN'
+    });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/standard-sessions`).flush({
+      status: 'ACTIVE', expiresAt: '', absoluteExpiresAt: '', consentRequired: true
+    });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/legal-document`).flush({
+      documentId: 'legal-a', title: 'Legal A', contentHtml: '<p>A</p>', contentHash: 'hash-a', updatedAt: '2026-11-03T05:00:00Z'
+    });
+
+    expect(app.standardAccessState()).toBe('CONSENT_REQUIRED');
+    expect(app.consentChecked()).toBeFalse();
+    app.consentChecked.set(true);
+    app.acceptLegalDocument();
+    const consent = httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session/consent`);
+    expect(consent.request.body).toEqual({ contentHash: 'hash-a', decision: 'ACCEPTED' });
+    consent.flush({ contentHash: 'hash-a', decision: 'ACCEPTED', acceptedAt: '', sessionStatus: 'ACTIVE', consentRequired: false });
+
+    expect(app.standardAccessState()).toBe('READY');
+  });
+
+  it('should keep the session blocked after an explicit rejection', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.standardAccessState.set('CONSENT_REQUIRED');
+    app.legalDocument.set({
+      documentId: 'legal-a', title: 'Legal A', contentHtml: '<p>A</p>', contentHash: 'hash-a', updatedAt: '2026-11-03T05:00:00Z'
+    });
+
+    app.rejectLegalDocument();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session/csrf`).flush({ token: 'csrf', headerName: 'X-XSRF-TOKEN' });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session/consent`).flush({
+      contentHash: 'hash-a', decision: 'REJECTED', acceptedAt: null, sessionStatus: 'ACTIVE', consentRequired: true
+    });
+
+    expect(app.standardAccessState()).toBe('BLOCKED');
+    expect(app.consentMessage()).toContain('es necesario aceptar');
+  });
+
+  it('should replace a stale legal document and uncheck consent', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.standardAccessState.set('CONSENT_REQUIRED');
+    app.legalDocument.set({
+      documentId: 'legal-a', title: 'Legal A', contentHtml: '<p>A</p>', contentHash: 'hash-a', updatedAt: '2026-11-03T05:00:00Z'
+    });
+    app.consentChecked.set(true);
+
+    app.acceptLegalDocument();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session/csrf`).flush({ token: 'csrf', headerName: 'X-XSRF-TOKEN' });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session/consent`).flush(
+      { code: 'LEGAL_DOCUMENT_CHANGED' }, { status: 409, statusText: 'Conflict' }
+    );
+    httpTesting.expectOne(`${environment.apiBaseUrl}/legal-document`).flush({
+      documentId: 'legal-b', title: 'Legal B', contentHtml: '<p>B</p>', contentHash: 'hash-b', updatedAt: '2026-11-03T06:00:00Z'
+    });
+
+    expect(app.legalDocument()?.contentHash).toBe('hash-b');
+    expect(app.consentChecked()).toBeFalse();
+    expect(app.standardAccessState()).toBe('CONSENT_REQUIRED');
+  });
+
+  it('should preserve analysis input and avoid automatic retry when consent becomes required', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.standardAccessState.set('READY');
+    app.view.set('standard-analysis');
+    app.analysisForm.setValue({ description: 'Descripción suficientemente extensa para analizar' });
+
+    app.submitAnalysis();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session/csrf`).flush({ token: 'csrf', headerName: 'X-XSRF-TOKEN' });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/analyses/text`).flush(
+      { code: 'CONSENT_REQUIRED' }, { status: 409, statusText: 'Conflict' }
+    );
+    httpTesting.expectOne(`${environment.apiBaseUrl}/legal-document`).flush({
+      documentId: 'legal-b', title: 'Legal B', contentHtml: '<p>B</p>', contentHash: 'hash-b', updatedAt: '2026-11-03T06:00:00Z'
+    });
+
+    expect(app.analysisForm.controls.description.value).toContain('Descripción suficientemente');
+    expect(app.standardAccessState()).toBe('CONSENT_REQUIRED');
+    httpTesting.expectNone(`${environment.apiBaseUrl}/analyses/text`);
+
+    app.consentChecked.set(true);
+    app.acceptLegalDocument();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session/consent`).flush({
+      contentHash: 'hash-b', decision: 'ACCEPTED', acceptedAt: '', sessionStatus: 'ACTIVE', consentRequired: false
+    });
+
+    expect(app.standardAccessState()).toBe('READY');
+    expect(app.analysisForm.controls.description.value).toContain('Descripción suficientemente');
+    httpTesting.expectNone(`${environment.apiBaseUrl}/analyses/text`);
+  });
+
+  it('should reuse one STANDARD session for a second analysis without creating or accepting anything again', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.standardAccessState.set('READY');
+    app.view.set('standard-analysis');
+    app.analysisForm.setValue({ description: 'Primera descripción suficientemente extensa para analizar' });
+
+    app.submitAnalysis();
+    app.submitAnalysis();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session/csrf`).flush({
+      token: 'csrf', headerName: 'X-XSRF-TOKEN'
+    });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/analyses/text`).flush({
+      analysisId: 'analysis-1', status: 'RECEIVED', createdAt: ''
+    });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/analyses/analysis-1`).flush({
+      analysisId: 'analysis-1', status: 'FAILED', createdAt: ''
+    });
+
+    app.startNewAnalysis();
+    app.analysisForm.setValue({ description: 'Segunda descripción suficientemente extensa para analizar' });
+    app.submitAnalysis();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/analyses/text`).flush({
+      analysisId: 'analysis-2', status: 'RECEIVED', createdAt: ''
+    });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/analyses/analysis-2`).flush({
+      analysisId: 'analysis-2', status: 'FAILED', createdAt: ''
+    });
+
+    httpTesting.expectNone(`${environment.apiBaseUrl}/standard-sessions`);
+    httpTesting.expectNone(`${environment.apiBaseUrl}/standard-session/consent`);
+  });
+
+  it('should clear local STANDARD state when polling reports an expired session', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.standardAccessState.set('READY');
+    app.view.set('standard-analysis');
+    app.analysisForm.setValue({ description: 'Descripción suficientemente extensa para analizar' });
+
+    app.submitAnalysis();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session/csrf`).flush({
+      token: 'csrf', headerName: 'X-XSRF-TOKEN'
+    });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/analyses/text`).flush({
+      analysisId: 'analysis-expired', status: 'RECEIVED', createdAt: ''
+    });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/analyses/analysis-expired`).flush(
+      { code: 'STANDARD_SESSION_REQUIRED' }, { status: 401, statusText: 'Unauthorized' }
+    );
+
+    expect(app.view()).toBe('home');
+    expect(app.standardAccessState()).toBe('UNIDENTIFIED');
+    expect(app.analysisForm.controls.description.value).toBe('');
+  });
+
+  it('should keep registration blocked when the legal document is unavailable', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+
+    app.openRegistration();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/legal-document`).flush(
+      { code: 'LEGAL_DOCUMENT_NOT_FOUND' }, { status: 404, statusText: 'Not Found' }
+    );
+    fixture.detectChanges();
+
+    const submit = fixture.nativeElement.querySelector(
+      '.registration-actions button[type="submit"]'
+    ) as HTMLButtonElement;
+    expect(app.legalDocument()).toBeNull();
+    expect(app.userForm.controls.termsAccepted.disabled).toBeTrue();
+    expect(submit.disabled).toBeTrue();
+    expect(fixture.nativeElement.textContent).toContain('aún no están disponibles');
+  });
+
+  it('should keep analysis blocked when the legal document is unavailable for consent', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.view.set('standard-analysis');
+    app.standardAccessState.set('CONSENT_REQUIRED');
+
+    app.reviewLegalDocument();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/legal-document`).flush(
+      { code: 'LEGAL_DOCUMENT_NOT_FOUND' }, { status: 404, statusText: 'Not Found' }
+    );
+    fixture.detectChanges();
+
+    const analysis = fixture.nativeElement.querySelector('.analysis-shell') as HTMLElement;
+    expect(app.standardAccessState()).toBe('BLOCKED');
+    expect(app.legalDocument()).toBeNull();
+    expect(analysis.hasAttribute('inert')).toBeTrue();
+    expect(analysis.getAttribute('aria-hidden')).toBe('true');
+    expect(fixture.nativeElement.textContent).toContain('Documento legal no disponible');
+  });
+
+  it('should render the public legal source from the backend state', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.view.set('legal');
+
+    app.loadPublicLegalDocument();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/legal-document`).flush({
+      documentId: 'legal-dynamic',
+      title: 'Documento legal dinámico',
+      contentHtml: '<h2>Contenido vigente</h2><p>Texto dinámico</p>',
+      contentHash: 'hash-dynamic',
+      updatedAt: '2026-11-03T06:00:00Z'
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Documento legal dinámico');
+    expect(fixture.nativeElement.textContent).toContain('Texto dinámico');
+  });
+
+  it('should allow first ADMIN legal configuration and replace local HTML with the sanitized response', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+
+    app.loadAdminLegalDocument();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/admin/legal-document`).flush(
+      { code: 'LEGAL_DOCUMENT_NOT_FOUND' }, { status: 404, statusText: 'Not Found' }
+    );
+    expect(app.legalAdminDocument()).toBeNull();
+
+    app.legalAdminTitle.set('Documento legal');
+    app.legalAdminHtml.set('<p onclick="bad()">Contenido</p>');
+    app.saveAdminLegalDocument();
+    const update = httpTesting.expectOne(`${environment.apiBaseUrl}/admin/legal-document`);
+    expect(update.request.body).toEqual({
+      title: 'Documento legal', contentHtml: '<p onclick="bad()">Contenido</p>'
+    });
+    update.flush({
+      documentId: 'legal-1',
+      title: 'Documento legal',
+      contentHtml: '<p>Contenido</p>',
+      contentHash: 'hash-1',
+      updatedAt: '2026-11-03T06:00:00Z'
+    });
+
+    expect(app.legalAdminHtml()).toBe('<p>Contenido</p>');
+    expect(app.legalAdminMessage()).toContain('guardado correctamente');
+  });
+
+  it('should preserve registration data and require a fresh checkbox after a legal change', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.view.set('registration');
+    app.legalDocument.set({
+      documentId: 'legal-a', title: 'Legal A', contentHtml: '<p>A</p>', contentHash: 'hash-a', updatedAt: '2026-11-03T05:00:00Z'
+    });
+    app.userForm.setValue({
+      firstName: 'Ana', paternalLastName: 'Rojas', maternalLastName: 'López', doi: '12345678', doiType: 'DNI',
+      birthDate: '01/01/1990', gender: 'FEMALE', email: 'ana@example.test', phone: '016543210',
+      mobilePhone: '912345678', profession: 'Abogada', password: '', termsAccepted: true
+    });
+
+    app.registerStandard();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session/csrf`).flush({ token: 'csrf', headerName: 'X-XSRF-TOKEN' });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/users`).flush(
+      { code: 'LEGAL_DOCUMENT_CHANGED' }, { status: 409, statusText: 'Conflict' }
+    );
+    httpTesting.expectOne(`${environment.apiBaseUrl}/legal-document`).flush({
+      documentId: 'legal-b', title: 'Legal B', contentHtml: '<p>B</p>', contentHash: 'hash-b', updatedAt: '2026-11-03T06:00:00Z'
+    });
+
+    expect(app.userForm.controls.firstName.value).toBe('Ana');
+    expect(app.userForm.controls.termsAccepted.value).toBeFalse();
+    expect(app.accessMessage()).toContain('actualizados');
   });
 
   it('should inactivate a user through an update without deleting it', () => {

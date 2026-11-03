@@ -1,38 +1,20 @@
 @if (view() === 'legal') {
   <main class="legal-page">
     <article class="legal-content">
-      <p class="eyebrow"></p>
-      <h1>Términos de uso y Política de Privacidad</h1>
-      <p class="legal-updated">Última actualización: 18 de octubre de 2026</p>
-
-      <section class="legal-section">
-        <h2>1. Términos de uso</h2>
-        <p>Bienvenido a IDENTIPAT IA, una herramienta de orientación preliminar sobre alternativas de protección de la propiedad intelectual.</p>
-        <h3>1.1 Uso del servicio</h3>
-        <p>Al acceder o utilizar IDENTIPAT IA, declaras que la información proporcionada es verdadera y que utilizarás el servicio de forma lícita y responsable. El servicio está dirigido a personas mayores de edad o a quienes cuenten con la autorización correspondiente.</p>
-        <h3>1.2 Alcance de la orientación</h3>
-        <p>Los resultados son informativos y orientativos. No constituyen asesoría legal, dictamen profesional, resolución oficial ni garantizan el otorgamiento de un derecho de propiedad intelectual. Para una evaluación definitiva, consulta a un profesional especializado o a la autoridad competente.</p>
-        <h3>1.3 Responsabilidades del usuario</h3>
-        <p>Debes revisar la información antes de tomar decisiones y evitar enviar datos de terceros sin autorización. No debes intentar afectar la disponibilidad, seguridad o funcionamiento del servicio.</p>
-        <h3>1.4 Disponibilidad y cambios</h3>
-        <p>Podemos actualizar, suspender o modificar el servicio cuando sea necesario por razones técnicas, operativas o legales. También podemos actualizar estos términos; la versión vigente será la publicada en esta página.</p>
-      </section>
-
-      <section class="legal-section">
-        <h2>2. Política de Privacidad</h2>
-        <h3>2.1 Información que recopilamos</h3>
-        <p>Podemos recopilar los datos de identificación, contacto, perfil y la descripción de la creación que ingreses para permitir el acceso, prestar el servicio y generar una orientación personalizada.</p>
-        <h3>2.2 Finalidades</h3>
-        <p>Usamos la información para identificarte dentro de una sesión, procesar tus solicitudes, generar resultados, mantener la seguridad, atender incidencias y mejorar la calidad del servicio.</p>
-        <h3>2.3 Tratamiento y protección</h3>
-        <p>Aplicamos medidas técnicas y organizativas razonables para proteger la información frente a accesos no autorizados, pérdida o alteración. El acceso está limitado al personal y proveedores que lo necesitan para operar el servicio.</p>
-        <h3>2.4 Conservación y derechos</h3>
-        <p>Conservamos la información durante el tiempo necesario para cumplir las finalidades descritas y las obligaciones aplicables. Puedes solicitar información, actualización, rectificación o eliminación de tus datos mediante los canales de contacto habilitados por IDENTIPAT IA.</p>
-        <h3>2.5 Proveedores tecnológicos</h3>
-        <p>El servicio puede utilizar proveedores tecnológicos para el procesamiento técnico de la información. Estos proveedores deben tratar los datos únicamente para prestar el servicio y bajo obligaciones de confidencialidad y seguridad.</p>
-        <h3>2.6 Contacto</h3>
-        <p>Para consultas sobre estos términos o sobre el tratamiento de tus datos, utiliza los canales oficiales de contacto de IDENTIPAT IA.</p>
-      </section>
+      <a class="legal-back" href="/">← Volver a IDENTIPAT IA</a>
+      @if (legalLoading()) {
+        <p class="legal-state" role="status">Cargando documento legal...</p>
+      } @else if (legalError()) {
+        <div class="legal-state legal-state-error" role="alert">
+          <p>{{ legalError() }}</p>
+          <button type="button" class="outline-button" (click)="loadPublicLegalDocument()">Reintentar</button>
+        </div>
+      } @else if (legalDocument(); as document) {
+        <p class="eyebrow">Documento vigente</p>
+        <h1>{{ document.title }}</h1>
+        <p class="legal-updated">Última actualización: {{ legalDateLabel(document.updatedAt) }}</p>
+        <section class="legal-section legal-rich-content" [innerHTML]="document.contentHtml"></section>
+      }
     </article>
   </main>
 } @else if (view() === 'admin') {
@@ -244,6 +226,56 @@
 
     @if (adminSection() === 'settings') {
     <section class="layout" style="margin-bottom: 1.5rem">
+      <article class="panel table-panel admin-legal-panel">
+        <div class="table-head">
+          <div>
+            <h2>Términos de uso y Política de Privacidad</h2>
+            <p class="empty-state">Documento vigente para registro y acceso STANDARD.</p>
+          </div>
+        </div>
+        @if (legalAdminLoading()) {
+          <p role="status">Cargando documento legal...</p>
+        } @else {
+          <label for="legal-admin-title">Título</label>
+          <input
+            id="legal-admin-title"
+            type="text"
+            [value]="legalAdminTitle()"
+            (input)="updateLegalAdminTitle($event)"
+            [disabled]="legalAdminSaving()"
+            maxlength="200"
+          />
+          <label class="legal-admin-content-label">Contenido</label>
+          <ckeditor
+            [editor]="legalAdminEditor"
+            [config]="legalAdminEditorConfig"
+            (ready)="onLegalAdminEditorReady($event)"
+            (change)="updateLegalAdminHtml($event)"
+            (blur)="updateLegalAdminHtml($event)"
+            aria-label="Contenido del documento legal"
+          ></ckeditor>
+          @if (legalAdminDocument(); as document) {
+            <p class="legal-admin-updated">Última actualización: {{ legalDateLabel(document.updatedAt) }}</p>
+          } @else {
+            <p class="legal-admin-updated">Primera configuración</p>
+          }
+          @if (legalAdminMessage()) {
+            <p class="success-message" role="status">{{ legalAdminMessage() }}</p>
+          }
+          @if (legalAdminError()) {
+            <p class="error" role="alert">{{ legalAdminError() }}</p>
+          }
+          <div class="actions legal-admin-actions">
+            <button
+              type="button"
+              (click)="saveAdminLegalDocument()"
+              [disabled]="legalAdminSaving() || !legalAdminTitle().trim() || !legalAdminHtml().trim() || (!legalAdminHasChanges() && !!legalAdminDocument())"
+            >
+              {{ legalAdminSaving() ? 'Guardando...' : 'Guardar cambios' }}
+            </button>
+          </div>
+        }
+      </article>
       <article class="panel table-panel">
         <div class="table-head">
           <h2>Orientación</h2>
@@ -591,7 +623,7 @@
 } @else if (view() === 'standard-analysis') {
   <main class="analysis-page">
     <header class="topbar">
-      <a class="brand" href="/" (click)="$event.preventDefault(); backHome()">IDENTIPAT IA</a>
+      <a class="brand" href="/" (click)="$event.preventDefault(); exitAnalysis()">IDENTIPAT IA</a>
       <div class="result-actions">
         @if (adminAuthenticated()) {
           <button class="outline-button" type="button" (click)="openAdminPanel()" [disabled]="navigationPending()">Panel de administración</button>
@@ -614,7 +646,60 @@
 
     @if (exitError()) { <p class="error" role="alert">{{ exitError() }}</p> }
 
-    <section class="analysis-shell">
+    @if (!adminAuthenticated() && (standardAccessState() === 'CONSENT_REQUIRED' || standardAccessState() === 'BLOCKED')) {
+      <section class="consent-gate" role="dialog" aria-modal="true" aria-labelledby="consent-gate-title">
+        <article class="consent-card">
+          @if (legalLoading()) {
+            <div class="consent-loading" role="status">
+              <span class="analysis-spinner" aria-hidden="true"></span>
+              <p>Cargando el documento legal vigente...</p>
+            </div>
+          } @else if (legalError()) {
+            <p class="eyebrow">Acceso temporalmente no disponible</p>
+            <h2 id="consent-gate-title">Documento legal no disponible</h2>
+            <p class="error" role="alert">{{ legalError() }}</p>
+            <div class="consent-actions">
+              <button type="button" class="outline-button" (click)="reviewLegalDocument()" autofocus>Reintentar</button>
+              <button type="button" class="outline-button" (click)="exitAnalysis()">Salir</button>
+            </div>
+          } @else if (legalDocument(); as document) {
+            @if (standardAccessState() === 'BLOCKED') {
+              <p class="eyebrow">Decisión registrada</p>
+              <h2 id="consent-gate-title">Se requiere tu aceptación para continuar</h2>
+              <p class="consent-blocked-message" role="alert">{{ consentMessage() }}</p>
+              <div class="consent-actions">
+                <button type="button" class="primary-button" (click)="reviewLegalDocument()" autofocus>Revisar nuevamente</button>
+                <button type="button" class="outline-button" (click)="exitAnalysis()">Salir</button>
+              </div>
+            } @else {
+              <p class="eyebrow">Consentimiento obligatorio</p>
+              <h2 id="consent-gate-title">{{ document.title }}</h2>
+              <p class="legal-updated">Última actualización: {{ legalDateLabel(document.updatedAt) }}</p>
+              @if (consentMessage()) {
+                <p class="consent-notice" role="status">{{ consentMessage() }}</p>
+              }
+              <div class="consent-document legal-rich-content" tabindex="0" [innerHTML]="document.contentHtml"></div>
+              <label class="consent-explicit-check">
+                <input type="checkbox" [checked]="consentChecked()" (change)="updateConsentChecked($event)" autofocus />
+                <span>He leído y acepto expresamente los Términos de uso y la Política de Privacidad vigentes.</span>
+              </label>
+              <div class="consent-actions">
+                <button type="button" class="outline-button" (click)="rejectLegalDocument()" [disabled]="consentSaving()">No aceptar</button>
+                <button type="button" class="primary-button" (click)="acceptLegalDocument()" [disabled]="!consentChecked() || consentSaving()">
+                  {{ consentSaving() ? 'Guardando...' : 'Aceptar y continuar' }}
+                </button>
+              </div>
+            }
+          }
+        </article>
+      </section>
+    }
+
+    <section
+      class="analysis-shell"
+      [attr.inert]="!adminAuthenticated() && standardAccessState() !== 'READY' ? '' : null"
+      [attr.aria-hidden]="!adminAuthenticated() && standardAccessState() !== 'READY' ? 'true' : null"
+    >
       <div class="analysis-heading">
         <p class="eyebrow">Análisis de tu creación</p>
         <h1>Cuéntanos qué quieres proteger</h1>
@@ -650,7 +735,7 @@
         </div>
         <div class="analysis-actions">
           <span [class.success-message]="analysisMessage().startsWith('Análisis recibido')" [class.error]="analysisMessage().startsWith('No se pudo')">{{ analysisMessage() }}</span>
-          <button class="primary-button" type="submit" [disabled]="submittingAnalysis()">{{ submittingAnalysis() ? 'Enviando...' : 'Iniciar análisis' }}</button>
+          <button class="primary-button" type="submit" [disabled]="submittingAnalysis() || (!adminAuthenticated() && standardAccessState() !== 'READY')">{{ submittingAnalysis() ? 'Enviando...' : 'Iniciar análisis' }}</button>
         </div>
       </form>
       <p class="analysis-disclaimer">Identipat es una herramienta de Inteligencia artificial y puede cometer errores, verifica la información importante.</p>
@@ -688,7 +773,7 @@
 } @else if (view() === 'standard-result') {
   <main class="analysis-page result-page">
     <header class="topbar">
-      <a class="brand" href="/" (click)="$event.preventDefault(); backHome()">IDENTIPAT IA</a>
+      <a class="brand" href="/" (click)="$event.preventDefault(); exitResult()">IDENTIPAT IA</a>
       <div class="result-actions">
         <button class="outline-button" type="button" (click)="startNewAnalysis()">Nuevo análisis</button>
         <button class="outline-button" type="button" (click)="exitResult()" [disabled]="navigationPending()">Salir</button>
@@ -959,12 +1044,24 @@
               <label>Teléfono <input type="text" name="phone" autocomplete="tel" formControlName="phone" inputmode="numeric" maxlength="9" pattern="[0-9]*" (input)="sanitizePhone($event, userForm.controls.phone)" placeholder="01654321" /></label>
               <label>Celular <input type="tel" name="mobilePhone" autocomplete="tel" formControlName="mobilePhone" inputmode="tel" maxlength="15" (input)="sanitizeMobilePhone($event, userForm.controls.mobilePhone)" placeholder="912345678" /></label>
               <label class="registration-wide">Profesión / Ocupación <input type="text" name="profession" autocomplete="organization-title" formControlName="profession" placeholder="Ingeniero" /></label>
+              <div class="registration-wide registration-legal-status">
+                @if (legalLoading()) {
+                  <p role="status">Cargando documento legal vigente...</p>
+                } @else if (legalError()) {
+                  <p class="error" role="alert">{{ legalError() }}</p>
+                  <button type="button" class="outline-button" (click)="openRegistration()">Reintentar</button>
+                } @else if (legalDocument(); as document) {
+                  <strong>{{ document.title }}</strong>
+                  <span>Actualizado: {{ legalDateLabel(document.updatedAt) }}</span>
+                  <a href="terminos-y-privacidad" target="_blank" rel="noopener noreferrer">Leer documento completo</a>
+                }
+              </div>
               <label class="registration-wide terms-checkbox">
-                <span><input type="checkbox" formControlName="termsAccepted" /> Acepto los <a href="/terminos-y-privacidad" target="_blank" rel="noopener noreferrer">Términos de uso y la Política de Privacidad</a></span>
+                <span><input type="checkbox" formControlName="termsAccepted" /> He leído y acepto los <a href="terminos-y-privacidad" target="_blank" rel="noopener noreferrer">Términos de uso y la Política de Privacidad</a> vigentes.</span>
               </label>
               @if (accessMessage()) { <p class="access-message registration-wide" role="alert">{{ accessMessage() }}</p> }
               <div class="registration-actions registration-wide">
-                <button class="primary-button" type="submit" [disabled]="saving()">{{ saving() ? 'Registrando...' : 'Registrarme' }}</button>
+                <button class="primary-button" type="submit" [disabled]="saving() || legalLoading() || !legalDocument() || userForm.invalid">{{ saving() ? 'Registrando...' : 'Registrarme' }}</button>
                 <button class="outline-button" type="button" (click)="cancelRegistration()" [disabled]="saving()">Volver</button>
               </div>
             </form>
@@ -1028,7 +1125,7 @@
           </section>
         }
         @if (view() !== 'registration') {
-          <p class="privacy-note">Al registrarte o acceder, aceptas los <a href="/terminos-y-privacidad" target="_blank" rel="noopener noreferrer">Términos de uso y Política de Privacidad de Identipat IA</a></p>
+          <p class="privacy-note">Consulta los <a href="terminos-y-privacidad" target="_blank" rel="noopener noreferrer">Términos de uso y la Política de Privacidad de Identipat IA</a>. Si se requiere tu aceptación, podrás revisarlos antes de usar la herramienta.</p>
         }
       </div>
 

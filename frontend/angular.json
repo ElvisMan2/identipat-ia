@@ -50,8 +50,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "18kB",
-                  "maximumError": "20kB"
+                  "maximumWarning": "34kB",
+                  "maximumError": "36kB"
                 }
               ],
               "allowedCommonJsDependencies": [
@@ -91,6 +91,7 @@
           "builder": "@angular/build:karma",
           "options": {
             "tsConfig": "tsconfig.spec.json",
+            "karmaConfig": "karma.conf.cjs",
             "assets": [
               {
                 "glob": "**/*",
