@@ -28,13 +28,17 @@ import com.mnk.identipatia.reporting.repository.AnalysisReportContextRepository;
 import com.mnk.identipatia.reporting.service.AnalysisReportContextService;
 import com.mnk.identipatia.reporting.service.OperationalAnalysisDatasetException;
 import com.mnk.identipatia.reporting.service.OperationalAnalysisDatasetService;
+import com.mnk.identipatia.service.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -48,8 +52,13 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Testcontainers
 class OperationalAnalysisDatasetIntegrationTest {
@@ -72,6 +81,8 @@ class OperationalAnalysisDatasetIntegrationTest {
     @Autowired AnalysisReportContextRepository contextRepository;
     @Autowired GuidanceViewRepository guidanceViewRepository;
     @Autowired OperationalAnalysisDatasetService datasetService;
+    @Autowired MockMvc mockMvc;
+    @Autowired JwtService jwtService;
 
     @BeforeEach
     void resetDatabase() {
@@ -240,6 +251,45 @@ class OperationalAnalysisDatasetIntegrationTest {
                 .hasMessageContaining("invalid or unsupported");
     }
 
+    @Test
+    void adminHttpExportUsesA1DatasetPreservesOrderAndPassesCalendarFilters() throws Exception {
+        User admin = user("Paterno", "Materno");
+        admin.setDoi("ADMIN-CSV");
+        admin.setPassword("unused-for-direct-jwt-test");
+        userRepository.saveAndFlush(admin);
+
+        UUID firstId = uuid(21);
+        UUID secondId = uuid(22);
+        UUID outsideId = uuid(23);
+        completed(admin, firstId, Instant.parse("2026-11-03T06:00:00Z"), v2Result(), true);
+        analysis(admin, secondId, Instant.parse("2026-11-03T07:00:00Z"),
+                AnalysisStatus.RECEIVED, false);
+        analysis(admin, outsideId, Instant.parse("2026-11-04T05:00:00Z"),
+                AnalysisStatus.RECEIVED, false);
+
+        byte[] bytes = mockMvc.perform(get("/admin/analyses/export.csv")
+                        .param("from", "2026-11-03")
+                        .param("to", "2026-11-03")
+                        .header(HttpHeaders.AUTHORIZATION,
+                                "Bearer " + jwtService.generateToken(admin.getDoi())))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("text/csv;charset=UTF-8"))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"identipat-analisis_2026-11-03_2026-11-03.csv\""))
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store, private"))
+                .andReturn().getResponse().getContentAsByteArray();
+
+        assertThat(bytes).startsWith((byte) 0xEF, (byte) 0xBB, (byte) 0xBF);
+        String csv = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+        String headerRow = csv.substring(1, csv.indexOf("\r\n"));
+        assertThat(headerRow.split(",", -1)).hasSize(21);
+        assertThat(headerRow).contains("\"Id Analisis\"", "\"Orientacion Consultada\"")
+                .doesNotContain("userId", "sessionId", "provider", "model", "tokens");
+        assertThat(csv).contains(firstId.toString(), secondId.toString(), "\"COMPLETADO\"")
+                .doesNotContain(outsideId.toString());
+        assertThat(csv.indexOf(firstId.toString())).isLessThan(csv.indexOf(secondId.toString()));
+    }
+
     private User user(String paternalLastName, String maternalLastName) {
         User user = new User();
         user.setFirstName("Perfil-" + UUID.randomUUID());
@@ -254,6 +304,7 @@ class OperationalAnalysisDatasetIntegrationTest {
         user.setProfession("Profesión");
         user.setStatus("A");
         user.setUserType("ADMIN");
+        user.setPassword("unused");
         return userRepository.saveAndFlush(user);
     }
 

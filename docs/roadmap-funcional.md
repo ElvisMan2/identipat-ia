@@ -1,6 +1,6 @@
 # Roadmap funcional — IDENTIPAT-IA
 
-**Estado:** F1.10A1 implementada; F1.10A2/A3 y F1.9 pendientes
+**Estado:** F1.10A1/A2 implementadas; F1.10A3 y F1.9 pendientes
 **Versión del roadmap:** 1.10
 **Última actualización:** 3 de noviembre de 2026
 **Objetivo:** mantener una visión vigente de la secuencia funcional del producto, diferenciando lo ya materializado de las fases pendientes.
@@ -38,7 +38,7 @@ La estabilización técnica F0 está completada. El backend también materializa
 | F1.8D | Registro de visualización de próximos pasos | ✅ Implementada |
 | F1.9 | Integración frontend y E2E | ⏳ Pendiente |
 | F1.10A1 | Dataset operacional backend de análisis | ✅ Implementada |
-| F1.10A2 | Serialización y endpoint CSV ADMIN | ⏳ Pendiente |
+| F1.10A2 | Serialización y endpoint CSV ADMIN | ✅ Implementada |
 | F1.10A3 | Descarga CSV en Angular ADMIN | ⏳ Pendiente |
 | F2 | Preparación para piloto y producción | ⏳ Pendiente |
 
@@ -596,13 +596,19 @@ El perfil mostrado es el vigente al construir el dataset porque no existe snapsh
 
 ## F1.10A2 — CSV y endpoint ADMIN
 
-**Estado:** pendiente.
+**Estado:** implementada.
+
+El endpoint `GET /admin/analyses/export.csv` reutiliza exclusivamente el dataset A1 y admite filtros
+opcionales `from`/`to`. La respuesta ADMIN-only contiene las 21 columnas contractuales, UTF-8 BOM,
+registros CRLF, quoting y escape deterministas, protección contra formula injection, nombres de archivo
+según el rango y `Cache-Control: no-store, private`. No se agregó ownership por análisis, acceso
+STANDARD, consulta por fila, migración ni cambio Angular.
 
 ## F1.10A3 — Descarga Angular ADMIN
 
 **Estado:** pendiente.
 
-F1.10A completa permanece pendiente hasta cerrar A2 y A3.
+F1.10A completa permanece pendiente hasta cerrar A3.
 
 ---
 

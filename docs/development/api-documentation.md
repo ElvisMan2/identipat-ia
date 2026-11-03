@@ -49,6 +49,14 @@ La respuesta `200` usa `Content-Type: text/csv; charset=UTF-8` y `Content-Dispos
 
 Las columnas, en orden, son: `ID`, `Nombre completo`, `Documento`, `Nacimiento`, `Género`, `Correo`, `Teléfono`, `Celular`, `Tipo`, `Profesión` y `Estado`. La contraseña y la metadata interna no se exportan.
 
+## Exportación operacional de análisis
+
+`GET /admin/analyses/export.csv` requiere Bearer JWT de un usuario `ADMIN`; no aplica ownership por análisis ni acepta la cookie STANDARD como autorización. Los parámetros opcionales `from` y `to` usan `YYYY-MM-DD` y representan días calendario de Perú. El límite inicial es inclusivo y el final incluye todo el día indicado. Un rango con `from > to` responde `400 INVALID_DATE_RANGE`.
+
+La respuesta `200` usa `Content-Type: text/csv; charset=UTF-8`, `Content-Disposition: attachment` y `Cache-Control: no-store, private`. El nombre es `identipat-analisis_completo.csv`, `identipat-analisis_desde_<from>.csv`, `identipat-analisis_hasta_<to>.csv` o `identipat-analisis_<from>_<to>.csv`, según los filtros presentes. El archivo se construye completo en memoria desde el dataset F1.10A1, usa UTF-8 con BOM, separador coma, registros `CRLF`, todas las celdas entre comillas y neutralización de formula injection para `=`, `+`, `-` y `@` después de whitespace. Sin resultados devuelve BOM y cabecera.
+
+Las 21 columnas, en orden, son: `Id Analisis`, `Conclusion`, `Estado del Analisis`, `Reporte`, `Reporte PDF Disponible`, `Nombres`, `Apellidos`, `Tipo de Documento`, `Numero de Documento`, `Genero`, `Fecha de Nacimiento`, `Telefono`, `Celular`, `Correo`, `Profesion u Oficio`, `Fecha de Creacion`, `Tipo de Entrada`, `Modalidades Identificadas`, `Aplicabilidad por Modalidad`, `Origen del Analisis` y `Orientacion Consultada`. `Fecha de Creacion` se presenta en `America/Lima`. JWT ausente o inválido responde `401` y un actor autenticado no ADMIN recibe `403`.
+
 ## Postman
 
 La colección está en `postman/identipat-api.collection.json` e incluye `STANDARD - Session and consent`, además de reconocimiento/registro, administración y negativos.
@@ -63,8 +71,9 @@ Las variables de colección no contienen secretos reales:
 - `legalContentHash`: hash vigente guardado desde `GET /legal-document` o `PUT /admin/legal-document`.
 - `analysisId`: se guarda desde la respuesta `202` del flujo STANDARD.
 - `adminAnalysisId`: se guarda por separado desde la respuesta `202` del flujo ADMIN.
+- `reportFrom` y `reportTo`: fechas calendario de ejemplo para la exportación operacional; ambos filtros son opcionales.
 
-Ejecuta primero **Login ADMIN and save JWT** y luego las operaciones en `Admin - Users`, que envían `Authorization: Bearer {{adminJwt}}`. El grupo incluye ejemplos paginados, de búsqueda, filtros, ordenamiento y exportación CSV completa. Las solicitudes que crean, actualizan o eliminan datos requieren valores de prueba únicos y son intencionalmente manuales.
+Ejecuta primero **Login ADMIN and save JWT**. `Admin - Users` incluye ejemplos paginados, de búsqueda, filtros, ordenamiento y exportación CSV de usuarios; `ADMIN - Diagnostic reports and disclaimers` incluye la exportación operacional de análisis. Ambos grupos envían `Authorization: Bearer {{adminJwt}}`. Las solicitudes que crean, actualizan o eliminan datos requieren valores de prueba únicos y son intencionalmente manuales.
 
 El flujo STANDARD no usa Bearer token: obtiene CSRF y `GET /legal-document`; si registra usuario, envía `legalAcceptance`; después crea sesión y acepta el hash solo cuando `consentRequired=true`. El flujo ADMIN incluye gobierno de `/admin/legal-document` y análisis con Bearer, sin consentimiento STANDARD. Los grupos PDF/audio usan selección manual de archivo y no almacenan archivos en el repositorio. No hay polling infinito. No deben guardarse DNI, voz o documentos reales, cookies, pepper, JWT ni secretos en variables compartidas.
 
