@@ -1,7 +1,7 @@
 # Roadmap funcional — IDENTIPAT-IA
 
-**Estado:** F1.1B backend y frontend implementados sobre F1.8D; F1.9 no completada
-**Versión del roadmap:** 1.9
+**Estado:** F1.10A1 implementada; F1.10A2/A3 y F1.9 pendientes
+**Versión del roadmap:** 1.10
 **Última actualización:** 3 de noviembre de 2026
 **Objetivo:** mantener una visión vigente de la secuencia funcional del producto, diferenciando lo ya materializado de las fases pendientes.
 
@@ -37,6 +37,9 @@ La estabilización técnica F0 está completada. El backend también materializa
 | F1.8 | Catálogo institucional y guidance vigente | ✅ Implementada |
 | F1.8D | Registro de visualización de próximos pasos | ✅ Implementada |
 | F1.9 | Integración frontend y E2E | ⏳ Pendiente |
+| F1.10A1 | Dataset operacional backend de análisis | ✅ Implementada |
+| F1.10A2 | Serialización y endpoint CSV ADMIN | ⏳ Pendiente |
+| F1.10A3 | Descarga CSV en Angular ADMIN | ⏳ Pendiente |
 | F2 | Preparación para piloto y producción | ⏳ Pendiente |
 
 Los estados **implementada** indican que el alcance técnico existe en el backend y está cubierto por pruebas. No sustituyen la revisión funcional, jurídica, de seguridad o de aceptación que corresponda antes del piloto.
@@ -61,6 +64,8 @@ La base actual incluye:
 - lease, retry y recuperación de trabajos interrumpidos.
 - listado administrativo de usuarios con paginación, búsqueda, filtros y ordenamiento controlado.
 - exportación CSV administrativa de todos los usuarios coincidentes, sin paginación y con protección contra CSV injection.
+- dataset operacional de análisis con una fila por `Analysis`, filtros calendario en `America/Lima`,
+  compatibilidad V1/V2 y reconstrucción batch del diagnóstico F1.7 sin endpoint ni CSV todavía.
 
 ---
 
@@ -567,6 +572,37 @@ resultado y reporte
 - descarga del reporte;
 - pruebas E2E y accesibilidad;
 - incorporación del frontend al CI.
+
+---
+
+# F1.10A — Reporte operativo CSV de análisis
+
+## F1.10A1 — Dataset operacional backend
+
+**Estado:** implementada.
+
+El backend dispone de un read-model tipado de 21 campos con una fila por `Analysis`. Consulta los
+análisis por rango calendario peruano, conserva el orden `createdAt ASC, analysisId ASC`, incorpora
+estados no terminales y `FAILED`, usa el perfil actual del usuario y deriva el origen histórico desde
+`sessionId`.
+
+Los resultados `analysis-result/1.0` y `analysis-result/2.0` se leen mediante el lector versionado.
+Las modalidades, aplicabilidad y conclusión reutilizan la presentación F1.7; el campo de reporte se
+ensambla con el contexto y disclaimer históricos y se renderiza a texto plano determinista. La carga
+de usuarios, resultados, contextos, disclaimers y existencia de guidance se realiza en batch.
+
+Esta fase no agrega endpoint, CSV, generación física de PDF, Angular, tablas, índices ni migraciones.
+El perfil mostrado es el vigente al construir el dataset porque no existe snapshot por análisis.
+
+## F1.10A2 — CSV y endpoint ADMIN
+
+**Estado:** pendiente.
+
+## F1.10A3 — Descarga Angular ADMIN
+
+**Estado:** pendiente.
+
+F1.10A completa permanece pendiente hasta cerrar A2 y A3.
 
 ---
 

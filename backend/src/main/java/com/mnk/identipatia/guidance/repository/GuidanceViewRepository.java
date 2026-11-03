@@ -7,7 +7,9 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 public interface GuidanceViewRepository extends JpaRepository<GuidanceView, UUID> {
@@ -23,5 +25,12 @@ public interface GuidanceViewRepository extends JpaRepository<GuidanceView, UUID
             """, nativeQuery = true)
     int insertIfAbsent(UUID guidanceViewId, UUID analysisId, String protectionType,
             long guideVersion, Instant firstViewedAt);
+
+    @Query("""
+            select distinct view.analysisId
+            from GuidanceView view
+            where view.analysisId in :analysisIds
+            """)
+    Set<UUID> findDistinctAnalysisIdsByAnalysisIdIn(Collection<UUID> analysisIds);
 }
 
