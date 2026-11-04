@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -86,6 +86,19 @@ export class AdminAnalysisService {
     return this.http.get<AdminAnalysesPage>(`${this.endpoint}/admin/analyses`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       params
+    });
+  }
+
+  exportAll(from = '', to = '', accessToken = this.accessToken): Observable<HttpResponse<Blob>> {
+    const params: Record<string, string> = {};
+    if (from) params['from'] = from;
+    if (to) params['to'] = to;
+
+    return this.http.get(`${this.endpoint}/admin/analyses/export.csv`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      params,
+      observe: 'response',
+      responseType: 'blob'
     });
   }
 

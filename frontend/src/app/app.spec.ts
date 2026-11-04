@@ -57,6 +57,25 @@ describe('App', () => {
     request.flush({ content: [], page: 1, size: 5, totalElements: 0, totalPages: 0, first: false, last: true });
   });
 
+  it('should download the complete admin analysis CSV with date filters and bearer token', () => {
+    const service = TestBed.inject(AdminAnalysisService);
+    const httpTesting = TestBed.inject(HttpTestingController);
+
+    service.exportAll('2026-10-01', '2026-10-31', 'test-token').subscribe();
+
+    const request = httpTesting.expectOne(
+      req => req.url === `${environment.apiBaseUrl}/admin/analyses/export.csv`
+    );
+    expect(request.request.method).toBe('GET');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer test-token');
+    expect(request.request.params.get('from')).toBe('2026-10-01');
+    expect(request.request.params.get('to')).toBe('2026-10-31');
+    expect(request.request.responseType).toBe('blob');
+    request.flush(new Blob(['csv'], { type: 'text/csv' }), {
+      headers: { 'Content-Disposition': 'attachment; filename="identipat-analisis.csv"' }
+    });
+  });
+
   it('should fetch all report disclaimers with the admin bearer token', () => {
     const service = TestBed.inject(AdminReportDisclaimerService);
     const httpTesting = TestBed.inject(HttpTestingController);

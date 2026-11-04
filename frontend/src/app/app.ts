@@ -72,6 +72,7 @@ export class App {
   readonly analysisSearch = signal('');
   readonly analysisFrom = signal('');
   readonly analysisTo = signal('');
+  readonly downloadingAnalyses = signal(false);
   readonly analysisTotalPages = signal(0);
   readonly analysisTotalElements = signal(0);
   readonly latestReportDisclaimer = signal<ReportDisclaimer | null>(null);
@@ -1529,31 +1530,41 @@ export class App {
   }
 
   downloadAnalysesCsv(): void {
-    const headers = ['ID de análisis', 'Fecha', 'Estado', 'Nombres', 'Apellidos', 'Tipo doc.', 'Documento', 'Entrada', 'Conclusión', 'Modalidades identificadas', 'Origen', 'Orientación consultada'];
-    const rows = this.analyses().map(analysis => [
-      analysis.analysisId,
-      analysis.createdAt,
-      this.analysisStatusLabel(analysis.status),
-      analysis.firstName,
-      analysis.lastNames,
-      analysis.doiType,
-      analysis.doi,
-      analysis.inputType,
-      analysis.conclusion ?? '',
-      analysis.identifiedModalities.join(', '),
-      analysis.analysisOrigin,
-      analysis.guidanceConsulted ? 'Sí' : 'No'
-    ]);
-    const csv = '\uFEFF' + [headers, ...rows]
-      .map(row => row.map(value => this.csvCell(value)).join(','))
-      .join('\r\n');
-    const link = this.document.createElement('a');
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    if (this.downloadingAnalyses()) {
+      return;
+    }
 
-    link.href = url;
-    link.download = `predicciones-${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    this.downloadingAnalyses.set(true);
+    this.analysesError.set('');
+    this.adminAnalysisService.exportAll(
+      this.analysisFrom(),
+      this.analysisTo(),
+      this.userService.getAccessToken()
+    ).subscribe({
+      next: response => {
+        const blob = response.body;
+        if (!blob) {
+          this.analysesError.set('No se pudo descargar el CSV de análisis.');
+          this.downloadingAnalyses.set(false);
+          return;
+        }
+
+        const filename = response.headers.get('Content-Disposition')
+          ?.match(/filename="?([^";]+)"?/i)?.[1]
+          ?? `identipat-analisis-${new Date().toISOString().slice(0, 10)}.csv`;
+        const url = URL.createObjectURL(blob);
+        const link = this.document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(url));
+        this.downloadingAnalyses.set(false);
+      },
+      error: () => {
+        this.analysesError.set('No se pudo descargar el CSV de análisis.');
+        this.downloadingAnalyses.set(false);
+      }
+    });
   }
 
   private createOrientationEditorState(): OrientationEditorState {
@@ -1729,11 +1740,6 @@ export class App {
         this.downloadingUsers.set(false);
       }
     });
-  }
-
-  private csvCell(value: string): string {
-    const safeValue = /^[=+\-@]/.test(value) ? `'${value}` : value;
-    return `"${safeValue.replace(/"/g, '""')}"`;
   }
 
   analysisStatusLabel(status: AnalysisStatus): string {
