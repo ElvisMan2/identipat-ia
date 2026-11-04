@@ -59,7 +59,7 @@ public class OperationalAnalysisQueryService {
             OperationalAnalysisListCriteria criteria) {
         Objects.requireNonNull(criteria, "criteria must not be null");
         Page<Analysis> analyses = analysisRepository.findAll(
-                OperationalAnalysisSpecifications.matching(criteria), criteria.toPageable());
+                OperationalAnalysisSpecifications.matching(criteria.filters()), criteria.toPageable());
         if (analyses.isEmpty()) {
             return new PagedResponse<>(
                     java.util.List.of(),

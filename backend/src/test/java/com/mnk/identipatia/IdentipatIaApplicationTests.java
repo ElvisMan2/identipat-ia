@@ -217,6 +217,7 @@ class IdentipatIaApplicationTests {
         assertThat(api.at("/paths/~1admin~1protection-guides~1{guideId}~1activate/post").isMissingNode())
                 .isFalse();
         assertThat(api.at("/paths/~1admin~1analyses/get").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1admin~1analyses~1export.csv/get").isMissingNode()).isFalse();
 
         assertThat(api.at("/paths/~1users~1identify/post/security").isMissingNode()).isTrue();
         assertThat(api.at("/paths/~1users/post/security").isMissingNode()).isTrue();
@@ -243,6 +244,23 @@ class IdentipatIaApplicationTests {
         assertThat(api.at("/paths/~1admin~1analyses/get/responses/401").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1admin~1analyses/get/responses/403").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1admin~1analyses/get/responses/500").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1admin~1analyses~1export.csv/get/security/0/bearerAuth")
+                .isMissingNode()).isFalse();
+        JsonNode analysisExportParameters = api.at(
+                "/paths/~1admin~1analyses~1export.csv/get/parameters");
+        assertThat(analysisExportParameters).extracting(parameter -> parameter.path("name").asText())
+                .containsExactlyInAnyOrder(
+                        "search", "from", "to", "status", "origin", "inputType", "sort");
+        assertThat(api.at("/paths/~1admin~1analyses~1export.csv/get/responses/200/content/text~1csv/schema/type")
+                .asText()).isEqualTo("string");
+        assertThat(api.at("/paths/~1admin~1analyses~1export.csv/get/responses/200/headers/Content-Disposition")
+                .isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1admin~1analyses~1export.csv/get/responses/200/headers/Cache-Control")
+                .isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1admin~1analyses~1export.csv/get/responses/400").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1admin~1analyses~1export.csv/get/responses/401").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1admin~1analyses~1export.csv/get/responses/403").isMissingNode()).isFalse();
+        assertThat(api.at("/paths/~1admin~1analyses~1export.csv/get/responses/500").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1users~1export/get/security/0/bearerAuth").isMissingNode()).isFalse();
         assertThat(api.at("/paths/~1users~1export/get/responses/200/content/text~1csv/schema/type").asText())
                 .isEqualTo("string");

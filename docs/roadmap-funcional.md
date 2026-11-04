@@ -40,6 +40,7 @@ La estabilización técnica F0 está completada. El backend también materializa
 | F1.10A1 | Dataset operacional backend de análisis | ✅ Implementada |
 | F1.10A2 | Serialización y endpoint CSV ADMIN | ✅ Implementada |
 | F1.10A2B | API paginada administrativa de análisis | ✅ Implementada |
+| F1.10A2C | Filtros y orden compartidos entre tabla y CSV | ✅ Implementada |
 | F1.10A3 | Tabla y descarga CSV en Angular ADMIN | ⏳ Pendiente |
 | F2 | Preparación para piloto y producción | ⏳ Pendiente |
 
@@ -599,8 +600,8 @@ El perfil mostrado es el vigente al construir el dataset porque no existe snapsh
 
 **Estado:** implementada.
 
-El endpoint `GET /admin/analyses/export.csv` reutiliza exclusivamente el dataset A1 y admite filtros
-opcionales `from`/`to`. La respuesta ADMIN-only contiene las 21 columnas contractuales, UTF-8 BOM,
+El endpoint `GET /admin/analyses/export.csv` reutiliza exclusivamente el dataset A1. La respuesta
+ADMIN-only contiene las 21 columnas contractuales, UTF-8 BOM,
 registros CRLF, quoting y escape deterministas, protección contra formula injection, nombres de archivo
 según el rango y `Cache-Control: no-store, private`. No se agregó ownership por análisis, acceso
 STANDARD, consulta por fila, migración ni cambio Angular.
@@ -617,12 +618,25 @@ la página se enriquecen en batch con usuarios, resultados V1/V2 y existencia de
 presentación de conclusión y modalidades fue extraída como pieza compartida con A1, preservando
 OTHER y el contrato CSV A2 de 21 columnas.
 
+## F1.10A2C — Filtros y orden compartidos para CSV
+
+**Estado:** implementada.
+
+`GET /admin/analyses/export.csv` admite `search`, `from`, `to`, `status`, `origin`, `inputType` y
+`sort`, pero no `page/size`. Tabla y exportación comparten normalización, validación y
+`OperationalAnalysisSpecifications`; la tabla usa `Specification + Pageable` y el CSV
+`Specification + Sort`, por lo que exporta todo el conjunto lógico filtrado en el mismo orden global.
+Sin sort mantiene `createdAt ASC, analysisId ASC` por compatibilidad con A2; A3 enviará el sort activo
+de la tabla, incluido `createdAt,desc` cuando corresponda. El enrichment completo y las 21 columnas A1
+permanecen intactos.
+
 ## F1.10A3 — Tabla y descarga Angular ADMIN
 
 **Estado:** pendiente.
 
 Angular deberá consumir `GET /admin/analyses` para filtros, tabla, paginación y ordenamiento, y
-`GET /admin/analyses/export.csv` para la descarga completa. A2B no implementa frontend.
+`GET /admin/analyses/export.csv` para la descarga completa, enviando siempre el mismo estado de filtros
+y orden activo. A2C no implementa frontend.
 
 F1.10A completa permanece pendiente hasta cerrar A3.
 

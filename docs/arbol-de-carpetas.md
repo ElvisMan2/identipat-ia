@@ -40,16 +40,19 @@ identipat-ia/
 │   │   │   │   │   ├── model/
 │   │   │   │   │   ├── repository/
 │   │   │   │   │   └── service/
-│   │   │   │   ├── reporting/          # Reporte F1.7, CSV A1/A2 y consulta paginada A2B
+│   │   │   │   ├── reporting/          # Reporte F1.7 y reporting operacional A1/A2/A2B/A2C
 │   │   │   │   │   ├── controller/
 │   │   │   │   │   │   ├── AdminOperationalAnalysisController.java
 │   │   │   │   │   │   └── AdminOperationalAnalysisExportController.java
 │   │   │   │   │   ├── dto/            # DiagnosticReport y contratos HTTP
 │   │   │   │   │   │   ├── OperationalAnalysisListCriteria.java
 │   │   │   │   │   │   ├── OperationalAnalysisListItem.java
+│   │   │   │   │   │   ├── OperationalAnalysisExportCriteria.java
+│   │   │   │   │   │   ├── OperationalAnalysisFilters.java
 │   │   │   │   │   │   ├── OperationalAnalysisOrigin.java
 │   │   │   │   │   │   ├── OperationalAnalysisReportCriteria.java
 │   │   │   │   │   │   ├── OperationalAnalysisReportRow.java
+│   │   │   │   │   │   ├── OperationalAnalysisSort.java
 │   │   │   │   │   │   └── OperationalModalityApplicability.java
 │   │   │   │   │   ├── model/
 │   │   │   │   │   ├── repository/
@@ -150,11 +153,12 @@ identipat-ia/
 │   │           ├── ai/               # Contratos, prompts, schemas, config y adapter OpenAI
 │   │           ├── analysis/         # E2E, contratos, claim, retry, recovery y rechazo local
 │   │           ├── guidance/         # Catálogo, /guidance, tracking, seguridad y concurrencia
-│   │           ├── reporting/        # Reporte web/PDF, CSV A1/A2 y consulta paginada A2B
+│   │           ├── reporting/        # Reporte web/PDF y reporting operacional A1/A2/A2B/A2C
 │   │           │   ├── AdminOperationalAnalysisControllerWebMvcTest.java
 │   │           │   ├── AdminOperationalAnalysisExportControllerWebMvcTest.java
 │   │           │   ├── OperationalAnalysisCsvExporterTest.java
 │   │           │   ├── OperationalAnalysisDatasetIntegrationTest.java
+│   │           │   ├── OperationalAnalysisExportCriteriaTest.java
 │   │           │   ├── OperationalAnalysisListCriteriaTest.java
 │   │           │   ├── OperationalAnalysisQueryIntegrationTest.java
 │   │           │   └── OperationalAnalysisResultPresenterTest.java

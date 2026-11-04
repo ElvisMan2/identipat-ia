@@ -5,7 +5,7 @@ import com.mnk.identipatia.config.JwtAuthenticationFilter;
 import com.mnk.identipatia.config.SecurityConfig;
 import com.mnk.identipatia.repository.UserRepository;
 import com.mnk.identipatia.reporting.controller.AdminOperationalAnalysisExportController;
-import com.mnk.identipatia.reporting.dto.OperationalAnalysisReportCriteria;
+import com.mnk.identipatia.reporting.dto.OperationalAnalysisExportCriteria;
 import com.mnk.identipatia.reporting.service.OperationalAnalysisCsvExporter;
 import com.mnk.identipatia.reporting.service.OperationalAnalysisDatasetException;
 import com.mnk.identipatia.reporting.service.OperationalAnalysisDatasetService;
@@ -52,28 +52,34 @@ class AdminOperationalAnalysisExportControllerWebMvcTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void adminExportsDatasetWithFiltersHeadersAndNoCsrf() throws Exception {
-        when(datasetService.build(any())).thenReturn(List.of());
+        when(datasetService.build(any(OperationalAnalysisExportCriteria.class))).thenReturn(List.of());
         when(csvExporter.export(List.of())).thenReturn(CSV);
 
         mockMvc.perform(get("/admin/analyses/export.csv")
+                        .param("search", "  JOSE   zuniga ")
                         .param("from", "2026-10-01")
-                        .param("to", "2026-10-31"))
+                        .param("to", "2026-10-31")
+                        .param("status", "completed")
+                        .param("origin", "standard")
+                        .param("inputType", "pdf")
+                        .param("sort", "status,desc"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("text/csv;charset=UTF-8"))
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"identipat-analisis_2026-10-01_2026-10-31.csv\""))
+                        "attachment; filename=\"identipat-analisis_2026-10-01_2026-10-31_filtrado.csv\""))
                 .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store, private"))
                 .andExpect(content().bytes(CSV));
 
-        verify(datasetService).build(new OperationalAnalysisReportCriteria(
-                LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31)));
+        verify(datasetService).build(OperationalAnalysisExportCriteria.of(
+                "  JOSE   zuniga ", LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31),
+                "completed", "standard", "pdf", "status,desc"));
         verify(csvExporter).export(List.of());
     }
 
     @Test
     @WithMockUser(roles = "ADMIN")
     void filenameCoversAllOptionalFilterCombinations() throws Exception {
-        when(datasetService.build(any())).thenReturn(List.of());
+        when(datasetService.build(any(OperationalAnalysisExportCriteria.class))).thenReturn(List.of());
         when(csvExporter.export(any())).thenReturn(CSV);
 
         assertFilename("", "identipat-analisis_completo.csv");
@@ -81,6 +87,33 @@ class AdminOperationalAnalysisExportControllerWebMvcTest {
         assertFilename("?to=2026-10-31", "identipat-analisis_hasta_2026-10-31.csv");
         assertFilename("?from=2026-10-01&to=2026-10-31",
                 "identipat-analisis_2026-10-01_2026-10-31.csv");
+        assertFilename("?status=COMPLETED", "identipat-analisis_filtrado.csv");
+        assertFilename("?search=jose&from=2026-10-01",
+                "identipat-analisis_desde_2026-10-01_filtrado.csv");
+        assertFilename("?to=2026-10-31&origin=ADMIN&inputType=TEXT",
+                "identipat-analisis_hasta_2026-10-31_filtrado.csv");
+        assertFilename("?sort=createdAt,desc", "identipat-analisis_completo.csv");
+        assertFilename("?search=", "identipat-analisis_completo.csv");
+        mockMvc.perform(get("/admin/analyses/export.csv").param("search", "   "))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"identipat-analisis_completo.csv\""));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void legacyRequestWithoutParametersUsesAscendingCriteriaAndReturnsEmptyCsvNormally() throws Exception {
+        when(datasetService.build(any(OperationalAnalysisExportCriteria.class))).thenReturn(List.of());
+        when(csvExporter.export(List.of())).thenReturn(CSV);
+
+        mockMvc.perform(get("/admin/analyses/export.csv"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"identipat-analisis_completo.csv\""))
+                .andExpect(content().bytes(CSV));
+
+        verify(datasetService).build(OperationalAnalysisExportCriteria.of(
+                null, null, null, null, null, null, null));
     }
 
     @Test
@@ -135,8 +168,19 @@ class AdminOperationalAnalysisExportControllerWebMvcTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
+    void invalidDomainFiltersAndSortReturnControlledBadRequests() throws Exception {
+        assertInvalidQuery("status", "UNKNOWN");
+        assertInvalidQuery("origin", "CUSTOMER");
+        assertInvalidQuery("inputType", "IMAGE");
+        assertInvalidQuery("sort", "password,asc");
+        assertInvalidQuery("sort", "createdAt,up");
+        assertInvalidQuery("sort", "createdAt");
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
     void structuralDatasetFailureReturnsJson500WithoutPartialCsvOrInternalMessage() throws Exception {
-        when(datasetService.build(any())).thenThrow(
+        when(datasetService.build(any(OperationalAnalysisExportCriteria.class))).thenThrow(
                 new OperationalAnalysisDatasetException("internal analysisId=secret"));
 
         mockMvc.perform(get("/admin/analyses/export.csv"))
@@ -152,5 +196,12 @@ class AdminOperationalAnalysisExportControllerWebMvcTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=\"" + filename + "\""));
+    }
+
+    private void assertInvalidQuery(String parameter, String value) throws Exception {
+        mockMvc.perform(get("/admin/analyses/export.csv").param(parameter, value))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType("application/json"))
+                .andExpect(jsonPath("$.code").value("INVALID_ANALYSIS_QUERY"));
     }
 }

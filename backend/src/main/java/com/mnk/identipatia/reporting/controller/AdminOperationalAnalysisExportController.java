@@ -1,7 +1,6 @@
 package com.mnk.identipatia.reporting.controller;
 
-import com.mnk.identipatia.exception.ApiException;
-import com.mnk.identipatia.reporting.dto.OperationalAnalysisReportCriteria;
+import com.mnk.identipatia.reporting.dto.OperationalAnalysisExportCriteria;
 import com.mnk.identipatia.reporting.service.OperationalAnalysisCsvExporter;
 import com.mnk.identipatia.reporting.service.OperationalAnalysisDatasetService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,7 +16,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -49,7 +47,7 @@ public class AdminOperationalAnalysisExportController {
     @Operation(
             summary = "Exportar reporte operacional de análisis",
             description = "Exporta el dataset operacional de análisis en CSV UTF-8 con BOM, "
-                    + "opcionalmente filtrado por fechas calendario de Perú.")
+                    + "con los mismos filtros y orden lógico de la tabla administrativa, sin paginación.")
     @SecurityRequirement(name = "bearerAuth")
     @ApiResponses({
             @ApiResponse(
@@ -63,7 +61,7 @@ public class AdminOperationalAnalysisExportController {
                     },
                     content = @Content(mediaType = "text/csv",
                             schema = @Schema(type = "string", format = "binary"))),
-            @ApiResponse(responseCode = "400", description = "Formato o rango de fechas inválido",
+            @ApiResponse(responseCode = "400", description = "Parámetros de consulta inválidos",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = Map.class))),
             @ApiResponse(responseCode = "401", description = "JWT ausente o inválido"),
@@ -71,37 +69,49 @@ public class AdminOperationalAnalysisExportController {
             @ApiResponse(responseCode = "500", description = "Inconsistencia interna del dataset")
     })
     public ResponseEntity<byte[]> export(
+            @Parameter(description = "Términos de usuario combinados con AND", example = "jose zuniga")
+            @RequestParam(required = false) String search,
             @Parameter(description = "Fecha inicial inclusiva en formato YYYY-MM-DD", example = "2026-10-01")
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @Parameter(description = "Fecha final inclusiva en formato YYYY-MM-DD", example = "2026-10-31")
             @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        if (from != null && to != null && from.isAfter(to)) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_DATE_RANGE",
-                    "from must not be after to");
-        }
-
-        OperationalAnalysisReportCriteria criteria = new OperationalAnalysisReportCriteria(from, to);
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @Parameter(description = "RECEIVED, PREPROCESSING, ANALYZING, COMPLETED o FAILED")
+            @RequestParam(required = false) String status,
+            @Parameter(description = "STANDARD o ADMIN")
+            @RequestParam(required = false) String origin,
+            @Parameter(description = "TEXT, PDF o AUDIO")
+            @RequestParam(required = false) String inputType,
+            @Parameter(description = "field,direction; campos: createdAt, status, inputType, analysisId",
+                    example = OperationalAnalysisExportCriteria.DEFAULT_SORT)
+            @RequestParam(required = false) String sort) {
+        OperationalAnalysisExportCriteria criteria = OperationalAnalysisExportCriteria.of(
+                search, from, to, status, origin, inputType, sort);
         byte[] csv = csvExporter.export(datasetService.build(criteria));
         return ResponseEntity.ok()
                 .contentType(CSV_MEDIA_TYPE)
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        ContentDisposition.attachment().filename(filename(from, to)).build().toString())
+                        ContentDisposition.attachment().filename(filename(criteria)).build().toString())
                 .cacheControl(CacheControl.noStore().cachePrivate())
                 .body(csv);
     }
 
-    private static String filename(LocalDate from, LocalDate to) {
+    private static String filename(OperationalAnalysisExportCriteria criteria) {
+        LocalDate from = criteria.from();
+        LocalDate to = criteria.to();
+        String suffix = criteria.hasAdditionalFilters() ? "_filtrado" : "";
         if (from != null && to != null) {
-            return "identipat-analisis_" + from + "_" + to + ".csv";
+            return "identipat-analisis_" + from + "_" + to + suffix + ".csv";
         }
         if (from != null) {
-            return "identipat-analisis_desde_" + from + ".csv";
+            return "identipat-analisis_desde_" + from + suffix + ".csv";
         }
         if (to != null) {
-            return "identipat-analisis_hasta_" + to + ".csv";
+            return "identipat-analisis_hasta_" + to + suffix + ".csv";
         }
-        return "identipat-analisis_completo.csv";
+        return criteria.hasAdditionalFilters()
+                ? "identipat-analisis_filtrado.csv"
+                : "identipat-analisis_completo.csv";
     }
 }
