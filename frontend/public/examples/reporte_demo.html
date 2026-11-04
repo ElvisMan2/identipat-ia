@@ -1,0 +1,473 @@
+
+
+<body>
+
+
+<main id="page" class="page">
+  <section class="hero">
+    <div class="hero-main">
+      <div class="hero-left">
+        <h1 id="report-title"></h1>
+        <p class="lead">Consulta el diagnóstico y la orientación institucional asociada a las modalidades identificadas.</p>
+      </div>
+    </div>
+    <div class="meta-stats two">
+      <div class="meta-item">
+        <span>Fecha de análisis:</span>
+        <strong id="completed-at"></strong>
+      </div>
+      <div class="meta-item">
+        <span>Modalidades identificadas</span>
+        <strong id="modalities-count"></strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="summary-card">
+    <div class="summary-content">
+      <div class="summary-kicker">Resumen</div>
+      <p id="report-summary"></p>
+    </div>
+  </section>
+
+  <div id="modalities-grid" class="modalities-grid"></div>
+
+  <section id="complementary-section" class="context-section" hidden>
+    <div class="section-head-title">
+      <h2>Información complementaria del diagnóstico</h2>
+    </div>
+    <div id="complementary-grid" class="context-grid"></div>
+  </section>
+
+  <section id="observations-section" class="context-card observation" hidden>
+    <h3>Aspectos a considerar</h3>
+    <ul id="observations-list"></ul>
+  </section>
+
+  <section id="warnings-section" class="context-card warning" hidden>
+    <h3>Advertencias del caso</h3>
+    <ul id="warnings-list"></ul>
+  </section>
+
+  <section id="disclaimer-section" class="disclaimer-card">
+    <h2 id="disclaimer-title"></h2>
+    <p id="disclaimer-content"></p>
+    <div id="disclaimer-version" class="disclaimer-version"></div>
+  </section>
+
+</main>
+
+<script>
+const sampleReportResponse = {
+  "reportVersion": "diagnostic-report/1.0",
+  "analysisId": "2b0fd60d-8a63-4f30-9a08-b1710f8f1808",
+  "sourceResultVersion": "analysis-result/2.0",
+  "inputType": "TEXT",
+  "analysisCompletedAt": "2026-10-29T21:05:18Z",
+  "title": "Reporte de diagnóstico de propiedad intelectual",
+  "summary": "La descripción presenta elementos funcionales, visuales, distintivos y creativos que pueden relacionarse con más de una modalidad de protección. El mecanismo de apertura y sujeción se relaciona claramente con modelo de utilidad; la apariencia exterior con diseño industrial; la denominación KUMAY y su logotipo con signo distintivo; y los activos creativos de la aplicación podrían corresponder a derecho de autor.",
+  "applicabilityNote": "La relación indicada describe qué tan directamente los elementos descritos encajan con cada modalidad. No representa una probabilidad de registro, concesión o reconocimiento de derechos.",
+  "protectionOptions": [
+    {
+      "type": "UTILITY_MODEL",
+      "name": "Modelo de utilidad",
+      "relationshipQuestion": "¿Qué parte de tu creación podría proteger?",
+      "applicability": "LIKELY",
+      "applicabilityLabel": "Se relaciona claramente",
+      "protectedSubjectMatter": "La configuración funcional y mecánica que permite abrir la botella con una mano y sujetarla mediante una pieza plegable.",
+      "rationale": "La descripción presenta una disposición concreta de elementos de un objeto que cumple una función práctica específica.",
+      "legalBasis": [
+        {
+          "instrument": "Decisión 486",
+          "articles": [
+            "Artículo 81"
+          ]
+        }
+      ],
+      "orientation": "Esta modalidad presenta una relación clara y puede considerarse una vía principal para una revisión especializada.",
+      "patentScreening": {
+        "title": "Revisión específica de la vía de modelo de utilidad",
+        "context": "Los artículos 15 y 20 corresponden a una revisión limitada de posibles exclusiones.",
+        "article15": {
+          "article": "Artículo 15",
+          "assessment": "NO_POTENTIAL_MATCH",
+          "assessmentLabel": "No se identifican coincidencias potenciales",
+          "rationale": "No se identifican elementos descritos que coincidan de manera potencial con las exclusiones revisadas.",
+          "matches": []
+        },
+        "article20": {
+          "article": "Artículo 20",
+          "assessment": "NO_POTENTIAL_MATCH",
+          "assessmentLabel": "No se identifican coincidencias potenciales",
+          "rationale": "No se identifican elementos descritos que coincidan de manera potencial con las exclusiones revisadas.",
+          "matches": []
+        },
+        "scopeNote": "Esta revisión se limita a los artículos 15 y 20 de la Decisión 486 y no evalúa novedad, nivel inventivo, aplicación industrial ni registrabilidad."
+      },
+      "geneticResourceAccess": null
+    },
+    {
+      "type": "INDUSTRIAL_DESIGN",
+      "name": "Diseño industrial",
+      "relationshipQuestion": "¿Qué parte de tu creación podría proteger?",
+      "applicability": "LIKELY",
+      "applicabilityLabel": "Se relaciona claramente",
+      "protectedSubjectMatter": "La apariencia exterior particular de la botella, incluyendo su forma, relieve y configuración visual.",
+      "rationale": "Se describen rasgos externos concretos que diferencian visualmente el producto.",
+      "legalBasis": [
+        {
+          "instrument": "Decisión 486",
+          "articles": [
+            "Artículo 113"
+          ]
+        }
+      ],
+      "orientation": "La apariencia descrita se relaciona claramente con esta modalidad.",
+      "patentScreening": null,
+      "geneticResourceAccess": null
+    },
+    {
+      "type": "DISTINCTIVE_SIGN",
+      "name": "Signo distintivo",
+      "relationshipQuestion": "¿Qué parte de tu creación podría proteger?",
+      "applicability": "LIKELY",
+      "applicabilityLabel": "Se relaciona claramente",
+      "protectedSubjectMatter": "El nombre KUMAY y el logotipo utilizados para distinguir el producto, su empaque y su comercialización.",
+      "rationale": "La denominación y el logotipo cumplen una función de identificación frente a otros productos o servicios.",
+      "legalBasis": [
+        {
+          "instrument": "Decisión 486",
+          "articles": [
+            "Artículo 134"
+          ]
+        }
+      ],
+      "orientation": "Esta modalidad presenta una relación clara con los elementos distintivos descritos.",
+      "patentScreening": null,
+      "geneticResourceAccess": null
+    },
+    {
+      "type": "COPYRIGHT",
+      "name": "Derecho de autor",
+      "relationshipQuestion": "¿Qué parte de tu creación podría proteger?",
+      "applicability": "POSSIBLE",
+      "applicabilityLabel": "Podría corresponder",
+      "protectedSubjectMatter": "Los textos, ilustraciones, iconos y otros elementos creativos desarrollados para la aplicación KUMAY.",
+      "rationale": "Se mencionan activos creativos de la aplicación, aunque la descripción no permite precisar el alcance de cada obra individual.",
+      "legalBasis": [
+        {
+          "instrument": "Decisión 351",
+          "articles": [
+            "Artículo 4"
+          ]
+        }
+      ],
+      "orientation": "Esta modalidad podría corresponder a los elementos creativos expresados y documentados.",
+      "patentScreening": null,
+      "geneticResourceAccess": null
+    }
+  ],
+  "patentScreening": null,
+  "geneticResourceAccess": {
+    "placement": "STANDALONE",
+    "assessment": "POTENTIALLY_REQUIRED",
+    "assessmentLabel": "Requiere revisión especializada",
+    "rationale": "La descripción menciona un recubrimiento experimental obtenido a partir de un extracto de una planta nativa peruana y no precisa el régimen de acceso aplicable.",
+    "missingInformation": [
+      "Origen específico del recurso biológico utilizado.",
+      "Documentación disponible sobre acceso al recurso.",
+      "Relación contractual con el proveedor del extracto."
+    ]
+  },
+  "historicalPatentability": null,
+  "observations": [
+    "La creación combina elementos que pueden relacionarse con distintas modalidades de protección."
+  ],
+  "warnings": [
+    "El prototipo fue presentado públicamente antes de realizar solicitudes de protección; esta circunstancia debe ser revisada por un especialista en las modalidades en las que resulte relevante.",
+    "Se mencionó la existencia de un signo similar denominado KUMAI; no se realizó una búsqueda registral dentro de este análisis."
+  ],
+  "scope": "Campo conservado por compatibilidad del contrato, pero no se renderiza en la experiencia F1.8.",
+  "disclaimer": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "version": 1,
+    "title": "Importante",
+    "content": "Este reporte constituye una guía complementaria basada en inteligencia artificial y tiene carácter orientativo. No reemplaza, bajo ninguna circunstancia, el juicio técnico, la evaluación experta ni las decisiones oficiales del personal examinador del Indecopi. Sus resultados deben interpretarse bajo el principio de supervisión humana."
+  }
+};
+const guidanceResponse = {
+  "guidanceVersion": "analysis-guidance/1.0",
+  "analysisId": "2b0fd60d-8a63-4f30-9a08-b1710f8f1808",
+  "resolvedAt": "2026-10-29T21:08:02Z",
+  "modalities": [
+    {
+      "protectionType": "UTILITY_MODEL",
+      "name": "Modelo de utilidad",
+      "applicability": "LIKELY",
+      "applicabilityLabel": "Se relaciona claramente",
+      "guideVersion": 1,
+      "shortDescription": "Protege mejoras en la forma o disposición de objetos que aportan una ventaja práctica.",
+      "nextSteps": {
+        "contentHtml": "<h3>Requisitos a preparar<\/h3>\n<ul>\n  <li>Plasma tu invención en un documento.<\/li>\n  <li>Prepara los dibujos que permitan identificar las piezas, su disposición y movimiento.<\/li>\n  <li>Identifica potenciales inventos similares.<\/li>\n<\/ul>\n<h3>Cómo avanzar<\/h3>\n<ol>\n  <li>Ingresa a nuestra web Patenta y entérate de nuestros programas y capacitaciones.<\/li>\n  <li>Participa en nuestro Programa Patenta.<\/li>\n  <li>Si tienes dudas, agenda una cita o acércate a nuestras plataformas de atención al ciudadano.<\/li>\n<\/ol>\n<h3>Recursos de orientación<\/h3>\n<ul>\n  <li><a href=\"https://www.patenta.pe/programa-patenta/\" target=\"_blank\" rel=\"noopener noreferrer\">Programa Patenta<\/a><\/li>\n  <li><a href=\"https://www.patenta.pe/2025/06/01/guia-de-patentes-para-investigadores/\" target=\"_blank\" rel=\"noopener noreferrer\">Guía de patentes<\/a><\/li>\n  <li><a href=\"https://www.patenta.pe/videos/?playlist=834ed03&amp;video=4ad21e2\" target=\"_blank\" rel=\"noopener noreferrer\">Videos<\/a><\/li>\n  <li><a href=\"https://www.patenta.pe/canales-de-atencion/\" target=\"_blank\" rel=\"noopener noreferrer\">Canales de atención<\/a><\/li>\n<\/ul>"
+      },
+      "lastVerifiedAt": "2026-10-29T18:00:00Z"
+    },
+    {
+      "protectionType": "INDUSTRIAL_DESIGN",
+      "name": "Diseño industrial",
+      "applicability": "LIKELY",
+      "applicabilityLabel": "Se relaciona claramente",
+      "guideVersion": 1,
+      "shortDescription": "Protege la apariencia particular de un producto, no su funcionamiento técnico.",
+      "nextSteps": {
+        "contentHtml": "<h3>Requisitos a preparar<\/h3>\n<ul>\n  <li>Prepara los dibujos que permitan identificar la apariencia particular de tu creación.<\/li>\n  <li>Identifica potenciales diseños similares.<\/li>\n<\/ul>\n<h3>Cómo avanzar<\/h3>\n<ol>\n  <li>Ingresa a nuestra web Patenta y entérate de nuestros programas y capacitaciones.<\/li>\n  <li>Participa en nuestro Programa de Protección de Diseños.<\/li>\n  <li>Si tienes dudas, agenda una cita o acércate a nuestras plataformas de atención al ciudadano.<\/li>\n<\/ol>\n<h3>Recursos de orientación<\/h3>\n<ul>\n  <li><a href=\"https://www.patenta.pe/ppd/\" target=\"_blank\" rel=\"noopener noreferrer\">Programa de Protección de Diseños<\/a><\/li>\n  <li><a href=\"https://www.patenta.pe/2025/03/26/guia-para-el-registro-de-disenos-industriales/\" target=\"_blank\" rel=\"noopener noreferrer\">Guía de Diseños Industriales<\/a><\/li>\n  <li><a href=\"https://www.patenta.pe/videos/?playlist=834ed03&amp;video=4ad21e2\" target=\"_blank\" rel=\"noopener noreferrer\">Videos<\/a><\/li>\n  <li><a href=\"https://www.patenta.pe/canales-de-atencion/\" target=\"_blank\" rel=\"noopener noreferrer\">Canales de atención<\/a><\/li>\n<\/ul>"
+      },
+      "lastVerifiedAt": "2026-10-29T18:00:00Z"
+    },
+    {
+      "protectionType": "DISTINCTIVE_SIGN",
+      "name": "Signo distintivo",
+      "applicability": "LIKELY",
+      "applicabilityLabel": "Se relaciona claramente",
+      "guideVersion": 1,
+      "shortDescription": "Protege signos que permiten distinguir productos o servicios en el mercado.",
+      "nextSteps": {
+        "contentHtml": "<h3>Requisitos a preparar<\/h3>\n<ul>\n  <li>Identifica la clase a la que pertenece tu marca.<\/li>\n  <li>Descarga los formularios actualizados.<\/li>\n<\/ul>\n<h3>Cómo avanzar<\/h3>\n<ol>\n  <li>Busca marcas similares a la tuya.<\/li>\n  <li>Si tienes dudas, agenda una cita o acércate a nuestras plataformas de atención al ciudadano.<\/li>\n<\/ol>\n<h3>Recursos de orientación<\/h3>\n<ul>\n  <li><a href=\"https://servicio.indecopi.gob.pe/appNIZAWeb/index.seam#\" target=\"_blank\" rel=\"noopener noreferrer\">Clasificador<\/a><\/li>\n  <li><a href=\"https://pi.indecopi.gob.pe/buscatumarca/#/inicio\" target=\"_blank\" rel=\"noopener noreferrer\">Busca tu marca<\/a><\/li>\n  <li><a href=\"https://www.gob.pe/333-registrar-la-marca-de-producto-o-servicio-de-tu-negocio-en-indecopi\" target=\"_blank\" rel=\"noopener noreferrer\">Inicia tu trámite<\/a><\/li>\n  <li><a href=\"https://repositorio.indecopi.gob.pe/backend/api/core/bitstreams/febd2efd-4d3e-4887-866a-7ed43cbfcd6a/content\" target=\"_blank\" rel=\"noopener noreferrer\">Guía sobre Signos Distintivos<\/a><\/li>\n  <li><a href=\"https://www.gob.pe/institucion/indecopi/contacto-y-numeros-de-emergencias\" target=\"_blank\" rel=\"noopener noreferrer\">Canales de atención<\/a><\/li>\n<\/ul>"
+      },
+      "lastVerifiedAt": "2026-10-29T18:00:00Z"
+    },
+    {
+      "protectionType": "COPYRIGHT",
+      "name": "Derecho de autor",
+      "applicability": "POSSIBLE",
+      "applicabilityLabel": "Podría corresponder",
+      "guideVersion": 1,
+      "shortDescription": "Protege la expresión original de obras creativas, textos, ilustraciones y programas de ordenador.",
+      "nextSteps": {
+        "contentHtml": "<h3>Requisitos a preparar<\/h3>\n<ul>\n  <li>Identifica los componentes creativos que se desea documentar.<\/li>\n  <li>Organiza los archivos y versiones de la aplicación y sus contenidos.<\/li>\n  <li>Reúne la información de autoría y titularidad cuando corresponda.<\/li>\n<\/ul>\n<h3>Cómo avanzar<\/h3>\n<ol>\n  <li>Ingresa a la web de la Dirección de Derecho de Autor (DDA).<\/li>\n  <li>Sigue los pasos para iniciar tu solicitud.<\/li>\n  <li>Si tienes dudas, agenda una cita o acércate a nuestras plataformas de atención al ciudadano.<\/li>\n<\/ol>\n<h3>Recursos de orientación<\/h3>\n<ul>\n  <li><a href=\"https://www.gob.pe/83358-registrar-una-obra-en-el-indecopi\" target=\"_blank\" rel=\"noopener noreferrer\">Web de la DDA<\/a><\/li>\n  <li><a href=\"https://repositorio.indecopi.gob.pe/item/f2f6ee01-f83a-4d1e-b815-add1fbfdeec7\" target=\"_blank\" rel=\"noopener noreferrer\">Guía sobre Derecho de autor<\/a><\/li>\n  <li><a href=\"https://www.gob.pe/institucion/indecopi/contacto-y-numeros-de-emergencias\" target=\"_blank\" rel=\"noopener noreferrer\">Canales de atención<\/a><\/li>\n<\/ul>"
+      },
+      "lastVerifiedAt": "2026-10-29T18:00:00Z"
+    }
+  ]
+};
+
+let reportResponse;
+
+const INPUT_LABELS = {
+  TEXT: 'Texto',
+  PDF: 'PDF',
+  AUDIO: 'Audio'
+};
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function fmtDate(value) {
+  if (!value) return '';
+  return new Intl.DateTimeFormat('es-PE', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'America/Lima'
+  }).format(new Date(value));
+}
+
+function relationClass(applicability) {
+  if (applicability === 'POSSIBLE') return 'possible';
+  if (applicability === 'UNLIKELY') return 'unlikely';
+  return '';
+}
+
+function screeningHtml(screening) {
+  if (!screening) return '';
+  const article = a => a ? `
+    <div class="screening-article">
+      <strong>${escapeHtml(a.article || `Artículo ${a === screening.article15 ? '15' : '20'}`)} · ${escapeHtml(a.assessmentLabel || a.assessment)}</strong>
+      <p>${escapeHtml(a.rationale)}</p>
+      ${a.matches?.length ? `<ul>${a.matches.map(m => `<li><strong>${escapeHtml(m.literal)}</strong>: ${escapeHtml(m.rationale)}</li>`).join('')}</ul>` : ''}
+    </div>` : '';
+
+  return `
+    <div class="screening-box">
+      <h4>${escapeHtml(screening.title || 'Revisión de posibles exclusiones de patentabilidad')}</h4>
+      ${screening.context ? `<p>${escapeHtml(screening.context)}</p>` : ''}
+      <div class="screening-detail">
+        ${article(screening.article15)}
+        ${article(screening.article20)}
+      </div>
+      ${screening.scopeNote ? `<p class="scope-note">${escapeHtml(screening.scopeNote)}</p>` : ''}
+    </div>`;
+}
+
+function geneticHtml(genetic, embedded = false) {
+  if (!genetic) return '';
+  return `
+    <div class="${embedded ? 'screening-box' : ''}">
+      <h4>${escapeHtml(genetic.assessmentLabel || genetic.assessment)}</h4>
+      <p>${escapeHtml(genetic.rationale)}</p>
+      ${genetic.missingInformation?.length ? `
+        <p>Información faltante</p>
+        <ul>${genetic.missingInformation.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>` : ''}
+    </div>`;
+}
+
+function modalityCard(reportModality, guidanceModality, index) {
+  const geneticResourceAccess = reportModality.geneticResourceAccess ||
+    (index === 0 ? reportResponse.geneticResourceAccess : null);
+  const modalityNames = {
+    INVENTION_PATENT: 'Patente de invención',
+    UTILITY_MODEL: 'Modelo de utilidad',
+    INDUSTRIAL_DESIGN: 'Diseño industrial',
+    COPYRIGHT: 'Derecho de autor',
+    DISTINCTIVE_SIGN: 'Signo distintivo',
+    PLANT_BREEDER_CERTIFICATE: 'Certificado de obtentor',
+    TRADE_SECRET: 'Secreto empresarial'
+  };
+  const applicabilityLabels = {
+    LIKELY: 'Se relaciona claramente',
+    POSSIBLE: 'Podría corresponder',
+    UNLIKELY: 'No parece aplicable'
+  };
+
+  return `
+    <article>
+      <button type="button" data-card-trigger aria-expanded="${index === 0 ? 'true' : 'false'}" onclick="toggleCard(this)">
+        <div class="card-left">
+          <div class="card-info">
+            <div class="card-header-title-row">
+              <h3>${escapeHtml(reportModality.name || modalityNames[reportModality.type] || reportModality.type)}</h3>
+            </div>
+            ${guidanceModality?.shortDescription ? `<p class="short-description">${escapeHtml(guidanceModality.shortDescription)}</p>` : ''}
+          </div>
+        </div>
+        <div class="card-right">
+          <span class="badge-relation ${relationClass(reportModality.applicability)}">
+            <span class="badge-relation-dot"></span>
+            ${escapeHtml(reportModality.applicabilityLabel || applicabilityLabels[reportModality.applicability] || reportModality.applicability)}
+          </span>
+        </div>
+      </button>
+
+      <div data-card-content ${index === 0 ? '' : 'hidden'}>
+        <div class="diagnosis-panel">
+          <div class="diag-item">
+            <div class="diag-key">${escapeHtml(reportModality.relationshipQuestion || '¿Qué parte de tu creación podría proteger?')}</div>
+            <div class="diag-val"><p>${escapeHtml(reportModality.protectedSubjectMatter)}</p></div>
+          </div>
+
+          <div class="diag-item">
+            <div class="diag-key">¿Por qué se identificó?</div>
+            <div class="diag-val"><p>${escapeHtml(reportModality.rationale)}</p></div>
+          </div>
+
+          ${reportModality.legalBasis?.length ? `
+          <div class="diag-item">
+            <div class="diag-key">Base legal</div>
+            <div class="diag-val">
+              <ul>${reportModality.legalBasis.map(basis => `<li>${escapeHtml(basis.instrument)}: ${basis.articles.map(article => escapeHtml(article)).join(', ')}</li>`).join('')}</ul>
+            </div>
+          </div>` : ''}
+
+          ${reportModality.orientation ? `
+          <div class="diag-item">
+            <div class="diag-key">Orientación diagnóstica</div>
+            <div class="diag-val"><p>${escapeHtml(reportModality.orientation)}</p></div>
+          </div>` : ''}
+
+          ${geneticResourceAccess ? `
+          <div class="diag-item full-width">
+            <div class="diag-key">Recursos genéticos</div>
+            <div class="diag-val">${geneticHtml(geneticResourceAccess, true)}</div>
+          </div>` : ''}
+        </div>
+      </div>
+    </article>`;
+}
+
+function renderComplementary() {
+  const cards = [];
+
+  if (reportResponse.patentScreening) {
+    cards.push(`
+      <article class="context-card full">
+        <h3>${escapeHtml(reportResponse.patentScreening.title || 'Revisión de patentabilidad')}</h3>
+        ${screeningHtml(reportResponse.patentScreening)}
+      </article>`);
+  }
+
+  if (reportResponse.historicalPatentability) {
+    cards.push(`
+      <article class="context-card full">
+        <h3>Antecedente histórico de patentabilidad</h3>
+        <p><strong>${escapeHtml(reportResponse.historicalPatentability.outcome)}</strong></p>
+        <p>${escapeHtml(reportResponse.historicalPatentability.rationale)}</p>
+      </article>`);
+  }
+
+  if (cards.length) {
+    document.getElementById('complementary-section').hidden = false;
+    document.getElementById('complementary-grid').innerHTML = cards.join('');
+  }
+}
+
+function renderListSection(sectionId, listId, values) {
+  if (!values?.length) return;
+  document.getElementById(sectionId).hidden = false;
+  document.getElementById(listId).innerHTML = values.map(x => `<li>${escapeHtml(x)}</li>`).join('');
+}
+
+function render() {
+  document.getElementById('report-title').textContent = reportResponse.title || 'Reporte de diagnóstico de propiedad intelectual';
+  document.getElementById('completed-at').textContent = fmtDate(reportResponse.analysisCompletedAt);
+  document.getElementById('modalities-count').textContent = String(reportResponse.protectionOptions.length);
+  document.getElementById('report-summary').textContent = reportResponse.summary;
+
+  const guidanceByType = new Map(guidanceResponse.modalities.map(x => [x.protectionType, x]));
+  document.getElementById('modalities-grid').innerHTML =
+    reportResponse.protectionOptions
+      .map((x, i) => modalityCard(x, guidanceByType.get(x.type), i))
+      .join('');
+
+  renderComplementary();
+  renderListSection('observations-section', 'observations-list', reportResponse.observations);
+  renderListSection('warnings-section', 'warnings-list', reportResponse.warnings);
+
+  const disclaimer = reportResponse.disclaimer;
+  document.getElementById('disclaimer-title').textContent = disclaimer?.title || 'Importante';
+  document.getElementById('disclaimer-content').textContent = disclaimer?.content || reportResponse.warnings?.[0] || '';
+  document.getElementById('disclaimer-version').textContent = disclaimer?.version ? `Versión institucional ${disclaimer.version}` : '';
+}
+
+function toggleCard(btn) {
+  const card = btn.closest('article');
+  const isExpanded = btn.getAttribute('aria-expanded') === 'true';
+  document.querySelectorAll('[data-card-trigger]').forEach(trigger => {
+    const item = trigger.closest('article');
+    const content = item.querySelector('[data-card-content]');
+    const shouldOpen = item === card && !isExpanded;
+    trigger.setAttribute('aria-expanded', String(shouldOpen));
+    content.hidden = !shouldOpen;
+  });
+}
+
+fetch('./analysis-result-v2.json')
+  .then(response => {
+    if (!response.ok) throw new Error(`No se pudo cargar analysis-result-v2.json (${response.status})`);
+    return response.json();
+  })
+  .then(data => {
+    reportResponse = data;
+    render();
+  })
+  .catch(error => {
+    console.error(error);
+    document.getElementById('modalities-grid').textContent = 'No se pudieron cargar los datos del reporte.';
+  });
+</script>
+</body>
+

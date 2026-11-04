@@ -56,6 +56,7 @@ export class App {
   private readonly legalDocumentService = inject(LegalDocumentService);
   private readonly csrfService = inject(CsrfService);
   private readonly defaultAdminPassword = 'admin';
+  private readonly useExampleAnalysis = true;
 
   readonly users = signal<User[]>([]);
   readonly userPage = signal(0);
@@ -1919,7 +1920,6 @@ export class App {
       return;
     }
 
-    const { description } = this.analysisForm.getRawValue();
     this.submittingAnalysis.set(true);
     this.analysisMessage.set('');
     this.analysisResult.set(null);
@@ -1927,6 +1927,12 @@ export class App {
     this.analysisGuidance.set(null);
     this.reportLoadError.set('');
 
+    if (this.useExampleAnalysis) {
+      this.loadExampleAnalysis(selectedPdf ? 'PDF' : selectedAudio ? 'AUDIO' : 'TEXT');
+      return;
+    }
+
+    const { description } = this.analysisForm.getRawValue();
     const adminAccessToken = this.adminAuthenticated() ? this.userService.getAccessToken() : '';
     const request = selectedPdf
       ? this.standardAnalysisService.createPdfAnalysis(selectedPdf, adminAccessToken)
@@ -1951,6 +1957,97 @@ export class App {
           return;
         }
         this.analysisMessage.set('No se pudo iniciar el análisis. Verifica tu sesión, consentimiento e intenta nuevamente.');
+      }
+    });
+  }
+
+  private loadExampleAnalysis(inputType: string): void {
+    const analysisId = 'example-analysis';
+    this.standardAnalysisService.getExampleResult().subscribe({
+      next: result => {
+        const now = new Date().toISOString();
+        this.analysisResult.set({
+          analysisId,
+          inputType,
+          status: 'COMPLETED',
+          createdAt: now,
+          startedAt: now,
+          completedAt: now,
+          failedAt: null,
+          result,
+          failure: null
+        });
+        this.diagnosticReport.set({
+          reportVersion: 'example',
+          analysisId,
+          sourceResultVersion: result.schemaVersion,
+          inputType,
+          analysisCompletedAt: now,
+          title: 'Reporte de análisis de ejemplo',
+          summary: result.summary,
+          applicabilityNote: 'Resultado de ejemplo para pruebas; no se ha consultado un modelo de IA.',
+          protectionOptions: result.protectionOptions.map(option => ({
+            type: option.type,
+            name: null,
+            relationshipQuestion: null,
+            applicability: option.applicability,
+            applicabilityLabel: null,
+            protectedSubjectMatter: option.protectedSubjectMatter,
+            rationale: option.rationale,
+            legalBasis: option.legalBasis.map(basis => ({
+              instrument: basis.instrument,
+              articles: basis.articles
+            })),
+            orientation: null,
+            patentScreening: null,
+            geneticResourceAccess: null
+          })),
+          patentScreening: {
+            title: 'Evaluación preliminar de exclusiones',
+            context: 'Ejemplo de evaluación basado en la descripción proporcionada.',
+            article15: {
+              article: 'Artículo 15',
+              assessment: result.patentScreening.article15.assessment,
+              assessmentLabel: result.patentScreening.article15.assessment,
+              rationale: result.patentScreening.article15.rationale,
+              matches: result.patentScreening.article15.matches as Array<{ literal: string; rationale: string }>
+            },
+            article20: {
+              article: 'Artículo 20',
+              assessment: result.patentScreening.article20.assessment,
+              assessmentLabel: result.patentScreening.article20.assessment,
+              rationale: result.patentScreening.article20.rationale,
+              matches: result.patentScreening.article20.matches as Array<{ literal: string; rationale: string }>
+            },
+            scopeNote: 'Ejemplo ilustrativo; requiere revisión profesional.'
+          },
+          geneticResourceAccess: {
+            placement: null,
+            assessment: result.geneticResourceAccess.assessment,
+            assessmentLabel: result.geneticResourceAccess.assessment,
+            rationale: result.geneticResourceAccess.rationale,
+            missingInformation: result.geneticResourceAccess.missingInformation
+          },
+          historicalPatentability: null,
+          observations: result.observations,
+          warnings: result.warnings,
+          scope: 'Datos estáticos de ejemplo; no se realizó análisis mediante IA.',
+          disclaimer: {
+            id: 'example',
+            version: 1,
+            title: 'Aviso de prueba',
+            content: 'Este reporte usa datos estáticos de ejemplo. No constituye asesoría legal.'
+          }
+        });
+        this.analysisGuidance.set(null);
+        this.submittingAnalysis.set(false);
+        this.analysisMessage.set('');
+        this.view.set('standard-result');
+        this.scrollToTop();
+      },
+      error: () => {
+        this.submittingAnalysis.set(false);
+        this.analysisMessage.set('No se pudo cargar el reporte de ejemplo.');
       }
     });
   }
@@ -2081,7 +2178,7 @@ export class App {
 
   downloadReportPdf(): void {
     const analysisId = this.analysisResult()?.analysisId;
-    if (!analysisId || this.downloadingReportPdf()) {
+    if (!analysisId || analysisId === 'example-analysis' || this.downloadingReportPdf()) {
       return;
     }
 

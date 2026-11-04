@@ -150,6 +150,10 @@ export class StandardAnalysisService {
   private readonly csrf = inject(CsrfService);
   private readonly endpoint = environment.apiBaseUrl;
 
+  getExampleResult(): Observable<AnalysisResult> {
+    return this.http.get<AnalysisResult>('/examples/analysis-result-v2.json');
+  }
+
   createTextAnalysis(description: string, accessToken = ''): Observable<AnalysisCreatedResponse> {
     if (accessToken) {
       return this.http.post<AnalysisCreatedResponse>(

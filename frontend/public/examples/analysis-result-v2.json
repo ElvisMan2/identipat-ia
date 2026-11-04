@@ -27,6 +27,18 @@
       ]
     },
     {
+      "type": "INDUSTRIAL_DESIGN",
+      "applicability": "UNLIKELY",
+      "protectedSubjectMatter": "La apariencia externa del dispositivo de riego, si cuenta con rasgos ornamentales nuevos y distinguibles de su función técnica.",
+      "rationale": "La descripción se centra en el funcionamiento del sistema y no aporta detalles suficientes sobre una apariencia particular que pudiera protegerse como diseño industrial.",
+      "legalBasis": [
+        {
+          "instrument": "DECISION_486",
+          "articles": ["113", "115"]
+        }
+      ]
+    },
+    {
       "type": "COPYRIGHT",
       "applicability": "LIKELY",
       "protectedSubjectMatter": "El código fuente, la documentación técnica y los elementos gráficos originales creados para el sistema.",
@@ -35,6 +47,30 @@
         {
           "instrument": "DECISION_351",
           "articles": ["3", "23"]
+        }
+      ]
+    },
+    {
+      "type": "DISTINCTIVE_SIGN",
+      "applicability": "UNLIKELY",
+      "protectedSubjectMatter": "Un nombre o logotipo original que identifique los productos o servicios asociados al sistema.",
+      "rationale": "No se proporcionó un nombre, logotipo ni otro signo distintivo concreto para evaluar.",
+      "legalBasis": [
+        {
+          "instrument": "DECISION_486",
+          "articles": ["134", "135"]
+        }
+      ]
+    },
+    {
+      "type": "PLANT_BREEDER_CERTIFICATE",
+      "applicability": "UNLIKELY",
+      "protectedSubjectMatter": "Una variedad vegetal nueva, homogénea, distinguible y estable, si la propuesta llegara a incluirla.",
+      "rationale": "La propuesta describe un sistema de riego y no una variedad vegetal desarrollada por el solicitante.",
+      "legalBasis": [
+        {
+          "instrument": "DECISION_345",
+          "articles": ["4", "7"]
         }
       ]
     },
@@ -56,18 +92,31 @@
     "article15": {
       "assessment": "NO_POTENTIAL_MATCH",
       "rationale": "Con la descripción resumida disponible no se identifica de forma evidente una exclusión de las categorías del artículo 15; la conclusión debe confirmarse con el texto técnico completo.",
-      "matches": []
+      "matches": [
+        {
+          "literal": "a",
+          "rationale": "No hay información suficiente para asociar la propuesta con esta categoría de exclusión."
+        }
+      ]
     },
     "article20": {
       "assessment": "NO_POTENTIAL_MATCH",
       "rationale": "La información proporcionada no permite identificar de forma evidente una exclusión del artículo 20. Se requiere revisar las reivindicaciones y el funcionamiento concreto de la propuesta.",
-      "matches": []
+      "matches": [
+        {
+          "literal": "a",
+          "rationale": "El ejemplo no permite identificar una correspondencia con esta exclusión."
+        }
+      ]
     }
   },
   "geneticResourceAccess": {
     "assessment": "NOT_INDICATED",
     "rationale": "La descripción no indica el uso de recursos genéticos ni de conocimientos tradicionales asociados.",
-    "missingInformation": []
+    "missingInformation": [
+      "Confirmar el origen de las semillas o especies vegetales eventualmente utilizadas en las pruebas.",
+      "Confirmar si se emplearon conocimientos tradicionales asociados a recursos genéticos."
+    ]
   },
   "observations": [
     "El ejemplo supone que el sistema incluye sensores de humedad, un controlador y un mecanismo de suministro de agua.",
