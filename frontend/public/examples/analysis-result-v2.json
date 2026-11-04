@@ -1,0 +1,79 @@
+{
+  "schemaVersion": "analysis-result/2.0",
+  "summary": "La propuesta describe un sistema de riego que ajusta el suministro de agua según la humedad medida en el suelo. Con la información disponible, podría evaluarse como una invención; se recomienda revisar los requisitos legales y realizar una búsqueda de antecedentes antes de tomar decisiones.",
+  "protectionOptions": [
+    {
+      "type": "INVENTION_PATENT",
+      "applicability": "POSSIBLE",
+      "protectedSubjectMatter": "El sistema y método de control de riego basado en mediciones de humedad del suelo.",
+      "rationale": "La propuesta parece describir una solución técnica, pero la novedad, el nivel inventivo y la aplicación industrial requieren un análisis más detallado.",
+      "legalBasis": [
+        {
+          "instrument": "DECISION_486",
+          "articles": ["14", "16", "18"]
+        }
+      ]
+    },
+    {
+      "type": "UTILITY_MODEL",
+      "applicability": "POSSIBLE",
+      "protectedSubjectMatter": "La configuración funcional de los componentes del dispositivo de control de riego, si aporta una ventaja técnica.",
+      "rationale": "Podría ser pertinente si la solución se materializa en una nueva forma o disposición de componentes que mejore su funcionamiento o utilidad.",
+      "legalBasis": [
+        {
+          "instrument": "DECISION_486",
+          "articles": ["81", "82"]
+        }
+      ]
+    },
+    {
+      "type": "COPYRIGHT",
+      "applicability": "LIKELY",
+      "protectedSubjectMatter": "El código fuente, la documentación técnica y los elementos gráficos originales creados para el sistema.",
+      "rationale": "La protección autoral puede cubrir la expresión original del software y de los materiales, pero no las ideas o métodos en sí mismos.",
+      "legalBasis": [
+        {
+          "instrument": "DECISION_351",
+          "articles": ["3", "23"]
+        }
+      ]
+    },
+    {
+      "type": "TRADE_SECRET",
+      "applicability": "POSSIBLE",
+      "protectedSubjectMatter": "Parámetros de calibración, procesos internos o información técnica no divulgada que tenga valor comercial.",
+      "rationale": "Esta vía depende de que la información sea secreta, tenga valor comercial por serlo y se proteja mediante medidas razonables de confidencialidad.",
+      "legalBasis": [
+        {
+          "instrument": "DECISION_486",
+          "articles": ["260", "262"]
+        }
+      ]
+    }
+  ],
+  "patentScreening": {
+    "applicable": true,
+    "article15": {
+      "assessment": "NO_POTENTIAL_MATCH",
+      "rationale": "Con la descripción resumida disponible no se identifica de forma evidente una exclusión de las categorías del artículo 15; la conclusión debe confirmarse con el texto técnico completo.",
+      "matches": []
+    },
+    "article20": {
+      "assessment": "NO_POTENTIAL_MATCH",
+      "rationale": "La información proporcionada no permite identificar de forma evidente una exclusión del artículo 20. Se requiere revisar las reivindicaciones y el funcionamiento concreto de la propuesta.",
+      "matches": []
+    }
+  },
+  "geneticResourceAccess": {
+    "assessment": "NOT_INDICATED",
+    "rationale": "La descripción no indica el uso de recursos genéticos ni de conocimientos tradicionales asociados.",
+    "missingInformation": []
+  },
+  "observations": [
+    "El ejemplo supone que el sistema incluye sensores de humedad, un controlador y un mecanismo de suministro de agua.",
+    "La protección disponible depende de los detalles técnicos, la jurisdicción y los antecedentes existentes."
+  ],
+  "warnings": [
+    "Ejemplo ilustrativo para desarrollo y pruebas; no constituye asesoría legal ni una determinación de registrabilidad."
+  ]
+}
