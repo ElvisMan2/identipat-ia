@@ -1,6 +1,6 @@
 # Matriz de autorización vigente — IDENTIPAT-IA
 
-**Estado verificado hasta:** F1.10A2B backend sobre F1.1B/F1.8D
+**Estado verificado hasta:** F1.10A2C backend sobre F1.1B/F1.8D
 **Última actualización:** 3 de noviembre de 2026
 
 Las rutas son relativas a `/identipat-ia`. Existen tres categorías separadas:
@@ -27,7 +27,7 @@ Las rutas son relativas a `/identipat-ia`. Existen tres categorías separadas:
 | `GET /analyses/{analysisId}/guidance` | `STANDARD_SESSION` propia **o** `ADMIN_JWT` propietario | Reutiliza `AnalysisAccessResolver`, solo acepta `COMPLETED` y resuelve el catálogo institucional ACTIVE vigente. |
 | `POST /analyses/{analysisId}/guidance/{protectionType}/view` | `STANDARD_SESSION` propia + `CSRF` | Registra idempotentemente la primera apertura del modal para una versión concreta. ADMIN se rechaza funcionalmente con `403 GUIDANCE_VIEW_STANDARD_ONLY`; un análisis ajeno responde `404`. |
 | `GET /admin/analyses` | `ADMIN_JWT` | Listado transversal paginado para la tabla administrativa. No usa ownership ni `AnalysisAccessResolver`; pagina y filtra en PostgreSQL, y por ser GET no requiere CSRF. |
-| `GET /admin/analyses/export.csv` | `ADMIN_JWT` | Exportación transversal del dataset operacional. No usa ownership, `AnalysisAccessResolver` ni fallback a cookie STANDARD; por ser GET no requiere CSRF. |
+| `GET /admin/analyses/export.csv` | `ADMIN_JWT` | Exportación transversal completa con los filtros/sort compartidos del listado, sin `page/size`. No usa ownership, `AnalysisAccessResolver` ni fallback a cookie STANDARD; por ser GET no requiere CSRF. |
 | `/admin/report-disclaimers/**` | `ADMIN_JWT` | Gobierno del disclaimer institucional. El actor de auditoría se deriva del JWT; no acepta identidad en el body. |
 | `/admin/protection-guides/**` | `ADMIN_JWT` | Gobierno del catálogo de orientación; creación, edición, clonado y activación auditan al actor del JWT. |
 | `POST /users/identify` | `PUBLIC` | Solo reconoce el registro; DNI/CE no autentica. |

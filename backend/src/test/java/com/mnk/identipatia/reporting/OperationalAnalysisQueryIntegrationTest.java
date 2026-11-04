@@ -291,6 +291,95 @@ class OperationalAnalysisQueryIntegrationTest {
                         .value(a2.getAnalysisId().toString()));
     }
 
+    @Test
+    void tablePagesAndCsvContainTheSameFullyFilteredSetInTheSameGlobalOrder() throws Exception {
+        User admin = user("Admin", "Exportador", null, "ADMIN-EQUIV", "admin-equiv@example.test");
+        admin.setUserType("ADMIN");
+        admin.setPassword("unused-for-jwt");
+        userRepository.saveAndFlush(admin);
+        User target = user(
+                "Equivalencia", "Compartida", "Filtros", "EQUIV-1", "equiv@example.test");
+        User other = user("Otro", "Usuario", null, "EQUIV-2", "other-equiv@example.test");
+        Instant base = Instant.parse("2026-11-03T10:00:00Z");
+
+        Analysis first = analysis(target, uuid(31), base, AnalysisStatus.COMPLETED,
+                AnalysisInputType.PDF, true);
+        storedResult(first, v2Result());
+        Analysis second = analysisWithStandardContext(
+                target, uuid(32), base.plusSeconds(1), AnalysisStatus.COMPLETED,
+                AnalysisInputType.PDF, first);
+        storedResult(second, v2Result());
+        Analysis third = analysisWithStandardContext(
+                target, uuid(33), base.plusSeconds(2), AnalysisStatus.COMPLETED,
+                AnalysisInputType.PDF, first);
+        storedResult(third, v2Result());
+        Analysis fourth = analysisWithStandardContext(
+                target, uuid(34), base.plusSeconds(2), AnalysisStatus.COMPLETED,
+                AnalysisInputType.PDF, first);
+        storedResult(fourth, v2Result());
+
+        Analysis wrongOrigin = analysis(target, uuid(35), base.plusSeconds(4),
+                AnalysisStatus.COMPLETED, AnalysisInputType.PDF, false);
+        storedResult(wrongOrigin, v2Result());
+        Analysis wrongInput = analysisWithStandardContext(
+                target, uuid(36), base.plusSeconds(5), AnalysisStatus.COMPLETED,
+                AnalysisInputType.AUDIO, first);
+        storedResult(wrongInput, v2Result());
+        analysisWithStandardContext(target, uuid(37), base.plusSeconds(6),
+                AnalysisStatus.RECEIVED, AnalysisInputType.PDF, first);
+        Analysis outsideDate = analysisWithStandardContext(
+                target, uuid(38), Instant.parse("2026-11-04T05:00:00Z"),
+                AnalysisStatus.COMPLETED, AnalysisInputType.PDF, first);
+        storedResult(outsideDate, v2Result());
+        Analysis wrongSearch = analysis(
+                other, uuid(39), base.plusSeconds(7), AnalysisStatus.COMPLETED,
+                AnalysisInputType.PDF, true);
+        storedResult(wrongSearch, v2Result());
+
+        String token = "Bearer " + jwtService.generateToken(admin.getDoi());
+        JsonNode page0 = response(get("/admin/analyses")
+                .param("page", "0").param("size", "2")
+                .param("search", "equivalencia compartida")
+                .param("from", "2026-11-03").param("to", "2026-11-03")
+                .param("status", "COMPLETED").param("origin", "STANDARD")
+                .param("inputType", "PDF").param("sort", "createdAt,desc")
+                .header(HttpHeaders.AUTHORIZATION, token));
+        JsonNode page1 = response(get("/admin/analyses")
+                .param("page", "1").param("size", "2")
+                .param("search", "equivalencia compartida")
+                .param("from", "2026-11-03").param("to", "2026-11-03")
+                .param("status", "COMPLETED").param("origin", "STANDARD")
+                .param("inputType", "PDF").param("sort", "createdAt,desc")
+                .header(HttpHeaders.AUTHORIZATION, token));
+
+        byte[] csvBytes = mockMvc.perform(get("/admin/analyses/export.csv")
+                        .param("search", "equivalencia compartida")
+                        .param("from", "2026-11-03").param("to", "2026-11-03")
+                        .param("status", "COMPLETED").param("origin", "STANDARD")
+                        .param("inputType", "PDF").param("sort", "createdAt,desc")
+                        .header(HttpHeaders.AUTHORIZATION, token))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string(HttpHeaders.CONTENT_DISPOSITION,
+                                "attachment; filename=\"identipat-analisis_2026-11-03_2026-11-03_filtrado.csv\""))
+                .andReturn().getResponse().getContentAsByteArray();
+
+        List<String> tableIds = java.util.stream.Stream.concat(
+                ids(page0).stream(), ids(page1).stream()).toList();
+        String csv = new String(csvBytes, java.nio.charset.StandardCharsets.UTF_8);
+        List<String> csvIds = csvAnalysisIds(csv);
+
+        assertThat(page0.path("totalElements").asLong()).isEqualTo(4);
+        assertThat(page0.path("totalPages").asInt()).isEqualTo(2);
+        assertThat(tableIds).containsExactly(
+                fourth.getAnalysisId().toString(), third.getAnalysisId().toString(),
+                second.getAnalysisId().toString(), first.getAnalysisId().toString());
+        assertThat(csvIds).containsExactlyElementsOf(tableIds);
+        assertThat(csv).contains("\"Equivalencia\"", "patente de invención")
+                .doesNotContain(wrongOrigin.getAnalysisId().toString(), wrongInput.getAnalysisId().toString(),
+                        outsideDate.getAnalysisId().toString(), wrongSearch.getAnalysisId().toString());
+    }
+
     private JsonNode response(org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request)
             throws Exception {
         String body = mockMvc.perform(request)
@@ -310,6 +399,13 @@ class OperationalAnalysisQueryIntegrationTest {
         return java.util.stream.StreamSupport.stream(
                         response.path("content").spliterator(), false)
                 .map(node -> node.path("analysisId").asText())
+                .toList();
+    }
+
+    private static List<String> csvAnalysisIds(String csv) {
+        return csv.lines()
+                .skip(1)
+                .map(line -> line.substring(1, line.indexOf('"', 1)))
                 .toList();
     }
 
@@ -370,6 +466,15 @@ class OperationalAnalysisQueryIntegrationTest {
             analysis.setFailedAt(createdAt.plusSeconds(1));
             analysis.setFailureCode("WORKER_PROCESSING_ERROR");
         }
+        return analysisRepository.saveAndFlush(analysis);
+    }
+
+    private Analysis analysisWithStandardContext(
+            User user, UUID id, Instant createdAt, AnalysisStatus status,
+            AnalysisInputType inputType, Analysis contextSource) {
+        Analysis analysis = analysis(user, id, createdAt, status, inputType, false);
+        analysis.setSessionId(contextSource.getSessionId());
+        analysis.setTermsAcceptanceId(contextSource.getTermsAcceptanceId());
         return analysisRepository.saveAndFlush(analysis);
     }
 

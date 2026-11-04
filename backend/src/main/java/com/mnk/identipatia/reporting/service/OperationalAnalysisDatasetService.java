@@ -14,12 +14,16 @@ import com.mnk.identipatia.analysis.result.v2.AnalysisResultV2;
 import com.mnk.identipatia.guidance.repository.GuidanceViewRepository;
 import com.mnk.identipatia.model.User;
 import com.mnk.identipatia.reporting.dto.DiagnosticReport;
+import com.mnk.identipatia.reporting.dto.OperationalAnalysisExportCriteria;
+import com.mnk.identipatia.reporting.dto.OperationalAnalysisFilters;
 import com.mnk.identipatia.reporting.dto.OperationalAnalysisOrigin;
 import com.mnk.identipatia.reporting.dto.OperationalAnalysisReportCriteria;
 import com.mnk.identipatia.reporting.dto.OperationalAnalysisReportRow;
+import com.mnk.identipatia.reporting.dto.OperationalAnalysisSort;
 import com.mnk.identipatia.reporting.model.AnalysisReportContext;
 import com.mnk.identipatia.reporting.model.ReportDisclaimer;
 import com.mnk.identipatia.reporting.repository.AnalysisReportContextRepository;
+import com.mnk.identipatia.reporting.repository.OperationalAnalysisSpecifications;
 import com.mnk.identipatia.reporting.repository.ReportDisclaimerRepository;
 import com.mnk.identipatia.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -78,8 +82,23 @@ public class OperationalAnalysisDatasetService {
     @Transactional(readOnly = true)
     public List<OperationalAnalysisReportRow> build(OperationalAnalysisReportCriteria criteria) {
         Objects.requireNonNull(criteria, "criteria must not be null");
-        List<Analysis> analyses = analysisRepository.findAllForOperationalReport(
-                criteria.fromInclusive(), criteria.toExclusive());
+        OperationalAnalysisFilters filters = new OperationalAnalysisFilters(
+                List.of(), criteria.from(), criteria.to(), null, null, null);
+        List<Analysis> analyses = analysisRepository.findAll(
+                OperationalAnalysisSpecifications.matching(filters),
+                OperationalAnalysisSort.of(null, OperationalAnalysisExportCriteria.DEFAULT_SORT).toSort());
+        return buildRows(analyses);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OperationalAnalysisReportRow> build(OperationalAnalysisExportCriteria criteria) {
+        Objects.requireNonNull(criteria, "criteria must not be null");
+        List<Analysis> analyses = analysisRepository.findAll(
+                OperationalAnalysisSpecifications.matching(criteria.filters()), criteria.toSort());
+        return buildRows(analyses);
+    }
+
+    private List<OperationalAnalysisReportRow> buildRows(List<Analysis> analyses) {
         if (analyses.isEmpty()) {
             return List.of();
         }

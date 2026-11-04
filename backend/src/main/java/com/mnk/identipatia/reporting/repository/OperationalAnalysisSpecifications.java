@@ -2,7 +2,7 @@ package com.mnk.identipatia.reporting.repository;
 
 import com.mnk.identipatia.analysis.model.Analysis;
 import com.mnk.identipatia.model.User;
-import com.mnk.identipatia.reporting.dto.OperationalAnalysisListCriteria;
+import com.mnk.identipatia.reporting.dto.OperationalAnalysisFilters;
 import com.mnk.identipatia.reporting.dto.OperationalAnalysisOrigin;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
@@ -20,7 +20,7 @@ public final class OperationalAnalysisSpecifications {
     private OperationalAnalysisSpecifications() {
     }
 
-    public static Specification<Analysis> matching(OperationalAnalysisListCriteria criteria) {
+    public static Specification<Analysis> matching(OperationalAnalysisFilters criteria) {
         return (root, query, builder) -> {
             List<Predicate> predicates = new ArrayList<>();
 

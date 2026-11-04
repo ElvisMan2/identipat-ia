@@ -608,8 +608,8 @@
           "request": {
             "method": "GET",
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
-            "url": "{{baseUrl}}/admin/analyses/export.csv?from={{reportFrom}}&to={{reportTo}}",
-            "description": "Descarga el reporte operacional de 21 columnas como CSV UTF-8 con BOM. Los filtros from/to (YYYY-MM-DD) son opcionales; elimínelos de la URL para exportar todo."
+            "url": "{{baseUrl}}/admin/analyses/export.csv?search=jose&from={{reportFrom}}&to={{reportTo}}&sort=createdAt,desc",
+            "description": "Descarga las 21 columnas para todo el conjunto filtrado, sin page/size. Comparte search, fechas America/Lima y sort con la tabla; A3 enviará siempre el sort activo."
           },
           "event": [{
             "listen": "test",
@@ -623,6 +623,24 @@
               ]
             }
           }]
+        },
+        {
+          "name": "Export operational analyses by status origin and input type",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/admin/analyses/export.csv?status=COMPLETED&origin=STANDARD&inputType=PDF&sort=status,asc",
+            "description": "Ejemplo CSV de filtros de dominio y orden estable. El nombre de archivo agrega _filtrado."
+          }
+        },
+        {
+          "name": "Export all operational analyses with legacy order",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "url": "{{baseUrl}}/admin/analyses/export.csv",
+            "description": "Sin sort conserva createdAt ASC, analysisId ASC y el filename identipat-analisis_completo.csv."
+          }
         },
         {
           "name": "Get diagnostic report",
