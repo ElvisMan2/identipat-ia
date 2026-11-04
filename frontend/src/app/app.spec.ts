@@ -25,6 +25,26 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
+  it('should open the admin panel on Predictions by default', () => {
+    const app = TestBed.createComponent(App).componentInstance;
+    spyOn(app, 'loadUsers');
+    const loadAnalyses = spyOn(app, 'loadAnalyses');
+    spyOn<any>(app, 'loadAdminProfile');
+    spyOn<any>(app, 'scrollToTop');
+    spyOn(window, 'setTimeout').and.callFake(callback => {
+      if (typeof callback === 'function') {
+        callback();
+      }
+      return 0;
+    });
+
+    app.openAdminPanel();
+
+    expect(app.view()).toBe('admin');
+    expect(app.adminSection()).toBe('predictions');
+    expect(loadAnalyses).toHaveBeenCalled();
+  });
+
   it('should limit the analysis summary to 150 characters with an ellipsis', () => {
     const app = TestBed.createComponent(App).componentInstance;
 

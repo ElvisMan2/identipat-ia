@@ -236,7 +236,7 @@ export class App {
   readonly editingOriginalUserType = signal('STANDARD');
   readonly showAdminPassword = signal(false);
   readonly showEditModal = signal(false);
-  readonly adminSection = signal<'users' | 'predictions' | 'profile' | 'settings'>('users');
+  readonly adminSection = signal<'users' | 'predictions' | 'profile' | 'settings'>('predictions');
   readonly view = signal<'home' | 'registration' | 'standard-analysis' | 'standard-result' | 'admin-login' | 'admin' | 'legal'>('home');
   readonly checkingDocument = signal(false);
   readonly standardAccessPending = signal(false);
@@ -295,7 +295,9 @@ export class App {
             this.loadProfileForm();
           }
           this.loadUsers(0);
-          if (this.adminSection() === 'settings') {
+          if (this.adminSection() === 'predictions') {
+            this.loadAnalyses();
+          } else if (this.adminSection() === 'settings') {
             this.loadReportDisclaimers();
             this.loadPatentOrientationGuide();
             this.loadAdminLegalDocument();
@@ -780,7 +782,7 @@ export class App {
     this.navigationPending.set('admin');
     window.setTimeout(() => {
       this.navigationPending.set(null);
-      this.adminSection.set('users');
+      this.setAdminSection('predictions');
       this.view.set('admin');
       this.loadUsers(0);
       this.loadAdminProfile();
@@ -1421,14 +1423,14 @@ export class App {
     }
   }
 
-  private consumeAdminSettingsReloadTarget(): 'users' | 'settings' {
+  private consumeAdminSettingsReloadTarget(): 'predictions' | 'settings' {
     try {
       const storage = this.document.defaultView?.sessionStorage;
       const section = storage?.getItem(adminSettingsReloadKey);
       storage?.removeItem(adminSettingsReloadKey);
-      return section === 'settings' ? 'settings' : 'users';
+      return section === 'settings' ? 'settings' : 'predictions';
     } catch {
-      return 'users';
+      return 'predictions';
     }
   }
 
