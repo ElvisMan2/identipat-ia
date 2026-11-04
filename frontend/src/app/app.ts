@@ -1753,6 +1753,13 @@ export class App {
     return labels[status];
   }
 
+  analysisSummary(summary: string | null): string {
+    if (!summary) {
+      return 'Aún no disponible.';
+    }
+    return summary.length > 150 ? `${summary.slice(0, 147)}...` : summary;
+  }
+
   loadUsers(page = this.userPage()): void {
     this.loading.set(true);
     this.errorMessage.set('');

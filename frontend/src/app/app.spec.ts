@@ -25,6 +25,14 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
+  it('should limit the analysis summary to 150 characters with an ellipsis', () => {
+    const app = TestBed.createComponent(App).componentInstance;
+
+    expect(app.analysisSummary('a'.repeat(150))).toBe('a'.repeat(150));
+    expect(app.analysisSummary('a'.repeat(151))).toBe(`${'a'.repeat(147)}...`);
+    expect(app.analysisSummary(null)).toBe('Aún no disponible.');
+  });
+
   it('should fetch an admin diagnostic report by analysis id', () => {
     const service = TestBed.inject(AdminAnalysisService);
     const httpTesting = TestBed.inject(HttpTestingController);

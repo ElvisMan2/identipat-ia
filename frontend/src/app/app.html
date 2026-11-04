@@ -101,7 +101,7 @@
                   <td>{{ analysis.doiType }}</td>
                   <td>{{ analysis.doi }}</td>
                   <td>{{ analysis.inputType }}</td>
-                  <td class="prediction-summary">{{ analysis.conclusion || 'Aún no disponible.' }}</td>
+                  <td class="prediction-summary">{{ analysisSummary(analysis.conclusion) }}</td>
                   <td>{{ analysis.identifiedModalities.join(', ') || 'Ninguna' }}</td>
                   <td>{{ analysis.guidanceConsulted ? 'Sí' : 'No' }}</td>
                 </tr>
