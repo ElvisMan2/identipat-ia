@@ -67,27 +67,57 @@
             <button class="ghost" type="button" (click)="loadAnalyses()" [disabled]="analysesLoading()">{{ analysesLoading() ? 'Cargando...' : 'Refrescar' }}</button>
           </div>
         </div>
+        <div class="prediction-filters">
+          <label class="user-search">Buscar
+            <input type="search" [value]="analysisSearch()" (input)="updateAnalysisSearch($event)" (keydown.enter)="$event.preventDefault(); searchAnalyses()" placeholder="Nombre, apellidos, documento o correo..." />
+            <button class="ghost" type="button" (click)="searchAnalyses()" [disabled]="analysesLoading()">Buscar</button>
+          </label>
+          <label class="page-size">Fecha inicio
+            <input type="date" [value]="analysisFrom()" (change)="updateAnalysisFrom($event)" />
+          </label>
+          <label class="page-size">Fecha fin
+            <input type="date" [value]="analysisTo()" (change)="updateAnalysisTo($event)" />
+          </label>
+          <label class="page-size">Mostrar
+            <select [value]="analysisPageSize()" (change)="changeAnalysisPageSize($event)" [disabled]="analysesLoading()">
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </label>
+        </div>
         @if (analysesError()) { <p class="error" role="alert">{{ analysesError() }}</p> }
         <div class="table-wrap">
           <table class="predictions-table">
-            <thead><tr><th>Fecha</th><th>Usuario</th><th>Estado</th><th>Predicción</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Nombres</th><th>Apellidos</th><th>Tipo doc.</th><th>Documento</th><th>Entrada</th><th>Conclusión</th><th>Modalidades identificadas</th><th>Orientación consultada</th></tr></thead>
             <tbody>
               @for (analysis of analyses(); track analysis.analysisId) {
                 <tr>
-                  <td class="prediction-date">{{ analysis.requestedAt | date:'dd/MM/yyyy, HH:mm' }}</td>
-                  <td>
-                    <strong>{{ analysis.firstName }} {{ analysis.paternalLastName }} {{ analysis.maternalLastName }}</strong>
-                    <span class="user-reference">Usuario #{{ analysis.userId }}</span>
-                  </td>
-                  <td><span class="status-badge" [attr.data-status]="analysis.status">{{ analysisStatusLabel(analysis.status) }}</span></td>
-                  <td class="prediction-summary">{{ analysis.summary || 'Resultado aún no disponible.' }}</td>
+                  <td class="prediction-date">{{ analysis.createdAt | date:'dd/MM/yyyy' }}</td>
+                  <td>{{ analysis.firstName }}</td>
+                  <td>{{ analysis.lastNames }}</td>
+                  <td>{{ analysis.doiType }}</td>
+                  <td>{{ analysis.doi }}</td>
+                  <td>{{ analysis.inputType }}</td>
+                  <td class="prediction-summary">{{ analysis.conclusion || 'Aún no disponible.' }}</td>
+                  <td>{{ analysis.identifiedModalities.join(', ') || 'Ninguna' }}</td>
+                  <td>{{ analysis.guidanceConsulted ? 'Sí' : 'No' }}</td>
                 </tr>
               } @empty {
-                @if (!analysesLoading()) { <tr><td colspan="4" class="empty">No hay predicciones registradas.</td></tr> }
+                @if (!analysesLoading()) { <tr><td colspan="9" class="empty">No hay predicciones registradas.</td></tr> }
               }
             </tbody>
           </table>
         </div>
+        <nav class="pagination" aria-label="Paginación del historial de predicciones">
+          <span>Página {{ analysisPage() + 1 }} de {{ analysisTotalPages() || 1 }} · {{ analysisTotalElements() }} predicciones</span>
+          <div class="table-actions">
+            <button class="ghost" type="button" (click)="changeAnalysisPage(analysisPage() - 1)" [disabled]="analysesLoading() || analysisPage() === 0">Anterior</button>
+            <button class="ghost" type="button" (click)="changeAnalysisPage(analysisPage() + 1)" [disabled]="analysesLoading() || analysisPage() >= analysisTotalPages() - 1">Siguiente</button>
+          </div>
+        </nav>
       </article>
     </section>
     }
@@ -130,7 +160,7 @@
         @if (errorMessage()) { <p class="error" role="alert">{{ errorMessage() }}</p> }
         <div class="table-wrap">
           <table>
-            <thead><tr><th>ID</th><th>Nombre completo</th><th>Tipo de documento</th><th>Número de documento</th><th>Género</th><th>Correo</th><th>Tipo</th><th>Profesión</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>ID</th><th>Nombre completo</th><th>Tipo doc.</th><th>Num doc.</th><th>Género</th><th>Correo</th><th>Tipo</th><th>Profesión</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
               @for (user of users(); track user.userId) {
                 <tr [class.editing]="isEditing(user)">
@@ -585,7 +615,7 @@
             <label>Nombres <input type="text" formControlName="firstName" maxlength="25" placeholder="Juan" /></label>
             <label>Apellido paterno <input type="text" formControlName="paternalLastName" maxlength="25" placeholder="Pérez" /></label>
             <label>Apellido materno <input type="text" formControlName="maternalLastName" maxlength="25" placeholder="Gómez" /></label>
-            <label>Tipo de documento
+            <label>Tipo doc.
               <select formControlName="doiType"><option value="" disabled>Seleccione</option><option value="DNI">DNI</option><option value="CE">CE</option></select>
             </label>
               <label>Tipo de usuario
@@ -594,7 +624,7 @@
                   <option value="ADMIN">Administrador</option>
                 </select>
               </label>
-            <label>Número de documento <input type="text" formControlName="doi" [attr.maxlength]="userForm.controls.doiType.value === 'DNI' ? 8 : 11" placeholder="12345678" /></label>
+            <label>Num doc. <input type="text" formControlName="doi" [attr.maxlength]="userForm.controls.doiType.value === 'DNI' ? 8 : 11" placeholder="12345678" /></label>
             <label>Fecha de nacimiento <input type="date" formControlName="birthDate" min="1926-01-01" max="2020-12-31" /></label>
             <label>Género
               <select formControlName="gender"><option value="" disabled>Seleccione</option><option value="MALE">Masculino</option><option value="FEMALE">Femenino</option></select>
@@ -1032,10 +1062,10 @@
               <label>Nombres <input type="text" name="firstName" autocomplete="given-name" formControlName="firstName" maxlength="25" placeholder="Adrian Jesús" /></label>
               <label>Apellido paterno <input type="text" name="paternalLastName" autocomplete="family-name" formControlName="paternalLastName" maxlength="25" placeholder="Lizarbe" /></label>
               <label>Apellido materno <input type="text" name="maternalLastName" autocomplete="additional-name" formControlName="maternalLastName" maxlength="25" placeholder="Estrada" /></label>
-              <label>Tipo de documento
+              <label>Tipo doc.
                 <select name="doiType" autocomplete="off" formControlName="doiType"><option value="DNI">DNI</option><option value="CE">CE</option></select>
               </label>
-              <label>Número de documento <input type="text" name="document-number" autocomplete="off" formControlName="doi" inputmode="numeric" [attr.maxlength]="userForm.controls.doiType.value === 'DNI' ? 8 : 11" (input)="userForm.controls.doiType.value === 'DNI' && sanitizeDni($event, userForm.controls.doi)" /></label>
+              <label>Num doc. <input type="text" name="document-number" autocomplete="off" formControlName="doi" inputmode="numeric" [attr.maxlength]="userForm.controls.doiType.value === 'DNI' ? 8 : 11" (input)="userForm.controls.doiType.value === 'DNI' && sanitizeDni($event, userForm.controls.doi)" /></label>
               <label>Fecha de nacimiento <input type="date" name="birthDate" autocomplete="bday" formControlName="birthDate" min="1926-01-01" max="2020-12-31" /></label>
               <label>Género
                 <select name="gender" autocomplete="sex" formControlName="gender"><option value="" disabled>Seleccione</option><option value="MALE">Masculino</option><option value="FEMALE">Femenino</option></select>
@@ -1071,9 +1101,9 @@
             <form [formGroup]="accessForm" (ngSubmit)="view() === 'admin-login' ? loginAdmin() : identifyDocument()">
               <div class="document-fields">
                 <label>Tipo
-                  <select formControlName="doiType" aria-label="Tipo de documento"><option value="DNI">DNI</option><option value="CE">CE</option></select>
+                  <select formControlName="doiType" aria-label="Tipo doc."><option value="DNI">DNI</option><option value="CE">CE</option></select>
                 </label>
-                <label>Número de documento
+                <label>Num doc.
                   <input type="text" inputmode="numeric" autocomplete="username" formControlName="doi" [attr.maxlength]="accessForm.controls.doiType.value === 'DNI' ? 8 : 11" placeholder="Ingresa tu documento" />
                 </label>
               </div>

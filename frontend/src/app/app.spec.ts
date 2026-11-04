@@ -40,6 +40,23 @@ describe('App', () => {
     reportRequest.flush({});
   });
 
+  it('should fetch the paginated admin analysis history with filters and bearer token', () => {
+    const service = TestBed.inject(AdminAnalysisService);
+    const httpTesting = TestBed.inject(HttpTestingController);
+
+    service.findAll(1, 5, 'patente', '2026-10-01', '2026-10-31', 'test-token').subscribe();
+
+    const request = httpTesting.expectOne(req => req.url === `${environment.apiBaseUrl}/admin/analyses`);
+    expect(request.request.method).toBe('GET');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer test-token');
+    expect(request.request.params.get('page')).toBe('1');
+    expect(request.request.params.get('size')).toBe('5');
+    expect(request.request.params.get('search')).toBe('patente');
+    expect(request.request.params.get('from')).toBe('2026-10-01');
+    expect(request.request.params.get('to')).toBe('2026-10-31');
+    request.flush({ content: [], page: 1, size: 5, totalElements: 0, totalPages: 0, first: false, last: true });
+  });
+
   it('should fetch all report disclaimers with the admin bearer token', () => {
     const service = TestBed.inject(AdminReportDisclaimerService);
     const httpTesting = TestBed.inject(HttpTestingController);
@@ -631,7 +648,7 @@ describe('App', () => {
     userService.clearAccessToken();
   });
 
-  it('should show the predictions section without requesting the pending endpoint', () => {
+  it('should load the predictions section and show its empty state', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     const httpTesting = TestBed.inject(HttpTestingController);
@@ -639,7 +656,16 @@ describe('App', () => {
     app.setAdminSection('predictions');
     fixture.detectChanges();
 
-    httpTesting.expectNone(`${environment.apiBaseUrl}/admin/analyses`);
+    httpTesting.expectOne(req => req.url === `${environment.apiBaseUrl}/admin/analyses`).flush({
+      content: [],
+      page: 0,
+      size: 10,
+      totalElements: 0,
+      totalPages: 0,
+      first: true,
+      last: true
+    });
+    fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Historial de predicciones');
     expect(fixture.nativeElement.textContent).toContain('No hay predicciones registradas.');
   });

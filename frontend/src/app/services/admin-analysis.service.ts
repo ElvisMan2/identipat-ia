@@ -7,13 +7,27 @@ export type AnalysisStatus = 'RECEIVED' | 'PREPROCESSING' | 'ANALYZING' | 'COMPL
 
 export interface AdminAnalysis {
   analysisId: string;
-  userId: number;
-  firstName: string;
-  paternalLastName: string;
-  maternalLastName: string;
-  requestedAt: string;
+  createdAt: string;
   status: AnalysisStatus;
-  summary: string | null;
+  firstName: string;
+  lastNames: string;
+  doiType: string;
+  doi: string;
+  inputType: string;
+  conclusion: string | null;
+  identifiedModalities: string[];
+  analysisOrigin: string;
+  guidanceConsulted: boolean;
+}
+
+export interface AdminAnalysesPage {
+  content: AdminAnalysis[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
 }
 
 export interface DiagnosticReport {
@@ -45,7 +59,7 @@ export interface DiagnosticReport {
 })
 export class AdminAnalysisService {
   private readonly http = inject(HttpClient);
-  private readonly endpoint = `${environment.apiBaseUrl}/analyses`;
+  private readonly endpoint = environment.apiBaseUrl;
   private accessToken = '';
 
   setAccessToken(accessToken: string): void {
@@ -56,9 +70,28 @@ export class AdminAnalysisService {
     this.accessToken = '';
   }
 
+  findAll(
+    page: number,
+    size: number,
+    search: string,
+    from: string,
+    to: string,
+    accessToken = this.accessToken
+  ): Observable<AdminAnalysesPage> {
+    const params: Record<string, string | number> = { page, size, sort: 'createdAt,desc' };
+    if (search.trim()) params['search'] = search.trim();
+    if (from) params['from'] = from;
+    if (to) params['to'] = to;
+
+    return this.http.get<AdminAnalysesPage>(`${this.endpoint}/admin/analyses`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      params
+    });
+  }
+
   getReport(analysisId: string): Observable<DiagnosticReport> {
     return this.http.get<DiagnosticReport>(
-      `${this.endpoint}/${encodeURIComponent(analysisId)}/report`, {
+      `${this.endpoint}/analyses/${encodeURIComponent(analysisId)}/report`, {
       headers: { Authorization: `Bearer ${this.accessToken}` }
     });
   }

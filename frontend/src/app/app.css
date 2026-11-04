@@ -242,6 +242,9 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .table-head h2 { margin-bottom: 0; }
 .user-search { display: flex; align-items: center; gap: .4rem; color: var(--muted); }
 .user-search input { width: min(18rem, 34vw); min-height: 36px; padding: .4rem .55rem; }
+.prediction-filters { display: flex; flex-wrap: wrap; align-items: end; gap: .7rem; margin: .85rem 0; }
+.prediction-filters .user-search { flex-wrap: wrap; }
+.prediction-filters input[type='date'] { width: auto; min-height: 36px; padding: .4rem .55rem; }
 .page-size { display: flex; align-items: center; gap: .4rem; color: var(--muted); white-space: nowrap; }
 .page-size select { width: auto; min-height: 36px; padding: .4rem 1.8rem .4rem .55rem; }
 .pagination { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-top: .9rem; color: var(--muted); font-size: .86rem; }
@@ -258,11 +261,11 @@ tr.editing { background: #eef8f5; }
 .empty { padding: 2rem; color: var(--muted); text-align: center; }
 .error { padding: .65rem; color: #7a2424; background: #fff0ee; }
 .success-message { margin: 0; padding: .65rem; color: var(--teal-dark); background: var(--mint); }
-.predictions-table { min-width: 760px; }
+.predictions-table { min-width: 1500px; }
 .predictions-table strong, .user-reference { display: block; }
 .prediction-date { white-space: nowrap; }
 .user-reference { margin-top: .18rem; color: var(--muted); font-size: .75rem; }
-.prediction-summary { min-width: 280px; line-height: 1.45; }
+.prediction-summary { min-width: 240px; max-width: 420px; line-height: 1.45; }
 .status-badge { display: inline-block; border-radius: 999px; padding: .3rem .55rem; color: #36524d; background: #e6eeec; font-size: .72rem; font-weight: 700; white-space: nowrap; }
 .status-badge[data-status='COMPLETED'] { color: #17643a; background: #dff3e6; }
 .status-badge[data-status='FAILED'] { color: var(--danger); background: #f9dfdc; }

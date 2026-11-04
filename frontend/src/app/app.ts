@@ -8,7 +8,7 @@ import { Alignment, Bold, ClassicEditor, EditorConfig, Essentials, FindAndReplac
 import { Observable } from 'rxjs';
 import { StandardUserRegistrationRequest, UserService } from './services/user.service';
 import { User } from './models/user.model';
-import { AdminAnalysis, AnalysisStatus } from './services/admin-analysis.service';
+import { AdminAnalysis, AdminAnalysisService, AnalysisStatus } from './services/admin-analysis.service';
 import { AdminReportDisclaimerService, ReportDisclaimer } from './services/admin-report-disclaimer.service';
 import { AdminProtectionGuideService, ProtectionGuide } from './services/admin-protection-guide.service';
 import { AnalysisGuidanceResponse, AnalysisResponse, DiagnosticReport, StandardAnalysisService } from './services/standard-analysis.service';
@@ -48,6 +48,7 @@ export class App {
   private readonly fb = inject(FormBuilder);
   private readonly document = inject(DOCUMENT);
   private readonly userService = inject(UserService);
+  private readonly adminAnalysisService = inject(AdminAnalysisService);
   private readonly adminReportDisclaimerService = inject(AdminReportDisclaimerService);
   private readonly adminProtectionGuideService = inject(AdminProtectionGuideService);
   private readonly standardAnalysisService = inject(StandardAnalysisService);
@@ -66,6 +67,13 @@ export class App {
   readonly userTotalElements = signal(0);
   readonly downloadingUsers = signal(false);
   readonly analyses = signal<AdminAnalysis[]>([]);
+  readonly analysisPage = signal(0);
+  readonly analysisPageSize = signal(10);
+  readonly analysisSearch = signal('');
+  readonly analysisFrom = signal('');
+  readonly analysisTo = signal('');
+  readonly analysisTotalPages = signal(0);
+  readonly analysisTotalElements = signal(0);
   readonly latestReportDisclaimer = signal<ReportDisclaimer | null>(null);
   readonly disclaimerTitle = signal('');
   readonly savedDisclaimerTitle = signal('');
@@ -1461,16 +1469,80 @@ export class App {
   }
 
   loadAnalyses(): void {
+    this.analysesLoading.set(true);
     this.analysesError.set('');
+    this.adminAnalysisService.findAll(
+      this.analysisPage(),
+      this.analysisPageSize(),
+      this.analysisSearch(),
+      this.analysisFrom(),
+      this.analysisTo(),
+      this.userService.getAccessToken()
+    ).subscribe({
+      next: response => {
+        this.analyses.set(response.content);
+        this.analysisPage.set(response.page);
+        this.analysisTotalPages.set(response.totalPages);
+        this.analysisTotalElements.set(response.totalElements);
+        this.analysesLoading.set(false);
+      },
+      error: () => {
+        this.analysesError.set('No se pudo cargar el historial de predicciones.');
+        this.analysesLoading.set(false);
+      }
+    });
+  }
+
+  changeAnalysisPage(page: number): void {
+    if (this.analysesLoading() || page < 0 || page >= this.analysisTotalPages()) {
+      return;
+    }
+    this.analysisPage.set(page);
+    this.loadAnalyses();
+  }
+
+  changeAnalysisPageSize(event: Event): void {
+    const size = Number((event.target as HTMLSelectElement).value);
+    if (![5, 10, 20, 50, 100].includes(size)) {
+      return;
+    }
+    this.analysisPageSize.set(size);
+    this.analysisPage.set(0);
+    this.loadAnalyses();
+  }
+
+  updateAnalysisSearch(event: Event): void {
+    this.analysisSearch.set((event.target as HTMLInputElement).value);
+  }
+
+  updateAnalysisFrom(event: Event): void {
+    this.analysisFrom.set((event.target as HTMLInputElement).value);
+  }
+
+  updateAnalysisTo(event: Event): void {
+    this.analysisTo.set((event.target as HTMLInputElement).value);
+  }
+
+  searchAnalyses(): void {
+    this.analysisPage.set(0);
+    this.loadAnalyses();
   }
 
   downloadAnalysesCsv(): void {
-    const headers = ['Fecha', 'Usuario', 'Estado', 'Predicción'];
+    const headers = ['ID de análisis', 'Fecha', 'Estado', 'Nombres', 'Apellidos', 'Tipo doc.', 'Documento', 'Entrada', 'Conclusión', 'Modalidades identificadas', 'Origen', 'Orientación consultada'];
     const rows = this.analyses().map(analysis => [
-      analysis.requestedAt,
-      `${analysis.firstName} ${analysis.paternalLastName} ${analysis.maternalLastName} (Usuario #${analysis.userId})`,
+      analysis.analysisId,
+      analysis.createdAt,
       this.analysisStatusLabel(analysis.status),
-      analysis.summary || 'Resultado aún no disponible.'
+      analysis.firstName,
+      analysis.lastNames,
+      analysis.doiType,
+      analysis.doi,
+      analysis.inputType,
+      analysis.conclusion ?? '',
+      analysis.identifiedModalities.join(', '),
+      analysis.analysisOrigin,
+      analysis.guidanceConsulted ? 'Sí' : 'No'
     ]);
     const csv = '\uFEFF' + [headers, ...rows]
       .map(row => row.map(value => this.csvCell(value)).join(','))
