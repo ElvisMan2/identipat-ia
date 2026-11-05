@@ -101,10 +101,10 @@ export interface DiagnosticProtectionOption {
 
 export interface DiagnosticPatentScreening {
   title: string | null;
-  context: string | null;
+  context?: string | null;
   article15: DiagnosticScreeningArticle | null;
   article20: DiagnosticScreeningArticle | null;
-  scopeNote: string | null;
+  scopeNote?: string | null;
 }
 
 export interface DiagnosticScreeningArticle {

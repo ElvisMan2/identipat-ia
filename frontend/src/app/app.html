@@ -858,23 +858,26 @@
               <p>{{ reportField(report.summary) }}</p>
             </div>
           </section>
-          @if (report.patentScreening || report.historicalPatentability) {
+          @let hasVisiblePatentScreening = report.patentScreening && (report.patentScreening.scopeNote || (report.patentScreening.article15 && report.patentScreening.article15.assessment !== 'NO_POTENTIAL_MATCH') || (report.patentScreening.article20 && report.patentScreening.article20.assessment !== 'NO_POTENTIAL_MATCH'));
+          @if (hasVisiblePatentScreening || report.historicalPatentability) {
             <section class="context-section">
               <h2>Información complementaria del diagnóstico</h2>
               <div class="context-grid">
                 @if (report.patentScreening; as screening) {
                   <article class="context-card full">
                     <h3>{{ reportField(screening.title) }}</h3>
-                    <p>{{ reportField(screening.context) }}</p>
+                    @if (screening.context && (screening.article15?.assessment === 'POTENTIAL_MATCH' || screening.article20?.assessment === 'POTENTIAL_MATCH')) {
+                      <p>{{ reportField(screening.context) }}</p>
+                    }
                     @for (article of [screening.article15, screening.article20]; track article?.article) {
                       @if (article; as screeningArticle) {
+                        @if (screeningArticle.assessment !== 'NO_POTENTIAL_MATCH') {
                         <div class="screening-article">
-                          <strong>{{ reportField(screeningArticle.article) }} · {{ reportField(screeningArticle.assessmentLabel || screeningArticle.assessment) }}</strong>
-                          <p>{{ reportField(screeningArticle.rationale) }}</p>
-                          @if (screeningArticle.matches?.length) {
-                            <ul>@for (match of screeningArticle.matches; track match.literal) { <li><b>{{ reportField(match.literal) }}</b>: {{ reportField(match.rationale) }}</li> }</ul>
-                          }
+                          <strong>{{ reportField(screeningArticle.article) }} · {{ screeningAssessmentLabel(screeningArticle.article, screeningArticle.assessmentLabel, screeningArticle.assessment) }}</strong>
+                          <p>{{ reportField(screeningArticle.rationale) }}@if (screeningArticle.matches?.length) { <span> @for (match of screeningArticle.matches; track match.literal; let first = $first) { @if (!first) { <span>; </span> }<b>Literal {{ reportField(match.literal) }}</b>: {{ reportField(match.rationale) }}}</span> }</p>
+                          <button class="outline-button" type="button" disabled>Próximos pasos</button>
                         </div>
+                        }
                       }
                     }
                     @if (screening.scopeNote) { <p>{{ reportField(screening.scopeNote) }}</p> }
@@ -895,6 +898,7 @@
             @for (option of report.protectionOptions ?? []; track option.type; let index = $index) {
                 @let guidance = guidanceFor(option.type ?? '');
                 @let genetic = option.geneticResourceAccess || (index === 0 ? report.geneticResourceAccess : null);
+              @if (option.applicability === 'LIKELY' || option.applicability === 'POSSIBLE') {
                 <article>
                   <details [open]="index === 0">
                     <summary>
@@ -920,20 +924,18 @@
                       @if (option.patentScreening; as screening) {
                         <div class="diag-item full-width">
                           <strong>{{ reportField(screening.title) }}</strong>
-                          <p>{{ reportField(screening.context) }}</p>
+                          @if (screening.context && (screening.article15?.assessment === 'POTENTIAL_MATCH' || screening.article20?.assessment === 'POTENTIAL_MATCH')) {
+                            <p>{{ reportField(screening.context) }}</p>
+                          }
                           @for (article of [screening.article15, screening.article20]; track article?.article) {
                             @if (article; as screeningArticle) {
+                              @if (screeningArticle.assessment !== 'NO_POTENTIAL_MATCH') {
                               <div class="screening-article">
-                                <b>{{ reportField(screeningArticle.article) }} · {{ reportField(screeningArticle.assessmentLabel || screeningArticle.assessment) }}</b>
-                                <p>{{ reportField(screeningArticle.rationale) }}</p>
-                                @if (screeningArticle.matches?.length) {
-                                  <ul>
-                                    @for (match of screeningArticle.matches; track match.literal) {
-                                      <li><b>{{ reportField(match.literal) }}</b>: {{ reportField(match.rationale) }}</li>
-                                    }
-                                  </ul>
-                                }
+                                <b>{{ reportField(screeningArticle.article) }} · {{ screeningAssessmentLabel(screeningArticle.article, screeningArticle.assessmentLabel, screeningArticle.assessment) }}</b>
+                                <p>{{ reportField(screeningArticle.rationale) }}@if (screeningArticle.matches?.length) { <span> @for (match of screeningArticle.matches; track match.literal; let first = $first) { @if (!first) { <span>; </span> }<b>Literal {{ reportField(match.literal) }}</b>: {{ reportField(match.rationale) }}}</span> }</p>
+                                <button class="outline-button" type="button" disabled>Próximos pasos</button>
                               </div>
+                              }
                             }
                           }
                           @if (screening.scopeNote) { <p>{{ reportField(screening.scopeNote) }}</p> }
@@ -963,6 +965,7 @@
                     </div>
                   </details>
                 </article>
+                }
             } @empty {
               <p>No se identificaron modalidades.</p>
             }

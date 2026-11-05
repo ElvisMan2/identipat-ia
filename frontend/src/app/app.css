@@ -167,7 +167,7 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .result-page .context-card h3 { margin: 0 0 .5rem; font-size: 1rem; }
 .result-page .context-card p, .result-page .context-card li { color: var(--muted); line-height: 1.6; overflow-wrap: anywhere; }
 .result-page .context-card ul { padding-left: 1.2rem; }
-.result-page .context-card.observation { border-left: 4px solid var(--teal); }
+.result-page .context-card.observation { margin-top: 1.25rem; border-left: 4px solid var(--teal); }
 .result-page .context-card.warning { border-color: #ead6a7; border-left: 4px solid #be933a; background: #fffcf2; }
 .result-page .disclaimer-card { margin-top: 1.25rem; }
 .result-heading { display: flex; align-items: end; flex-wrap: wrap; justify-content: space-between; gap: .75rem; }

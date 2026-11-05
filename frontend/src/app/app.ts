@@ -2004,7 +2004,6 @@ export class App {
           })),
           patentScreening: {
             title: 'Evaluación preliminar de exclusiones',
-            context: 'Ejemplo de evaluación basado en la descripción proporcionada.',
             article15: {
               article: 'Artículo 15',
               assessment: result.patentScreening.article15.assessment,
@@ -2019,7 +2018,6 @@ export class App {
               rationale: result.patentScreening.article20.rationale,
               matches: result.patentScreening.article20.matches as Array<{ literal: string; rationale: string }>
             },
-            scopeNote: 'Ejemplo ilustrativo; requiere revisión profesional.'
           },
           geneticResourceAccess: {
             placement: null,
@@ -2287,6 +2285,23 @@ export class App {
 
   reportField(value: string | null | undefined): string {
     return value?.trim() || 'campo faltante';
+  }
+
+  screeningAssessmentLabel(
+    article: string | null | undefined,
+    assessmentLabel: string | null | undefined,
+    assessment: string | null | undefined
+  ): string {
+    if (assessment === 'POTENTIAL_MATCH') {
+      const labels: Record<string, string> = {
+        'Artículo 15': 'Exclusiones a la patentabilidad',
+        'Artículo 20': 'Excepciones a la patentabilidad'
+      };
+      if (article && labels[article]) {
+        return labels[article];
+      }
+    }
+    return assessmentLabel?.trim() || assessment?.trim() || 'campo faltante';
   }
 
   reportInputTypeLabel(type: string | null | undefined): string {

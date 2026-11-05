@@ -90,7 +90,7 @@
   "patentScreening": {
     "applicable": true,
     "article15": {
-      "assessment": "NO_POTENTIAL_MATCH",
+      "assessment": "POTENTIAL_MATCH",
       "rationale": "Con la descripción resumida disponible no se identifica de forma evidente una exclusión de las categorías del artículo 15; la conclusión debe confirmarse con el texto técnico completo.",
       "matches": [
         {
@@ -100,7 +100,7 @@
       ]
     },
     "article20": {
-      "assessment": "NO_POTENTIAL_MATCH",
+      "assessment": "POTENTIAL_MATCH",
       "rationale": "La información proporcionada no permite identificar de forma evidente una exclusión del artículo 20. Se requiere revisar las reivindicaciones y el funcionamiento concreto de la propuesta.",
       "matches": [
         {
