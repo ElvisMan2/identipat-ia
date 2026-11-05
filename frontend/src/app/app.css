@@ -146,12 +146,12 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .result-page .summary-card p { margin: 0; color: var(--ink); line-height: 1.7; }
 .result-page .modalities-grid { gap: .85rem; }
 .result-page .modalities-grid > article { min-width: 0; border: 1px solid var(--line); background: #fff; }
-.result-page .modalities-grid details > summary { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 1.1fr) auto; align-items: center; gap: .65rem 1rem; padding: 1rem 1.1rem; cursor: pointer; list-style: none; }
-.result-page .modalities-grid details > summary::-webkit-details-marker { display: none; }
-.result-page .modalities-grid details > summary span:first-child { color: var(--ink); font-family: 'Space Grotesk', sans-serif; font-weight: 700; }
-.result-page .modalities-grid details > summary span:nth-child(2) { color: var(--muted); font-size: .83rem; line-height: 1.45; }
-.result-page .modalities-grid details > summary b { justify-self: end; padding: .35rem .55rem; color: var(--teal-dark); background: var(--mint); font-size: .72rem; }
+.result-page .modality-heading { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 1.1fr) auto; align-items: center; gap: .65rem 1rem; padding: 1rem 1.1rem; }
+.result-page .modality-heading span:first-child { color: var(--ink); font-family: 'Space Grotesk', sans-serif; font-weight: 700; }
+.result-page .modality-heading span:nth-child(2) { color: var(--muted); font-size: .83rem; line-height: 1.45; }
+.result-page .modality-heading b { justify-self: end; padding: .35rem .55rem; color: var(--teal-dark); background: var(--mint); font-size: .72rem; }
 .result-page .diagnosis-panel { display: grid; grid-template-columns: 1fr; gap: .65rem; padding: 0 1.1rem 1.1rem; }
+.result-page .modality-next-steps { display: block; margin: 0 1.1rem 1.1rem auto; }
 .result-page .diag-item { min-width: 0; padding: .85rem; background: #f4f7f6; }
 .result-page .diag-item.full-width { grid-column: 1 / -1; }
 .result-page .diag-item > strong { display: block; margin-bottom: .35rem; color: var(--ink); font-size: .8rem; }
@@ -228,7 +228,7 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .diagnosis-item ul, .complementary-card ul { margin: .55rem 0 0; padding-left: 1.2rem; color: var(--muted); line-height: 1.55; }
 .screening-box { border: 1px solid #e9e5ff; background: #fbfaff; }
 .screening-article { margin-top: .65rem; padding: .7rem .8rem; border: 1px solid #e9e5ff; background: #fff; }
-.screening-article b { display: block; color: #5b21b6; font-size: .8rem; }
+.screening-article > b { display: block; color: #5b21b6; font-size: .8rem; }
 .screening-article p { margin-top: .25rem; }
 .scope-note { color: var(--muted); font-size: .75rem !important; }
 .genetic-box { border: 1px solid #bae6fd; background: #f0f9ff; }
@@ -343,8 +343,8 @@ tr.editing { background: #eef8f5; }
   .result-page .hero-left h2 { font-size: 1.55rem; }
   .result-page .hero-main > .outline-button { align-self: flex-start; }
   .result-page .meta-stats, .result-page .diagnosis-panel, .result-page .context-grid { grid-template-columns: 1fr; }
-  .result-page .modalities-grid details > summary { grid-template-columns: minmax(0, 1fr); align-items: start; }
-  .result-page .modalities-grid details > summary b { justify-self: start; white-space: normal; }
+  .result-page .modality-heading { grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .result-page .modality-heading b { justify-self: start; white-space: normal; }
   .result-page .diag-item.full-width, .result-page .context-card.full { grid-column: auto; }
   .report-meta { grid-template-columns: 1fr; }
   .modality-card summary { align-items: flex-start; flex-direction: column; }
