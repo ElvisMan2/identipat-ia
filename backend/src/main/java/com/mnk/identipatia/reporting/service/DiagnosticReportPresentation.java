@@ -24,14 +24,28 @@ final class DiagnosticReportPresentation {
             "DISTINCTIVE_SIGN", "signo distintivo",
             "UTILITY_MODEL", "modelo de utilidad",
             "TRADE_SECRET", "secreto empresarial",
-            "COPYRIGHT", "derecho de autor");
+            "COPYRIGHT", "derecho de autor",
+            "OTHER", "otra modalidad");
     private static final Map<String, String> NARRATIVE_APPLICABILITY_LABELS = labels(
             "LIKELY", "se relaciona claramente",
             "POSSIBLE", "podría corresponder",
             "UNLIKELY", "relación limitada");
+    private static final Map<String, String> NARRATIVE_ENUM_LABELS = labels(
+            "NO_POTENTIAL_MATCH", "no se identifican coincidencias potenciales",
+            "POTENTIAL_MATCH", "se identifican coincidencias potenciales",
+            "NOT_INDICATED", "no se identifican indicios",
+            "POTENTIALLY_REQUIRED", "requiere revisión especializada",
+            "INSUFFICIENT_INFORMATION", "se necesita más información",
+            "DECISION_345", "Decisión 345",
+            "DECISION_351", "Decisión 351",
+            "DECISION_391", "Decisión 391",
+            "DECISION_486", "Decisión 486",
+            "POTENTIALLY_PATENTABLE", "potencialmente patentable",
+            "POTENTIALLY_NOT_PATENTABLE", "podría no ser patentable");
     private static final Pattern NARRATIVE_PAIR = pairPattern();
     private static final Pattern NARRATIVE_PROTECTION = tokenPattern(NARRATIVE_PROTECTION_LABELS);
     private static final Pattern NARRATIVE_APPLICABILITY = tokenPattern(NARRATIVE_APPLICABILITY_LABELS);
+    private static final Pattern NARRATIVE_ENUM = tokenPattern(NARRATIVE_ENUM_LABELS);
 
     private DiagnosticReportPresentation() {
     }
@@ -71,7 +85,8 @@ final class DiagnosticReportPresentation {
     static String narrative(String value) {
         String presented = replacePairs(value);
         presented = replaceTokens(presented, NARRATIVE_PROTECTION, NARRATIVE_PROTECTION_LABELS);
-        return replaceTokens(presented, NARRATIVE_APPLICABILITY, NARRATIVE_APPLICABILITY_LABELS);
+        presented = replaceTokens(presented, NARRATIVE_APPLICABILITY, NARRATIVE_APPLICABILITY_LABELS);
+        return replaceTokens(presented, NARRATIVE_ENUM, NARRATIVE_ENUM_LABELS);
     }
 
     static List<String> narratives(List<String> values) {

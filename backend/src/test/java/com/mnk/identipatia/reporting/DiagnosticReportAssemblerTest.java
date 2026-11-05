@@ -9,6 +9,8 @@ import com.mnk.identipatia.analysis.result.v2.AnalysisResultV2;
 import com.mnk.identipatia.analysis.result.v2.Article15Literal;
 import com.mnk.identipatia.analysis.result.v2.Article15Match;
 import com.mnk.identipatia.analysis.result.v2.Article15Screening;
+import com.mnk.identipatia.analysis.result.v2.Article20Literal;
+import com.mnk.identipatia.analysis.result.v2.Article20Match;
 import com.mnk.identipatia.analysis.result.v2.Article20Screening;
 import com.mnk.identipatia.analysis.result.v2.GeneticResourceAccess;
 import com.mnk.identipatia.analysis.result.v2.GeneticResourceAssessment;
@@ -148,10 +150,45 @@ class DiagnosticReportAssemblerTest {
     }
 
     @Test
+    void v1SanitizesHistoricalPatentabilityAndOtherWithoutChangingStructuredFields() {
+        var v1 = new AnalysisResultV1(AnalysisResultV1.SCHEMA_VERSION,
+                "OTHER (UNLIKELY), POTENTIALLY_PATENTABLE",
+                new PatentabilityAssessment(PatentabilityOutcome.POTENTIALLY_NOT_PATENTABLE,
+                        "POTENTIALLY_PATENTABLE, POTENTIALLY_NOT_PATENTABLE e "
+                                + "INSUFFICIENT_INFORMATION."),
+                List.of(new com.mnk.identipatia.analysis.result.ProtectionOption(
+                        com.mnk.identipatia.analysis.result.ProtectionType.OTHER,
+                        com.mnk.identipatia.analysis.result.ProtectionApplicability.UNLIKELY,
+                        "OTHER con INSUFFICIENT_INFORMATION")),
+                List.of("POTENTIALLY_PATENTABLE"),
+                List.of("POTENTIALLY_NOT_PATENTABLE e INSUFFICIENT_INFORMATION"));
+
+        DiagnosticReport report = new DiagnosticReportAssemblerV1()
+                .assemble(analysis(), v1, context(), disclaimer());
+
+        assertThat(report.summary())
+                .isEqualTo("otra modalidad — relación limitada, potencialmente patentable");
+        assertThat(report.protectionOptions().getFirst().type()).isEqualTo("OTHER");
+        assertThat(report.protectionOptions().getFirst().applicability()).isEqualTo("UNLIKELY");
+        assertThat(report.protectionOptions().getFirst().rationale())
+                .isEqualTo("otra modalidad con se necesita más información");
+        assertThat(report.historicalPatentability().outcome())
+                .isEqualTo("POTENTIALLY_NOT_PATENTABLE");
+        assertThat(report.historicalPatentability().rationale())
+                .isEqualTo("potencialmente patentable, podría no ser patentable e "
+                        + "se necesita más información.");
+        assertThat(report.observations()).containsExactly("potencialmente patentable");
+        assertThat(report.warnings())
+                .containsExactly("podría no ser patentable e se necesita más información");
+    }
+
+    @Test
     void summaryUsesCitizenLabelsOnlyForCompleteKnownTokensAndPreservesLegalText() {
         String legalText = "La Decisión 486, artículo 14, permanece sin cambios.";
         String source = "DISTINCTIVE_SIGN (LIKELY) y COPYRIGHT (POSSIBLE). "
-                + legalText + " COPYRIGHTABLE, PRELIKELY y POSSIBLE_EFFECT no son tokens completos.";
+                + legalText + " COPYRIGHTABLE, PRELIKELY, POSSIBLE_EFFECT, POTENTIALLY_REQUIRED_FLAG, "
+                + "NO_POTENTIAL_MATCHING, NOT_INDICATED_VALUE, DECISION_486_EXTRA y "
+                + "POTENTIALLY_PATENTABLE_VALUE no son tokens completos.";
 
         DiagnosticReport report = assemblerV2.assemble(analysis(),
                 resultWithSummary(source, true, true,
@@ -161,8 +198,63 @@ class DiagnosticReportAssemblerTest {
                 .contains("signo distintivo — se relaciona claramente")
                 .contains("derecho de autor — podría corresponder")
                 .contains(legalText)
-                .contains("COPYRIGHTABLE", "PRELIKELY", "POSSIBLE_EFFECT")
+                .contains("COPYRIGHTABLE", "PRELIKELY", "POSSIBLE_EFFECT",
+                        "POTENTIALLY_REQUIRED_FLAG", "NO_POTENTIAL_MATCHING",
+                        "NOT_INDICATED_VALUE", "DECISION_486_EXTRA",
+                        "POTENTIALLY_PATENTABLE_VALUE")
                 .doesNotContain("DISTINCTIVE_SIGN", "COPYRIGHT (", "(LIKELY)", "(POSSIBLE)");
+    }
+
+    @Test
+    void v2SanitizesEveryKnownNarrativeEnumAndPreservesStructuredEnums() {
+        String source = "INVENTION_PATENT, PLANT_BREEDER_CERTIFICATE, OTHER; "
+                + "LIKELY, POSSIBLE, UNLIKELY; "
+                + "NO_POTENTIAL_MATCH, POTENTIAL_MATCH, INSUFFICIENT_INFORMATION; "
+                + "NOT_INDICATED, POTENTIALLY_REQUIRED; "
+                + "DECISION_345, DECISION_351, DECISION_391, DECISION_486; "
+                + "POTENTIALLY_PATENTABLE, POTENTIALLY_NOT_PATENTABLE.";
+        AnalysisResultV2 raw = new AnalysisResultV2(AnalysisResultV2.SCHEMA_VERSION, source,
+                List.of(option(ProtectionType.INVENTION_PATENT)),
+                new PatentScreening(true,
+                        new Article15Screening(ScreeningAssessment.NO_POTENTIAL_MATCH,
+                                "Sin coincidencias", List.of()),
+                        new Article20Screening(ScreeningAssessment.POTENTIAL_MATCH,
+                                "Con coincidencias",
+                                List.of(new Article20Match(Article20Literal.a, "Coincidencia")))),
+                new GeneticResourceAccess(GeneticResourceAssessment.POTENTIALLY_REQUIRED,
+                        "Revisión requerida", List.of()), List.of(), List.of());
+
+        DiagnosticReport report = assemblerV2.assemble(analysis(), raw, context(), disclaimer());
+
+        assertThat(report.summary())
+                .contains("patente de invención", "certificado de obtentor", "otra modalidad")
+                .contains("se relaciona claramente", "podría corresponder", "relación limitada")
+                .contains("no se identifican coincidencias potenciales",
+                        "se identifican coincidencias potenciales", "se necesita más información")
+                .contains("no se identifican indicios", "requiere revisión especializada")
+                .contains("Decisión 345", "Decisión 351", "Decisión 391", "Decisión 486")
+                .contains("potencialmente patentable", "podría no ser patentable")
+                .doesNotContain("INVENTION_PATENT", "PLANT_BREEDER_CERTIFICATE", "OTHER",
+                        "LIKELY", "POSSIBLE", "UNLIKELY", "NO_POTENTIAL_MATCH", "POTENTIAL_MATCH",
+                        "INSUFFICIENT_INFORMATION", "NOT_INDICATED", "POTENTIALLY_REQUIRED",
+                        "DECISION_345", "DECISION_351", "DECISION_391", "DECISION_486",
+                        "POTENTIALLY_PATENTABLE", "POTENTIALLY_NOT_PATENTABLE");
+        assertThat(report.protectionOptions().getFirst().type()).isEqualTo("INVENTION_PATENT");
+        assertThat(report.protectionOptions().getFirst().applicability()).isEqualTo("LIKELY");
+        assertThat(report.patentScreening().article15().assessment()).isEqualTo("NO_POTENTIAL_MATCH");
+        assertThat(report.patentScreening().article20().assessment()).isEqualTo("POTENTIAL_MATCH");
+        assertThat(report.geneticResourceAccess().assessment()).isEqualTo("POTENTIALLY_REQUIRED");
+    }
+
+    @Test
+    void summarySanitizesObservedPotentiallyRequiredRegression() {
+        DiagnosticReport report = assemblerV2.assemble(analysis(),
+                resultWithSummary("Existe indicio suficiente (POTENTIALLY_REQUIRED).", true, true,
+                        List.of(option(ProtectionType.INVENTION_PATENT))), context(), disclaimer());
+
+        assertThat(report.summary())
+                .contains("requiere revisión especializada")
+                .doesNotContain("POTENTIALLY_REQUIRED");
     }
 
     @Test
@@ -170,43 +262,51 @@ class DiagnosticReportAssemblerTest {
         String legalText = "La Decisión 486, artículo 14, permanece sin cambios.";
         ProtectionOption rawOption = new ProtectionOption(ProtectionType.INVENTION_PATENT,
                 ProtectionApplicability.POSSIBLE,
-                "Materia UTILITY_MODEL y POSSIBLE_EFFECT.",
-                "Se clasifica como POSSIBLE. " + legalText + " COPYRIGHTABLE y PRELIKELY permanecen.",
+                "Materia UTILITY_MODEL, NOT_INDICATED y POSSIBLE_EFFECT.",
+                "Se clasifica como POSSIBLE bajo DECISION_486. " + legalText
+                        + " COPYRIGHTABLE y PRELIKELY permanecen.",
                 List.of(new LegalBasis(LegalInstrument.DECISION_486, List.of("14"))));
         AnalysisResultV2 raw = new AnalysisResultV2(AnalysisResultV2.SCHEMA_VERSION,
-                "INVENTION_PATENT (POSSIBLE)", List.of(rawOption),
+                "INVENTION_PATENT (POSSIBLE) y POTENTIALLY_REQUIRED", List.of(rawOption),
                 new PatentScreening(true,
                         new Article15Screening(ScreeningAssessment.POTENTIAL_MATCH,
-                                "DISTINCTIVE_SIGN con evaluación LIKELY",
+                                "DISTINCTIVE_SIGN con evaluación LIKELY y NO_POTENTIAL_MATCH",
                                 List.of(new Article15Match(Article15Literal.a,
-                                        "COPYRIGHT y COPYRIGHTABLE"))),
+                                        "COPYRIGHT, POTENTIAL_MATCH y COPYRIGHTABLE"))),
                         new Article20Screening(ScreeningAssessment.NO_POTENTIAL_MATCH,
-                                "TRADE_SECRET sin coincidencia", List.of())),
+                                "TRADE_SECRET e INSUFFICIENT_INFORMATION", List.of())),
                 new GeneticResourceAccess(GeneticResourceAssessment.INSUFFICIENT_INFORMATION,
-                        "INDUSTRIAL_DESIGN requiere datos", List.of("Dato para UTILITY_MODEL")),
-                List.of("Observación DISTINCTIVE_SIGN y POSSIBLE_EFFECT"),
-                List.of("Advertencia UNLIKELY y PRELIKELY"));
+                        "INDUSTRIAL_DESIGN y POTENTIALLY_REQUIRED",
+                        List.of("Dato para UTILITY_MODEL según DECISION_391")),
+                List.of("Observación DISTINCTIVE_SIGN, POTENTIALLY_PATENTABLE y POSSIBLE_EFFECT"),
+                List.of("Advertencia UNLIKELY, DECISION_486_EXTRA y PRELIKELY"));
 
         DiagnosticReport report = assemblerV2.assemble(analysis(), raw, context(), disclaimer());
         DiagnosticReport.ProtectionPresentation option = report.protectionOptions().getFirst();
         DiagnosticReport.PatentScreeningPresentation screening = report.patentScreening();
 
-        assertThat(report.summary()).isEqualTo("patente de invención — podría corresponder");
-        assertThat(option.protectedSubjectMatter()).contains("modelo de utilidad", "POSSIBLE_EFFECT");
-        assertThat(option.rationale()).contains("podría corresponder", legalText,
+        assertThat(report.summary()).isEqualTo(
+                "patente de invención — podría corresponder y requiere revisión especializada");
+        assertThat(option.protectedSubjectMatter())
+                .contains("modelo de utilidad", "no se identifican indicios", "POSSIBLE_EFFECT");
+        assertThat(option.rationale()).contains("podría corresponder", "Decisión 486", legalText,
                 "COPYRIGHTABLE", "PRELIKELY").doesNotContain(" como POSSIBLE");
         assertThat(screening.article15().rationale())
-                .isEqualTo("signo distintivo con evaluación se relaciona claramente");
+                .isEqualTo("signo distintivo con evaluación se relaciona claramente y "
+                        + "no se identifican coincidencias potenciales");
         assertThat(screening.article15().matches().getFirst().rationale())
-                .isEqualTo("derecho de autor y COPYRIGHTABLE");
-        assertThat(screening.article20().rationale()).isEqualTo("secreto empresarial sin coincidencia");
+                .isEqualTo("derecho de autor, se identifican coincidencias potenciales y COPYRIGHTABLE");
+        assertThat(screening.article20().rationale())
+                .isEqualTo("secreto empresarial e se necesita más información");
         assertThat(report.geneticResourceAccess()).isNotNull();
-        assertThat(report.geneticResourceAccess().rationale()).isEqualTo("diseño industrial requiere datos");
+        assertThat(report.geneticResourceAccess().rationale())
+                .isEqualTo("diseño industrial y requiere revisión especializada");
         assertThat(report.geneticResourceAccess().missingInformation())
-                .containsExactly("Dato para modelo de utilidad");
+                .containsExactly("Dato para modelo de utilidad según Decisión 391");
         assertThat(report.observations())
-                .containsExactly("Observación signo distintivo y POSSIBLE_EFFECT");
-        assertThat(report.warnings()).containsExactly("Advertencia relación limitada y PRELIKELY");
+                .containsExactly("Observación signo distintivo, potencialmente patentable y POSSIBLE_EFFECT");
+        assertThat(report.warnings())
+                .containsExactly("Advertencia relación limitada, DECISION_486_EXTRA y PRELIKELY");
         assertThat(raw.protectionOptions().getFirst().rationale()).contains("POSSIBLE", "COPYRIGHTABLE");
     }
 
