@@ -303,6 +303,15 @@ class IdentipatIaApplicationTests {
         assertThat(registrationProperties.has("status")).isFalse();
         assertThat(registrationProperties.has("password")).isFalse();
 
+        JsonNode reportProperties = api.at("/components/schemas/DiagnosticReport/properties");
+        assertThat(reportProperties.has("patentScreening")).isTrue();
+        assertThat(reportProperties.has("geneticResourceAccess")).isTrue();
+        JsonNode protectionProperties = api.at("/components/schemas/ProtectionPresentation/properties");
+        assertThat(protectionProperties.has("patentScreening")).isFalse();
+        assertThat(protectionProperties.has("geneticResourceAccess")).isFalse();
+        JsonNode geneticProperties = api.at("/components/schemas/GeneticResourcePresentation/properties");
+        assertThat(geneticProperties.has("placement")).isFalse();
+
         mockMvc.perform(get("/swagger-ui.html"))
                 .andExpect(status().is3xxRedirection());
     }

@@ -95,8 +95,6 @@ export interface DiagnosticProtectionOption {
     articles: string[] | null;
   }> | null;
   orientation: string | null;
-  patentScreening: DiagnosticPatentScreening | null;
-  geneticResourceAccess: DiagnosticGeneticResourceAccess | null;
 }
 
 export interface DiagnosticPatentScreening {
@@ -119,7 +117,6 @@ export interface DiagnosticScreeningArticle {
 }
 
 export interface DiagnosticGeneticResourceAccess {
-  placement: string | null;
   assessment: string | null;
   assessmentLabel: string | null;
   rationale: string | null;

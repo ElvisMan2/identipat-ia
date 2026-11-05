@@ -4,9 +4,7 @@ import com.mnk.identipatia.reporting.dto.DiagnosticReport;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 @Component
 public class OperationalDiagnosticReportTextRenderer {
@@ -21,48 +19,24 @@ public class OperationalDiagnosticReportTextRenderer {
                     .orElseThrow());
         }
 
-        screeningPresentations(report).forEach(screening ->
-                sections.add("Revisión de patente:\n" + renderScreening(screening)));
+        if (report.patentScreening() != null) {
+            sections.add("Revisión de patente:\n" + renderScreening(report.patentScreening()));
+        }
 
         if (report.historicalPatentability() != null) {
             sections.add("Revisión de patente:\n"
                     + report.historicalPatentability().rationale());
         }
 
-        geneticPresentations(report).forEach(genetic ->
-                sections.add("Recursos genéticos:\n" + renderGenetic(genetic)));
+        if (report.geneticResourceAccess() != null) {
+            sections.add("Recursos genéticos:\n" + renderGenetic(report.geneticResourceAccess()));
+        }
 
         addList(sections, "Observaciones", report.observations());
         addList(sections, "Advertencias", report.warnings());
         sections.add("Disclaimer:\n" + report.disclaimer().title() + ": "
                 + report.disclaimer().content());
         return String.join("\n\n", sections);
-    }
-
-    private static Set<DiagnosticReport.PatentScreeningPresentation> screeningPresentations(
-            DiagnosticReport report) {
-        Set<DiagnosticReport.PatentScreeningPresentation> presentations = new LinkedHashSet<>();
-        report.protectionOptions().stream()
-                .map(DiagnosticReport.ProtectionPresentation::patentScreening)
-                .filter(java.util.Objects::nonNull)
-                .forEach(presentations::add);
-        if (report.patentScreening() != null) {
-            presentations.add(report.patentScreening());
-        }
-        return presentations;
-    }
-
-    private static Set<DiagnosticReport.GeneticResourcePresentation> geneticPresentations(
-            DiagnosticReport report) {
-        Set<DiagnosticReport.GeneticResourcePresentation> presentations = new LinkedHashSet<>();
-        report.protectionOptions().stream()
-                .map(DiagnosticReport.ProtectionPresentation::geneticResourceAccess)
-                .filter(java.util.Objects::nonNull)
-                .forEach(presentations::add);
-        if (report.geneticResourceAccess() != null) {
-            presentations.add(report.geneticResourceAccess());
-        }
-        return presentations;
     }
 
     private static String renderScreening(DiagnosticReport.PatentScreeningPresentation screening) {

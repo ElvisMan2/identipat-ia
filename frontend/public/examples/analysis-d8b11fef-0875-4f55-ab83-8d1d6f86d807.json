@@ -24,30 +24,28 @@
           ]
         }
       ],
-      "orientation": "Esta modalidad presenta una relación clara con la materia descrita y puede considerarse como una vía principal para una revisión especializada.",
-      "patentScreening": {
-        "title": "Revisión específica de la vía de patente de invención",
-        "context": "El artículo 14 constituye la base jurídica general de la modalidad. Los artículos 15 y 20 corresponden a una revisión limitada de posibles exclusiones.",
-        "article15": {
-          "article": "Artículo 15",
-          "assessment": "INSUFFICIENT_INFORMATION",
-          "assessmentLabel": "Se necesita más información",
-          "rationale": "Se mencionan agentes prebióticos de origen natural (inulina, FOS, etc.), lo que sugiere la presencia de material biológico natural o derivado. Sin embargo, falta información clave para decidir si la materia objeto de protección sería material biológico natural/aislable (excluido por 15(b)) o una composición formulada/transformada (no excluida); por ello no puede confirmarse la coincidencia con 15(b).",
-          "matches": []
-        },
-        "article20": {
-          "article": "Artículo 20",
-          "assessment": "NO_POTENTIAL_MATCH",
-          "assessmentLabel": "No se identifican coincidencias potenciales",
-          "rationale": "No hay indicios concretos en la descripción de que la explotación de la invención contravenga orden público/moral, afecte la protección de la salud/vida ambiental de forma conflictiva, consista en plantas/animales o en procedimientos esencialmente biológicos, ni que sea un método terapéutico/quirúrgico de humanos/animales.",
-          "matches": []
-        },
-        "scopeNote": "Este screening se limita a posibles coincidencias con los artículos 15 y 20 de la Decisión 486 y no constituye un examen completo de patentabilidad."
-      },
-      "geneticResourceAccess": null
+      "orientation": "Esta modalidad presenta una relación clara con la materia descrita y puede considerarse como una vía principal para una revisión especializada."
     }
   ],
-  "patentScreening": null,
+  "patentScreening": {
+    "title": "Revisión de la vía patentaria",
+    "context": "La descripción fue revisada respecto de posibles exclusiones previstas en los artículos 15 y 20 de la Decisión 486.",
+    "article15": {
+      "article": "Artículo 15",
+      "assessment": "INSUFFICIENT_INFORMATION",
+      "assessmentLabel": "Se necesita más información",
+      "rationale": "Se mencionan agentes prebióticos de origen natural (inulina, FOS, etc.), lo que sugiere la presencia de material biológico natural o derivado. Sin embargo, falta información clave para decidir si la materia objeto de protección sería material biológico natural/aislable (excluido por 15(b)) o una composición formulada/transformada (no excluida); por ello no puede confirmarse la coincidencia con 15(b).",
+      "matches": []
+    },
+    "article20": {
+      "article": "Artículo 20",
+      "assessment": "NO_POTENTIAL_MATCH",
+      "assessmentLabel": "No se identifican coincidencias potenciales",
+      "rationale": "No hay indicios concretos en la descripción de que la explotación de la invención contravenga orden público/moral, afecte la protección de la salud/vida ambiental de forma conflictiva, consista en plantas/animales o en procedimientos esencialmente biológicos, ni que sea un método terapéutico/quirúrgico de humanos/animales.",
+      "matches": []
+    },
+    "scopeNote": "Este screening se limita a posibles coincidencias con los artículos 15 y 20 de la Decisión 486 y no constituye un examen completo de patentabilidad."
+  },
   "geneticResourceAccess": null,
   "historicalPatentability": null,
   "observations": [

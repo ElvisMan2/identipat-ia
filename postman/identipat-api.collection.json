@@ -508,7 +508,7 @@
             "method": "GET",
             "auth": { "type": "noauth" },
             "url": "{{baseUrl}}/analyses/{{analysisId}}/report",
-            "description": "Devuelve diagnostic-report/1.0 con el disclaimer histórico, sin PII ni metadata del proveedor."
+            "description": "Devuelve diagnostic-report/1.0 con patentScreening y geneticResourceAccess únicamente a nivel raíz cuando corresponden, además del disclaimer histórico, sin PII ni metadata del proveedor."
           }
         },
         {

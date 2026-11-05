@@ -4,61 +4,46 @@ import com.mnk.identipatia.analysis.model.Analysis;
 import com.mnk.identipatia.analysis.result.v2.AnalysisResultV2;
 import com.mnk.identipatia.analysis.result.v2.Article15Match;
 import com.mnk.identipatia.analysis.result.v2.Article20Match;
+import com.mnk.identipatia.analysis.result.v2.GeneticResourceAssessment;
 import com.mnk.identipatia.analysis.result.v2.LegalBasis;
 import com.mnk.identipatia.analysis.result.v2.PatentScreening;
 import com.mnk.identipatia.analysis.result.v2.ProtectionOption;
-import com.mnk.identipatia.analysis.result.v2.ProtectionType;
 import com.mnk.identipatia.reporting.dto.DiagnosticReport;
 import com.mnk.identipatia.reporting.model.AnalysisReportContext;
 import com.mnk.identipatia.reporting.model.ReportDisclaimer;
 import org.springframework.stereotype.Component;
 
-import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
 
 @Component
 public class DiagnosticReportAssemblerV2 implements DiagnosticReportAssembler<AnalysisResultV2> {
-    private static final Set<ProtectionType> PATENT_ROUTE_TYPES =
-            EnumSet.of(ProtectionType.INVENTION_PATENT, ProtectionType.UTILITY_MODEL);
+    private static final String SCREENING_TITLE = "Revisión de la vía patentaria";
+    private static final String SCREENING_CONTEXT = "La descripción fue revisada respecto de posibles exclusiones "
+            + "previstas en los artículos 15 y 20 de la Decisión 486.";
 
     @Override
     public DiagnosticReport assemble(Analysis analysis, AnalysisResultV2 result, AnalysisReportContext context,
             ReportDisclaimer disclaimer) {
         DiagnosticReportPresentation.requireSupportedContext(context);
-        ScreeningPlacement placement = placement(result);
-        DiagnosticReport.PatentScreeningPresentation screening = placement == ScreeningPlacement.HIDDEN
-                ? null : screening(result.patentScreening(), placement);
-        GeneticPlacement geneticPlacement = geneticPlacement(result);
-        DiagnosticReport.GeneticResourcePresentation genetic = geneticPlacement == GeneticPlacement.HIDDEN
-                ? null : genetic(result, geneticPlacement);
+        DiagnosticReport.PatentScreeningPresentation screening = result.patentScreening().applicable()
+                ? screening(result.patentScreening()) : null;
+        DiagnosticReport.GeneticResourcePresentation genetic =
+                result.geneticResourceAccess().assessment() == GeneticResourceAssessment.NOT_INDICATED
+                        ? null : genetic(result);
         List<DiagnosticReport.ProtectionPresentation> options = result.protectionOptions().stream()
-                .map(option -> option(option, nestedScreening(option.type(), placement, screening),
-                        nestedGenetic(option.type(), geneticPlacement, genetic)))
+                .map(DiagnosticReportAssemblerV2::option)
                 .toList();
-        DiagnosticReport.PatentScreeningPresentation independentScreening = switch (placement) {
-            case SHARED_PATENT_ROUTE, STANDALONE -> screening;
-            default -> null;
-        };
-
-        DiagnosticReport.GeneticResourcePresentation independentGenetic = switch (geneticPlacement) {
-            case SHARED, STANDALONE -> genetic;
-            default -> null;
-        };
 
         return new DiagnosticReport(context.getReportVersion(), analysis.getAnalysisId(), result.schemaVersion(),
                 analysis.getInputType(), analysis.getCompletedAt(), DiagnosticReportPresentation.TITLE,
                 DiagnosticReportPresentation.narrative(result.summary()),
-                DiagnosticReportPresentation.APPLICABILITY_NOTE, options, independentScreening,
-                independentGenetic, null,
+                DiagnosticReportPresentation.APPLICABILITY_NOTE, options, screening, genetic, null,
                 DiagnosticReportPresentation.narratives(result.observations()),
                 DiagnosticReportPresentation.narratives(result.warnings()),
                 DiagnosticReportPresentation.SCOPE, DiagnosticReportPresentation.disclaimer(disclaimer));
     }
 
-    private static DiagnosticReport.ProtectionPresentation option(ProtectionOption option,
-            DiagnosticReport.PatentScreeningPresentation screening,
-            DiagnosticReport.GeneticResourcePresentation genetic) {
+    private static DiagnosticReport.ProtectionPresentation option(ProtectionOption option) {
         return new DiagnosticReport.ProtectionPresentation(
                 option.type().name(),
                 DiagnosticReportPresentation.protectionLabel(option.type().name()),
@@ -68,14 +53,13 @@ public class DiagnosticReportAssemblerV2 implements DiagnosticReportAssembler<An
                 DiagnosticReportPresentation.narrative(option.protectedSubjectMatter()),
                 DiagnosticReportPresentation.narrative(option.rationale()),
                 option.legalBasis().stream().map(DiagnosticReportAssemblerV2::legalBasis).toList(),
-                DiagnosticReportPresentation.orientation(option.applicability().name()), screening, genetic);
+                DiagnosticReportPresentation.orientation(option.applicability().name()));
     }
 
-    private static DiagnosticReport.GeneticResourcePresentation genetic(AnalysisResultV2 result,
-            GeneticPlacement placement) {
+    private static DiagnosticReport.GeneticResourcePresentation genetic(AnalysisResultV2 result) {
         var genetic = result.geneticResourceAccess();
         return new DiagnosticReport.GeneticResourcePresentation(
-                placement.name(), genetic.assessment().name(), geneticLabel(genetic.assessment().name()),
+                genetic.assessment().name(), geneticLabel(genetic.assessment().name()),
                 DiagnosticReportPresentation.narrative(genetic.rationale()),
                 DiagnosticReportPresentation.narratives(genetic.missingInformation()));
     }
@@ -95,23 +79,8 @@ public class DiagnosticReportAssemblerV2 implements DiagnosticReportAssembler<An
         };
     }
 
-    private static DiagnosticReport.PatentScreeningPresentation screening(PatentScreening screening,
-            ScreeningPlacement placement) {
-        String title = switch (placement) {
-            case INVENTION_PATENT -> "Revisión específica de la vía de patente de invención";
-            case UTILITY_MODEL -> "Revisión específica de la vía de modelo de utilidad";
-            case SHARED_PATENT_ROUTE -> "Revisión de la vía patentaria";
-            case STANDALONE -> "Revisión de la vía de patente";
-            case HIDDEN -> throw new IllegalArgumentException("Hidden screening has no presentation");
-        };
-        String context = switch (placement) {
-            case INVENTION_PATENT -> "El artículo 14 constituye la base jurídica general de la modalidad. Los artículos 15 y 20 corresponden a una revisión limitada de posibles exclusiones.";
-            case UTILITY_MODEL -> "Los artículos 15 y 20 corresponden a una revisión limitada de posibles exclusiones. La base jurídica de esta modalidad se muestra exclusivamente según el resultado del análisis.";
-            case SHARED_PATENT_ROUTE -> "Las modalidades técnicas identificadas fueron revisadas también frente a las posibles exclusiones de los artículos 15 y 20 de la Decisión 486.";
-            case STANDALONE -> "La descripción también fue revisada respecto de la vía patentaria, aunque no se identificó una modalidad positiva de patente de invención o modelo de utilidad.";
-            case HIDDEN -> throw new IllegalArgumentException("Hidden screening has no presentation");
-        };
-        return new DiagnosticReport.PatentScreeningPresentation(title, context,
+    private static DiagnosticReport.PatentScreeningPresentation screening(PatentScreening screening) {
+        return new DiagnosticReport.PatentScreeningPresentation(SCREENING_TITLE, SCREENING_CONTEXT,
                 new DiagnosticReport.ScreeningArticlePresentation("Artículo 15",
                         screening.article15().assessment().name(),
                         screeningLabel(screening.article15().assessment().name()),
@@ -135,65 +104,6 @@ public class DiagnosticReportAssemblerV2 implements DiagnosticReportAssembler<An
                 DiagnosticReportPresentation.narrative(match.rationale()));
     }
 
-    private static ScreeningPlacement placement(AnalysisResultV2 result) {
-        if (!result.patentScreening().applicable()) {
-            return ScreeningPlacement.HIDDEN;
-        }
-        Set<ProtectionType> present = result.protectionOptions().stream()
-                .map(ProtectionOption::type)
-                .filter(PATENT_ROUTE_TYPES::contains)
-                .collect(java.util.stream.Collectors.toSet());
-        if (present.size() == 2) {
-            return ScreeningPlacement.SHARED_PATENT_ROUTE;
-        }
-        if (present.contains(ProtectionType.INVENTION_PATENT)) {
-            return ScreeningPlacement.INVENTION_PATENT;
-        }
-        if (present.contains(ProtectionType.UTILITY_MODEL)) {
-            return ScreeningPlacement.UTILITY_MODEL;
-        }
-        return ScreeningPlacement.STANDALONE;
-    }
-
-    private static DiagnosticReport.PatentScreeningPresentation nestedScreening(ProtectionType type,
-            ScreeningPlacement placement, DiagnosticReport.PatentScreeningPresentation screening) {
-        return switch (placement) {
-            case INVENTION_PATENT -> type == ProtectionType.INVENTION_PATENT ? screening : null;
-            case UTILITY_MODEL -> type == ProtectionType.UTILITY_MODEL ? screening : null;
-            default -> null;
-        };
-    }
-
-    private static GeneticPlacement geneticPlacement(AnalysisResultV2 result) {
-        if ("NOT_INDICATED".equals(result.geneticResourceAccess().assessment().name())) {
-            return GeneticPlacement.HIDDEN;
-        }
-        boolean inventionPatent = result.protectionOptions().stream()
-                .anyMatch(option -> option.type() == ProtectionType.INVENTION_PATENT);
-        boolean plantBreeder = result.protectionOptions().stream()
-                .anyMatch(option -> option.type() == ProtectionType.PLANT_BREEDER_CERTIFICATE);
-        if (inventionPatent && plantBreeder) {
-            return GeneticPlacement.SHARED;
-        }
-        if (inventionPatent) {
-            return GeneticPlacement.EMBEDDED_IN_INVENTION_PATENT;
-        }
-        if (plantBreeder) {
-            return GeneticPlacement.EMBEDDED_IN_PLANT_BREEDER_CERTIFICATE;
-        }
-        return GeneticPlacement.STANDALONE;
-    }
-
-    private static DiagnosticReport.GeneticResourcePresentation nestedGenetic(ProtectionType type,
-            GeneticPlacement placement, DiagnosticReport.GeneticResourcePresentation genetic) {
-        return switch (placement) {
-            case EMBEDDED_IN_INVENTION_PATENT -> type == ProtectionType.INVENTION_PATENT ? genetic : null;
-            case EMBEDDED_IN_PLANT_BREEDER_CERTIFICATE ->
-                    type == ProtectionType.PLANT_BREEDER_CERTIFICATE ? genetic : null;
-            default -> null;
-        };
-    }
-
     private static String screeningLabel(String assessment) {
         return switch (assessment) {
             case "NO_POTENTIAL_MATCH" -> "No se identifican coincidencias potenciales";
@@ -210,21 +120,5 @@ public class DiagnosticReportAssemblerV2 implements DiagnosticReportAssembler<An
             case "INSUFFICIENT_INFORMATION" -> "Se necesita más información";
             default -> throw new IllegalArgumentException("Unsupported genetic resource assessment: " + assessment);
         };
-    }
-
-    private enum ScreeningPlacement {
-        INVENTION_PATENT,
-        UTILITY_MODEL,
-        SHARED_PATENT_ROUTE,
-        STANDALONE,
-        HIDDEN
-    }
-
-    private enum GeneticPlacement {
-        EMBEDDED_IN_INVENTION_PATENT,
-        EMBEDDED_IN_PLANT_BREEDER_CERTIFICATE,
-        SHARED,
-        STANDALONE,
-        HIDDEN
     }
 }

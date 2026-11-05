@@ -106,9 +106,10 @@ El DTO JSON conserva `scope` por compatibilidad, pero el PDF ya no renderiza la 
 “Alcance del análisis”. El disclaimer, la nota del semáforo y las notas específicas del screening se
 mantienen.
 
-La evaluación de recursos genéticos sigue proviniendo exclusivamente de `AnalysisResultV2` y usa
-placement determinístico: oculta para `NOT_INDICATED`; embebida en patente o certificado si hay un
-solo anclaje; compartida si hay ambos; y standalone si no hay anclajes. Nunca se duplica.
+La evaluación de recursos genéticos sigue proviniendo exclusivamente de `AnalysisResultV2`. En el
+reporte se presenta como un único bloque transversal raíz para `POTENTIALLY_REQUIRED` o
+`INSUFFICIENT_INFORMATION`, y se oculta para `NOT_INDICATED`; nunca depende de modalidades ancla ni
+se duplica.
 
 ## Límites
 

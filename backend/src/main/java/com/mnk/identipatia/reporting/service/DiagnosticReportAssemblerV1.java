@@ -25,9 +25,7 @@ public class DiagnosticReportAssemblerV1 implements DiagnosticReportAssembler<An
                         null,
                         DiagnosticReportPresentation.narrative(option.rationale()),
                         List.of(),
-                        DiagnosticReportPresentation.orientation(option.applicability().name()),
-                        null,
-                        null))
+                        DiagnosticReportPresentation.orientation(option.applicability().name())))
                 .toList();
         return new DiagnosticReport(context.getReportVersion(), analysis.getAnalysisId(), result.schemaVersion(),
                 analysis.getInputType(), analysis.getCompletedAt(), DiagnosticReportPresentation.TITLE,

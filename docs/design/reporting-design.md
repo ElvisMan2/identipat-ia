@@ -2,7 +2,7 @@
 
 **Versión pública:** `diagnostic-report/1.0`  
 **Estado:** implementado  
-**Última actualización:** 26 de octubre de 2026
+**Última actualización:** 5 de noviembre de 2026
 
 ## Fuente única y límites
 
@@ -41,19 +41,22 @@ JSON y PDF.
 `observations` se presenta como “Aspectos a considerar”; `warnings` como “Advertencias del caso”. El
 disclaimer institucional y “Alcance del análisis” son bloques distintos y nunca se agregan a warnings.
 
-## Screening de la vía patentaria
+## Bloques transversales
 
-La vía patentaria comprende patente de invención y modelo de utilidad. Cuando el screening es
-aplicable se presenta exactamente una vez:
+`patentScreening` y `geneticResourceAccess` son bloques transversales de `DiagnosticReport`,
+independientes de `protectionOptions`. Nunca se anidan dentro de una modalidad y cada uno se presenta
+como máximo una vez. El contrato vigente `diagnostic-report/1.0` se modificó directamente porque aún
+no había sido presentado ni liberado como contrato externo ante INDECOPI.
 
-- solo patente de invención: se anida en esa modalidad y conserva el artículo 14 como base general;
-- solo modelo de utilidad: se anida en esa modalidad, con contexto neutral y sin afirmar que falta
-  una modalidad de patente;
-- ambas modalidades: se muestra un único bloque global compartido por la vía patentaria;
-- ninguna modalidad: se muestra un único bloque independiente con contexto neutral;
-- screening no aplicable: no se muestra.
+Cuando `patentScreening.applicable` es `true`, el reporte incluye el bloque raíz con título y contexto
+neutrales, sin depender de que exista patente de invención o modelo de utilidad. Si es `false`, el
+bloque raíz es `null`. Los casos visibles mantienen el detalle de artículos 15 y 20, sus coincidencias,
+labels y la nota controlada de alcance.
 
-Los casos visibles incluyen la nota controlada que limita el screening a los artículos 15 y 20.
+Cuando `geneticResourceAccess.assessment` es `POTENTIALLY_REQUIRED` o
+`INSUFFICIENT_INFORMATION`, el reporte incluye el bloque raíz. Para `NOT_INDICATED` es `null`. Esta
+decisión no depende de patente de invención ni de certificado de obtentor, y la presentación ya no
+expone un campo `placement`.
 
 ## JSON, PDF y seguridad
 

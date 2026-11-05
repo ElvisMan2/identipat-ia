@@ -84,27 +84,7 @@ const sampleReportResponse = {
           ]
         }
       ],
-      "orientation": "Esta modalidad presenta una relación clara y puede considerarse una vía principal para una revisión especializada.",
-      "patentScreening": {
-        "title": "Revisión específica de la vía de modelo de utilidad",
-        "context": "Los artículos 15 y 20 corresponden a una revisión limitada de posibles exclusiones.",
-        "article15": {
-          "article": "Artículo 15",
-          "assessment": "NO_POTENTIAL_MATCH",
-          "assessmentLabel": "No se identifican coincidencias potenciales",
-          "rationale": "No se identifican elementos descritos que coincidan de manera potencial con las exclusiones revisadas.",
-          "matches": []
-        },
-        "article20": {
-          "article": "Artículo 20",
-          "assessment": "NO_POTENTIAL_MATCH",
-          "assessmentLabel": "No se identifican coincidencias potenciales",
-          "rationale": "No se identifican elementos descritos que coincidan de manera potencial con las exclusiones revisadas.",
-          "matches": []
-        },
-        "scopeNote": "Esta revisión se limita a los artículos 15 y 20 de la Decisión 486 y no evalúa novedad, nivel inventivo, aplicación industrial ni registrabilidad."
-      },
-      "geneticResourceAccess": null
+      "orientation": "Esta modalidad presenta una relación clara y puede considerarse una vía principal para una revisión especializada."
     },
     {
       "type": "INDUSTRIAL_DESIGN",
@@ -122,9 +102,7 @@ const sampleReportResponse = {
           ]
         }
       ],
-      "orientation": "La apariencia descrita se relaciona claramente con esta modalidad.",
-      "patentScreening": null,
-      "geneticResourceAccess": null
+      "orientation": "La apariencia descrita se relaciona claramente con esta modalidad."
     },
     {
       "type": "DISTINCTIVE_SIGN",
@@ -142,9 +120,7 @@ const sampleReportResponse = {
           ]
         }
       ],
-      "orientation": "Esta modalidad presenta una relación clara con los elementos distintivos descritos.",
-      "patentScreening": null,
-      "geneticResourceAccess": null
+      "orientation": "Esta modalidad presenta una relación clara con los elementos distintivos descritos."
     },
     {
       "type": "COPYRIGHT",
@@ -162,14 +138,29 @@ const sampleReportResponse = {
           ]
         }
       ],
-      "orientation": "Esta modalidad podría corresponder a los elementos creativos expresados y documentados.",
-      "patentScreening": null,
-      "geneticResourceAccess": null
+      "orientation": "Esta modalidad podría corresponder a los elementos creativos expresados y documentados."
     }
   ],
-  "patentScreening": null,
+  "patentScreening": {
+    "title": "Revisión de la vía patentaria",
+    "context": "La descripción fue revisada respecto de posibles exclusiones previstas en los artículos 15 y 20 de la Decisión 486.",
+    "article15": {
+      "article": "Artículo 15",
+      "assessment": "NO_POTENTIAL_MATCH",
+      "assessmentLabel": "No se identifican coincidencias potenciales",
+      "rationale": "No se identifican elementos descritos que coincidan de manera potencial con las exclusiones revisadas.",
+      "matches": []
+    },
+    "article20": {
+      "article": "Artículo 20",
+      "assessment": "NO_POTENTIAL_MATCH",
+      "assessmentLabel": "No se identifican coincidencias potenciales",
+      "rationale": "No se identifican elementos descritos que coincidan de manera potencial con las exclusiones revisadas.",
+      "matches": []
+    },
+    "scopeNote": "Esta revisión se limita a los artículos 15 y 20 de la Decisión 486 y no evalúa novedad, nivel inventivo, aplicación industrial ni registrabilidad."
+  },
   "geneticResourceAccess": {
-    "placement": "STANDALONE",
     "assessment": "POTENTIALLY_REQUIRED",
     "assessmentLabel": "Requiere revisión especializada",
     "rationale": "La descripción menciona un recubrimiento experimental obtenido a partir de un extracto de una planta nativa peruana y no precisa el régimen de acceso aplicable.",
@@ -304,10 +295,10 @@ function screeningHtml(screening) {
     </div>`;
 }
 
-function geneticHtml(genetic, embedded = false) {
+function geneticHtml(genetic) {
   if (!genetic) return '';
   return `
-    <div class="${embedded ? 'screening-box' : ''}">
+    <div>
       <h4>${escapeHtml(genetic.assessmentLabel || genetic.assessment)}</h4>
       <p>${escapeHtml(genetic.rationale)}</p>
       ${genetic.missingInformation?.length ? `
@@ -317,8 +308,6 @@ function geneticHtml(genetic, embedded = false) {
 }
 
 function modalityCard(reportModality, guidanceModality, index) {
-  const geneticResourceAccess = reportModality.geneticResourceAccess ||
-    (index === 0 ? reportResponse.geneticResourceAccess : null);
   const modalityNames = {
     INVENTION_PATENT: 'Patente de invención',
     UTILITY_MODEL: 'Modelo de utilidad',
@@ -379,11 +368,6 @@ function modalityCard(reportModality, guidanceModality, index) {
             <div class="diag-val"><p>${escapeHtml(reportModality.orientation)}</p></div>
           </div>` : ''}
 
-          ${geneticResourceAccess ? `
-          <div class="diag-item full-width">
-            <div class="diag-key">Recursos genéticos</div>
-            <div class="diag-val">${geneticHtml(geneticResourceAccess, true)}</div>
-          </div>` : ''}
         </div>
       </div>
     </article>`;
@@ -406,6 +390,14 @@ function renderComplementary() {
         <h3>Antecedente histórico de patentabilidad</h3>
         <p><strong>${escapeHtml(reportResponse.historicalPatentability.outcome)}</strong></p>
         <p>${escapeHtml(reportResponse.historicalPatentability.rationale)}</p>
+      </article>`);
+  }
+
+  if (reportResponse.geneticResourceAccess) {
+    cards.push(`
+      <article class="context-card full">
+        <h3>Recursos genéticos</h3>
+        ${geneticHtml(reportResponse.geneticResourceAccess)}
       </article>`);
   }
 

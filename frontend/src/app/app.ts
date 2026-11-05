@@ -1999,9 +1999,7 @@ export class App {
               instrument: basis.instrument,
               articles: basis.articles
             })),
-            orientation: null,
-            patentScreening: null,
-            geneticResourceAccess: null
+            orientation: null
           })),
           patentScreening: {
             title: 'Evaluación preliminar de exclusiones',
@@ -2021,7 +2019,6 @@ export class App {
             },
           },
           geneticResourceAccess: {
-            placement: null,
             assessment: result.geneticResourceAccess.assessment,
             assessmentLabel: result.geneticResourceAccess.assessment,
             rationale: result.geneticResourceAccess.rationale,

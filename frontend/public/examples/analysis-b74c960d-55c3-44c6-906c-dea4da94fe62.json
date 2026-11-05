@@ -24,41 +24,38 @@
           ]
         }
       ],
-      "orientation": "Esta modalidad presenta una relación clara con la materia descrita y puede considerarse como una vía principal para una revisión especializada.",
-      "patentScreening": {
-        "title": "Revisión específica de la vía de patente de invención",
-        "context": "El artículo 14 constituye la base jurídica general de la modalidad. Los artículos 15 y 20 corresponden a una revisión limitada de posibles exclusiones.",
-        "article15": {
-          "article": "Artículo 15",
-          "assessment": "NO_POTENTIAL_MATCH",
-          "assessmentLabel": "No se identifican coincidencias potenciales",
-          "rationale": "Los componentes botánicos listados (Avena sativa, Zea mays, Hordeum vulgare, etc.) aparecen como insumos/constituyentes de una formulación transformada; por tanto la materia objeto de protección es la composición formulada y no el material biológico tal como está en la naturaleza, por lo que no se identifica una coincidencia con el literal 15(b). No hay señales de coincidencia con otros literales de artículo 15.",
-          "matches": []
-        },
-        "article20": {
-          "article": "Artículo 20",
-          "assessment": "NO_POTENTIAL_MATCH",
-          "assessmentLabel": "No se identifican coincidencias potenciales",
-          "rationale": "Aunque la formulación está destinada a tratar anemia en equinos, la descripción se refiere a un producto (composición) y a un procedimiento de preparación, no a un método terapéutico de aplicación médica/quirúrgica excluido por el literal 20(d). No hay indicios concretos de los supuestos del artículo 20.",
-          "matches": []
-        },
-        "scopeNote": "Este screening se limita a posibles coincidencias con los artículos 15 y 20 de la Decisión 486 y no constituye un examen completo de patentabilidad."
-      },
-      "geneticResourceAccess": {
-        "placement": "EMBEDDED_IN_INVENTION_PATENT",
-        "assessment": "INSUFFICIENT_INFORMATION",
-        "assessmentLabel": "Se necesita más información",
-        "rationale": "La composición incluye múltiples especies vegetales identificadas por nombre científico, y la formulación tiene una finalidad comercial/industrial (tratamiento de anemia en equinos), lo que sugiere utilización de material biológico relevante. Sin embargo falta información crítica sobre el país de origen y la forma de obtención de esos materiales para evaluar la posible aplicación del régimen de acceso a recursos genéticos.",
-        "missingInformation": [
-          "país de origen de los materiales vegetales listados",
-          "forma de obtención de cada material vegetal (semilla, extracto, ingrediente procesado)",
-          "si se utilizaron recursos genéticos provenientes de un País Miembro"
-        ]
-      }
+      "orientation": "Esta modalidad presenta una relación clara con la materia descrita y puede considerarse como una vía principal para una revisión especializada."
     }
   ],
-  "patentScreening": null,
-  "geneticResourceAccess": null,
+  "patentScreening": {
+    "title": "Revisión de la vía patentaria",
+    "context": "La descripción fue revisada respecto de posibles exclusiones previstas en los artículos 15 y 20 de la Decisión 486.",
+    "article15": {
+      "article": "Artículo 15",
+      "assessment": "NO_POTENTIAL_MATCH",
+      "assessmentLabel": "No se identifican coincidencias potenciales",
+      "rationale": "Los componentes botánicos listados (Avena sativa, Zea mays, Hordeum vulgare, etc.) aparecen como insumos/constituyentes de una formulación transformada; por tanto la materia objeto de protección es la composición formulada y no el material biológico tal como está en la naturaleza, por lo que no se identifica una coincidencia con el literal 15(b). No hay señales de coincidencia con otros literales de artículo 15.",
+      "matches": []
+    },
+    "article20": {
+      "article": "Artículo 20",
+      "assessment": "NO_POTENTIAL_MATCH",
+      "assessmentLabel": "No se identifican coincidencias potenciales",
+      "rationale": "Aunque la formulación está destinada a tratar anemia en equinos, la descripción se refiere a un producto (composición) y a un procedimiento de preparación, no a un método terapéutico de aplicación médica/quirúrgica excluido por el literal 20(d). No hay indicios concretos de los supuestos del artículo 20.",
+      "matches": []
+    },
+    "scopeNote": "Este screening se limita a posibles coincidencias con los artículos 15 y 20 de la Decisión 486 y no constituye un examen completo de patentabilidad."
+  },
+  "geneticResourceAccess": {
+    "assessment": "INSUFFICIENT_INFORMATION",
+    "assessmentLabel": "Se necesita más información",
+    "rationale": "La composición incluye múltiples especies vegetales identificadas por nombre científico, y la formulación tiene una finalidad comercial/industrial (tratamiento de anemia en equinos), lo que sugiere utilización de material biológico relevante. Sin embargo falta información crítica sobre el país de origen y la forma de obtención de esos materiales para evaluar la posible aplicación del régimen de acceso a recursos genéticos.",
+    "missingInformation": [
+      "país de origen de los materiales vegetales listados",
+      "forma de obtención de cada material vegetal (semilla, extracto, ingrediente procesado)",
+      "si se utilizaron recursos genéticos provenientes de un País Miembro"
+    ]
+  },
   "historicalPatentability": null,
   "observations": [
     "La materia objeto de la vía patentaria identificada es la formulación (composición con rangos porcentuales) y el procedimiento de preparación referido; los ingredientes botánicos actúan como insumos/constituyentes de la formulación.",

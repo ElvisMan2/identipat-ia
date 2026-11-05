@@ -74,12 +74,6 @@ public class DiagnosticReportPdfRenderer {
                     option.legalBasis().forEach(basis -> cursor.bullet(legalBasisText(basis)));
                 }
                 cursor.labelValueTogether("Orientación", option.orientation());
-                if (option.patentScreening() != null) {
-                    writeScreening(cursor, option.patentScreening());
-                }
-                if (option.geneticResourceAccess() != null) {
-                    writeGeneticResources(cursor, option.geneticResourceAccess());
-                }
                 cursor.endOption();
             }
             if (report.patentScreening() != null) {

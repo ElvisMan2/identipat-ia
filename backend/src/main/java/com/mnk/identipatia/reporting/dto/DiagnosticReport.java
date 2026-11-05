@@ -42,9 +42,7 @@ public record DiagnosticReport(
             String protectedSubjectMatter,
             String rationale,
             List<LegalBasisPresentation> legalBasis,
-            String orientation,
-            PatentScreeningPresentation patentScreening,
-            GeneticResourcePresentation geneticResourceAccess) {
+            String orientation) {
     }
 
     public record LegalBasisPresentation(String instrument, List<String> articles) {
@@ -70,7 +68,6 @@ public record DiagnosticReport(
     }
 
     public record GeneticResourcePresentation(
-            String placement,
             String assessment,
             String assessmentLabel,
             String rationale,

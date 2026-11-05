@@ -45,7 +45,7 @@ class DiagnosticReportAssemblerTest {
     private final DiagnosticReportAssemblerV2 assemblerV2 = new DiagnosticReportAssemblerV2();
 
     @Test
-    void v2MapsAllSevenLabelsCitizenApplicabilityLegalBasisAndSharedScreening() {
+    void v2MapsAllSevenLabelsCitizenApplicabilityLegalBasisAndRootScreening() {
         AnalysisResultV2 result = result(true, true,
                 Arrays.stream(ProtectionType.values()).map(this::option).toList());
 
@@ -58,70 +58,59 @@ class DiagnosticReportAssemblerTest {
                 .containsOnly("Se relaciona claramente");
         assertThat(report.protectionOptions().getFirst().legalBasis().getFirst().instrument())
                 .isEqualTo("Decisión 486");
-        assertThat(report.protectionOptions()).allMatch(option -> option.patentScreening() == null);
         assertThat(report.patentScreening()).isNotNull();
         assertThat(report.patentScreening().title()).isEqualTo("Revisión de la vía patentaria");
-        assertThat(report.patentScreening().context()).contains("modalidades técnicas identificadas");
-        assertThat(screeningCount(report)).isEqualTo(1);
+        assertThat(report.patentScreening().context())
+                .isEqualTo("La descripción fue revisada respecto de posibles exclusiones previstas "
+                        + "en los artículos 15 y 20 de la Decisión 486.");
         assertThat(report.observations()).containsExactly("Aspecto específico");
         assertThat(report.warnings()).containsExactly("Advertencia específica");
         assertThat(report.scope()).contains("No determina registrabilidad");
     }
 
     @Test
-    void screeningWithOnlyInventionPatentIsNestedExactlyOnce() {
+    void screeningWithOnlyInventionPatentIsRootExactlyOnce() {
         DiagnosticReport report = assemblerV2.assemble(analysis(),
                 result(true, true, List.of(option(ProtectionType.INVENTION_PATENT))), context(), disclaimer());
 
-        assertThat(report.protectionOptions().getFirst().patentScreening()).isNotNull();
-        assertThat(report.protectionOptions().getFirst().patentScreening().title())
-                .isEqualTo("Revisión específica de la vía de patente de invención");
-        assertThat(report.protectionOptions().getFirst().patentScreening().context())
-                .contains("artículo 14").contains("artículos 15 y 20");
-        assertThat(report.patentScreening()).isNull();
-        assertThat(screeningCount(report)).isEqualTo(1);
+        assertThat(report.patentScreening()).isNotNull();
+        assertThat(report.patentScreening().title()).isEqualTo("Revisión de la vía patentaria");
+        assertThat(report.patentScreening().context()).contains("artículos 15 y 20");
     }
 
     @Test
-    void screeningWithOnlyUtilityModelIsNestedExactlyOnceWithNeutralContext() {
+    void screeningWithOnlyUtilityModelIsRootExactlyOnceWithNeutralContext() {
         DiagnosticReport report = assemblerV2.assemble(analysis(),
                 result(true, false, List.of(option(ProtectionType.UTILITY_MODEL))), context(), disclaimer());
 
-        assertThat(report.protectionOptions().getFirst().patentScreening()).isNotNull();
-        assertThat(report.protectionOptions().getFirst().patentScreening().title())
-                .isEqualTo("Revisión específica de la vía de modelo de utilidad");
-        assertThat(report.protectionOptions().getFirst().patentScreening().context())
+        assertThat(report.patentScreening()).isNotNull();
+        assertThat(report.patentScreening().title()).isEqualTo("Revisión de la vía patentaria");
+        assertThat(report.patentScreening().context())
                 .contains("artículos 15 y 20")
                 .doesNotContain("artículo 14", "patente no aparece", "no se identificó una modalidad positiva");
-        assertThat(report.patentScreening()).isNull();
-        assertThat(screeningCount(report)).isEqualTo(1);
     }
 
     @Test
-    void screeningWithPatentAndUtilityModelIsSharedExactlyOnce() {
+    void screeningWithPatentAndUtilityModelIsRootExactlyOnce() {
         DiagnosticReport report = assemblerV2.assemble(analysis(),
                 result(true, true, List.of(option(ProtectionType.INVENTION_PATENT),
                         option(ProtectionType.UTILITY_MODEL))), context(), disclaimer());
 
-        assertThat(report.protectionOptions()).allMatch(option -> option.patentScreening() == null);
         assertThat(report.patentScreening()).isNotNull();
         assertThat(report.patentScreening().title()).isEqualTo("Revisión de la vía patentaria");
-        assertThat(report.patentScreening().context()).contains("modalidades técnicas identificadas");
-        assertThat(screeningCount(report)).isEqualTo(1);
+        assertThat(report.patentScreening().context()).contains("artículos 15 y 20");
     }
 
     @Test
-    void screeningWithoutPatentRouteUsesIndependentBlockWithoutInventingOption() {
+    void screeningWithoutPatentRouteUsesRootBlockWithoutInventingOption() {
         DiagnosticReport report = assemblerV2.assemble(analysis(),
                 result(true, false, List.of(option(ProtectionType.COPYRIGHT))), context(), disclaimer());
 
         assertThat(report.patentScreening()).isNotNull();
-        assertThat(report.patentScreening().title()).isEqualTo("Revisión de la vía de patente");
+        assertThat(report.patentScreening().title()).isEqualTo("Revisión de la vía patentaria");
         assertThat(report.patentScreening().context())
-                .contains("no se identificó una modalidad positiva de patente de invención o modelo de utilidad");
+                .contains("artículos 15 y 20 de la Decisión 486");
         assertThat(report.protectionOptions()).noneMatch(option -> option.type().equals("INVENTION_PATENT"));
-        assertThat(report.protectionOptions()).allMatch(option -> option.patentScreening() == null);
-        assertThat(screeningCount(report)).isEqualTo(1);
     }
 
     @Test
@@ -130,8 +119,6 @@ class DiagnosticReportAssemblerTest {
                 result(false, true, List.of(option(ProtectionType.INVENTION_PATENT))), context(), disclaimer());
 
         assertThat(report.patentScreening()).isNull();
-        assertThat(report.protectionOptions().getFirst().patentScreening()).isNull();
-        assertThat(screeningCount(report)).isZero();
     }
 
     @Test
@@ -202,7 +189,7 @@ class DiagnosticReportAssemblerTest {
 
         DiagnosticReport report = assemblerV2.assemble(analysis(), raw, context(), disclaimer());
         DiagnosticReport.ProtectionPresentation option = report.protectionOptions().getFirst();
-        DiagnosticReport.PatentScreeningPresentation screening = option.patentScreening();
+        DiagnosticReport.PatentScreeningPresentation screening = report.patentScreening();
 
         assertThat(report.summary()).isEqualTo("patente de invención — podría corresponder");
         assertThat(option.protectedSubjectMatter()).contains("modelo de utilidad", "POSSIBLE_EFFECT");
@@ -213,10 +200,9 @@ class DiagnosticReportAssemblerTest {
         assertThat(screening.article15().matches().getFirst().rationale())
                 .isEqualTo("derecho de autor y COPYRIGHTABLE");
         assertThat(screening.article20().rationale()).isEqualTo("secreto empresarial sin coincidencia");
-        assertThat(report.geneticResourceAccess()).isNull();
-        assertThat(option.geneticResourceAccess().placement()).isEqualTo("EMBEDDED_IN_INVENTION_PATENT");
-        assertThat(option.geneticResourceAccess().rationale()).isEqualTo("diseño industrial requiere datos");
-        assertThat(option.geneticResourceAccess().missingInformation())
+        assertThat(report.geneticResourceAccess()).isNotNull();
+        assertThat(report.geneticResourceAccess().rationale()).isEqualTo("diseño industrial requiere datos");
+        assertThat(report.geneticResourceAccess().missingInformation())
                 .containsExactly("Dato para modelo de utilidad");
         assertThat(report.observations())
                 .containsExactly("Observación signo distintivo y POSSIBLE_EFFECT");
@@ -230,7 +216,8 @@ class DiagnosticReportAssemblerTest {
                 + "Descripción técnica A → B con áéíóú, ñ, ¿pregunta? y ¡énfasis! ".repeat(18);
         DiagnosticReport report = assemblerV2.assemble(analysis(),
                 resultWithSummary(summary, true, true,
-                        List.of(longPatentOption(), option(ProtectionType.COPYRIGHT))),
+                        List.of(longPatentOption(), option(ProtectionType.COPYRIGHT),
+                                option(ProtectionType.PLANT_BREEDER_CERTIFICATE))),
                 context(), longDisclaimer());
 
         byte[] bytes = new DiagnosticReportPdfRenderer().render(report);
@@ -243,14 +230,18 @@ class DiagnosticReportAssemblerTest {
                     report.analysisId().toString(), "áéíóú", "¿pregunta?", "¡énfasis!",
                     "A → B", "INICIO-DISCLAIMER", "FIN-DISCLAIMER",
                     "INICIO-MATERIA", "FIN-MATERIA", "INICIO-RAZON", "FIN-RAZON",
-                    "Revisión específica de la vía de patente", "Artículo 15", "Artículo 20",
-                    "Este screening se limita", "signo distintivo", "derecho de autor");
+                    "Revisión de la vía patentaria", "Artículo 15", "Artículo 20",
+                    "Este screening se limita", "signo distintivo", "derecho de autor",
+                    "Recursos genéticos", "Se necesita más información",
+                    "No hay datos suficientes", "Origen del recurso");
             assertThat(text)
                     .containsOnlyOnce("INICIO-MATERIA")
                     .containsOnlyOnce("FIN-MATERIA")
                     .containsOnlyOnce("INICIO-RAZON")
                     .containsOnlyOnce("FIN-RAZON")
+                    .containsOnlyOnce("Revisión de la vía patentaria")
                     .containsOnlyOnce("Este screening se limita")
+                    .containsOnlyOnce("Recursos genéticos")
                     .doesNotContain("Alcance del análisis", "DISTINCTIVE_SIGN", "COPYRIGHT (",
                             "(LIKELY)", "(POSSIBLE)");
         }
@@ -283,31 +274,37 @@ class DiagnosticReportAssemblerTest {
     }
 
     @Test
-    void geneticResourcesUseDeterministicAnchorPlacementWithoutDuplication() {
+    void geneticResourcesWithOnlyInventionPatentUseRootBlock() {
         DiagnosticReport patent = assemblerV2.assemble(analysis(),
                 result(false, true, List.of(option(ProtectionType.INVENTION_PATENT))), context(), disclaimer());
-        assertThat(patent.geneticResourceAccess()).isNull();
-        assertThat(patent.protectionOptions().getFirst().geneticResourceAccess().placement())
-                .isEqualTo("EMBEDDED_IN_INVENTION_PATENT");
+        assertThat(patent.geneticResourceAccess()).isNotNull();
+    }
 
+    @Test
+    void geneticResourcesWithOnlyPlantBreederCertificateUseRootBlock() {
         DiagnosticReport breeder = assemblerV2.assemble(analysis(),
                 result(false, false, List.of(option(ProtectionType.PLANT_BREEDER_CERTIFICATE))),
                 context(), disclaimer());
-        assertThat(breeder.geneticResourceAccess()).isNull();
-        assertThat(breeder.protectionOptions().getFirst().geneticResourceAccess().placement())
-                .isEqualTo("EMBEDDED_IN_PLANT_BREEDER_CERTIFICATE");
+        assertThat(breeder.geneticResourceAccess()).isNotNull();
+    }
 
+    @Test
+    void geneticResourcesWithBothAnchorModalitiesUseRootBlock() {
         DiagnosticReport shared = assemblerV2.assemble(analysis(),
                 result(false, true, List.of(option(ProtectionType.INVENTION_PATENT),
                         option(ProtectionType.PLANT_BREEDER_CERTIFICATE))), context(), disclaimer());
-        assertThat(shared.geneticResourceAccess().placement()).isEqualTo("SHARED");
-        assertThat(shared.protectionOptions()).allSatisfy(option ->
-                assertThat(option.geneticResourceAccess()).isNull());
+        assertThat(shared.geneticResourceAccess()).isNotNull();
+    }
 
+    @Test
+    void geneticResourcesWithoutAnchorModalitiesUseRootBlock() {
         DiagnosticReport standalone = assemblerV2.assemble(analysis(),
                 result(false, false, List.of(option(ProtectionType.COPYRIGHT))), context(), disclaimer());
-        assertThat(standalone.geneticResourceAccess().placement()).isEqualTo("STANDALONE");
+        assertThat(standalone.geneticResourceAccess()).isNotNull();
+    }
 
+    @Test
+    void notIndicatedGeneticResourcesAreHidden() {
         AnalysisResultV2 base = result(false, true, List.of(option(ProtectionType.INVENTION_PATENT)));
         AnalysisResultV2 notIndicated = new AnalysisResultV2(base.schemaVersion(), base.summary(),
                 base.protectionOptions(), base.patentScreening(),
@@ -315,7 +312,6 @@ class DiagnosticReportAssemblerTest {
                         "No hay indicios", List.of()), base.observations(), base.warnings());
         DiagnosticReport hidden = assemblerV2.assemble(analysis(), notIndicated, context(), disclaimer());
         assertThat(hidden.geneticResourceAccess()).isNull();
-        assertThat(hidden.protectionOptions().getFirst().geneticResourceAccess()).isNull();
     }
 
     @Test
@@ -406,12 +402,6 @@ class DiagnosticReportAssemblerTest {
                 + "Contenido institucional extenso con caracteres áéíóú y ñ. ".repeat(75)
                 + " FIN-DISCLAIMER");
         return disclaimer;
-    }
-
-    private static int screeningCount(DiagnosticReport report) {
-        return (report.patentScreening() == null ? 0 : 1)
-                + (int) report.protectionOptions().stream()
-                        .filter(option -> option.patentScreening() != null).count();
     }
 
     private static List<String> pageTexts(org.apache.pdfbox.pdmodel.PDDocument document) throws IOException {

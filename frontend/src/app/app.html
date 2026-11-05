@@ -894,9 +894,8 @@
           }
           <section class="modalities-grid">
             <h2>Modalidades identificadas</h2>
-            @for (option of report.protectionOptions ?? []; track option.type; let index = $index) {
+            @for (option of report.protectionOptions ?? []; track option.type) {
                 @let guidance = guidanceFor(option.type ?? '');
-                @let genetic = option.geneticResourceAccess || (index === 0 ? report.geneticResourceAccess : null);
               @if (option.applicability === 'LIKELY' || option.applicability === 'POSSIBLE') {
                 <article>
                   <div class="modality-heading">
@@ -919,40 +918,6 @@
                           <p>{{ reportField(option.orientation) }}</p>
                         </div>
                       }
-                      @if (option.patentScreening; as screening) {
-                        <div class="diag-item full-width">
-                          <strong>{{ reportField(screening.title) }}</strong>
-                          @if (screening.context && (screening.article15?.assessment === 'POTENTIAL_MATCH' || screening.article20?.assessment === 'POTENTIAL_MATCH')) {
-                            <p>{{ reportField(screening.context) }}</p>
-                          }
-                          @for (article of [screening.article15, screening.article20]; track article?.article) {
-                            @if (article; as screeningArticle) {
-                              @if (screeningArticle.assessment !== 'NO_POTENTIAL_MATCH') {
-                              <div class="screening-article">
-                                <b>{{ reportField(screeningArticle.article) }} · {{ screeningAssessmentLabel(screeningArticle.article, screeningArticle.assessmentLabel, screeningArticle.assessment) }}</b>
-                                <p>{{ reportField(screeningArticle.rationale) }}@if (screeningArticle.matches?.length) { <span> @for (match of screeningArticle.matches; track match.literal; let first = $first) { @if (!first) { <span>; </span> }<b>Literal {{ reportField(match.literal) }}</b>: {{ reportField(match.rationale) }}}</span> }</p>
-                              </div>
-                              }
-                            }
-                          }
-                          @if (screening.scopeNote) { <p>{{ reportField(screening.scopeNote) }}</p> }
-                        </div>
-                      }
-                      @if (genetic; as geneticAccess) {
-                        @if (geneticAccess.assessment === 'POTENTIALLY_REQUIRED') {
-                        <div class="diag-item full-width">
-                          <strong>Recursos genéticos</strong>
-                          <div>
-                            <p><b>{{ reportField(geneticAccess.assessmentLabel || geneticAccess.assessment) }}</b></p>
-                            <p>{{ reportField(geneticAccess.rationale) }}</p>
-                            @if (geneticAccess.missingInformation?.length) {
-                              <p>Información faltante</p>
-                              <ul>@for (item of geneticAccess.missingInformation; track item) { <li>{{ reportField(item) }}</li> }</ul>
-                            }
-                          </div>
-                        </div>
-                        }
-                      }
                   </div>
                   <button class="outline-button modality-next-steps" type="button" (click)="openNextStepsModal(option.name || protectionTypeLabel(option.type), guidance?.nextSteps?.contentHtml)">Próximos pasos</button>
                 </article>
@@ -961,6 +926,17 @@
               <p>No se identificaron modalidades.</p>
             }
           </section>
+          @if (report.geneticResourceAccess; as geneticAccess) {
+            <section class="context-card">
+              <h3>Recursos genéticos</h3>
+              <p><b>{{ reportField(geneticAccess.assessmentLabel || geneticAccess.assessment) }}</b></p>
+              <p>{{ reportField(geneticAccess.rationale) }}</p>
+              @if (geneticAccess.missingInformation?.length) {
+                <p>Información faltante</p>
+                <ul>@for (item of geneticAccess.missingInformation; track item) { <li>{{ reportField(item) }}</li> }</ul>
+              }
+            </section>
+          }
           @if (nextStepsModal(); as nextSteps) {
             <div class="modal-backdrop" (click)="closeNextStepsModal()" (keydown.escape)="closeNextStepsModal()">
               <article class="panel modal-panel" role="dialog" aria-modal="true" aria-labelledby="next-steps-modal-title" (click)="$event.stopPropagation()">

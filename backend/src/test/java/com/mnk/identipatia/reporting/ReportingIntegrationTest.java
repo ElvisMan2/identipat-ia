@@ -172,9 +172,12 @@ class ReportingIntegrationTest {
                 .andExpect(jsonPath("$.summary")
                         .value("patente de invención — podría corresponder. Resumen técnico orientativo."))
                 .andExpect(jsonPath("$.protectionOptions[0].name").value("Patente de invención"))
-                .andExpect(jsonPath("$.protectionOptions[0].patentScreening.title")
-                        .value("Revisión específica de la vía de patente de invención"))
-                .andExpect(jsonPath("$.patentScreening").isEmpty())
+                .andExpect(jsonPath("$.patentScreening.title").value("Revisión de la vía patentaria"))
+                .andExpect(jsonPath("$.geneticResourceAccess.assessment")
+                        .value("INSUFFICIENT_INFORMATION"))
+                .andExpect(jsonPath("$.geneticResourceAccess.placement").doesNotExist())
+                .andExpect(jsonPath("$.protectionOptions[*].patentScreening").doesNotExist())
+                .andExpect(jsonPath("$.protectionOptions[*].geneticResourceAccess").doesNotExist())
                 .andExpect(jsonPath("$.disclaimer.version").value(1));
 
         byte[] pdf = mockMvc.perform(get("/analyses/{id}/report.pdf", analysisId)
@@ -225,13 +228,14 @@ class ReportingIntegrationTest {
                         + "derecho de autor — podría corresponder, diseño industrial — se relaciona claramente "
                         + "y modelo de utilidad — se relaciona claramente."))
                 .andExpect(jsonPath("$.protectionOptions[3].name").value("Modelo de utilidad"))
-                .andExpect(jsonPath("$.protectionOptions[3].patentScreening.title")
-                        .value("Revisión específica de la vía de modelo de utilidad"))
-                .andExpect(jsonPath("$.protectionOptions[3].patentScreening.article15.assessmentLabel")
+                .andExpect(jsonPath("$.patentScreening.title")
+                        .value("Revisión de la vía patentaria"))
+                .andExpect(jsonPath("$.patentScreening.article15.assessmentLabel")
                         .value("No se identifican coincidencias potenciales"))
-                .andExpect(jsonPath("$.protectionOptions[3].patentScreening.article20.assessmentLabel")
+                .andExpect(jsonPath("$.patentScreening.article20.assessmentLabel")
                         .value("No se identifican coincidencias potenciales"))
-                .andExpect(jsonPath("$.patentScreening").isEmpty())
+                .andExpect(jsonPath("$.protectionOptions[*].patentScreening").doesNotExist())
+                .andExpect(jsonPath("$.protectionOptions[*].geneticResourceAccess").doesNotExist())
                 .andExpect(jsonPath("$.protectionOptions[1].rationale")
                         .value("La relación podría corresponder requiere revisión."))
                 .andExpect(jsonPath("$.observations[0]")
@@ -251,13 +255,13 @@ class ReportingIntegrationTest {
             String text = new PDFTextStripper().getText(document);
             assertThat(text)
                     .contains("Signo distintivo", "Derecho de autor", "Diseño industrial", "Modelo de utilidad",
-                            "Revisión específica de la vía de modelo de utilidad", "Artículo 15", "Artículo 20",
+                            "Revisión de la vía patentaria", "Artículo 15", "Artículo 20",
                             "No se identifican coincidencias potenciales")
                     .containsOnlyOnce("Este screening se limita")
                     .doesNotContain("patente no aparece como modalidad positiva", "DISTINCTIVE_SIGN",
                             "INDUSTRIAL_DESIGN", "UTILITY_MODEL", "(LIKELY)", "(POSSIBLE)");
             assertThat(text.indexOf("Modelo de utilidad"))
-                    .isLessThan(text.indexOf("Revisión específica de la vía de modelo de utilidad"));
+                    .isLessThan(text.indexOf("Revisión de la vía patentaria"));
         }
     }
 
@@ -412,7 +416,9 @@ class ReportingIntegrationTest {
                  "patentScreening":{"applicable":%s,
                    "article15":{"assessment":"NO_POTENTIAL_MATCH","rationale":"Sin coincidencias.","matches":[]},
                    "article20":{"assessment":"NO_POTENTIAL_MATCH","rationale":"Sin coincidencias.","matches":[]}},
-                 "geneticResourceAccess":{"assessment":"NOT_INDICATED","rationale":"No hay indicios.","missingInformation":[]},
+                 "geneticResourceAccess":{"assessment":"INSUFFICIENT_INFORMATION",
+                   "rationale":"Falta identificar el origen del recurso.",
+                   "missingInformation":["Origen del recurso"]},
                  "observations":["Aspecto a considerar"],"warnings":["Advertencia del caso"]}
                 """.formatted(option, screeningApplicable));
     }

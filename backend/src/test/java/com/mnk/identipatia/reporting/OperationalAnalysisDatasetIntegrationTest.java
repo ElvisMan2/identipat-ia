@@ -217,6 +217,8 @@ class OperationalAnalysisDatasetIntegrationTest {
                         "Recursos genéticos:\n", "Información faltante:",
                         "Observaciones:\n- Observación presentada.",
                         "Advertencias:\n- Advertencia presentada.")
+                .containsOnlyOnce("Revisión de patente:\n")
+                .containsOnlyOnce("Recursos genéticos:\n")
                 .doesNotContain("INVENTION_PATENT", "COPYRIGHT", "POSSIBLE");
         assertThat(v2Row.guidanceConsulted()).isTrue();
 
