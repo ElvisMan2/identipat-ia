@@ -2278,6 +2278,8 @@ export class App {
       INDUSTRIAL_DESIGN: 'Diseño industrial',
       DISTINCTIVE_SIGN: 'Signo distintivo',
       COPYRIGHT: 'Derechos de autor',
+      PLANT_BREEDER_CERTIFICATE: 'Certificado de Obtentor',
+      TRADE_SECRET: 'Secreto empresarial',
       OTHER: 'Otra modalidad'
     };
     return type ? labels[type] ?? type : 'campo faltante';

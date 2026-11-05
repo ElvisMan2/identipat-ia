@@ -867,7 +867,7 @@
                   <details [open]="index === 0">
                     <summary>
                       <span>{{ reportField(option.name || protectionTypeLabel(option.type)) }}</span>
-                      <span>{{ reportField(guidance?.shortDescription) }}</span>
+                      <span>{{ guidance?.shortDescription || '' }}</span>
                       <b>{{ reportField(option.applicabilityLabel || applicabilityLabel(option.applicability)) }}</b>
                     </summary>
                     <div class="diagnosis-panel">
@@ -918,6 +918,7 @@
                         </div>
                       }
                       @if (genetic; as geneticAccess) {
+                        @if (geneticAccess.assessment === 'POTENTIALLY_REQUIRED') {
                         <div class="diag-item full-width">
                           <strong>Recursos genéticos</strong>
                           <div>
@@ -929,6 +930,7 @@
                             }
                           </div>
                         </div>
+                        }
                       }
                       @if (guidance?.nextSteps?.contentHtml; as contentHtml) {
                         <div class="diag-item full-width">

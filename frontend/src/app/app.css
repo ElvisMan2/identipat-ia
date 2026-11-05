@@ -129,6 +129,8 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .legal-admin-updated { margin: .75rem 0 0; color: var(--muted); font-size: .82rem; }
 .legal-admin-actions { justify-content: flex-end; }
 .analysis-result { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--line); }
+.result-page .analysis-shell { padding-top: 1.5rem; }
+.result-page .analysis-result { margin-top: 0; padding-top: 0; border-top: 0; }
 .result-page .analysis-result > .hero { width: 100%; min-height: 0; display: block; margin: 0; padding: 1.5rem 0 1.25rem; border-bottom: 1px solid var(--line); }
 .result-page .hero-main { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.25rem; }
 .result-page .hero-left { max-width: 720px; }
@@ -149,7 +151,7 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .result-page .modalities-grid details > summary span:first-child { color: var(--ink); font-family: 'Space Grotesk', sans-serif; font-weight: 700; }
 .result-page .modalities-grid details > summary span:nth-child(2) { color: var(--muted); font-size: .83rem; line-height: 1.45; }
 .result-page .modalities-grid details > summary b { justify-self: end; padding: .35rem .55rem; color: var(--teal-dark); background: var(--mint); font-size: .72rem; }
-.result-page .diagnosis-panel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; padding: 0 1.1rem 1.1rem; }
+.result-page .diagnosis-panel { display: grid; grid-template-columns: 1fr; gap: .65rem; padding: 0 1.1rem 1.1rem; }
 .result-page .diag-item { min-width: 0; padding: .85rem; background: #f4f7f6; }
 .result-page .diag-item.full-width { grid-column: 1 / -1; }
 .result-page .diag-item > strong { display: block; margin-bottom: .35rem; color: var(--ink); font-size: .8rem; }
