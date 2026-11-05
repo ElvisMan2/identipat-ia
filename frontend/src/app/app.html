@@ -858,8 +858,40 @@
               <p>{{ reportField(report.summary) }}</p>
             </div>
           </section>
-
+          @if (report.patentScreening || report.historicalPatentability) {
+            <section class="context-section">
+              <h2>Información complementaria del diagnóstico</h2>
+              <div class="context-grid">
+                @if (report.patentScreening; as screening) {
+                  <article class="context-card full">
+                    <h3>{{ reportField(screening.title) }}</h3>
+                    <p>{{ reportField(screening.context) }}</p>
+                    @for (article of [screening.article15, screening.article20]; track article?.article) {
+                      @if (article; as screeningArticle) {
+                        <div class="screening-article">
+                          <strong>{{ reportField(screeningArticle.article) }} · {{ reportField(screeningArticle.assessmentLabel || screeningArticle.assessment) }}</strong>
+                          <p>{{ reportField(screeningArticle.rationale) }}</p>
+                          @if (screeningArticle.matches?.length) {
+                            <ul>@for (match of screeningArticle.matches; track match.literal) { <li><b>{{ reportField(match.literal) }}</b>: {{ reportField(match.rationale) }}</li> }</ul>
+                          }
+                        </div>
+                      }
+                    }
+                    @if (screening.scopeNote) { <p>{{ reportField(screening.scopeNote) }}</p> }
+                  </article>
+                }
+                @if (report.historicalPatentability; as historical) {
+                  <article class="context-card full">
+                    <h3>Antecedente histórico de patentabilidad</h3>
+                    <p><strong>{{ reportField(historical.outcome) }}</strong></p>
+                    <p>{{ reportField(historical.rationale) }}</p>
+                  </article>
+                }
+              </div>
+            </section>
+          }
           <section class="modalities-grid">
+            <h2>Modalidades identificadas</h2>
             @for (option of report.protectionOptions ?? []; track option.type; let index = $index) {
                 @let guidance = guidanceFor(option.type ?? '');
                 @let genetic = option.geneticResourceAccess || (index === 0 ? report.geneticResourceAccess : null);
@@ -879,16 +911,6 @@
                         <strong>¿Por qué se identificó?</strong>
                         <p>{{ reportField(option.rationale) }}</p>
                       </div>
-                      @if (option.legalBasis?.length) {
-                        <div class="diag-item">
-                          <strong>Base legal</strong>
-                          <ul>
-                            @for (basis of option.legalBasis; track basis.instrument) {
-                              <li>{{ reportField(basis.instrument) }}: {{ (basis.articles ?? []).join(', ') }}</li>
-                            }
-                          </ul>
-                        </div>
-                      }
                       @if (option.orientation) {
                         <div class="diag-item">
                           <strong>Orientación diagnóstica</strong>
@@ -945,40 +967,6 @@
               <p>No se identificaron modalidades.</p>
             }
           </section>
-
-          @if (report.patentScreening || report.historicalPatentability) {
-            <section class="context-section">
-              <h2>Información complementaria del diagnóstico</h2>
-              <div class="context-grid">
-                @if (report.patentScreening; as screening) {
-                  <article class="context-card full">
-                    <h3>{{ reportField(screening.title) }}</h3>
-                    <p>{{ reportField(screening.context) }}</p>
-                    @for (article of [screening.article15, screening.article20]; track article?.article) {
-                      @if (article; as screeningArticle) {
-                        <div class="screening-article">
-                          <strong>{{ reportField(screeningArticle.article) }} · {{ reportField(screeningArticle.assessmentLabel || screeningArticle.assessment) }}</strong>
-                          <p>{{ reportField(screeningArticle.rationale) }}</p>
-                          @if (screeningArticle.matches?.length) {
-                            <ul>@for (match of screeningArticle.matches; track match.literal) { <li><b>{{ reportField(match.literal) }}</b>: {{ reportField(match.rationale) }}</li> }</ul>
-                          }
-                        </div>
-                      }
-                    }
-                    @if (screening.scopeNote) { <p>{{ reportField(screening.scopeNote) }}</p> }
-                  </article>
-                }
-                @if (report.historicalPatentability; as historical) {
-                  <article class="context-card full">
-                    <h3>Antecedente histórico de patentabilidad</h3>
-                    <p><strong>{{ reportField(historical.outcome) }}</strong></p>
-                    <p>{{ reportField(historical.rationale) }}</p>
-                  </article>
-                }
-              </div>
-            </section>
-          }
-
           @if (report.observations?.length) {
             <section class="context-card observation">
               <h3>Aspectos a considerar</h3>
