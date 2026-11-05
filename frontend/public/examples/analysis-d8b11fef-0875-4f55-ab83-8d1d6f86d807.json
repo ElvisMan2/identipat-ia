@@ -1,0 +1,66 @@
+{
+  "reportVersion": "diagnostic-report/1.0",
+  "analysisId": "d8b11fef-0875-4f55-ab83-8d1d6f86d807",
+  "sourceResultVersion": "analysis-result/2.0",
+  "inputType": "TEXT",
+  "analysisCompletedAt": "2026-11-05T00:54:57.599831Z",
+  "title": "Reporte orientativo de identificación de propiedad intelectual",
+  "summary": "Se identifica una vía de patente de invención para una composición formulada prebiótica (alfa-hidroxiácido(s) + agente(s) prebiótico(s)). Screening 15: información insuficiente respecto a si materiales de origen biológico se reclaman como material biológico natural/aislable. Screening 20: sin indicios de coincidencia. Recursos genéticos: no indicados.",
+  "applicabilityNote": "La relación mostrada indica qué tan directamente lo descrito en tu creación se vincula con esta modalidad de protección. No representa una probabilidad de registro, concesión o reconocimiento definitivo de un derecho.",
+  "protectionOptions": [
+    {
+      "type": "INVENTION_PATENT",
+      "name": "Patente de invención",
+      "relationshipQuestion": "¿Cómo se relaciona con tu creación?",
+      "applicability": "LIKELY",
+      "applicabilityLabel": "Se relaciona claramente",
+      "protectedSubjectMatter": "composiciones y formulaciones prebióticas que comprenden un alfa-hidroxiácido (p.ej. ácido láctico, glicólico, cítrico, tartárico o málico) y un agente prebiótico (p.ej. inulina, FOS, lactulosa, GOS, rafinosa, estaquiosa, isomaltooligosacárido, xilooligosacárido)",
+      "rationale": "La entrada describe explícitamente una composición/formulación con componentes químicos y biológicos concretos y modos de administración, lo que encaja directamente con la naturaleza de un producto o composición susceptible de protección por patente de invención.",
+      "legalBasis": [
+        {
+          "instrument": "Decisión 486",
+          "articles": [
+            "14"
+          ]
+        }
+      ],
+      "orientation": "Esta modalidad presenta una relación clara con la materia descrita y puede considerarse como una vía principal para una revisión especializada.",
+      "patentScreening": {
+        "title": "Revisión específica de la vía de patente de invención",
+        "context": "El artículo 14 constituye la base jurídica general de la modalidad. Los artículos 15 y 20 corresponden a una revisión limitada de posibles exclusiones.",
+        "article15": {
+          "article": "Artículo 15",
+          "assessment": "INSUFFICIENT_INFORMATION",
+          "assessmentLabel": "Se necesita más información",
+          "rationale": "Se mencionan agentes prebióticos de origen natural (inulina, FOS, etc.), lo que sugiere la presencia de material biológico natural o derivado. Sin embargo, falta información clave para decidir si la materia objeto de protección sería material biológico natural/aislable (excluido por 15(b)) o una composición formulada/transformada (no excluida); por ello no puede confirmarse la coincidencia con 15(b).",
+          "matches": []
+        },
+        "article20": {
+          "article": "Artículo 20",
+          "assessment": "NO_POTENTIAL_MATCH",
+          "assessmentLabel": "No se identifican coincidencias potenciales",
+          "rationale": "No hay indicios concretos en la descripción de que la explotación de la invención contravenga orden público/moral, afecte la protección de la salud/vida ambiental de forma conflictiva, consista en plantas/animales o en procedimientos esencialmente biológicos, ni que sea un método terapéutico/quirúrgico de humanos/animales.",
+          "matches": []
+        },
+        "scopeNote": "Este screening se limita a posibles coincidencias con los artículos 15 y 20 de la Decisión 486 y no constituye un examen completo de patentabilidad."
+      },
+      "geneticResourceAccess": null
+    }
+  ],
+  "patentScreening": null,
+  "geneticResourceAccess": null,
+  "historicalPatentability": null,
+  "observations": [
+    "Falta especificar si las sustancias de origen natural (p.ej. inulina, FOS) se reclaman como materiales biológicos aislados o como componentes de una composición formulada; ese dato es determinante para resolver la coincidencia con el literal 15(b)."
+  ],
+  "warnings": [
+    "Si en la solicitud la materia reclamada fuera material biológico natural aislado (no una composición formulada), ello podría activar la exclusión del literal 15(b) y requerir aclaración adicional."
+  ],
+  "scope": "Este análisis identifica relaciones orientativas a partir de la información disponible. No determina registrabilidad, concesión o reconocimiento definitivo, ni sustituye una evaluación especializada o una decisión oficial.",
+  "disclaimer": {
+    "id": "80692dc8-218c-434e-bbf8-b0fbccb5f906",
+    "version": 15,
+    "title": "Importante hhhh",
+    "content": "Este reporte constituye una guía complementaria basada en inteligencia artificial y tiene carácter orientativo. No reemplaza, bajo ninguna circunstancia, el juicio técnico, la evaluación experta ni las decisiones oficiales del personal examinador del Indecopi. Sus resultados deben interpretarse bajo el principio de supervisión jjj"
+  }
+}

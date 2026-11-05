@@ -1,0 +1,77 @@
+{
+  "reportVersion": "diagnostic-report/1.0",
+  "analysisId": "b74c960d-55c3-44c6-906c-dea4da94fe62",
+  "sourceResultVersion": "analysis-result/2.0",
+  "inputType": "TEXT",
+  "analysisCompletedAt": "2026-11-05T01:00:21.152125Z",
+  "title": "Reporte orientativo de identificación de propiedad intelectual",
+  "summary": "Vía identificada: patente de invención — se relaciona claramente sobre la formulación nutricional y el procedimiento de preparación descritos. Patent screening: artículo 15 = NO_POTENTIAL_MATCH; artículo 20 = NO_POTENTIAL_MATCH. Acceso a recursos genéticos: INSUFFICIENT_INFORMATION (faltan datos sobre país de origen y forma de obtención de los materiales vegetales).",
+  "applicabilityNote": "La relación mostrada indica qué tan directamente lo descrito en tu creación se vincula con esta modalidad de protección. No representa una probabilidad de registro, concesión o reconocimiento definitivo de un derecho.",
+  "protectionOptions": [
+    {
+      "type": "INVENTION_PATENT",
+      "name": "Patente de invención",
+      "relationshipQuestion": "¿Cómo se relaciona con tu creación?",
+      "applicability": "LIKELY",
+      "applicabilityLabel": "Se relaciona claramente",
+      "protectedSubjectMatter": "Formulación nutricional para tratar la anemia en equinos (composición con porcentajes y lista de ingredientes) y procedimiento de preparación referido",
+      "rationale": "La entrada describe de forma concreta una composición con rangos porcentuales y lista de ingredientes botánicos, además de un procedimiento de preparación; esta materia corresponde directamente a un producto y procedimiento de naturaleza tecnológica que encaja con la vía de patente.",
+      "legalBasis": [
+        {
+          "instrument": "Decisión 486",
+          "articles": [
+            "14"
+          ]
+        }
+      ],
+      "orientation": "Esta modalidad presenta una relación clara con la materia descrita y puede considerarse como una vía principal para una revisión especializada.",
+      "patentScreening": {
+        "title": "Revisión específica de la vía de patente de invención",
+        "context": "El artículo 14 constituye la base jurídica general de la modalidad. Los artículos 15 y 20 corresponden a una revisión limitada de posibles exclusiones.",
+        "article15": {
+          "article": "Artículo 15",
+          "assessment": "NO_POTENTIAL_MATCH",
+          "assessmentLabel": "No se identifican coincidencias potenciales",
+          "rationale": "Los componentes botánicos listados (Avena sativa, Zea mays, Hordeum vulgare, etc.) aparecen como insumos/constituyentes de una formulación transformada; por tanto la materia objeto de protección es la composición formulada y no el material biológico tal como está en la naturaleza, por lo que no se identifica una coincidencia con el literal 15(b). No hay señales de coincidencia con otros literales de artículo 15.",
+          "matches": []
+        },
+        "article20": {
+          "article": "Artículo 20",
+          "assessment": "NO_POTENTIAL_MATCH",
+          "assessmentLabel": "No se identifican coincidencias potenciales",
+          "rationale": "Aunque la formulación está destinada a tratar anemia en equinos, la descripción se refiere a un producto (composición) y a un procedimiento de preparación, no a un método terapéutico de aplicación médica/quirúrgica excluido por el literal 20(d). No hay indicios concretos de los supuestos del artículo 20.",
+          "matches": []
+        },
+        "scopeNote": "Este screening se limita a posibles coincidencias con los artículos 15 y 20 de la Decisión 486 y no constituye un examen completo de patentabilidad."
+      },
+      "geneticResourceAccess": {
+        "placement": "EMBEDDED_IN_INVENTION_PATENT",
+        "assessment": "INSUFFICIENT_INFORMATION",
+        "assessmentLabel": "Se necesita más información",
+        "rationale": "La composición incluye múltiples especies vegetales identificadas por nombre científico, y la formulación tiene una finalidad comercial/industrial (tratamiento de anemia en equinos), lo que sugiere utilización de material biológico relevante. Sin embargo falta información crítica sobre el país de origen y la forma de obtención de esos materiales para evaluar la posible aplicación del régimen de acceso a recursos genéticos.",
+        "missingInformation": [
+          "país de origen de los materiales vegetales listados",
+          "forma de obtención de cada material vegetal (semilla, extracto, ingrediente procesado)",
+          "si se utilizaron recursos genéticos provenientes de un País Miembro"
+        ]
+      }
+    }
+  ],
+  "patentScreening": null,
+  "geneticResourceAccess": null,
+  "historicalPatentability": null,
+  "observations": [
+    "La materia objeto de la vía patentaria identificada es la formulación (composición con rangos porcentuales) y el procedimiento de preparación referido; los ingredientes botánicos actúan como insumos/constituyentes de la formulación.",
+    "El procedimiento de preparación se menciona pero no se detalla; la falta de pasos/condiciones impide precisar si el procedimiento, como tal, aportaría elementos adicionales relevantes para la clasificación."
+  ],
+  "warnings": [
+    "No se indica el país de origen de los ingredientes vegetales; esa información es relevante para evaluar obligaciones relativas a acceso a recursos genéticos bajo la Decisión 391/391 aplicable en la Comunidad Andina."
+  ],
+  "scope": "Este análisis identifica relaciones orientativas a partir de la información disponible. No determina registrabilidad, concesión o reconocimiento definitivo, ni sustituye una evaluación especializada o una decisión oficial.",
+  "disclaimer": {
+    "id": "80692dc8-218c-434e-bbf8-b0fbccb5f906",
+    "version": 15,
+    "title": "Importante hhhh",
+    "content": "Este reporte constituye una guía complementaria basada en inteligencia artificial y tiene carácter orientativo. No reemplaza, bajo ninguna circunstancia, el juicio técnico, la evaluación experta ni las decisiones oficiales del personal examinador del Indecopi. Sus resultados deben interpretarse bajo el principio de supervisión jjj"
+  }
+}
