@@ -953,20 +953,30 @@
                         </div>
                         }
                       }
-                      @if (guidance?.nextSteps?.contentHtml; as contentHtml) {
-                        <div class="diag-item full-width">
-                          <strong>Próximos pasos</strong>
-                          <div class="rich-content" [innerHTML]="contentHtml"></div>
-                        </div>
-                      }
                   </div>
-                  <button class="outline-button modality-next-steps" type="button" disabled>Próximos pasos</button>
+                  <button class="outline-button modality-next-steps" type="button" (click)="openNextStepsModal(option.name || protectionTypeLabel(option.type), guidance?.nextSteps?.contentHtml)">Próximos pasos</button>
                 </article>
                 }
             } @empty {
               <p>No se identificaron modalidades.</p>
             }
           </section>
+          @if (nextStepsModal(); as nextSteps) {
+            <div class="modal-backdrop" (click)="closeNextStepsModal()" (keydown.escape)="closeNextStepsModal()">
+              <article class="panel modal-panel" role="dialog" aria-modal="true" aria-labelledby="next-steps-modal-title" (click)="$event.stopPropagation()">
+                <h2 id="next-steps-modal-title">Próximos pasos</h2>
+                <h3>{{ nextSteps.modality }}</h3>
+                @if (nextSteps.contentHtml) {
+                  <div class="rich-content" [innerHTML]="nextSteps.contentHtml"></div>
+                } @else {
+                  <p>No hay próximos pasos disponibles para esta modalidad.</p>
+                }
+                <div class="actions">
+                  <button type="button" (click)="closeNextStepsModal()">Cerrar</button>
+                </div>
+              </article>
+            </div>
+          }
           @if (report.observations?.length) {
             <section class="context-card observation">
               <h3>Aspectos a considerar</h3>

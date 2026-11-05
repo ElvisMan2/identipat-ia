@@ -56,7 +56,7 @@ export class App {
   private readonly legalDocumentService = inject(LegalDocumentService);
   private readonly csrfService = inject(CsrfService);
   private readonly defaultAdminPassword = 'admin';
-  private readonly useExampleAnalysis = true;
+  private readonly useExampleAnalysis = false;
 
   readonly users = signal<User[]>([]);
   readonly userPage = signal(0);
@@ -257,6 +257,7 @@ export class App {
   readonly analysisResult = signal<AnalysisResponse | null>(null);
   readonly diagnosticReport = signal<DiagnosticReport | null>(null);
   readonly analysisGuidance = signal<AnalysisGuidanceResponse | null>(null);
+  readonly nextStepsModal = signal<{ modality: string; contentHtml: string | null } | null>(null);
   readonly reportLoadError = signal('');
   readonly downloadingReportPdf = signal(false);
   readonly reportPdfError = signal('');
@@ -2330,6 +2331,14 @@ export class App {
 
   guidanceFor(type: string): AnalysisGuidanceResponse['modalities'][number] | null {
     return this.analysisGuidance()?.modalities.find(modality => modality.protectionType === type) ?? null;
+  }
+
+  openNextStepsModal(modality: string, contentHtml: string | null | undefined): void {
+    this.nextStepsModal.set({ modality, contentHtml: contentHtml?.trim() || null });
+  }
+
+  closeNextStepsModal(): void {
+    this.nextStepsModal.set(null);
   }
 
   applicabilityLabel(applicability: string | null | undefined): string {
