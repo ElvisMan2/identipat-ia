@@ -170,11 +170,14 @@ class ReportingIntegrationTest {
                 .andExpect(jsonPath("$.reportVersion").value("diagnostic-report/1.0"))
                 .andExpect(jsonPath("$.sourceResultVersion").value("analysis-result/2.0"))
                 .andExpect(jsonPath("$.summary")
-                        .value("patente de invención — podría corresponder. Resumen técnico orientativo."))
+                        .value("patente de invención — podría corresponder. Existe indicio suficiente "
+                                + "(requiere revisión especializada)."))
                 .andExpect(jsonPath("$.protectionOptions[0].name").value("Patente de invención"))
                 .andExpect(jsonPath("$.patentScreening.title").value("Revisión de la vía patentaria"))
                 .andExpect(jsonPath("$.geneticResourceAccess.assessment")
-                        .value("INSUFFICIENT_INFORMATION"))
+                        .value("POTENTIALLY_REQUIRED"))
+                .andExpect(jsonPath("$.geneticResourceAccess.assessmentLabel")
+                        .value("Requiere revisión especializada"))
                 .andExpect(jsonPath("$.geneticResourceAccess.placement").doesNotExist())
                 .andExpect(jsonPath("$.protectionOptions[*].patentScreening").doesNotExist())
                 .andExpect(jsonPath("$.protectionOptions[*].geneticResourceAccess").doesNotExist())
@@ -193,8 +196,8 @@ class ReportingIntegrationTest {
         try (var document = Loader.loadPDF(pdf)) {
             assertThat(new PDFTextStripper().getText(document))
                     .contains("Patente de invención", "podría corresponder", "Importante",
-                            analysisId.toString(), "Versión 1")
-                    .doesNotContain("INVENTION_PATENT", "POSSIBLE");
+                            "requiere revisión especializada", analysisId.toString(), "Versión 1")
+                    .doesNotContain("INVENTION_PATENT", "POSSIBLE", "POTENTIALLY_REQUIRED");
         }
 
         User otherAdmin = admin();
@@ -411,12 +414,12 @@ class ReportingIntegrationTest {
                   "legalBasis":[{"instrument":"DECISION_486","articles":["14"]}]}]
                 """ : "[]";
         return objectMapper.readTree("""
-                {"schemaVersion":"analysis-result/2.0","summary":"INVENTION_PATENT (POSSIBLE). Resumen técnico orientativo.",
+                {"schemaVersion":"analysis-result/2.0","summary":"INVENTION_PATENT (POSSIBLE). Existe indicio suficiente (POTENTIALLY_REQUIRED).",
                  "protectionOptions":%s,
                  "patentScreening":{"applicable":%s,
                    "article15":{"assessment":"NO_POTENTIAL_MATCH","rationale":"Sin coincidencias.","matches":[]},
                    "article20":{"assessment":"NO_POTENTIAL_MATCH","rationale":"Sin coincidencias.","matches":[]}},
-                 "geneticResourceAccess":{"assessment":"INSUFFICIENT_INFORMATION",
+                 "geneticResourceAccess":{"assessment":"POTENTIALLY_REQUIRED",
                    "rationale":"Falta identificar el origen del recurso.",
                    "missingInformation":["Origen del recurso"]},
                  "observations":["Aspecto a considerar"],"warnings":["Advertencia del caso"]}

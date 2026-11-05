@@ -32,11 +32,12 @@ SYSTEM v1; no modifica `result_json`.
 
 El resultado persistido se conserva intacto en `analysis_results`. Al ensamblar el
 `DiagnosticReport`, la capa de presentación sustituye solo tokens internos completos y conocidos de
-modalidad/applicability en todo texto narrativo dirigido al usuario: resumen, objeto protegido,
-justificaciones, observaciones, advertencias, screening y recursos genéticos. Las construcciones
-`MODALIDAD (APPLICABILITY)` se expresan de forma natural con una raya; los tokens desconocidos, las
-coincidencias parciales y el texto jurídico no se alteran. Esta proyección ciudadana es compartida por
-JSON y PDF.
+modalidad, applicability, screening, recursos genéticos, instrumentos legales y patentabilidad
+histórica en todo texto narrativo dirigido al usuario: resumen, objeto protegido, justificaciones,
+observaciones, advertencias, screening y recursos genéticos. Las construcciones `MODALIDAD
+(APPLICABILITY)` se expresan de forma natural con una raya; los tokens desconocidos, las coincidencias
+parciales y el texto jurídico natural no se alteran. Los campos estructurados conservan sus enums
+canónicos. Esta proyección ciudadana es compartida por JSON, PDF y reporting operacional.
 
 `observations` se presenta como “Aspectos a considerar”; `warnings` como “Advertencias del caso”. El
 disclaimer institucional y “Alcance del análisis” son bloques distintos y nunca se agregan a warnings.

@@ -215,11 +215,13 @@ class OperationalAnalysisDatasetIntegrationTest {
         assertThat(v2Row.reportText())
                 .contains("Revisión de patente:\n", "Artículo 15", "Artículo 20",
                         "Recursos genéticos:\n", "Información faltante:",
+                        "requiere revisión especializada",
                         "Observaciones:\n- Observación presentada.",
                         "Advertencias:\n- Advertencia presentada.")
                 .containsOnlyOnce("Revisión de patente:\n")
                 .containsOnlyOnce("Recursos genéticos:\n")
-                .doesNotContain("INVENTION_PATENT", "COPYRIGHT", "POSSIBLE");
+                .doesNotContain("INVENTION_PATENT", "COPYRIGHT", "POSSIBLE",
+                        "POTENTIALLY_REQUIRED");
         assertThat(v2Row.guidanceConsulted()).isTrue();
 
         OperationalAnalysisReportRow noContextRow = row(rows, noContext.getAnalysisId());
@@ -288,7 +290,8 @@ class OperationalAnalysisDatasetIntegrationTest {
         assertThat(headerRow).contains("\"Id Analisis\"", "\"Orientacion Consultada\"")
                 .doesNotContain("userId", "sessionId", "provider", "model", "tokens");
         assertThat(csv).contains(firstId.toString(), secondId.toString(), "\"COMPLETADO\"")
-                .doesNotContain(outsideId.toString());
+                .contains("requiere revisión especializada")
+                .doesNotContain(outsideId.toString(), "POTENTIALLY_REQUIRED");
         assertThat(csv.indexOf(firstId.toString())).isLessThan(csv.indexOf(secondId.toString()));
     }
 
@@ -457,7 +460,7 @@ class OperationalAnalysisDatasetIntegrationTest {
                   },
                   "geneticResourceAccess":{
                     "assessment":"POTENTIALLY_REQUIRED",
-                    "rationale":"Se identificó material biológico.",
+                    "rationale":"Se identificó material biológico (POTENTIALLY_REQUIRED).",
                     "missingInformation":["Origen del recurso."]
                   },
                   "observations":["Observación presentada."],
