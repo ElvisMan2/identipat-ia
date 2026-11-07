@@ -259,55 +259,6 @@
 
     @if (adminSection() === 'settings') {
     <section class="layout" style="margin-bottom: 1.5rem">
-      <article class="panel table-panel admin-legal-panel">
-        <div class="table-head">
-          <div>
-            <h2>Términos de uso y Política de Privacidad</h2>
-          </div>
-        </div>
-        @if (legalAdminLoading()) {
-          <p role="status">Cargando documento legal...</p>
-        } @else {
-          <label for="legal-admin-title">Título</label>
-          <input
-            id="legal-admin-title"
-            type="text"
-            [value]="legalAdminTitle()"
-            (input)="updateLegalAdminTitle($event)"
-            [disabled]="legalAdminSaving()"
-            maxlength="200"
-          />
-          <label class="legal-admin-content-label">Contenido</label>
-          <ckeditor
-            [editor]="legalAdminEditor"
-            [config]="legalAdminEditorConfig"
-            (ready)="onLegalAdminEditorReady($event)"
-            (change)="updateLegalAdminHtml($event)"
-            (blur)="updateLegalAdminHtml($event)"
-            aria-label="Contenido del documento legal"
-          ></ckeditor>
-          @if (legalAdminDocument(); as document) {
-            <p class="legal-admin-updated">Última actualización: {{ legalDateLabel(document.updatedAt) }}</p>
-          } @else {
-            <p class="legal-admin-updated">Primera configuración</p>
-          }
-          @if (legalAdminMessage()) {
-            <p class="success-message" role="status">{{ legalAdminMessage() }}</p>
-          }
-          @if (legalAdminError()) {
-            <p class="error" role="alert">{{ legalAdminError() }}</p>
-          }
-          <div class="actions legal-admin-actions">
-            <button
-              type="button"
-              (click)="saveAdminLegalDocument()"
-              [disabled]="legalAdminSaving() || !legalAdminTitle().trim() || !legalAdminHtml().trim() || (!legalAdminHasChanges() && !!legalAdminDocument())"
-            >
-              {{ legalAdminSaving() ? 'Guardando...' : 'Guardar cambios' }}
-            </button>
-          </div>
-        }
-      </article>
       <article class="panel table-panel">
         <div class="table-head">
           <h2>Orientación</h2>
@@ -534,6 +485,55 @@
               </div>
             }
           }
+        }
+      </article>
+      <article class="panel table-panel admin-legal-panel">
+        <div class="table-head">
+          <div>
+            <h2>Términos de uso y Política de Privacidad</h2>
+          </div>
+        </div>
+        @if (legalAdminLoading()) {
+          <p role="status">Cargando documento legal...</p>
+        } @else {
+          <label for="legal-admin-title">Título</label>
+          <input
+            id="legal-admin-title"
+            type="text"
+            [value]="legalAdminTitle()"
+            (input)="updateLegalAdminTitle($event)"
+            [disabled]="legalAdminSaving()"
+            maxlength="200"
+          />
+          <label class="legal-admin-content-label">Contenido</label>
+          <ckeditor
+            [editor]="legalAdminEditor"
+            [config]="legalAdminEditorConfig"
+            (ready)="onLegalAdminEditorReady($event)"
+            (change)="updateLegalAdminHtml($event)"
+            (blur)="updateLegalAdminHtml($event)"
+            aria-label="Contenido del documento legal"
+          ></ckeditor>
+          @if (legalAdminDocument(); as document) {
+            <p class="legal-admin-updated">Última actualización: {{ legalDateLabel(document.updatedAt) }}</p>
+          } @else {
+            <p class="legal-admin-updated">Primera configuración</p>
+          }
+          @if (legalAdminMessage()) {
+            <p class="success-message" role="status">{{ legalAdminMessage() }}</p>
+          }
+          @if (legalAdminError()) {
+            <p class="error" role="alert">{{ legalAdminError() }}</p>
+          }
+          <div class="actions legal-admin-actions">
+            <button
+              type="button"
+              (click)="saveAdminLegalDocument()"
+              [disabled]="legalAdminSaving() || !legalAdminTitle().trim() || !legalAdminHtml().trim() || (!legalAdminHasChanges() && !!legalAdminDocument())"
+            >
+              {{ legalAdminSaving() ? 'Guardando...' : 'Guardar cambios' }}
+            </button>
+          </div>
         }
       </article>
       <article class="panel table-panel">
