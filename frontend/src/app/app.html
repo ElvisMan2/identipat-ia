@@ -488,65 +488,70 @@
         }
       </article>
       <article class="panel table-panel admin-legal-panel">
-        <div class="table-head">
-          <div>
+        <details class="legal-admin-subsection">
+          <summary class="legal-admin-summary">
             <h2>Términos de uso y Política de Privacidad</h2>
-          </div>
-        </div>
-        @if (legalAdminLoading()) {
-          <p role="status">Cargando documento legal...</p>
-        } @else {
-          <label for="legal-admin-title">Título</label>
-          <input
-            id="legal-admin-title"
-            type="text"
-            [value]="legalAdminTitle()"
-            (input)="updateLegalAdminTitle($event)"
-            [disabled]="legalAdminSaving()"
-            maxlength="200"
-          />
-          <label class="legal-admin-content-label">Contenido</label>
-          <ckeditor
-            [editor]="legalAdminEditor"
-            [config]="legalAdminEditorConfig"
-            (ready)="onLegalAdminEditorReady($event)"
-            (change)="updateLegalAdminHtml($event)"
-            (blur)="updateLegalAdminHtml($event)"
-            aria-label="Contenido del documento legal"
-          ></ckeditor>
-          @if (legalAdminDocument(); as document) {
-            <p class="legal-admin-updated">Última actualización: {{ legalDateLabel(document.updatedAt) }}</p>
+            <span class="orientation-chevron" aria-hidden="true"></span>
+          </summary>
+          @if (legalAdminLoading()) {
+            <p role="status">Cargando documento legal...</p>
           } @else {
-            <p class="legal-admin-updated">Primera configuración</p>
+            <div class="legal-admin-fields">
+              <label for="legal-admin-title">Título</label>
+              <input
+                id="legal-admin-title"
+                type="text"
+                [value]="legalAdminTitle()"
+                (input)="updateLegalAdminTitle($event)"
+                [disabled]="legalAdminSaving()"
+                maxlength="200"
+              />
+              <label class="legal-admin-content-label">Contenido</label>
+              <ckeditor
+                [editor]="legalAdminEditor"
+                [config]="legalAdminEditorConfig"
+                (ready)="onLegalAdminEditorReady($event)"
+                (change)="updateLegalAdminHtml($event)"
+                (blur)="updateLegalAdminHtml($event)"
+                aria-label="Contenido del documento legal"
+              ></ckeditor>
+              @if (legalAdminDocument(); as document) {
+                <p class="legal-admin-updated">Última actualización: {{ legalDateLabel(document.updatedAt) }}</p>
+              } @else {
+                <p class="legal-admin-updated">Primera configuración</p>
+              }
+              @if (legalAdminMessage()) {
+                <p class="success-message" role="status">{{ legalAdminMessage() }}</p>
+              }
+              @if (legalAdminError()) {
+                <p class="error" role="alert">{{ legalAdminError() }}</p>
+              }
+              <div class="actions legal-admin-actions">
+                <button
+                  type="button"
+                  (click)="saveAdminLegalDocument()"
+                  [disabled]="legalAdminSaving() || !legalAdminTitle().trim() || !legalAdminHtml().trim() || (!legalAdminHasChanges() && !!legalAdminDocument())"
+                >
+                  {{ legalAdminSaving() ? 'Guardando...' : 'Guardar cambios' }}
+                </button>
+              </div>
+            </div>
           }
-          @if (legalAdminMessage()) {
-            <p class="success-message" role="status">{{ legalAdminMessage() }}</p>
-          }
-          @if (legalAdminError()) {
-            <p class="error" role="alert">{{ legalAdminError() }}</p>
-          }
-          <div class="actions legal-admin-actions">
-            <button
-              type="button"
-              (click)="saveAdminLegalDocument()"
-              [disabled]="legalAdminSaving() || !legalAdminTitle().trim() || !legalAdminHtml().trim() || (!legalAdminHasChanges() && !!legalAdminDocument())"
-            >
-              {{ legalAdminSaving() ? 'Guardando...' : 'Guardar cambios' }}
-            </button>
-          </div>
-        }
+        </details>
       </article>
       <article class="panel table-panel">
-        <div class="table-head">
-          <h2>Disclaimer Institucional</h2>
-        </div>
-        @if (settingsLoading()) {
-          <p role="status">Cargando disclaimers...</p>
-        } @else if (settingsError()) {
-          <p class="error" role="alert">{{ settingsError() }}</p>
-          <button class="ghost" type="button" (click)="loadReportDisclaimers()">Reintentar</button>
-        } @else if (latestReportDisclaimer(); as disclaimer) {
-          <div class="report-disclaimer-details">
+        <details class="legal-admin-subsection">
+          <summary class="legal-admin-summary">
+            <h2>Disclaimer Institucional</h2>
+            <span class="orientation-chevron" aria-hidden="true"></span>
+          </summary>
+          @if (settingsLoading()) {
+            <p role="status">Cargando disclaimers...</p>
+          } @else if (settingsError()) {
+            <p class="error" role="alert">{{ settingsError() }}</p>
+            <button class="ghost" type="button" (click)="loadReportDisclaimers()">Reintentar</button>
+          } @else if (latestReportDisclaimer(); as disclaimer) {
+            <div class="report-disclaimer-details">
             <label for="disclaimer-title" style="margin-top: .75rem">Título del disclaimer</label>
             <input id="disclaimer-title" type="text" [value]="disclaimerTitle()" (input)="updateDisclaimerTitle($event)" [disabled]="savingDisclaimerDraft() || activatingDisclaimer()" style="margin-bottom: .75rem" />
             <label for="disclaimer-content">Contenido del disclaimer</label>
@@ -581,30 +586,31 @@
             @if (disclaimerActivationError()) {
               <p class="error" role="alert">{{ disclaimerActivationError() }}</p>
             }
-          </div>
-        }
-        @if (settingsLoaded() && !latestReportDisclaimer() && !settingsError()) {
-          <p class="empty-state">No hay disclaimers registrados.</p>
-        }
-        @if (showPublishDisclaimerModal(); as publishModal) {
-          @if (savedDisclaimerDraft(); as draft) {
-            <div class="modal-backdrop" (click)="closePublishDisclaimerModal()" (keydown.escape)="closePublishDisclaimerModal()">
-              <article class="panel modal-panel" role="dialog" aria-modal="true" aria-labelledby="publish-disclaimer-title" (click)="$event.stopPropagation()" style="text-align: center">
-                <h2 id="publish-disclaimer-title">Publicar disclaimer</h2>
-                <p>¿Confirmas publicar este borrador? Reemplazará el disclaimer activo actual.</p>
-                @if (disclaimerActivationError()) {
-                  <p class="error" role="alert">{{ disclaimerActivationError() }}</p>
-                }
-                <div class="actions" style="justify-content: center">
-                  <button type="button" class="ghost" (click)="closePublishDisclaimerModal()" [disabled]="activatingDisclaimer()">Cancelar</button>
-                  <button type="button" (click)="publishDisclaimerDraft()" [disabled]="activatingDisclaimer()">
-                    {{ activatingDisclaimer() ? 'Publicando...' : 'Confirmar publicación' }}
-                  </button>
-                </div>
-              </article>
             </div>
           }
-        }
+          @if (settingsLoaded() && !latestReportDisclaimer() && !settingsError()) {
+            <p class="empty-state">No hay disclaimers registrados.</p>
+          }
+          @if (showPublishDisclaimerModal(); as publishModal) {
+            @if (savedDisclaimerDraft(); as draft) {
+              <div class="modal-backdrop" (click)="closePublishDisclaimerModal()" (keydown.escape)="closePublishDisclaimerModal()">
+                <article class="panel modal-panel" role="dialog" aria-modal="true" aria-labelledby="publish-disclaimer-title" (click)="$event.stopPropagation()" style="text-align: center">
+                  <h2 id="publish-disclaimer-title">Publicar disclaimer</h2>
+                  <p>¿Confirmas publicar este borrador? Reemplazará el disclaimer activo actual.</p>
+                  @if (disclaimerActivationError()) {
+                    <p class="error" role="alert">{{ disclaimerActivationError() }}</p>
+                  }
+                  <div class="actions" style="justify-content: center">
+                    <button type="button" class="ghost" (click)="closePublishDisclaimerModal()" [disabled]="activatingDisclaimer()">Cancelar</button>
+                    <button type="button" (click)="publishDisclaimerDraft()" [disabled]="activatingDisclaimer()">
+                      {{ activatingDisclaimer() ? 'Publicando...' : 'Confirmar publicación' }}
+                    </button>
+                  </div>
+                </article>
+              </div>
+            }
+          }
+        </details>
       </article>
     </section>
     }

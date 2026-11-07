@@ -123,7 +123,15 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .consent-notice { padding: .75rem 1rem; border-left: 3px solid #be933a; background: #fffcf2; color: #60533c; }
 .consent-blocked-message { margin: 1rem 0; color: var(--muted); line-height: 1.6; }
 .admin-legal-panel { grid-column: 1 / -1; }
-.admin-legal-panel > label { display: block; margin: 1rem 0 .45rem; font-weight: 600; }
+.legal-admin-fields { margin-top: 1rem; }
+.admin-legal-fields > label { display: block; margin: 1rem 0 .45rem; font-weight: 600; }
+.legal-admin-subsection { margin: 0; }
+.legal-admin-summary { display: flex; align-items: center; justify-content: space-between; gap: .75rem; cursor: pointer; list-style: none; }
+.legal-admin-summary::-webkit-details-marker { display: none; }
+.legal-admin-summary:focus-visible { outline: 2px solid var(--teal); outline-offset: 4px; }
+.legal-admin-summary h2 { margin: 0; }
+.legal-admin-subsection[open] .orientation-chevron { transform: rotate(225deg) translate(-2px, -2px); }
+.legal-admin-subsection .ck-editor__editable { margin-top: 0; }
 .admin-legal-panel .ck-editor__editable { min-height: 260px; }
 .legal-admin-content-label { margin-top: 1.25rem !important; }
 .legal-admin-updated { margin: .75rem 0 0; color: var(--muted); font-size: .82rem; }
