@@ -1,7 +1,9 @@
 @if (view() === 'legal') {
   <main class="legal-page">
+      <header class="topbar">
+        <a class="brand" href="/">IDENTIPAT IA</a>
+      </header>
     <article class="legal-content">
-      <a class="legal-back" href="/">← Volver a IDENTIPAT IA</a>
       @if (legalLoading()) {
         <p class="legal-state" role="status">Cargando documento legal...</p>
       } @else if (legalError()) {
@@ -10,12 +12,16 @@
           <button type="button" class="outline-button" (click)="loadPublicLegalDocument()">Reintentar</button>
         </div>
       } @else if (legalDocument(); as document) {
-        <p class="eyebrow">Documento vigente</p>
         <h1>{{ document.title }}</h1>
         <p class="legal-updated">Última actualización: {{ legalDateLabel(document.updatedAt) }}</p>
         <section class="legal-section legal-rich-content" [innerHTML]="document.contentHtml"></section>
       }
     </article>
+      <footer class="trust-strip" aria-label="Características del servicio">
+        <div><strong>Privado</strong><span>Tus datos bajo control</span></div>
+        <div><strong>Orientativo</strong><span>No reemplaza una resolución oficial de Indecopi</span></div>
+        <div><strong>Especializado</strong><span>Enfocado en propiedad intelectual</span></div>
+      </footer>
   </main>
 } @else if (view() === 'admin') {
   <main class="admin-page">
@@ -257,7 +263,6 @@
         <div class="table-head">
           <div>
             <h2>Términos de uso y Política de Privacidad</h2>
-            <p class="empty-state">Documento vigente para registro y acceso STANDARD.</p>
           </div>
         </div>
         @if (legalAdminLoading()) {
