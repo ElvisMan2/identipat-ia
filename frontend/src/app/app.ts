@@ -60,7 +60,7 @@ export class App {
 
   readonly users = signal<User[]>([]);
   readonly userPage = signal(0);
-  readonly userPageSize = signal(20);
+  readonly userPageSize = signal(10);
   readonly userSearch = signal('');
   readonly userStatus = signal('');
   readonly userType = signal('');
