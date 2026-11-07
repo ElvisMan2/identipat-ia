@@ -34,6 +34,12 @@ test con PostgreSQL efímero. En eventos `push` publica en GHCR el tag inmutable
 `sha-<commit completo>` y escribe el digest en el resumen del job. El digest es la fuente de verdad
 para QA/PREPROD; el tag sirve para localizarlo, no para fijar el despliegue.
 
+El mismo evento publica de forma independiente
+`ghcr.io/elvisman2/identipat-preprocessing:sha-<commit completo>` después de pytest, Ruff, build y
+healthcheck. Esa imagen reutiliza `preprocessing-service/Dockerfile`; nunca se copia Python ni el
+modelo Whisper dentro del contenedor Spring Boot. QA/PREPROD fijan ambas imágenes por sus digests
+SHA-256.
+
 Si GHCR es privado, el host necesita autenticación con `read:packages`. El workflow usa
 `GITHUB_TOKEN` y requiere permiso `packages: write`; la configuración de la organización debe
 permitir que Actions cree/escriba el paquete.

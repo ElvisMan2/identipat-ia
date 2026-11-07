@@ -83,6 +83,6 @@ admin_status="$(curl --silent --output "$response_dir/admin-error" --write-out '
 test "$admin_status" = "401"
 
 docker run --rm --entrypoint sh "$image" -c \
-  '! command -v node && ! command -v npm && ! command -v mvn && ! test -e /workspace/backend/mvnw'
+  '! command -v node && ! command -v npm && ! command -v mvn && ! command -v python && ! command -v python3 && ! test -e /workspace/backend/mvnw'
 
 echo "Integrated image smoke test passed: $image"

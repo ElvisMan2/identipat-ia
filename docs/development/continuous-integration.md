@@ -1,14 +1,13 @@
 # Integración continua
 
-GitHub Actions valida la base técnica en cada `push` a `develop` o `main`, en cada Pull Request
-hacia esas ramas y mediante ejecución manual (`workflow_dispatch`). El workflow no usa filtros de
-rutas: ambos componentes se validan juntos para no omitir regresiones en configuración o contratos
-compartidos.
+GitHub Actions valida la base técnica en cada `push`, en cada Pull Request hacia `develop` o `main`
+y mediante ejecución manual (`workflow_dispatch`). El workflow no usa filtros de rutas: todos los
+componentes se validan juntos para no omitir regresiones en configuración o contratos compartidos.
 
 La ejecución nueva del mismo Pull Request o rama cancela la anterior mediante `concurrency`.
-El workflow usa `contents: read`; el job de imagen solicita además `packages: write`. No despliega
-entornos. En eventos `push` publica en GHCR una imagen integrada identificada por SHA; en Pull
-Requests construye y prueba la imagen sin publicarla.
+El workflow usa `contents: read`; los jobs que publican imágenes solicitan además `packages: write`.
+No despliega entornos. En eventos `push` publica en GHCR las imágenes integrada y de preprocessing
+identificadas por SHA; en Pull Requests las construye y prueba sin publicarlas.
 
 ## Checks
 
@@ -20,13 +19,16 @@ Requests construye y prueba la imagen sin publicarla.
   caché de pip basado en `preprocessing-service/pyproject.toml`, instala
   `python -m pip install -e ".[dev]"`, ejecuta `python -m pytest` y
   `python -m ruff check .`, construye la imagen Docker y verifica `GET /health` del contenedor.
-  El contenedor temporal se elimina incluso si la comprobación falla.
+  El contenedor temporal se elimina incluso si la comprobación falla. Solo después de completar
+  esas verificaciones, los eventos `push` publican
+  `ghcr.io/elvisman2/identipat-preprocessing:sha-<commit>` y reportan su digest SHA-256; los Pull
+  Requests construyen y prueban sin publicar.
 - **Frontend CI** (`ubuntu-latest`, máximo 20 minutos): usa Node.js 24.11.0, ejecuta `npm ci`, los
   tests ChromeHeadless y el build estático de producción. Verifica que exista `browser/index.html`
   y que no se genere un servidor SSR de runtime.
 - **Integrated image** (`ubuntu-latest`, máximo 30 minutos): después de los tres stacks, construye
   el Dockerfile raíz, inicia PostgreSQL efímero y valida raíz, bundle, ruta cliente, 404 de API,
-  protección ADMIN y ausencia de Node/Maven en runtime. En `push` publica
+  protección ADMIN y ausencia de Node/Maven/Python en runtime. En `push` publica
   `ghcr.io/<owner>/<repo>:sha-<commit>` y reporta su digest.
 
 Un check verde confirma que esas validaciones terminaron correctamente. Uno rojo bloquea la

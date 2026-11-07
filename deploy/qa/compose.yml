@@ -27,8 +27,8 @@ services:
       ANALYSIS_WORKER_QUEUE_CAPACITY: ${ANALYSIS_WORKER_QUEUE_CAPACITY:-1}
     ports:
       - "${APP_BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-8082}:8082"
-    mem_limit: 768m
-    cpus: 0.75
+    mem_limit: ${APP_MEMORY_LIMIT:-768m}
+    cpus: ${APP_CPU_LIMIT:-0.75}
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8082/identipat-ia/"]
       interval: 15s
@@ -37,6 +37,55 @@ services:
       start_period: 45s
     networks:
       - internal
+    depends_on:
+      preprocessing:
+        condition: service_healthy
+
+  preprocessing:
+    image: ${PREPROCESSING_IMAGE:?Set PREPROCESSING_IMAGE to an immutable GHCR digest}
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      PREPROCESSING_ENV: prod
+      PREPROCESSING_HOST: 0.0.0.0
+      PREPROCESSING_PORT: 8090
+      PREPROCESSING_LOG_LEVEL: ${PREPROCESSING_LOG_LEVEL:-INFO}
+      PREPROCESSING_PDF_MAX_FILE_SIZE_BYTES: ${PREPROCESSING_PDF_MAX_FILE_SIZE_BYTES:-10485760}
+      PREPROCESSING_PDF_MAX_PAGES: ${PREPROCESSING_PDF_MAX_PAGES:-50}
+      PREPROCESSING_AUDIO_MAX_FILE_SIZE_BYTES: ${PREPROCESSING_AUDIO_MAX_FILE_SIZE_BYTES:-20971520}
+      PREPROCESSING_AUDIO_MAX_DURATION_SECONDS: ${PREPROCESSING_AUDIO_MAX_DURATION_SECONDS:-180}
+      PREPROCESSING_AUDIO_MODEL: ${PREPROCESSING_AUDIO_MODEL:-base}
+      PREPROCESSING_AUDIO_LANGUAGE: ${PREPROCESSING_AUDIO_LANGUAGE:-es}
+      PREPROCESSING_AUDIO_DEVICE: ${PREPROCESSING_AUDIO_DEVICE:-cpu}
+      PREPROCESSING_AUDIO_COMPUTE_TYPE: ${PREPROCESSING_AUDIO_COMPUTE_TYPE:-int8}
+      PREPROCESSING_AUDIO_MODEL_CACHE_DIR: /models
+      HF_HOME: /models/.huggingface
+      HF_HUB_DISABLE_XET: "1"
+    expose:
+      - "8090"
+    volumes:
+      - preprocessing_models:/models
+    mem_limit: ${PREPROCESSING_MEMORY_LIMIT:-640m}
+    cpus: ${PREPROCESSING_CPU_LIMIT:-0.50}
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import json, urllib.request;
+          data = json.load(urllib.request.urlopen('http://127.0.0.1:8090/health', timeout=3));
+          assert data.get('status') == 'UP' and data.get('service') == 'preprocessing-service'
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    networks:
+      - internal
+
+volumes:
+  preprocessing_models:
+    name: identipat-qa_preprocessing_models
 
 networks:
   internal:

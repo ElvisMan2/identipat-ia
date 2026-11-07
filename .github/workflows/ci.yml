@@ -81,6 +81,9 @@ jobs:
     name: Preprocessing CI
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -127,6 +130,29 @@ jobs:
             sleep 1
           done
           test "$response" = '{"status":"UP","service":"preprocessing-service","version":"0.1.0"}'
+
+      - name: Log in to GHCR for preprocessing image
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish immutable preprocessing SHA image
+        if: github.event_name == 'push'
+        id: publish-preprocessing
+        shell: bash
+        run: |
+          repository="ghcr.io/elvisman2/identipat-preprocessing"
+          tag="sha-${GITHUB_SHA}"
+          image="${repository}:${tag}"
+          docker tag identipat-preprocessing:ci "$image"
+          docker push "$image"
+          digest="$(docker image inspect --format '{{index .RepoDigests 0}}' "$image")"
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
+          echo "### Preprocessing image" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`${digest}\`" >> "$GITHUB_STEP_SUMMARY"
 
   integrated-image:
     name: Integrated image

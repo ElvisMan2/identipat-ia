@@ -1,48 +1,127 @@
-# Despliegue QA de la imagen integrada
+# Despliegue QA de Java/Angular y preprocessing
 
-Este Compose despliega únicamente la aplicación integrada Java + Angular. PostgreSQL (`db`) y el
-servicio Python (`preprocessing`) continúan como servicios independientes en la red externa
-`identipat-qa_internal`; no se publican sus puertos. La imagen se construye y publica en CI, nunca
-en el host QA de 1 vCPU/2 GiB.
+Este Compose despliega dos imágenes independientes: la aplicación integrada Java + Angular y
+`preprocessing-service`. PostgreSQL (`db`) continúa administrado por el Compose existente y se
+alcanza mediante la red externa `identipat-qa_internal`. Python también usa esa red, pero el puerto
+8090 solo se expone entre contenedores y nunca se publica en el host.
+
+El caché de modelos se conserva en el volumen `identipat-qa_preprocessing_models`. Las imágenes se
+construyen y publican en CI; no se compilan en el host QA de 1 vCPU/2 GiB.
 
 ## Preparación y migración segura
 
-1. Confirmar que el Compose existente está activo y que `docker network inspect
-   identipat-qa_internal` contiene `db` y `preprocessing`.
-2. Copiar `.env.example` a `.env` fuera del control de versiones y completar los secretos.
-3. Iniciar sesión en GHCR si el paquete es privado: `echo "$GHCR_TOKEN" | docker login ghcr.io -u
-   USUARIO --password-stdin`. El token requiere `read:packages`; además, el usuario debe tener
-   acceso al repositorio/paquete privado.
-4. Sustituir `IDENTIPAT_IMAGE` por el digest reportado por CI, con formato
-   `ghcr.io/elvisman2/identipat-ia@sha256:...`, y ejecutar:
+1. Registrar los digests desplegados, comprobar el backup/restauración de PostgreSQL e inspeccionar
+   `identipat-qa_internal`. La red debe contener el servicio `db` con ese alias.
+2. Si ya existe otro contenedor Python con el alias `preprocessing`, identificar su Compose y su
+   volumen antes de detener solo ese servicio. No detener ni recrear `db`.
+3. Copiar `.env.example` a `.env` fuera del control de versiones y completar secretos y ambos
+   digests:
+
+   ```dotenv
+   IDENTIPAT_IMAGE=ghcr.io/elvisman2/identipat-ia@sha256:...
+   PREPROCESSING_IMAGE=ghcr.io/elvisman2/identipat-preprocessing@sha256:...
+   ```
+
+4. Si los paquetes son privados, iniciar sesión en GHCR con un token `read:packages` y acceso a
+   ambos paquetes:
+
+   ```bash
+   echo "$GHCR_TOKEN" | docker login ghcr.io -u USUARIO --password-stdin
+   ```
+
+5. Validar y descargar sin construir en el host:
 
    ```bash
    docker compose --env-file .env -f compose.yml config
-   docker compose --env-file .env -f compose.yml pull app
+   docker compose --env-file .env -f compose.yml pull app preprocessing
+   docker compose --env-file .env -f compose.yml up -d preprocessing
    docker compose --env-file .env -f compose.yml up -d app
    ```
 
-No ejecutar `docker compose down -v`, no borrar `identipat-qa_postgres_data` y no recrear el
-servicio `db`. Este proyecto usa la red existente y no declara el volumen PostgreSQL. Antes de la
-migración conviene verificar backup/restauración y anotar el digest actualmente desplegado.
+`app` espera el health general de `preprocessing`, pero ese health no espera a que Whisper termine
+de cargar. No ejecutar `docker compose down -v`, no borrar `identipat-qa_postgres_data`, no recrear
+`db` y no eliminar `identipat-qa_preprocessing_models` durante un despliegue normal.
 
-## Verificación
+## Health general y carga inicial de Whisper
+
+Como 8090 no está publicado, las verificaciones se ejecutan dentro del contenedor. `/health`
+confirma que FastAPI atiende PDF y el contrato general:
 
 ```bash
-docker compose --env-file .env -f compose.yml ps
-docker compose --env-file .env -f compose.yml logs --tail=200 app
-curl --fail http://127.0.0.1:8082/identipat-ia/
-docker stats --no-stream identipat-qa-app-app-1
+docker compose --env-file .env -f compose.yml exec -T preprocessing python - <<'PY'
+import json
+import urllib.request
+
+with urllib.request.urlopen("http://127.0.0.1:8090/health", timeout=3) as response:
+    print(response.status, json.load(response))
+PY
 ```
 
-En logs debe observarse que Flyway valida/aplica las migraciones y que Spring inicia sin errores.
-El contenedor limita la aplicación a 768 MiB y 0.75 CPU; revisar uso sostenido, reinicios y OOM.
-Python (en particular la transcripción de audio) y PostgreSQL comparten el host, por lo que una
-prueba de carga sigue siendo necesaria antes de aumentar workers o límites.
+`/v1/audio/health` devuelve `503 AUDIO_MODEL_NOT_READY` mientras el modelo se descarga o carga y
+`200` cuando queda listo. Repetir esta consulta durante la puesta en marcha:
+
+```bash
+docker compose --env-file .env -f compose.yml exec -T preprocessing python - <<'PY'
+import urllib.error
+import urllib.request
+
+request = urllib.request.Request("http://127.0.0.1:8090/v1/audio/health")
+try:
+    with urllib.request.urlopen(request, timeout=5) as response:
+        print(response.status, response.read().decode())
+except urllib.error.HTTPError as error:
+    print(error.code, error.read().decode())
+    raise SystemExit(1)
+PY
+```
+
+En un volumen vacío, el primer arranque necesita salida de red hacia el repositorio del modelo. El
+modelo queda bajo `/models`; reinicios posteriores reutilizan el volumen. Seguir la carga y revisar
+el tamaño del caché con:
+
+```bash
+docker compose --env-file .env -f compose.yml logs -f preprocessing
+docker compose --env-file .env -f compose.yml exec -T preprocessing du -sh /models
+```
+
+Que `/health` esté verde no demuestra que haya memoria suficiente para cargar Whisper o transcribir
+audio. La disponibilidad de audio solo la confirma `/v1/audio/health`, y aun así debe ejecutarse una
+prueba controlada de transcripción antes de habilitar carga real.
+
+## Recursos y observabilidad
+
+Los defaults del laboratorio son 768 MiB/0.75 CPU para Java y 640 MiB/0.50 CPU para Python. Son
+límites iniciales ajustables mediante `APP_MEMORY_LIMIT`, `APP_CPU_LIMIT`,
+`PREPROCESSING_MEMORY_LIMIT` y `PREPROCESSING_CPU_LIMIT`; no constituyen una capacidad garantizada
+para el modelo `base` ni para audio de 180 segundos. PostgreSQL y el sistema operativo también
+compiten por los 2 GiB del host.
+
+```bash
+preprocessing_id="$(docker compose --env-file .env -f compose.yml ps -q preprocessing)"
+app_id="$(docker compose --env-file .env -f compose.yml ps -q app)"
+docker stats --no-stream "$preprocessing_id" "$app_id"
+docker inspect --format 'OOMKilled={{.State.OOMKilled}} restarts={{.RestartCount}}' "$preprocessing_id"
+docker compose --env-file .env -f compose.yml ps
+docker compose --env-file .env -f compose.yml logs --tail=200 app preprocessing
+```
+
+Revisar memoria durante el warm-up y durante una transcripción representativa. Si hay OOM, reinicios
+o latencia inaceptable, detener las pruebas de audio y ajustar capacidad/límites de forma explícita;
+no aumentar workers en este host por defecto.
+
+En los logs de Java debe observarse que Flyway valida/aplica migraciones y que Spring inicia sin
+errores. La interfaz se verifica desde el host con:
+
+```bash
+curl --fail http://127.0.0.1:8082/identipat-ia/
+```
 
 ## Rollback
 
-Restaurar en `.env` el digest anterior (no solo un tag), ejecutar `pull app` y luego `up -d app`.
-Las migraciones Flyway son hacia adelante: si una versión introduce una migración incompatible,
-la reversión de imagen exige el procedimiento de base de datos aprobado y un backup verificado;
-nunca se debe eliminar el volumen para forzar el rollback.
+Restaurar en `.env` los digests anteriores de `IDENTIPAT_IMAGE` y/o `PREPROCESSING_IMAGE`, ejecutar
+`pull` y luego `up -d` para los servicios afectados. El caché de modelos puede conservarse entre
+versiones; no eliminarlo como mecanismo de rollback.
+
+Las migraciones Flyway son hacia adelante: si una versión Java introduce una migración
+incompatible, la reversión de imagen exige el procedimiento de base de datos aprobado y un backup
+verificado. Nunca se debe eliminar el volumen PostgreSQL para forzar el rollback.
