@@ -1,0 +1,93 @@
+name: identipat-qa-app
+
+services:
+  app:
+    image: ${IDENTIPAT_IMAGE:?Set IDENTIPAT_IMAGE to an immutable GHCR digest}
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=65 -XX:+ExitOnOutOfMemoryError
+      SERVER_PORT: 8082
+      DB_URL: jdbc:postgresql://db:5432/${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      IDENTIPAT_AI_ENABLED: ${IDENTIPAT_AI_ENABLED}
+      IDENTIPAT_AI_PROVIDER: ${IDENTIPAT_AI_PROVIDER}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL}
+      OPENAI_TIMEOUT: ${OPENAI_TIMEOUT:-60s}
+      PREPROCESSING_SERVICE_BASE_URL: http://preprocessing:8090
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      STANDARD_SESSION_PEPPER: ${STANDARD_SESSION_PEPPER}
+      STANDARD_SESSION_INACTIVITY_TIMEOUT: ${STANDARD_SESSION_INACTIVITY_TIMEOUT:-30m}
+      STANDARD_SESSION_ABSOLUTE_TIMEOUT: ${STANDARD_SESSION_ABSOLUTE_TIMEOUT:-8h}
+      ANALYSIS_WORKER_THREADS: ${ANALYSIS_WORKER_THREADS:-1}
+      ANALYSIS_WORKER_QUEUE_CAPACITY: ${ANALYSIS_WORKER_QUEUE_CAPACITY:-1}
+    ports:
+      - "${APP_BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-8082}:8082"
+    mem_limit: ${APP_MEMORY_LIMIT:-768m}
+    cpus: ${APP_CPU_LIMIT:-0.75}
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8082/identipat-ia/"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+    networks:
+      - internal
+    depends_on:
+      preprocessing:
+        condition: service_healthy
+
+  preprocessing:
+    image: ${PREPROCESSING_IMAGE:?Set PREPROCESSING_IMAGE to an immutable GHCR digest}
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      PREPROCESSING_ENV: prod
+      PREPROCESSING_HOST: 0.0.0.0
+      PREPROCESSING_PORT: 8090
+      PREPROCESSING_LOG_LEVEL: ${PREPROCESSING_LOG_LEVEL:-INFO}
+      PREPROCESSING_PDF_MAX_FILE_SIZE_BYTES: ${PREPROCESSING_PDF_MAX_FILE_SIZE_BYTES:-10485760}
+      PREPROCESSING_PDF_MAX_PAGES: ${PREPROCESSING_PDF_MAX_PAGES:-50}
+      PREPROCESSING_AUDIO_MAX_FILE_SIZE_BYTES: ${PREPROCESSING_AUDIO_MAX_FILE_SIZE_BYTES:-20971520}
+      PREPROCESSING_AUDIO_MAX_DURATION_SECONDS: ${PREPROCESSING_AUDIO_MAX_DURATION_SECONDS:-180}
+      PREPROCESSING_AUDIO_MODEL: ${PREPROCESSING_AUDIO_MODEL:-base}
+      PREPROCESSING_AUDIO_LANGUAGE: ${PREPROCESSING_AUDIO_LANGUAGE:-es}
+      PREPROCESSING_AUDIO_DEVICE: ${PREPROCESSING_AUDIO_DEVICE:-cpu}
+      PREPROCESSING_AUDIO_COMPUTE_TYPE: ${PREPROCESSING_AUDIO_COMPUTE_TYPE:-int8}
+      PREPROCESSING_AUDIO_MODEL_CACHE_DIR: /models
+      HF_HOME: /models/.huggingface
+      HF_HUB_DISABLE_XET: "1"
+    expose:
+      - "8090"
+    volumes:
+      - preprocessing_models:/models
+    mem_limit: ${PREPROCESSING_MEMORY_LIMIT:-640m}
+    cpus: ${PREPROCESSING_CPU_LIMIT:-0.50}
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import json, urllib.request;
+          data = json.load(urllib.request.urlopen('http://127.0.0.1:8090/health', timeout=3));
+          assert data.get('status') == 'UP' and data.get('service') == 'preprocessing-service'
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    networks:
+      - internal
+
+volumes:
+  preprocessing_models:
+    name: identipat-qa_preprocessing_models
+
+networks:
+  internal:
+    external: true
+    name: identipat-qa_internal
