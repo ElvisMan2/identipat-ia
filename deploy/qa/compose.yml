@@ -1,0 +1,44 @@
+name: identipat-qa-app
+
+services:
+  app:
+    image: ${IDENTIPAT_IMAGE:?Set IDENTIPAT_IMAGE to an immutable GHCR digest}
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=65 -XX:+ExitOnOutOfMemoryError
+      SERVER_PORT: 8082
+      DB_URL: jdbc:postgresql://db:5432/${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      IDENTIPAT_AI_ENABLED: ${IDENTIPAT_AI_ENABLED}
+      IDENTIPAT_AI_PROVIDER: ${IDENTIPAT_AI_PROVIDER}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL}
+      OPENAI_TIMEOUT: ${OPENAI_TIMEOUT:-60s}
+      PREPROCESSING_SERVICE_BASE_URL: http://preprocessing:8090
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      STANDARD_SESSION_PEPPER: ${STANDARD_SESSION_PEPPER}
+      STANDARD_SESSION_INACTIVITY_TIMEOUT: ${STANDARD_SESSION_INACTIVITY_TIMEOUT:-30m}
+      STANDARD_SESSION_ABSOLUTE_TIMEOUT: ${STANDARD_SESSION_ABSOLUTE_TIMEOUT:-8h}
+      ANALYSIS_WORKER_THREADS: ${ANALYSIS_WORKER_THREADS:-1}
+      ANALYSIS_WORKER_QUEUE_CAPACITY: ${ANALYSIS_WORKER_QUEUE_CAPACITY:-1}
+    ports:
+      - "${APP_BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-8082}:8082"
+    mem_limit: 768m
+    cpus: 0.75
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8082/identipat-ia/"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+    networks:
+      - internal
+
+networks:
+  internal:
+    external: true
+    name: identipat-qa_internal

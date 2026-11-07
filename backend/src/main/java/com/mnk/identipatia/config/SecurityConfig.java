@@ -81,8 +81,10 @@ public class SecurityConfig {
                         .requestMatchers("/analyses/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/users/**").hasRole("ADMIN")
-                        .requestMatchers("/", "/index.html", "/*.js", "/*.css", "/*.ico",
-                                "/assets/**", "/favicon.ico").permitAll()
+                        .requestMatchers("/", "/index.html", "/terminos-y-privacidad",
+                                "/*.js", "/*.css", "/*.ico", "/*.png", "/*.webp", "/*.svg",
+                                "/*.woff", "/*.woff2", "/*.ttf", "/*.html",
+                                "/assets/**", "/examples/**", "/favicon.ico").permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .exceptionHandling(exceptions -> exceptions

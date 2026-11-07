@@ -6,8 +6,9 @@ rutas: ambos componentes se validan juntos para no omitir regresiones en configu
 compartidos.
 
 La ejecución nueva del mismo Pull Request o rama cancela la anterior mediante `concurrency`.
-El workflow usa solo el permiso `contents: read`; no requiere secretos, no publica artefactos ni
-imágenes y no realiza despliegues.
+El workflow usa `contents: read`; el job de imagen solicita además `packages: write`. No despliega
+entornos. En eventos `push` publica en GHCR una imagen integrada identificada por SHA; en Pull
+Requests construye y prueba la imagen sin publicarla.
 
 ## Checks
 
@@ -20,6 +21,13 @@ imágenes y no realiza despliegues.
   `python -m pip install -e ".[dev]"`, ejecuta `python -m pytest` y
   `python -m ruff check .`, construye la imagen Docker y verifica `GET /health` del contenedor.
   El contenedor temporal se elimina incluso si la comprobación falla.
+- **Frontend CI** (`ubuntu-latest`, máximo 20 minutos): usa Node.js 24.11.0, ejecuta `npm ci`, los
+  tests ChromeHeadless y el build estático de producción. Verifica que exista `browser/index.html`
+  y que no se genere un servidor SSR de runtime.
+- **Integrated image** (`ubuntu-latest`, máximo 30 minutos): después de los tres stacks, construye
+  el Dockerfile raíz, inicia PostgreSQL efímero y valida raíz, bundle, ruta cliente, 404 de API,
+  protección ADMIN y ausencia de Node/Maven en runtime. En `push` publica
+  `ghcr.io/<owner>/<repo>:sha-<commit>` y reporta su digest.
 
 Un check verde confirma que esas validaciones terminaron correctamente. Uno rojo bloquea la
 validación técnica de ese componente y debe revisarse antes de integrar cambios. CI valida; no
@@ -46,8 +54,20 @@ python -m ruff check .
 docker build -t identipat-preprocessing:local .
 ```
 
+Para frontend e imagen integrada, desde la raíz:
+
+```bash
+cd frontend
+npm ci
+npm test -- --watch=false --browsers=ChromeHeadlessNoGpu
+npm run build:prod
+cd ..
+docker build -t identipat-integrated:local .
+bash scripts/smoke-integrated-image.sh identipat-integrated:local
+```
+
 ## Protección de ramas recomendada
 
-Configurar manualmente GitHub Branch Protection para exigir Pull Request y el check **Backend CI**
-y **Preprocessing CI** en `main`. En `develop`, exigir o al menos recomendar ambos checks según la
-política del equipo. Esta configuración no se gestiona desde el workflow.
+Configurar manualmente GitHub Branch Protection para exigir Pull Request y los checks **Backend
+CI**, **Frontend CI**, **Preprocessing CI** e **Integrated image** en `main`. En `develop`, exigirlos
+o recomendarlos según la política del equipo. Esta configuración no se gestiona desde el workflow.
