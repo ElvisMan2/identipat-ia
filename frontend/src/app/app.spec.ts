@@ -519,6 +519,7 @@ describe('App', () => {
       request.url === `${environment.apiBaseUrl}/users`
       && request.params.get('page') === '0'
       && request.params.get('size') === '20'
+      && request.params.get('sort') === 'userId,asc'
     ).flush(pageResponse);
 
     expect(app.users()).toEqual(pageResponse.content);

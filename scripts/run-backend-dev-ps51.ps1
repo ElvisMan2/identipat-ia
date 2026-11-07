@@ -215,7 +215,7 @@ if (-not (Wait-PreprocessingService -Uri $preprocessingHealthUri -TimeoutSeconds
 }
 Write-Host "preprocessing-service DEV: healthy"
 
-$audioReadyTimeoutSeconds = 5
+$audioReadyTimeoutSeconds = 300
 if (-not [string]::IsNullOrWhiteSpace($env:PREPROCESSING_AUDIO_READY_TIMEOUT_SECONDS)) {
     if (-not [int]::TryParse(
             $env:PREPROCESSING_AUDIO_READY_TIMEOUT_SECONDS.Trim(),
