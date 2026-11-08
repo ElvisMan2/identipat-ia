@@ -897,12 +897,12 @@
               <p>No se identificaron modalidades.</p>
             }
           </section>
-          @let hasVisiblePatentScreening = report.patentScreening && (report.patentScreening.scopeNote || (report.patentScreening.article15 && report.patentScreening.article15.assessment !== 'NO_POTENTIAL_MATCH') || (report.patentScreening.article20 && report.patentScreening.article20.assessment !== 'NO_POTENTIAL_MATCH'));
-          @if (hasPatentScreeningModality(report.protectionOptions) && (hasVisiblePatentScreening || report.historicalPatentability)) {
+          @let hasVisiblePatentScreening = report.patentScreening && (report.patentScreening.article15?.assessment === 'POTENTIAL_MATCH' || report.patentScreening.article20?.assessment === 'POTENTIAL_MATCH');
+          @if (hasPatentScreeningModality(report.protectionOptions)) {
             <section class="context-section">
               <h2>Información complementaria del diagnóstico</h2>
               <div class="context-grid">
-                @if (report.patentScreening; as screening) {
+                @if (hasVisiblePatentScreening && report.patentScreening; as screening) {
                   <article class="context-card full">
                     <h3>{{ reportField(screening.title) }}</h3>
                     @if (screening.context && (screening.article15?.assessment === 'POTENTIAL_MATCH' || screening.article20?.assessment === 'POTENTIAL_MATCH')) {
@@ -918,7 +918,6 @@
                         }
                       }
                     }
-                    @if (screening.scopeNote) { <p>{{ reportField(screening.scopeNote) }}</p> }
                   </article>
                 }
                 @if (report.historicalPatentability; as historical) {
