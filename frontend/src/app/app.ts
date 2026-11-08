@@ -2229,6 +2229,12 @@ export class App {
     return value?.trim() || 'campo faltante';
   }
 
+  hasPatentScreeningModality(options: DiagnosticReport['protectionOptions']): boolean {
+    return options?.some(option =>
+      option.type === 'INVENTION_PATENT' || option.type === 'UTILITY_MODEL'
+    ) ?? false;
+  }
+
   screeningAssessmentLabel(
     article: string | null | undefined,
     assessmentLabel: string | null | undefined,
