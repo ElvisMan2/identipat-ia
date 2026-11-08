@@ -5,7 +5,7 @@
   "inputType": "TEXT",
   "analysisCompletedAt": "2026-11-08T10:29:19.261241Z",
   "title": "Reporte orientativo de identificación de propiedad intelectual",
-  "summary": "Se identifican vías de protección basadas en los elementos descritos: signo distintivo se relaciona claramente para la denominación KUMAY y el logotipo (K estilizada + silueta de montaña); derecho de autor se relaciona claramente para la expresión gráfica del logotipo; modelo de utilidad se relaciona claramente para el mecanismo de apertura con presión lateral y la pieza plegable de sujeción; diseño industrial se relaciona claramente para la apariencia exterior (forma triangular con bordes redondeados, líneas diagonales en relieve, tapa integrada y combinación de colores). Patent screening no muestra potenciales coincidencias con los artículos 15 o 20 de la Decisión 486. No se señalan indicios de recurso genético.",
+  "summary": "Se identifican vías de protección basadas en los elementos descritos: signo distintivo se relaciona claramente para la denominación KUMAY y el logotipo (K estilizada + silueta de montaña); derecho de autor se relaciona claramente para la expresión gráfica del logotipo; modelo de utilidad se relaciona claramente para el mecanismo de apertura con presión lateral y la pieza plegable de sujeción; diseño industrial se relaciona claramente para la apariencia exterior (forma triangular con bordes redondeados, líneas diagonales en relieve, tapa integrada y combinación de colores). La revisión de la vía patentaria identifica una coincidencia potencial en el artículo 15 y requiere más información respecto del artículo 20. El análisis de recursos genéticos requiere información adicional.",
   "applicabilityNote": "La relación mostrada indica qué tan directamente lo descrito en tu creación se vincula con esta modalidad de protección. No representa una probabilidad de registro, concesión o reconocimiento definitivo de un derecho.",
   "protectionOptions": [
     {
@@ -81,6 +81,60 @@
         }
       ],
       "orientation": "Esta modalidad presenta una relación clara con la materia descrita y puede considerarse como una vía principal para una revisión especializada."
+    },
+    {
+      "type": "INVENTION_PATENT",
+      "name": "Patente de invención",
+      "relationshipQuestion": "¿Cómo se relaciona con tu creación?",
+      "applicability": "POSSIBLE",
+      "applicabilityLabel": "Podría relacionarse",
+      "protectedSubjectMatter": "Configuración técnica del mecanismo de apertura con presión lateral y de la pieza plegable de sujeción, si incorpora novedad, nivel inventivo y aplicación industrial suficientes",
+      "rationale": "La descripción contiene elementos técnicos y funcionales que podrían evaluarse por la vía de patente; sin embargo, la clasificación como modelo de utilidad resulta más directamente relacionada con la configuración descrita y se requiere un examen especializado de los requisitos de patentabilidad.",
+      "legalBasis": [
+        {
+          "instrument": "Decisión 486",
+          "articles": [
+            "14"
+          ]
+        }
+      ],
+      "orientation": "La relación es posible, pero debe diferenciarse la materia patentable de la protección como modelo de utilidad mediante una revisión técnica y jurídica especializada."
+    },
+    {
+      "type": "PLANT_BREEDER_CERTIFICATE",
+      "name": "Certificado de obtentor",
+      "relationshipQuestion": "¿Cómo se relaciona con tu creación?",
+      "applicability": "UNLIKELY",
+      "applicabilityLabel": "No se relaciona directamente",
+      "protectedSubjectMatter": "Variedad vegetal nueva, distinta, homogénea, estable y con una denominación adecuada",
+      "rationale": "La creación descrita es una botella con elementos mecánicos, ornamentales y gráficos. No se identifica una variedad vegetal ni material de propagación que pueda constituir materia propia de un certificado de obtentor.",
+      "legalBasis": [
+        {
+          "instrument": "Decisión 345",
+          "articles": [
+            "4"
+          ]
+        }
+      ],
+      "orientation": "Esta modalidad no parece aplicable al objeto descrito, salvo que el análisis incluya posteriormente una variedad vegetal desarrollada por el solicitante."
+    },
+    {
+      "type": "TRADE_SECRET",
+      "name": "Secreto empresarial",
+      "relationshipQuestion": "¿Cómo se relaciona con tu creación?",
+      "applicability": "POSSIBLE",
+      "applicabilityLabel": "Podría relacionarse",
+      "protectedSubjectMatter": "Información técnica o comercial no divulgada relacionada con el diseño, fabricación, ensamblaje o estrategia comercial de la botella",
+      "rationale": "Los detalles no divulgados del mecanismo, los procesos de fabricación, los costos o la estrategia comercial podrían protegerse como secreto empresarial si tienen valor por ser secretos y se adoptan medidas razonables para mantenerlos confidenciales.",
+      "legalBasis": [
+        {
+          "instrument": "Decisión 486",
+          "articles": [
+            "260"
+          ]
+        }
+      ],
+      "orientation": "La protección depende de conservar la información confidencial y de implementar medidas razonables de control de acceso, contratos y gestión documental."
     }
   ],
   "patentScreening": {
@@ -95,6 +149,10 @@
         {
           "literal": "Literal b",
           "rationale": "La materia descrita podría relacionarse con una forma de presentar información y requiere evaluación especializada."
+        },
+        {
+          "literal": "Literal e",
+          "rationale": "Se recomienda revisar si algún elemento de la descripción corresponde a una exclusión adicional del artículo 15."
         }
       ]
     },
@@ -107,6 +165,10 @@
         {
           "literal": "Literal d",
           "rationale": "Se requiere precisar el uso y el contexto de la creación para completar la evaluación."
+        },
+        {
+          "literal": "Literal a",
+          "rationale": "También debe aclararse si la solución descrita se limita a una aplicación práctica o si contiene una materia excluida por el artículo 20."
         }
       ]
     },
@@ -121,12 +183,18 @@
       "Indicar si existe conocimiento tradicional asociado"
     ]
   },
-  "historicalPatentability": null,
+  "historicalPatentability": {
+    "outcome": "POTENTIALLY_PATENTABLE",
+    "rationale": "La materia técnica descrita podría presentar una relación inicial con la protección por patente, pero esta conclusión histórica no sustituye el análisis específico de novedad, nivel inventivo, aplicación industrial y exclusiones legales."
+  },
   "observations": [
     "Existe un prototipo funcional y la intención de comercializarlo, hecho relevante para la aplicación de signo distintivo y para la explotación práctica de la utilidad/modelo.",
     "La protección concurrente propuesta separa claramente dimensiones distintas: la configuración mecánica (modelo de utilidad) y la apariencia ornamental (diseño industrial); el logotipo puede recibir protección tanto como signo distintivo (signo distintivo) como por su expresión gráfica (derecho de autor)."
   ],
-  "warnings": [],
+  "warnings": [
+    "La clasificación de la configuración mecánica como modelo de utilidad y su eventual evaluación como patente requiere una revisión técnica y jurídica especializada.",
+    "La protección como secreto empresarial depende de que la información se mantenga confidencial y de que existan medidas razonables para protegerla."
+  ],
   "scope": "Este análisis identifica relaciones orientativas a partir de la información disponible. No determina registrabilidad, concesión o reconocimiento definitivo, ni sustituye una evaluación especializada o una decisión oficial.",
   "disclaimer": {
     "id": "3c39569c-2899-4529-9531-b20567584a6b",

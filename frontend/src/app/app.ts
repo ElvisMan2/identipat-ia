@@ -56,7 +56,7 @@ export class App {
   private readonly legalDocumentService = inject(LegalDocumentService);
   private readonly csrfService = inject(CsrfService);
   private readonly defaultAdminPassword = 'admin';
-  private readonly useExampleAnalysis = true;
+  private readonly useExampleAnalysis = false;
 
   readonly users = signal<User[]>([]);
   readonly userPage = signal(0);
@@ -2280,8 +2280,26 @@ export class App {
     return this.analysisGuidance()?.modalities.find(modality => modality.protectionType === type) ?? null;
   }
 
-  openNextStepsModal(modality: string, contentHtml: string | null | undefined): void {
+  openNextStepsModal(
+    modality: string,
+    protectionType: string | null | undefined,
+    guidance: AnalysisGuidanceResponse['modalities'][number] | null
+  ): void {
+    const contentHtml = guidance?.nextSteps?.contentHtml;
     this.nextStepsModal.set({ modality, contentHtml: contentHtml?.trim() || null });
+
+    const analysisId = this.analysisResult()?.analysisId;
+    if (!analysisId || !protectionType || !guidance?.guideVersion || !guidance.nextSteps || this.adminAuthenticated()) {
+      return;
+    }
+
+    this.standardAnalysisService.recordGuidanceView(analysisId, protectionType, guidance.guideVersion).subscribe({
+      error: error => {
+        if (!this.adminAuthenticated() && this.apiErrorCode(error) === 'STANDARD_SESSION_REQUIRED') {
+          this.handleExpiredStandardSession();
+        }
+      }
+    });
   }
 
   closeNextStepsModal(): void {

@@ -891,7 +891,7 @@
                         </div>
                       }
                   </div>
-                  <button class="outline-button modality-next-steps" type="button" (click)="openNextStepsModal(option.name || 'Modalidad', guidance?.nextSteps?.contentHtml)">Próximos pasos</button>
+                  <button class="outline-button modality-next-steps" type="button" (click)="openNextStepsModal(option.name || 'Modalidad', option.type, guidance)">Próximos pasos</button>
                 </article>
             } @empty {
               <p>No se identificaron modalidades.</p>

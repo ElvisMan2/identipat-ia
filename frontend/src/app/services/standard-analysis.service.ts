@@ -139,6 +139,13 @@ export interface AnalysisGuidanceResponse {
   }>;
 }
 
+export interface GuidanceViewResponse {
+  analysisId: string;
+  protectionType: string;
+  guideVersion: number;
+  firstViewedAt: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -235,6 +242,16 @@ export class StandardAnalysisService {
       accessToken
         ? { headers: { Authorization: `Bearer ${accessToken}` } }
         : { withCredentials: true }
+    );
+  }
+
+  recordGuidanceView(analysisId: string, protectionType: string, guideVersion: number): Observable<GuidanceViewResponse> {
+    return this.csrf.ensureToken().pipe(
+      switchMap(() => this.http.post<GuidanceViewResponse>(
+        `${this.endpoint}/analyses/${encodeURIComponent(analysisId)}/guidance/${encodeURIComponent(protectionType)}/view`,
+        { guideVersion },
+        { headers: this.csrf.headers(), withCredentials: true }
+      ))
     );
   }
 
