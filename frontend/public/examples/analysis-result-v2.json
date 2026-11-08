@@ -1,128 +1,137 @@
 {
-  "schemaVersion": "analysis-result/2.0",
-  "summary": "La propuesta describe un sistema de riego que ajusta el suministro de agua según la humedad medida en el suelo. Con la información disponible, podría evaluarse como una invención; se recomienda revisar los requisitos legales y realizar una búsqueda de antecedentes antes de tomar decisiones.",
+  "reportVersion": "diagnostic-report/1.0",
+  "analysisId": "30f61e2f-d2cf-4764-9436-4dfb444cc465",
+  "sourceResultVersion": "analysis-result/2.0",
+  "inputType": "TEXT",
+  "analysisCompletedAt": "2026-11-08T10:29:19.261241Z",
+  "title": "Reporte orientativo de identificación de propiedad intelectual",
+  "summary": "Se identifican vías de protección basadas en los elementos descritos: signo distintivo se relaciona claramente para la denominación KUMAY y el logotipo (K estilizada + silueta de montaña); derecho de autor se relaciona claramente para la expresión gráfica del logotipo; modelo de utilidad se relaciona claramente para el mecanismo de apertura con presión lateral y la pieza plegable de sujeción; diseño industrial se relaciona claramente para la apariencia exterior (forma triangular con bordes redondeados, líneas diagonales en relieve, tapa integrada y combinación de colores). Patent screening no muestra potenciales coincidencias con los artículos 15 o 20 de la Decisión 486. No se señalan indicios de recurso genético.",
+  "applicabilityNote": "La relación mostrada indica qué tan directamente lo descrito en tu creación se vincula con esta modalidad de protección. No representa una probabilidad de registro, concesión o reconocimiento definitivo de un derecho.",
   "protectionOptions": [
     {
-      "type": "INVENTION_PATENT",
-      "applicability": "POSSIBLE",
-      "protectedSubjectMatter": "El sistema y método de control de riego basado en mediciones de humedad del suelo.",
-      "rationale": "La propuesta parece describir una solución técnica, pero la novedad, el nivel inventivo y la aplicación industrial requieren un análisis más detallado.",
+      "type": "DISTINCTIVE_SIGN",
+      "name": "Signo distintivo",
+      "relationshipQuestion": "¿Cómo se relaciona con tu creación?",
+      "applicability": "LIKELY",
+      "applicabilityLabel": "Se relaciona claramente",
+      "protectedSubjectMatter": "Denominación 'KUMAY' y logotipo (K estilizada con silueta de montaña) destinados a distinguir las botellas, empaques y publicidad",
+      "rationale": "El nombre y el logotipo están explícitamente descritos y se indica la intención de usarlos en productos, empaques, etiquetas y publicidad, lo que muestra su función distintiva en el mercado.",
       "legalBasis": [
         {
-          "instrument": "DECISION_486",
-          "articles": ["14", "16", "18"]
+          "instrument": "Decisión 486",
+          "articles": [
+            "134"
+          ]
         }
-      ]
-    },
-    {
-      "type": "UTILITY_MODEL",
-      "applicability": "POSSIBLE",
-      "protectedSubjectMatter": "La configuración funcional de los componentes del dispositivo de control de riego, si aporta una ventaja técnica.",
-      "rationale": "Podría ser pertinente si la solución se materializa en una nueva forma o disposición de componentes que mejore su funcionamiento o utilidad.",
-      "legalBasis": [
-        {
-          "instrument": "DECISION_486",
-          "articles": ["81", "82"]
-        }
-      ]
-    },
-    {
-      "type": "INDUSTRIAL_DESIGN",
-      "applicability": "UNLIKELY",
-      "protectedSubjectMatter": "La apariencia externa del dispositivo de riego, si cuenta con rasgos ornamentales nuevos y distinguibles de su función técnica.",
-      "rationale": "La descripción se centra en el funcionamiento del sistema y no aporta detalles suficientes sobre una apariencia particular que pudiera protegerse como diseño industrial.",
-      "legalBasis": [
-        {
-          "instrument": "DECISION_486",
-          "articles": ["113", "115"]
-        }
-      ]
+      ],
+      "orientation": "Esta modalidad presenta una relación clara con la materia descrita y puede considerarse como una vía principal para una revisión especializada."
     },
     {
       "type": "COPYRIGHT",
+      "name": "Derecho de autor",
+      "relationshipQuestion": "¿Cómo se relaciona con tu creación?",
       "applicability": "LIKELY",
-      "protectedSubjectMatter": "El código fuente, la documentación técnica y los elementos gráficos originales creados para el sistema.",
-      "rationale": "La protección autoral puede cubrir la expresión original del software y de los materiales, pero no las ideas o métodos en sí mismos.",
+      "applicabilityLabel": "Se relaciona claramente",
+      "protectedSubjectMatter": "Logotipo (K estilizada combinada con la silueta de una montaña) como obra gráfica",
+      "rationale": "El logotipo se describe de forma concreta como elemento gráfico (combinación de K estilizada y silueta de montaña), lo que encaja con una obra gráfica susceptible de protección por derecho de autor.",
       "legalBasis": [
         {
-          "instrument": "DECISION_351",
-          "articles": ["3", "23"]
+          "instrument": "Decisión 351",
+          "articles": [
+            "1",
+            "3",
+            "4"
+          ]
         }
-      ]
+      ],
+      "orientation": "Esta modalidad presenta una relación clara con la materia descrita y puede considerarse como una vía principal para una revisión especializada."
     },
     {
-      "type": "DISTINCTIVE_SIGN",
-      "applicability": "UNLIKELY",
-      "protectedSubjectMatter": "Un nombre o logotipo original que identifique los productos o servicios asociados al sistema.",
-      "rationale": "No se proporcionó un nombre, logotipo ni otro signo distintivo concreto para evaluar.",
+      "type": "UTILITY_MODEL",
+      "name": "Modelo de utilidad",
+      "relationshipQuestion": "¿Cómo se relaciona con tu creación?",
+      "applicability": "LIKELY",
+      "applicabilityLabel": "Se relaciona claramente",
+      "protectedSubjectMatter": "Mecanismo de tapa de apertura operable con una sola mano mediante presión lateral y pieza plegable lateral para enganchar la botella a mochila/cinturón/bicicleta",
+      "rationale": "La descripción detalla una configuración física y funcional de elementos del objeto (mecanismo de apertura y elemento plegable de sujeción) que encaja con la naturaleza de un modelo de utilidad para artefactos.",
       "legalBasis": [
         {
-          "instrument": "DECISION_486",
-          "articles": ["134", "135"]
+          "instrument": "Decisión 486",
+          "articles": [
+            "81"
+          ]
         }
-      ]
+      ],
+      "orientation": "Esta modalidad presenta una relación clara con la materia descrita y puede considerarse como una vía principal para una revisión especializada."
     },
     {
-      "type": "PLANT_BREEDER_CERTIFICATE",
-      "applicability": "UNLIKELY",
-      "protectedSubjectMatter": "Una variedad vegetal nueva, homogénea, distinguible y estable, si la propuesta llegara a incluirla.",
-      "rationale": "La propuesta describe un sistema de riego y no una variedad vegetal desarrollada por el solicitante.",
+      "type": "INDUSTRIAL_DESIGN",
+      "name": "Diseño industrial",
+      "relationshipQuestion": "¿Cómo se relaciona con tu creación?",
+      "applicability": "LIKELY",
+      "applicabilityLabel": "Se relaciona claramente",
+      "protectedSubjectMatter": "Apariencia exterior: forma ligeramente triangular con bordes redondeados, superficie con líneas diagonales en relieve, tapa integrada visualmente con el cuerpo; combinación de colores verde oscuro y cobre",
+      "rationale": "La entrada describe características ornamentales y visuales concretas de la botella (forma, texturas y combinación de colores) que corresponden a la apariencia protegible por diseño industrial.",
       "legalBasis": [
         {
-          "instrument": "DECISION_345",
-          "articles": ["4", "7"]
+          "instrument": "Decisión 486",
+          "articles": [
+            "113"
+          ]
         }
-      ]
-    },
-    {
-      "type": "TRADE_SECRET",
-      "applicability": "POSSIBLE",
-      "protectedSubjectMatter": "Parámetros de calibración, procesos internos o información técnica no divulgada que tenga valor comercial.",
-      "rationale": "Esta vía depende de que la información sea secreta, tenga valor comercial por serlo y se proteja mediante medidas razonables de confidencialidad.",
-      "legalBasis": [
-        {
-          "instrument": "DECISION_486",
-          "articles": ["260", "262"]
-        }
-      ]
+      ],
+      "orientation": "Esta modalidad presenta una relación clara con la materia descrita y puede considerarse como una vía principal para una revisión especializada."
     }
   ],
   "patentScreening": {
-    "applicable": true,
+    "title": "Revisión de la vía patentaria",
+    "context": "La descripción fue revisada respecto de posibles exclusiones previstas en los artículos 15 y 20 de la Decisión 486.",
     "article15": {
+      "article": "Artículo 15",
       "assessment": "POTENTIAL_MATCH",
-      "rationale": "Con la descripción resumida disponible no se identifica de forma evidente una exclusión de las categorías del artículo 15; la conclusión debe confirmarse con el texto técnico completo.",
+      "assessmentLabel": "Se identifican coincidencias potenciales",
+      "rationale": "La descripción contiene un elemento que puede requerir revisión frente a las exclusiones del artículo 15.",
       "matches": [
         {
-          "literal": "a",
-          "rationale": "No hay información suficiente para asociar la propuesta con esta categoría de exclusión."
+          "literal": "Literal b",
+          "rationale": "La materia descrita podría relacionarse con una forma de presentar información y requiere evaluación especializada."
         }
       ]
     },
     "article20": {
-      "assessment": "POTENTIAL_MATCH",
-      "rationale": "La información proporcionada no permite identificar de forma evidente una exclusión del artículo 20. Se requiere revisar las reivindicaciones y el funcionamiento concreto de la propuesta.",
+      "article": "Artículo 20",
+      "assessment": "INSUFFICIENT_INFORMATION",
+      "assessmentLabel": "Se necesita más información",
+      "rationale": "La información disponible no permite descartar todas las exclusiones previstas en el artículo 20.",
       "matches": [
         {
-          "literal": "a",
-          "rationale": "El ejemplo no permite identificar una correspondencia con esta exclusión."
+          "literal": "Literal d",
+          "rationale": "Se requiere precisar el uso y el contexto de la creación para completar la evaluación."
         }
       ]
-    }
+    },
+    "scopeNote": "Este screening se limita a posibles coincidencias con los artículos 15 y 20 de la Decisión 486 y no constituye un examen completo de patentabilidad."
   },
   "geneticResourceAccess": {
-    "assessment": "NOT_INDICATED",
-    "rationale": "La descripción no indica el uso de recursos genéticos ni de conocimientos tradicionales asociados.",
+    "assessment": "INSUFFICIENT_INFORMATION",
+    "assessmentLabel": "Se necesita más información",
+    "rationale": "No hay información suficiente para determinar si la creación utiliza recursos genéticos o conocimientos tradicionales asociados.",
     "missingInformation": [
-      "Confirmar el origen de las semillas o especies vegetales eventualmente utilizadas en las pruebas.",
-      "Confirmar si se emplearon conocimientos tradicionales asociados a recursos genéticos."
+      "Origen de los materiales biológicos utilizados",
+      "Indicar si existe conocimiento tradicional asociado"
     ]
   },
+  "historicalPatentability": null,
   "observations": [
-    "El ejemplo supone que el sistema incluye sensores de humedad, un controlador y un mecanismo de suministro de agua.",
-    "La protección disponible depende de los detalles técnicos, la jurisdicción y los antecedentes existentes."
+    "Existe un prototipo funcional y la intención de comercializarlo, hecho relevante para la aplicación de signo distintivo y para la explotación práctica de la utilidad/modelo.",
+    "La protección concurrente propuesta separa claramente dimensiones distintas: la configuración mecánica (modelo de utilidad) y la apariencia ornamental (diseño industrial); el logotipo puede recibir protección tanto como signo distintivo (signo distintivo) como por su expresión gráfica (derecho de autor)."
   ],
-  "warnings": [
-    "Ejemplo ilustrativo para desarrollo y pruebas; no constituye asesoría legal ni una determinación de registrabilidad."
-  ]
+  "warnings": [],
+  "scope": "Este análisis identifica relaciones orientativas a partir de la información disponible. No determina registrabilidad, concesión o reconocimiento definitivo, ni sustituye una evaluación especializada o una decisión oficial.",
+  "disclaimer": {
+    "id": "3c39569c-2899-4529-9531-b20567584a6b",
+    "version": 10,
+    "title": "Importante",
+    "content": "Este reporte constituye una guía complementaria basada en inteligencia artificial y tiene carácter orientativo. No reemplaza, bajo ninguna circunstancia, el juicio técnico, la evaluación experta ni las decisiones oficiales del personal examinador del Indecopi. Sus resultados deben interpretarse bajo el principio de supervisión humana.bb"
+  }
 }

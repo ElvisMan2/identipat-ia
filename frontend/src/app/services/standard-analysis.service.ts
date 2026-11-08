@@ -147,8 +147,8 @@ export class StandardAnalysisService {
   private readonly csrf = inject(CsrfService);
   private readonly endpoint = environment.apiBaseUrl;
 
-  getExampleResult(): Observable<AnalysisResult> {
-    return this.http.get<AnalysisResult>('/examples/analysis-result-v2.json');
+  getExampleDiagnosticReport(): Observable<DiagnosticReport> {
+    return this.http.get<DiagnosticReport>('/examples/analysis-result-v2.json');
   }
 
   createTextAnalysis(description: string, accessToken = ''): Observable<AnalysisCreatedResponse> {
