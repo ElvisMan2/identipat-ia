@@ -51,6 +51,17 @@ app:
     audio:
       max-file-size-bytes: ${ANALYSIS_AUDIO_MAX_FILE_SIZE_BYTES:20971520}
       max-duration-seconds: ${ANALYSIS_AUDIO_MAX_DURATION_SECONDS:180}
+    admission:
+      enabled: ${ANALYSIS_ADMISSION_ENABLED:true}
+      standard-max-per-hour: ${ANALYSIS_STANDARD_MAX_PER_HOUR:3}
+      standard-max-per-24-hours: ${ANALYSIS_STANDARD_MAX_PER_24H:10}
+      standard-audio-max-per-24-hours: ${ANALYSIS_STANDARD_AUDIO_MAX_PER_24H:3}
+      standard-max-active: ${ANALYSIS_STANDARD_MAX_ACTIVE:1}
+      global-max-active: ${ANALYSIS_GLOBAL_MAX_ACTIVE:8}
+      audio-max-preprocessing: ${ANALYSIS_AUDIO_MAX_PREPROCESSING:1}
+      reservation-ttl: ${ANALYSIS_ADMISSION_RESERVATION_TTL:8m}
+      reservation-safety-margin: ${ANALYSIS_ADMISSION_RESERVATION_SAFETY_MARGIN:60s}
+      retry-after: ${ANALYSIS_ADMISSION_RETRY_AFTER:10s}
   preprocessing:
     base-url: ${PREPROCESSING_SERVICE_BASE_URL:http://localhost:8090}
     connect-timeout: ${PREPROCESSING_SERVICE_CONNECT_TIMEOUT:5s}

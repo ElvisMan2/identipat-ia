@@ -55,6 +55,7 @@ public class AnalysisController {
             @ApiResponse(responseCode = "401", description = "Sesión STANDARD o Bearer ADMIN inválido"),
             @ApiResponse(responseCode = "403", description = "CSRF STANDARD inválido"),
             @ApiResponse(responseCode = "409", description = "Consentimiento STANDARD vigente no aceptado"),
+            @ApiResponse(responseCode = "429", description = "Cuota o análisis activo STANDARD"),
             @ApiResponse(responseCode = "422", description = "Descripción fuera de límites"),
             @ApiResponse(responseCode = "503", description = "IA no disponible para nuevas consultas")
     })
@@ -79,6 +80,7 @@ public class AnalysisController {
             @ApiResponse(responseCode = "409", description = "Consentimiento STANDARD vigente no aceptado"),
             @ApiResponse(responseCode = "413", description = "PDF_TOO_LARGE"),
             @ApiResponse(responseCode = "415", description = "UNSUPPORTED_PDF_MEDIA_TYPE"),
+            @ApiResponse(responseCode = "429", description = "Cuota o análisis activo STANDARD"),
             @ApiResponse(responseCode = "422", description = "PDF inválido, cifrado, sin texto o fuera de límites"),
             @ApiResponse(responseCode = "503", description = "Preprocesamiento o IA no disponible")
     })
@@ -105,6 +107,7 @@ public class AnalysisController {
             @ApiResponse(responseCode = "409", description = "Consentimiento STANDARD vigente no aceptado"),
             @ApiResponse(responseCode = "413", description = "AUDIO_TOO_LARGE"),
             @ApiResponse(responseCode = "415", description = "UNSUPPORTED_AUDIO_MEDIA_TYPE"),
+            @ApiResponse(responseCode = "429", description = "Cuota o análisis activo STANDARD"),
             @ApiResponse(responseCode = "422", description = "Audio inválido, demasiado largo o transcripción fuera de límites"),
             @ApiResponse(responseCode = "503", description = "Transcripción local o IA no disponible")
     })

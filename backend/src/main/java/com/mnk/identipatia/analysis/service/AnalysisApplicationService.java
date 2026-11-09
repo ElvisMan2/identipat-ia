@@ -67,7 +67,7 @@ public class AnalysisApplicationService {
     private final ObjectProvider<GenerativeAiProvider> provider;
     private final ObjectMapper objectMapper;
     private final PreprocessingServiceClient preprocessingClient;
-    private final AnalysisCreationPersistenceService creationService;
+    private final AnalysisAdmissionService admissionService;
 
     public AnalysisApplicationService(
             AnalysisRepository analysisRepository,
@@ -78,7 +78,7 @@ public class AnalysisApplicationService {
             ObjectProvider<GenerativeAiProvider> provider,
             ObjectMapper objectMapper,
             PreprocessingServiceClient preprocessingClient,
-            AnalysisCreationPersistenceService creationService) {
+            AnalysisAdmissionService admissionService) {
         this.analysisRepository = analysisRepository;
         this.resultRepository = resultRepository;
         this.termsAcceptanceService = termsAcceptanceService;
@@ -87,10 +87,9 @@ public class AnalysisApplicationService {
         this.provider = provider;
         this.objectMapper = objectMapper;
         this.preprocessingClient = preprocessingClient;
-        this.creationService = creationService;
+        this.admissionService = admissionService;
     }
 
-    @Transactional
     public AnalysisCreatedResponse createText(AnalysisAccessContext access, String originalText) {
         UserTermsAcceptance acceptance = access.mode() == AnalysisAccessContext.Mode.STANDARD_SESSION
                 ? termsAcceptanceService.requireCurrentAcceptance(access.user().getUserId()) : null;
@@ -98,76 +97,97 @@ public class AnalysisApplicationService {
 
         String processedText = TextNormalizer.normalize(originalText);
         validateTextLength(processedText);
-        return creationService.create(access, AnalysisInputType.TEXT, originalText, processedText,
-                objectMapper.createObjectNode(), acceptance);
+        AnalysisAdmissionService.Reservation reservation =
+                admissionService.reserve(access, AnalysisInputType.TEXT);
+        try {
+            return admissionService.confirm(reservation, access, AnalysisInputType.TEXT,
+                    originalText, processedText, objectMapper.createObjectNode(), acceptance);
+        } catch (RuntimeException exception) {
+            admissionService.release(reservation);
+            throw exception;
+        }
     }
 
     public AnalysisCreatedResponse createPdf(AnalysisAccessContext access, MultipartFile file) {
         UserTermsAcceptance acceptance = access.mode() == AnalysisAccessContext.Mode.STANDARD_SESSION
                 ? termsAcceptanceService.requireCurrentAcceptance(access.user().getUserId()) : null;
         byte[] pdfBytes = validateAndReadPdf(file);
-
-        PdfExtractionResponse extraction;
-        try {
-            extraction = preprocessingClient.extractPdf(pdfBytes);
-        } catch (PreprocessingPdfException exception) {
-            throw mapPdfError(exception.getCode());
-        } catch (PreprocessingServiceUnavailableException exception) {
-            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "PREPROCESSING_SERVICE_UNAVAILABLE",
-                    "PDF preprocessing is temporarily unavailable");
-        }
-
-        if (extraction.pageCount() > analysisProperties.pdf().maxPages()) {
-            throw pdfError("PDF_PAGE_LIMIT_EXCEEDED", "The PDF exceeds the configured page limit");
-        }
-        String processedText = TextNormalizer.normalize(extraction.text());
-        validatePdfLength(processedText);
         ensureAiAvailable();
+        AnalysisAdmissionService.Reservation reservation =
+                admissionService.reserve(access, AnalysisInputType.PDF);
 
-        ObjectNode metadata = objectMapper.createObjectNode();
-        metadata.put("mediaType", "application/pdf");
-        metadata.put("sizeBytes", pdfBytes.length);
-        metadata.put("pageCount", extraction.pageCount());
-        metadata.put("characterCount", extraction.characterCount());
-        metadata.put("extractionMethod", extraction.extractionMethod());
-        metadata.put("sha256", sha256(pdfBytes));
-        return creationService.create(access, AnalysisInputType.PDF, extraction.text(), processedText,
-                metadata, acceptance);
+        try {
+            PdfExtractionResponse extraction;
+            try {
+                extraction = preprocessingClient.extractPdf(pdfBytes);
+            } catch (PreprocessingPdfException exception) {
+                throw mapPdfError(exception.getCode());
+            } catch (PreprocessingServiceUnavailableException exception) {
+                throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "PREPROCESSING_SERVICE_UNAVAILABLE",
+                        "PDF preprocessing is temporarily unavailable");
+            }
+
+            if (extraction.pageCount() > analysisProperties.pdf().maxPages()) {
+                throw pdfError("PDF_PAGE_LIMIT_EXCEEDED", "The PDF exceeds the configured page limit");
+            }
+            String processedText = TextNormalizer.normalize(extraction.text());
+            validatePdfLength(processedText);
+
+            ObjectNode metadata = objectMapper.createObjectNode();
+            metadata.put("mediaType", "application/pdf");
+            metadata.put("sizeBytes", pdfBytes.length);
+            metadata.put("pageCount", extraction.pageCount());
+            metadata.put("characterCount", extraction.characterCount());
+            metadata.put("extractionMethod", extraction.extractionMethod());
+            metadata.put("sha256", sha256(pdfBytes));
+            return admissionService.confirm(reservation, access, AnalysisInputType.PDF,
+                    extraction.text(), processedText, metadata, acceptance);
+        } catch (RuntimeException exception) {
+            admissionService.release(reservation);
+            throw exception;
+        }
     }
 
     public AnalysisCreatedResponse createAudio(AnalysisAccessContext access, MultipartFile file) {
         UserTermsAcceptance acceptance = access.mode() == AnalysisAccessContext.Mode.STANDARD_SESSION
                 ? termsAcceptanceService.requireCurrentAcceptance(access.user().getUserId()) : null;
         ValidatedAudio audio = validateAndReadAudio(file);
-
-        AudioTranscriptionResponse transcription;
-        try {
-            transcription = preprocessingClient.transcribeAudio(audio.bytes(), audio.mediaType());
-        } catch (PreprocessingAudioException exception) {
-            throw mapAudioError(exception.getCode());
-        } catch (PreprocessingServiceUnavailableException exception) {
-            throw audioUnavailable();
-        }
-
-        if (transcription.durationSeconds() > analysisProperties.audio().maxDurationSeconds()) {
-            throw audioError("AUDIO_DURATION_LIMIT_EXCEEDED",
-                    "The audio exceeds the configured duration limit");
-        }
-        String processedText = TextNormalizer.normalize(transcription.text());
-        validateAudioLength(processedText);
         ensureAiAvailable();
+        AnalysisAdmissionService.Reservation reservation =
+                admissionService.reserve(access, AnalysisInputType.AUDIO);
 
-        ObjectNode metadata = objectMapper.createObjectNode();
-        metadata.put("mediaType", audio.mediaType());
-        metadata.put("sizeBytes", audio.bytes().length);
-        metadata.put("durationSeconds", transcription.durationSeconds());
-        metadata.put("characterCount", transcription.characterCount());
-        metadata.put("language", transcription.language());
-        metadata.put("transcriptionMethod", transcription.transcriptionMethod());
-        metadata.put("model", transcription.model());
-        metadata.put("sha256", sha256(audio.bytes()));
-        return creationService.create(access, AnalysisInputType.AUDIO, transcription.text(), processedText,
-                metadata, acceptance);
+        try {
+            AudioTranscriptionResponse transcription;
+            try {
+                transcription = preprocessingClient.transcribeAudio(audio.bytes(), audio.mediaType());
+            } catch (PreprocessingAudioException exception) {
+                throw mapAudioError(exception.getCode());
+            } catch (PreprocessingServiceUnavailableException exception) {
+                throw audioUnavailable();
+            }
+
+            if (transcription.durationSeconds() > analysisProperties.audio().maxDurationSeconds()) {
+                throw audioError("AUDIO_DURATION_LIMIT_EXCEEDED",
+                        "The audio exceeds the configured duration limit");
+            }
+            String processedText = TextNormalizer.normalize(transcription.text());
+            validateAudioLength(processedText);
+
+            ObjectNode metadata = objectMapper.createObjectNode();
+            metadata.put("mediaType", audio.mediaType());
+            metadata.put("sizeBytes", audio.bytes().length);
+            metadata.put("durationSeconds", transcription.durationSeconds());
+            metadata.put("characterCount", transcription.characterCount());
+            metadata.put("language", transcription.language());
+            metadata.put("transcriptionMethod", transcription.transcriptionMethod());
+            metadata.put("model", transcription.model());
+            metadata.put("sha256", sha256(audio.bytes()));
+            return admissionService.confirm(reservation, access, AnalysisInputType.AUDIO,
+                    transcription.text(), processedText, metadata, acceptance);
+        } catch (RuntimeException exception) {
+            admissionService.release(reservation);
+            throw exception;
+        }
     }
 
     @Transactional(readOnly = true)
