@@ -1,7 +1,9 @@
 @if (view() === 'legal') {
   <main class="legal-page">
+      <header class="topbar">
+        <a class="brand" href="/">IDENTIPAT IA</a>
+      </header>
     <article class="legal-content">
-      <a class="legal-back" href="/">← Volver a IDENTIPAT IA</a>
       @if (legalLoading()) {
         <p class="legal-state" role="status">Cargando documento legal...</p>
       } @else if (legalError()) {
@@ -10,12 +12,16 @@
           <button type="button" class="outline-button" (click)="loadPublicLegalDocument()">Reintentar</button>
         </div>
       } @else if (legalDocument(); as document) {
-        <p class="eyebrow">Documento vigente</p>
         <h1>{{ document.title }}</h1>
         <p class="legal-updated">Última actualización: {{ legalDateLabel(document.updatedAt) }}</p>
         <section class="legal-section legal-rich-content" [innerHTML]="document.contentHtml"></section>
       }
     </article>
+      <footer class="trust-strip" aria-label="Características del servicio">
+        <div><strong>Privado</strong><span>Tus datos bajo control</span></div>
+        <div><strong>Orientativo</strong><span>No reemplaza una resolución oficial de Indecopi</span></div>
+        <div><strong>Especializado</strong><span>Enfocado en propiedad intelectual</span></div>
+      </footer>
   </main>
 } @else if (view() === 'admin') {
   <main class="admin-page">
@@ -91,22 +97,19 @@
         @if (analysesError()) { <p class="error" role="alert">{{ analysesError() }}</p> }
         <div class="table-wrap">
           <table class="predictions-table">
-            <thead><tr><th>Fecha</th><th>Nombres</th><th>Apellidos</th><th>Tipo doc.</th><th>Documento</th><th>Entrada</th><th>Conclusión</th><th>Modalidades identificadas</th><th>Orientación consultada</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Nombres</th><th>Apellidos</th><th>Conclusión</th><th>Modalidades identificadas</th><th>Orientación consultada</th></tr></thead>
             <tbody>
               @for (analysis of analyses(); track analysis.analysisId) {
                 <tr>
                   <td class="prediction-date">{{ analysis.createdAt | date:'dd/MM/yyyy' }}</td>
                   <td>{{ analysis.firstName }}</td>
                   <td>{{ analysis.lastNames }}</td>
-                  <td>{{ analysis.doiType }}</td>
-                  <td>{{ analysis.doi }}</td>
-                  <td>{{ analysis.inputType }}</td>
                   <td class="prediction-summary">{{ analysisSummary(analysis.conclusion) }}</td>
                   <td>{{ analysis.identifiedModalities.join(', ') || 'Ninguna' }}</td>
                   <td>{{ analysis.guidanceConsulted ? 'Sí' : 'No' }}</td>
                 </tr>
               } @empty {
-                @if (!analysesLoading()) { <tr><td colspan="9" class="empty">No hay predicciones registradas.</td></tr> }
+                @if (!analysesLoading()) { <tr><td colspan="6" class="empty">No hay predicciones registradas.</td></tr> }
               }
             </tbody>
           </table>
@@ -256,56 +259,6 @@
 
     @if (adminSection() === 'settings') {
     <section class="layout" style="margin-bottom: 1.5rem">
-      <article class="panel table-panel admin-legal-panel">
-        <div class="table-head">
-          <div>
-            <h2>Términos de uso y Política de Privacidad</h2>
-            <p class="empty-state">Documento vigente para registro y acceso STANDARD.</p>
-          </div>
-        </div>
-        @if (legalAdminLoading()) {
-          <p role="status">Cargando documento legal...</p>
-        } @else {
-          <label for="legal-admin-title">Título</label>
-          <input
-            id="legal-admin-title"
-            type="text"
-            [value]="legalAdminTitle()"
-            (input)="updateLegalAdminTitle($event)"
-            [disabled]="legalAdminSaving()"
-            maxlength="200"
-          />
-          <label class="legal-admin-content-label">Contenido</label>
-          <ckeditor
-            [editor]="legalAdminEditor"
-            [config]="legalAdminEditorConfig"
-            (ready)="onLegalAdminEditorReady($event)"
-            (change)="updateLegalAdminHtml($event)"
-            (blur)="updateLegalAdminHtml($event)"
-            aria-label="Contenido del documento legal"
-          ></ckeditor>
-          @if (legalAdminDocument(); as document) {
-            <p class="legal-admin-updated">Última actualización: {{ legalDateLabel(document.updatedAt) }}</p>
-          } @else {
-            <p class="legal-admin-updated">Primera configuración</p>
-          }
-          @if (legalAdminMessage()) {
-            <p class="success-message" role="status">{{ legalAdminMessage() }}</p>
-          }
-          @if (legalAdminError()) {
-            <p class="error" role="alert">{{ legalAdminError() }}</p>
-          }
-          <div class="actions legal-admin-actions">
-            <button
-              type="button"
-              (click)="saveAdminLegalDocument()"
-              [disabled]="legalAdminSaving() || !legalAdminTitle().trim() || !legalAdminHtml().trim() || (!legalAdminHasChanges() && !!legalAdminDocument())"
-            >
-              {{ legalAdminSaving() ? 'Guardando...' : 'Guardar cambios' }}
-            </button>
-          </div>
-        }
-      </article>
       <article class="panel table-panel">
         <div class="table-head">
           <h2>Orientación</h2>
@@ -534,17 +487,71 @@
           }
         }
       </article>
+      <article class="panel table-panel admin-legal-panel">
+        <details class="legal-admin-subsection">
+          <summary class="legal-admin-summary">
+            <h2>Términos de uso y Política de Privacidad</h2>
+            <span class="orientation-chevron" aria-hidden="true"></span>
+          </summary>
+          @if (legalAdminLoading()) {
+            <p role="status">Cargando documento legal...</p>
+          } @else {
+            <div class="legal-admin-fields">
+              <label for="legal-admin-title">Título</label>
+              <input
+                id="legal-admin-title"
+                type="text"
+                [value]="legalAdminTitle()"
+                (input)="updateLegalAdminTitle($event)"
+                [disabled]="legalAdminSaving()"
+                maxlength="200"
+              />
+              <label class="legal-admin-content-label">Contenido</label>
+              <ckeditor
+                [editor]="legalAdminEditor"
+                [config]="legalAdminEditorConfig"
+                (ready)="onLegalAdminEditorReady($event)"
+                (change)="updateLegalAdminHtml($event)"
+                (blur)="updateLegalAdminHtml($event)"
+                aria-label="Contenido del documento legal"
+              ></ckeditor>
+              @if (legalAdminDocument(); as document) {
+                <p class="legal-admin-updated">Última actualización: {{ legalDateLabel(document.updatedAt) }}</p>
+              } @else {
+                <p class="legal-admin-updated">Primera configuración</p>
+              }
+              @if (legalAdminMessage()) {
+                <p class="success-message" role="status">{{ legalAdminMessage() }}</p>
+              }
+              @if (legalAdminError()) {
+                <p class="error" role="alert">{{ legalAdminError() }}</p>
+              }
+              <div class="actions legal-admin-actions">
+                <button
+                  type="button"
+                  (click)="saveAdminLegalDocument()"
+                  [disabled]="legalAdminSaving() || !legalAdminTitle().trim() || !legalAdminHtml().trim() || (!legalAdminHasChanges() && !!legalAdminDocument())"
+                >
+                  {{ legalAdminSaving() ? 'Guardando...' : 'Guardar cambios' }}
+                </button>
+              </div>
+            </div>
+          }
+        </details>
+      </article>
       <article class="panel table-panel">
-        <div class="table-head">
-          <h2>Disclaimer Institucional</h2>
-        </div>
-        @if (settingsLoading()) {
-          <p role="status">Cargando disclaimers...</p>
-        } @else if (settingsError()) {
-          <p class="error" role="alert">{{ settingsError() }}</p>
-          <button class="ghost" type="button" (click)="loadReportDisclaimers()">Reintentar</button>
-        } @else if (latestReportDisclaimer(); as disclaimer) {
-          <div class="report-disclaimer-details">
+        <details class="legal-admin-subsection">
+          <summary class="legal-admin-summary">
+            <h2>Disclaimer Institucional</h2>
+            <span class="orientation-chevron" aria-hidden="true"></span>
+          </summary>
+          @if (settingsLoading()) {
+            <p role="status">Cargando disclaimers...</p>
+          } @else if (settingsError()) {
+            <p class="error" role="alert">{{ settingsError() }}</p>
+            <button class="ghost" type="button" (click)="loadReportDisclaimers()">Reintentar</button>
+          } @else if (latestReportDisclaimer(); as disclaimer) {
+            <div class="report-disclaimer-details">
             <label for="disclaimer-title" style="margin-top: .75rem">Título del disclaimer</label>
             <input id="disclaimer-title" type="text" [value]="disclaimerTitle()" (input)="updateDisclaimerTitle($event)" [disabled]="savingDisclaimerDraft() || activatingDisclaimer()" style="margin-bottom: .75rem" />
             <label for="disclaimer-content">Contenido del disclaimer</label>
@@ -579,30 +586,31 @@
             @if (disclaimerActivationError()) {
               <p class="error" role="alert">{{ disclaimerActivationError() }}</p>
             }
-          </div>
-        }
-        @if (settingsLoaded() && !latestReportDisclaimer() && !settingsError()) {
-          <p class="empty-state">No hay disclaimers registrados.</p>
-        }
-        @if (showPublishDisclaimerModal(); as publishModal) {
-          @if (savedDisclaimerDraft(); as draft) {
-            <div class="modal-backdrop" (click)="closePublishDisclaimerModal()" (keydown.escape)="closePublishDisclaimerModal()">
-              <article class="panel modal-panel" role="dialog" aria-modal="true" aria-labelledby="publish-disclaimer-title" (click)="$event.stopPropagation()" style="text-align: center">
-                <h2 id="publish-disclaimer-title">Publicar disclaimer</h2>
-                <p>¿Confirmas publicar este borrador? Reemplazará el disclaimer activo actual.</p>
-                @if (disclaimerActivationError()) {
-                  <p class="error" role="alert">{{ disclaimerActivationError() }}</p>
-                }
-                <div class="actions" style="justify-content: center">
-                  <button type="button" class="ghost" (click)="closePublishDisclaimerModal()" [disabled]="activatingDisclaimer()">Cancelar</button>
-                  <button type="button" (click)="publishDisclaimerDraft()" [disabled]="activatingDisclaimer()">
-                    {{ activatingDisclaimer() ? 'Publicando...' : 'Confirmar publicación' }}
-                  </button>
-                </div>
-              </article>
             </div>
           }
-        }
+          @if (settingsLoaded() && !latestReportDisclaimer() && !settingsError()) {
+            <p class="empty-state">No hay disclaimers registrados.</p>
+          }
+          @if (showPublishDisclaimerModal(); as publishModal) {
+            @if (savedDisclaimerDraft(); as draft) {
+              <div class="modal-backdrop" (click)="closePublishDisclaimerModal()" (keydown.escape)="closePublishDisclaimerModal()">
+                <article class="panel modal-panel" role="dialog" aria-modal="true" aria-labelledby="publish-disclaimer-title" (click)="$event.stopPropagation()" style="text-align: center">
+                  <h2 id="publish-disclaimer-title">Publicar disclaimer</h2>
+                  <p>¿Confirmas publicar este borrador? Reemplazará el disclaimer activo actual.</p>
+                  @if (disclaimerActivationError()) {
+                    <p class="error" role="alert">{{ disclaimerActivationError() }}</p>
+                  }
+                  <div class="actions" style="justify-content: center">
+                    <button type="button" class="ghost" (click)="closePublishDisclaimerModal()" [disabled]="activatingDisclaimer()">Cancelar</button>
+                    <button type="button" (click)="publishDisclaimerDraft()" [disabled]="activatingDisclaimer()">
+                      {{ activatingDisclaimer() ? 'Publicando...' : 'Confirmar publicación' }}
+                    </button>
+                  </div>
+                </article>
+              </div>
+            }
+          }
+        </details>
       </article>
     </section>
     }
@@ -851,55 +859,19 @@
             </div>
           </section>
           @if (reportPdfError()) { <p class="error" role="alert">{{ reportPdfError() }}</p> }
-
           <section class="summary-card">
             <div class="summary-content">
               <div class="summary-kicker">Resumen</div>
               <p>{{ reportField(report.summary) }}</p>
             </div>
           </section>
-          @let hasVisiblePatentScreening = report.patentScreening && (report.patentScreening.scopeNote || (report.patentScreening.article15 && report.patentScreening.article15.assessment !== 'NO_POTENTIAL_MATCH') || (report.patentScreening.article20 && report.patentScreening.article20.assessment !== 'NO_POTENTIAL_MATCH'));
-          @if (hasVisiblePatentScreening || report.historicalPatentability) {
-            <section class="context-section">
-              <h2>Información complementaria del diagnóstico</h2>
-              <div class="context-grid">
-                @if (report.patentScreening; as screening) {
-                  <article class="context-card full">
-                    <h3>{{ reportField(screening.title) }}</h3>
-                    @if (screening.context && (screening.article15?.assessment === 'POTENTIAL_MATCH' || screening.article20?.assessment === 'POTENTIAL_MATCH')) {
-                      <p>{{ reportField(screening.context) }}</p>
-                    }
-                    @for (article of [screening.article15, screening.article20]; track article?.article) {
-                      @if (article; as screeningArticle) {
-                        @if (screeningArticle.assessment !== 'NO_POTENTIAL_MATCH') {
-                        <div class="screening-article">
-                          <strong>{{ reportField(screeningArticle.article) }} · {{ screeningAssessmentLabel(screeningArticle.article, screeningArticle.assessmentLabel, screeningArticle.assessment) }}</strong>
-                          <p>{{ reportField(screeningArticle.rationale) }}@if (screeningArticle.matches?.length) { <span> @for (match of screeningArticle.matches; track match.literal; let first = $first) { @if (!first) { <span>; </span> }<b>Literal {{ reportField(match.literal) }}</b>: {{ reportField(match.rationale) }}}</span> }</p>
-                        </div>
-                        }
-                      }
-                    }
-                    @if (screening.scopeNote) { <p>{{ reportField(screening.scopeNote) }}</p> }
-                  </article>
-                }
-                @if (report.historicalPatentability; as historical) {
-                  <article class="context-card full">
-                    <h3>Antecedente histórico de patentabilidad</h3>
-                    <p><strong>{{ reportField(historical.outcome) }}</strong></p>
-                    <p>{{ reportField(historical.rationale) }}</p>
-                  </article>
-                }
-              </div>
-            </section>
-          }
           <section class="modalities-grid">
             <h2>Modalidades identificadas</h2>
-            @for (option of report.protectionOptions ?? []; track option.type) {
+            @for (option of report.protectionOptions ?? []; track option.name) {
                 @let guidance = guidanceFor(option.type ?? '');
-              @if (option.applicability === 'LIKELY' || option.applicability === 'POSSIBLE') {
                 <article>
                   <div class="modality-heading">
-                    <span>{{ reportField(option.name || protectionTypeLabel(option.type)) }}</span>
+                    <span>{{ reportField(option.name) }}</span>
                     <span>{{ guidance?.shortDescription || '' }}</span>
                     <b>{{ reportField(option.applicabilityLabel || applicabilityLabel(option.applicability)) }}</b>
                   </div>
@@ -919,13 +891,45 @@
                         </div>
                       }
                   </div>
-                  <button class="outline-button modality-next-steps" type="button" (click)="openNextStepsModal(option.name || protectionTypeLabel(option.type), guidance?.nextSteps?.contentHtml)">Próximos pasos</button>
+                  <button class="outline-button modality-next-steps" type="button" (click)="openNextStepsModal(option.name || 'Modalidad', option.type, guidance)">Próximos pasos</button>
                 </article>
-                }
             } @empty {
               <p>No se identificaron modalidades.</p>
             }
           </section>
+          @let hasVisiblePatentScreening = report.patentScreening && (report.patentScreening.article15?.assessment === 'POTENTIAL_MATCH' || report.patentScreening.article20?.assessment === 'POTENTIAL_MATCH');
+          @if (hasPatentScreeningModality(report.protectionOptions)) {
+            <section class="context-section">
+              <h2>Información complementaria del diagnóstico</h2>
+              <div class="context-grid">
+                @if (hasVisiblePatentScreening && report.patentScreening; as screening) {
+                  <article class="context-card full">
+                    <h3>{{ reportField(screening.title) }}</h3>
+                    @if (screening.context && (screening.article15?.assessment === 'POTENTIAL_MATCH' || screening.article20?.assessment === 'POTENTIAL_MATCH')) {
+                      <p>{{ reportField(screening.context) }}</p>
+                    }
+                    @for (article of [screening.article15, screening.article20]; track article?.article) {
+                      @if (article; as screeningArticle) {
+                        @if (screeningArticle.assessment !== 'NO_POTENTIAL_MATCH') {
+                        <div class="screening-article">
+                          <strong>{{ reportField(screeningArticle.article) }} · {{ screeningAssessmentLabel(screeningArticle.article, screeningArticle.assessmentLabel, screeningArticle.assessment) }}</strong>
+                          <p>{{ reportField(screeningArticle.rationale) }}@if (screeningArticle.matches?.length) {<br /><span> @for (match of screeningArticle.matches; track match.literal; let first = $first) { @if (!first) { <span>; </span> }<b>{{ reportField(match.literal) }}</b>: {{ reportField(match.rationale) }}}</span> }</p>
+                        </div>
+                        }
+                      }
+                    }
+                  </article>
+                }
+                @if (report.historicalPatentability; as historical) {
+                  <article class="context-card full">
+                    <h3>Antecedente histórico de patentabilidad</h3>
+                    <p><strong>{{ reportField(historical.outcome) }}</strong></p>
+                    <p>{{ reportField(historical.rationale) }}</p>
+                  </article>
+                }
+              </div>
+            </section>
+          }
           @if (report.geneticResourceAccess; as geneticAccess) {
             <section class="context-card">
               <h3>Recursos genéticos</h3>
@@ -969,9 +973,6 @@
           <section class="disclaimer-card">
             <h2>{{ reportField(report.disclaimer?.title) }}</h2>
             <p>{{ reportField(report.disclaimer?.content) }}</p>
-            @if (report.disclaimer?.version) {
-              <div class="disclaimer-version">Versión institucional {{ report.disclaimer?.version }}</div>
-            }
           </section>
         </section>
       }

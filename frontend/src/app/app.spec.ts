@@ -331,6 +331,32 @@ describe('App', () => {
     standardGuidanceRequest.flush({});
   });
 
+  it('should register opening next steps with the STANDARD session and CSRF', () => {
+    const service = TestBed.inject(StandardAnalysisService);
+    const httpTesting = TestBed.inject(HttpTestingController);
+
+    service.recordGuidanceView('analysis/123', 'INVENTION_PATENT', 4).subscribe();
+
+    const csrfRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session/csrf`);
+    expect(csrfRequest.request.method).toBe('GET');
+    expect(csrfRequest.request.withCredentials).toBeTrue();
+    csrfRequest.flush({ token: 'csrf-token', headerName: 'X-XSRF-TOKEN' });
+
+    const viewRequest = httpTesting.expectOne(
+      `${environment.apiBaseUrl}/analyses/analysis%2F123/guidance/INVENTION_PATENT/view`
+    );
+    expect(viewRequest.request.method).toBe('POST');
+    expect(viewRequest.request.body).toEqual({ guideVersion: 4 });
+    expect(viewRequest.request.headers.get('X-XSRF-TOKEN')).toBe('csrf-token');
+    expect(viewRequest.request.withCredentials).toBeTrue();
+    viewRequest.flush({
+      analysisId: 'analysis/123',
+      protectionType: 'INVENTION_PATENT',
+      guideVersion: 4,
+      firstViewedAt: '2026-11-08T00:00:00Z'
+    });
+  });
+
   it('should remove non-numeric characters from a DNI during registration', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
@@ -519,6 +545,7 @@ describe('App', () => {
       request.url === `${environment.apiBaseUrl}/users`
       && request.params.get('page') === '0'
       && request.params.get('size') === '20'
+      && request.params.get('sort') === 'userId,asc'
     ).flush(pageResponse);
 
     expect(app.users()).toEqual(pageResponse.content);

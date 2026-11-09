@@ -116,7 +116,7 @@ export class UserService {
   }
 
   findAll(page = 0, size = 20, search = '', status = '', userType = ''): Observable<PagedResponse<User>> {
-    const params: Record<string, string | number> = { page, size };
+    const params: Record<string, string | number> = { page, size, sort: 'userId,asc' };
     if (search.trim()) {
       params['search'] = search.trim();
     }

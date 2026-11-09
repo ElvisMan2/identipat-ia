@@ -60,7 +60,7 @@ export class App {
 
   readonly users = signal<User[]>([]);
   readonly userPage = signal(0);
-  readonly userPageSize = signal(20);
+  readonly userPageSize = signal(10);
   readonly userSearch = signal('');
   readonly userStatus = signal('');
   readonly userType = signal('');
@@ -1964,8 +1964,8 @@ export class App {
 
   private loadExampleAnalysis(inputType: string): void {
     const analysisId = 'example-analysis';
-    this.standardAnalysisService.getExampleResult().subscribe({
-      next: result => {
+    this.standardAnalysisService.getExampleDiagnosticReport().subscribe({
+      next: report => {
         const now = new Date().toISOString();
         this.analysisResult.set({
           analysisId,
@@ -1975,66 +1975,10 @@ export class App {
           startedAt: now,
           completedAt: now,
           failedAt: null,
-          result,
+          result: null,
           failure: null
         });
-        this.diagnosticReport.set({
-          reportVersion: 'example',
-          analysisId,
-          sourceResultVersion: result.schemaVersion,
-          inputType,
-          analysisCompletedAt: now,
-          title: 'Reporte de análisis de ejemplo',
-          summary: result.summary,
-          applicabilityNote: 'Resultado de ejemplo para pruebas; no se ha consultado un modelo de IA.',
-          protectionOptions: result.protectionOptions.map(option => ({
-            type: option.type,
-            name: null,
-            relationshipQuestion: null,
-            applicability: option.applicability,
-            applicabilityLabel: null,
-            protectedSubjectMatter: option.protectedSubjectMatter,
-            rationale: option.rationale,
-            legalBasis: option.legalBasis.map(basis => ({
-              instrument: basis.instrument,
-              articles: basis.articles
-            })),
-            orientation: null
-          })),
-          patentScreening: {
-            title: 'Evaluación preliminar de exclusiones',
-            article15: {
-              article: 'Artículo 15',
-              assessment: result.patentScreening.article15.assessment,
-              assessmentLabel: result.patentScreening.article15.assessment,
-              rationale: result.patentScreening.article15.rationale,
-              matches: result.patentScreening.article15.matches as Array<{ literal: string; rationale: string }>
-            },
-            article20: {
-              article: 'Artículo 20',
-              assessment: result.patentScreening.article20.assessment,
-              assessmentLabel: result.patentScreening.article20.assessment,
-              rationale: result.patentScreening.article20.rationale,
-              matches: result.patentScreening.article20.matches as Array<{ literal: string; rationale: string }>
-            },
-          },
-          geneticResourceAccess: {
-            assessment: result.geneticResourceAccess.assessment,
-            assessmentLabel: result.geneticResourceAccess.assessment,
-            rationale: result.geneticResourceAccess.rationale,
-            missingInformation: result.geneticResourceAccess.missingInformation
-          },
-          historicalPatentability: null,
-          observations: result.observations,
-          warnings: result.warnings,
-          scope: 'Datos estáticos de ejemplo; no se realizó análisis mediante IA.',
-          disclaimer: {
-            id: 'example',
-            version: 1,
-            title: 'Aviso de prueba',
-            content: 'Este reporte usa datos estáticos de ejemplo. No constituye asesoría legal.'
-          }
-        });
+        this.diagnosticReport.set({ ...report, analysisId, inputType, analysisCompletedAt: now });
         this.analysisGuidance.set(null);
         this.submittingAnalysis.set(false);
         this.analysisMessage.set('');
@@ -2285,6 +2229,12 @@ export class App {
     return value?.trim() || 'campo faltante';
   }
 
+  hasPatentScreeningModality(options: DiagnosticReport['protectionOptions']): boolean {
+    return options?.some(option =>
+      option.type === 'INVENTION_PATENT' || option.type === 'UTILITY_MODEL'
+    ) ?? false;
+  }
+
   screeningAssessmentLabel(
     article: string | null | undefined,
     assessmentLabel: string | null | undefined,
@@ -2330,8 +2280,26 @@ export class App {
     return this.analysisGuidance()?.modalities.find(modality => modality.protectionType === type) ?? null;
   }
 
-  openNextStepsModal(modality: string, contentHtml: string | null | undefined): void {
+  openNextStepsModal(
+    modality: string,
+    protectionType: string | null | undefined,
+    guidance: AnalysisGuidanceResponse['modalities'][number] | null
+  ): void {
+    const contentHtml = guidance?.nextSteps?.contentHtml;
     this.nextStepsModal.set({ modality, contentHtml: contentHtml?.trim() || null });
+
+    const analysisId = this.analysisResult()?.analysisId;
+    if (!analysisId || !protectionType || !guidance?.guideVersion || !guidance.nextSteps || this.adminAuthenticated()) {
+      return;
+    }
+
+    this.standardAnalysisService.recordGuidanceView(analysisId, protectionType, guidance.guideVersion).subscribe({
+      error: error => {
+        if (!this.adminAuthenticated() && this.apiErrorCode(error) === 'STANDARD_SESSION_REQUIRED') {
+          this.handleExpiredStandardSession();
+        }
+      }
+    });
   }
 
   closeNextStepsModal(): void {
