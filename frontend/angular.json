@@ -35,6 +35,7 @@
           },
           "configurations": {
             "production": {
+              "outputMode": "static",
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",
@@ -42,6 +43,11 @@
                 }
               ],
               "baseHref": "/identipat-ia/",
+              "optimization": {
+                "fonts": {
+                  "inline": false
+                }
+              },
               "budgets": [
                 {
                   "type": "initial",

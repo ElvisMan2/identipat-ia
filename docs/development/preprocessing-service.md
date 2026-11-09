@@ -98,6 +98,12 @@ entre reinicios; `HF_HOME` también queda bajo ese volumen y Compose deshabilita
 descarga HTTP estándar en DEV. PyAV, instalado transitivamente por `faster-whisper`, decodifica sin FFmpeg del
 sistema; la imagen tampoco instala Poppler, Tesseract ni OCRmyPDF.
 
+En QA/PREPROD se reutiliza este mismo Dockerfile y CI publica
+`ghcr.io/elvisman2/identipat-preprocessing:sha-<commit>`. El despliegue fija el digest SHA-256,
+mantiene `/models` en un volumen persistente y conecta el contenedor solo a la red interna, sin
+publicar 8090 al host. El procedimiento de health, warm-up, recursos y rollback está en
+[`deploy/qa/README.md`](../../deploy/qa/README.md).
+
 ## Extracción PDF
 
 El contrato privado es:

@@ -7,6 +7,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 class GlobalExceptionHandlerTest {
 
@@ -49,5 +50,14 @@ class GlobalExceptionHandlerTest {
         Map<String, Object> body = handler.handleUnreadableRequest(request).getBody();
 
         assertThat(body).containsEntry("code", "INVALID_REQUEST");
+    }
+
+    @Test
+    void missingResourceReturnsJsonNotFound() {
+        var response = handler.handleNoResourceFound();
+
+        assertThat(response.getStatusCode()).isEqualTo(NOT_FOUND);
+        assertThat(response.getHeaders().getContentType()).isEqualTo(org.springframework.http.MediaType.APPLICATION_JSON);
+        assertThat(response.getBody()).containsEntry("status", 404);
     }
 }

@@ -533,9 +533,9 @@ describe('App', () => {
         status: 'A'
       }],
       page: 0,
-      size: 20,
+      size: 10,
       totalElements: 42,
-      totalPages: 3,
+      totalPages: 5,
       first: true,
       last: false
     };
@@ -544,19 +544,19 @@ describe('App', () => {
     httpTesting.expectOne(request =>
       request.url === `${environment.apiBaseUrl}/users`
       && request.params.get('page') === '0'
-      && request.params.get('size') === '20'
+      && request.params.get('size') === '10'
       && request.params.get('sort') === 'userId,asc'
     ).flush(pageResponse);
 
     expect(app.users()).toEqual(pageResponse.content);
     expect(app.userTotalElements()).toBe(42);
-    expect(app.userTotalPages()).toBe(3);
+    expect(app.userTotalPages()).toBe(5);
 
     app.changeUserPage(1);
     httpTesting.expectOne(request =>
       request.url === `${environment.apiBaseUrl}/users`
       && request.params.get('page') === '1'
-      && request.params.get('size') === '20'
+      && request.params.get('size') === '10'
     ).flush({ ...pageResponse, page: 1, first: false });
 
     expect(app.userPage()).toBe(1);
@@ -567,7 +567,7 @@ describe('App', () => {
     httpTesting.expectOne(request =>
       request.url === `${environment.apiBaseUrl}/users`
       && request.params.get('page') === '0'
-      && request.params.get('size') === '20'
+      && request.params.get('size') === '10'
       && request.params.get('search') === 'ana rojas'
     ).flush({ ...pageResponse, totalElements: 1, totalPages: 1 });
 
@@ -578,7 +578,7 @@ describe('App', () => {
     httpTesting.expectOne(request =>
       request.url === `${environment.apiBaseUrl}/users`
       && request.params.get('page') === '0'
-      && request.params.get('size') === '20'
+      && request.params.get('size') === '10'
       && request.params.get('search') === 'ana rojas'
       && request.params.get('status') === 'I'
     ).flush({ ...pageResponse, content: [], totalElements: 0, totalPages: 0 });
@@ -590,7 +590,7 @@ describe('App', () => {
     httpTesting.expectOne(request =>
       request.url === `${environment.apiBaseUrl}/users`
       && request.params.get('page') === '0'
-      && request.params.get('size') === '20'
+      && request.params.get('size') === '10'
       && request.params.get('search') === 'ana rojas'
       && request.params.get('status') === 'I'
       && request.params.get('userType') === 'ADMIN'
@@ -1150,11 +1150,11 @@ describe('App', () => {
       request.url === `${environment.apiBaseUrl}/users` && request.method === 'GET'
     );
     expect(reloadRequest.request.params.get('page')).toBe('0');
-    expect(reloadRequest.request.params.get('size')).toBe('20');
+    expect(reloadRequest.request.params.get('size')).toBe('10');
     reloadRequest.flush({
       content: [],
       page: 0,
-      size: 20,
+      size: 10,
       totalElements: 0,
       totalPages: 0,
       first: true,
@@ -1237,11 +1237,11 @@ describe('App', () => {
       request.url === `${environment.apiBaseUrl}/users` && request.method === 'GET'
     );
     expect(reloadRequest.request.params.get('page')).toBe('0');
-    expect(reloadRequest.request.params.get('size')).toBe('20');
+    expect(reloadRequest.request.params.get('size')).toBe('10');
     reloadRequest.flush({
       content: [],
       page: 0,
-      size: 20,
+      size: 10,
       totalElements: 0,
       totalPages: 0,
       first: true,
