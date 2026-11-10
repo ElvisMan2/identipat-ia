@@ -773,7 +773,7 @@
         </div>
         <div class="analysis-actions">
           <span [class.success-message]="analysisMessage().startsWith('Análisis recibido')" [class.error]="analysisMessage().startsWith('No se pudo')">{{ analysisMessage() }}</span>
-          <button class="primary-button" type="submit" [disabled]="submittingAnalysis() || (!adminAuthenticated() && standardAccessState() !== 'READY')">{{ submittingAnalysis() ? 'Enviando...' : 'Iniciar análisis' }}</button>
+          <button class="primary-button" type="submit" [disabled]="submittingAnalysis() || (!adminAuthenticated() && standardAccessState() !== 'READY')">{{ submittingAnalysis() ? 'Enviando...' : canResumePendingAnalysis() ? 'Reanudar seguimiento' : 'Iniciar análisis' }}</button>
         </div>
       </form>
       <p class="analysis-disclaimer">Identipat es una herramienta de Inteligencia artificial y puede cometer errores, verifica la información importante.</p>

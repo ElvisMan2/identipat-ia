@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mnk.identipatia.ai.GenerativeAiProvider;
 import com.mnk.identipatia.ai.config.AiProperties;
 import com.mnk.identipatia.analysis.config.AnalysisProperties;
+import com.mnk.identipatia.analysis.dto.AnalysisCreatedResponse;
 import com.mnk.identipatia.analysis.model.AnalysisInputType;
+import com.mnk.identipatia.analysis.model.AnalysisStatus;
 import com.mnk.identipatia.analysis.repository.AnalysisRepository;
 import com.mnk.identipatia.analysis.repository.StoredAnalysisResultRepository;
 import com.mnk.identipatia.exception.ApiException;
@@ -22,10 +24,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.util.stream.Stream;
+import java.time.Instant;
+import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -43,6 +49,7 @@ class AnalysisApplicationServiceAdmissionTest {
     @Mock GenerativeAiProvider provider;
     @Mock PreprocessingServiceClient preprocessingClient;
     @Mock AnalysisAdmissionService admissionService;
+    @Mock AnalysisIdempotencyService idempotencyService;
 
     private AnalysisApplicationService service;
     private AnalysisAccessContext admin;
@@ -51,16 +58,23 @@ class AnalysisApplicationServiceAdmissionTest {
     void setUp() {
         lenient().when(analysisProperties.pdf()).thenReturn(pdfProperties);
         lenient().when(analysisProperties.audio()).thenReturn(audioProperties);
+        lenient().when(analysisProperties.textMinLength()).thenReturn(20);
+        lenient().when(analysisProperties.textMaxLength()).thenReturn(20_000);
         lenient().when(pdfProperties.maxFileSizeBytes()).thenReturn(10_000L);
         lenient().when(audioProperties.maxFileSizeBytes()).thenReturn(10_000L);
-        when(aiProperties.enabled()).thenReturn(true);
-        when(providers.orderedStream()).thenReturn(Stream.of(provider));
+        lenient().when(aiProperties.enabled()).thenReturn(true);
+        lenient().when(providers.orderedStream()).thenReturn(Stream.of(provider));
         service = new AnalysisApplicationService(
                 analysisRepository, resultRepository, termsAcceptanceService, analysisProperties,
-                aiProperties, providers, new ObjectMapper(), preprocessingClient, admissionService);
+                aiProperties, providers, new ObjectMapper(), preprocessingClient, admissionService,
+                idempotencyService);
         User user = new User();
         user.setUserId(42L);
         admin = AnalysisAccessContext.admin(user);
+        lenient().when(idempotencyService.fingerprintFile(any(), any(), any()))
+                .thenReturn("payload-digest");
+        lenient().when(idempotencyService.claimOrReplay(any(), any(), any(), any()))
+                .thenReturn(AnalysisIdempotencyService.Claim.disabled());
     }
 
     @Test
@@ -89,14 +103,56 @@ class AnalysisApplicationServiceAdmissionTest {
     void preprocessingFailureReleasesPdfReservation() {
         AnalysisAdmissionService.Reservation reservation =
                 new AnalysisAdmissionService.Reservation(java.util.UUID.randomUUID(), true);
+        var claim = AnalysisIdempotencyService.Claim.claimed(UUID.randomUUID(), UUID.randomUUID());
+        when(idempotencyService.claimOrReplay(any(), any(), any(), any())).thenReturn(claim);
         when(admissionService.reserve(admin, AnalysisInputType.PDF)).thenReturn(reservation);
         when(preprocessingClient.extractPdf(any()))
                 .thenThrow(new PreprocessingServiceUnavailableException("timeout"));
         MockMultipartFile pdf = new MockMultipartFile(
                 "file", "sample.pdf", "application/pdf", "%PDF-valid".getBytes());
 
-        assertThatThrownBy(() -> service.createPdf(admin, pdf)).isInstanceOf(ApiException.class);
+        assertThatThrownBy(() -> service.createPdf(admin, pdf, "safe-retry-key"))
+                .isInstanceOf(ApiException.class);
         verify(admissionService).release(reservation);
+        verify(idempotencyService).release(claim);
+    }
+
+    @Test
+    void idempotencyClaimIsReleasedEvenWhenAdmissionReleaseFailsIndependently() {
+        AnalysisAdmissionService.Reservation reservation =
+                new AnalysisAdmissionService.Reservation(UUID.randomUUID(), true);
+        var claim = AnalysisIdempotencyService.Claim.claimed(UUID.randomUUID(), UUID.randomUUID());
+        when(idempotencyService.claimOrReplay(any(), any(), any(), any())).thenReturn(claim);
+        when(admissionService.reserve(admin, AnalysisInputType.PDF)).thenReturn(reservation);
+        when(preprocessingClient.extractPdf(any()))
+                .thenThrow(new PreprocessingServiceUnavailableException("timeout"));
+        doThrow(new IllegalStateException("synthetic admission release failure"))
+                .when(admissionService).release(reservation);
+        MockMultipartFile pdf = new MockMultipartFile(
+                "file", "sample.pdf", "application/pdf", "%PDF-valid".getBytes());
+
+        assertThatThrownBy(() -> service.createPdf(admin, pdf, "safe-retry-key"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("admission release failure");
+        verify(idempotencyService).release(claim);
+    }
+
+    @Test
+    void acceptedReplayBypassesCurrentQuotaAndAiAvailability() {
+        UUID analysisId = UUID.randomUUID();
+        var response = new AnalysisCreatedResponse(
+                analysisId, AnalysisStatus.RECEIVED, Instant.parse("2026-11-09T12:00:00Z"));
+        var replay = AnalysisIdempotencyService.Claim.replay(UUID.randomUUID(), response);
+        when(idempotencyService.fingerprintText(any())).thenReturn("payload-digest");
+        when(idempotencyService.claimOrReplay(admin, "replay-key", AnalysisInputType.TEXT, "payload-digest"))
+                .thenReturn(replay);
+        lenient().when(aiProperties.enabled()).thenReturn(false);
+
+        assertThat(service.createText(
+                admin, "Descripción suficientemente extensa para recuperar el replay.", "replay-key"))
+                .isEqualTo(response);
+        verify(admissionService, never()).reserve(any(), any());
+        verify(providers, never()).orderedStream();
     }
 
     private static ApiException capacity() {

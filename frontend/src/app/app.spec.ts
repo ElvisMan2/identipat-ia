@@ -940,6 +940,147 @@ describe('App', () => {
     httpTesting.expectNone(`${environment.apiBaseUrl}/analyses/text`);
   });
 
+  it('should reuse the idempotency key after an uncertain network error and replace it for changed text', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.standardAccessState.set('READY');
+    app.view.set('standard-analysis');
+    app.analysisForm.setValue({ description: 'Descripción inicial suficientemente extensa para analizar' });
+
+    app.submitAnalysis();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session/csrf`).flush({
+      token: 'csrf', headerName: 'X-XSRF-TOKEN'
+    });
+    const first = httpTesting.expectOne(`${environment.apiBaseUrl}/analyses/text`);
+    const firstKey = first.request.headers.get('Idempotency-Key');
+    expect(firstKey).toMatch(/^[0-9a-f-]{36}$/);
+    first.error(new ProgressEvent('network error'));
+    expect(app.analysisMessage()).toContain('Reintenta sin cambiar el contenido');
+
+    app.submitAnalysis();
+    const retry = httpTesting.expectOne(`${environment.apiBaseUrl}/analyses/text`);
+    expect(retry.request.headers.get('Idempotency-Key')).toBe(firstKey);
+    retry.error(new ProgressEvent('network error'));
+
+    app.analysisForm.setValue({ description: 'Descripción modificada suficientemente extensa para analizar' });
+    app.submitAnalysis();
+    const changed = httpTesting.expectOne(`${environment.apiBaseUrl}/analyses/text`);
+    expect(changed.request.headers.get('Idempotency-Key')).not.toBe(firstKey);
+    changed.flush({ analysisId: 'analysis-changed', status: 'RECEIVED', createdAt: '' });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/analyses/analysis-changed`).flush({
+      analysisId: 'analysis-changed', status: 'FAILED', createdAt: ''
+    });
+  });
+
+  it('should resume polling the accepted analysis instead of posting another request', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.standardAccessState.set('READY');
+    app.view.set('standard-analysis');
+    app.analysisForm.setValue({ description: 'Descripción suficientemente extensa para reanudar seguimiento' });
+
+    app.submitAnalysis();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session/csrf`).flush({
+      token: 'csrf', headerName: 'X-XSRF-TOKEN'
+    });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/analyses/text`).flush({
+      analysisId: 'analysis-resume', status: 'RECEIVED', createdAt: ''
+    });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/analyses/analysis-resume`).flush(
+      { code: 'ANALYSIS_TEMPORARILY_UNAVAILABLE' },
+      { status: 503, statusText: 'Service Unavailable' }
+    );
+
+    expect(app.pendingAnalysisId()).toBe('analysis-resume');
+    expect(app.analysisMessage()).toContain('Reanuda el seguimiento');
+    app.submitAnalysis();
+    httpTesting.expectNone(`${environment.apiBaseUrl}/analyses/text`);
+    httpTesting.expectOne(`${environment.apiBaseUrl}/analyses/analysis-resume`).flush({
+      analysisId: 'analysis-resume', status: 'FAILED', createdAt: ''
+    });
+  });
+
+  it('should stop offering polling resume when text changes after a polling failure', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.standardAccessState.set('READY');
+    app.view.set('standard-analysis');
+    app.analysisForm.setValue({ description: 'Descripción original suficientemente extensa para seguimiento' });
+
+    app.submitAnalysis();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session/csrf`).flush({
+      token: 'csrf', headerName: 'X-XSRF-TOKEN'
+    });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/analyses/text`).flush({
+      analysisId: 'analysis-original', status: 'RECEIVED', createdAt: ''
+    });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/analyses/analysis-original`).flush(
+      { code: 'ANALYSIS_TEMPORARILY_UNAVAILABLE' },
+      { status: 503, statusText: 'Service Unavailable' }
+    );
+    fixture.detectChanges();
+
+    const submitButton = () => (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>('form.analysis-form button[type="submit"]');
+    expect(app.pendingAnalysisId()).toBe('analysis-original');
+    expect(app.canResumePendingAnalysis()).toBeTrue();
+    expect(submitButton()?.textContent).toContain('Reanudar seguimiento');
+
+    app.analysisForm.controls.description.setValue(
+      'Descripción modificada suficientemente extensa que constituye otra intención'
+    );
+    fixture.detectChanges();
+
+    expect(app.pendingAnalysisId()).toBe('analysis-original');
+    expect(app.canResumePendingAnalysis()).toBeFalse();
+    expect(submitButton()?.textContent).toContain('Iniciar análisis');
+
+    app.submitAnalysis();
+    httpTesting.expectNone(`${environment.apiBaseUrl}/analyses/analysis-original`);
+    httpTesting.expectOne(`${environment.apiBaseUrl}/analyses/text`).flush({
+      analysisId: 'analysis-new-intent', status: 'RECEIVED', createdAt: ''
+    });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/analyses/analysis-new-intent`).flush({
+      analysisId: 'analysis-new-intent', status: 'FAILED', createdAt: ''
+    });
+  });
+
+  it('should show quota, capacity and idempotency messages with defensive Retry-After handling', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.standardAccessState.set('READY');
+    app.view.set('standard-analysis');
+    app.analysisForm.setValue({ description: 'Descripción suficientemente extensa para probar límites' });
+
+    app.submitAnalysis();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session/csrf`).flush({
+      token: 'csrf', headerName: 'X-XSRF-TOKEN'
+    });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/analyses/text`).flush(
+      { code: 'ANALYSIS_QUOTA_EXCEEDED' },
+      { status: 429, statusText: 'Too Many Requests', headers: { 'Retry-After': '120' } }
+    );
+    expect(app.analysisMessage()).toContain('aproximadamente 2 minutos');
+
+    app.submitAnalysis();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/analyses/text`).flush(
+      { code: 'IDEMPOTENCY_REQUEST_IN_PROGRESS' },
+      { status: 409, statusText: 'Conflict', headers: { 'Retry-After': 'invalid' } }
+    );
+    expect(app.analysisMessage()).toContain('reintenta en unos segundos');
+
+    app.submitAnalysis();
+    httpTesting.expectOne(`${environment.apiBaseUrl}/analyses/text`).flush(
+      { code: 'ANALYSIS_CAPACITY_EXCEEDED' },
+      { status: 503, statusText: 'Service Unavailable', headers: { 'Retry-After': '10' } }
+    );
+    expect(app.analysisMessage()).toContain('servicio está ocupado');
+  });
+
   it('should reuse one STANDARD session for a second analysis without creating or accepting anything again', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;

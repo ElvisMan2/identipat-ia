@@ -17,6 +17,12 @@
     { "key": "legalContentHash", "value": "" },
     { "key": "analysisId", "value": "" },
     { "key": "adminAnalysisId", "value": "" },
+    { "key": "standardTextIdempotencyKey", "value": "" },
+    { "key": "standardPdfIdempotencyKey", "value": "" },
+    { "key": "standardAudioIdempotencyKey", "value": "" },
+    { "key": "adminTextIdempotencyKey", "value": "" },
+    { "key": "adminPdfIdempotencyKey", "value": "" },
+    { "key": "adminAudioIdempotencyKey", "value": "" },
     { "key": "protectionType", "value": "UTILITY_MODEL" },
     { "key": "guideVersion", "value": "1" },
     { "key": "disclaimerId", "value": "" },
@@ -204,7 +210,8 @@
             "method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }
+              { "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" },
+              { "key": "Idempotency-Key", "value": "{{standardTextIdempotencyKey}}" }
             ],
             "auth": { "type": "noauth" },
             "body": {
@@ -213,23 +220,78 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{baseUrl}}/analyses/text",
-            "description": "Requiere cookie STANDARD vigente, consentimiento aceptado y CSRF. Responde 202 sin esperar al proveedor."
+            "description": "Requiere cookie STANDARD vigente, consentimiento aceptado y CSRF. Genere un UUID v4 nuevo por intención y reutilícelo solo al repetir exactamente la misma solicitud. Responde 202 sin esperar al proveedor."
           },
-          "event": [{
-            "listen": "test",
-            "script": {
-              "type": "text/javascript",
-              "exec": [
-                "pm.test('Analysis is accepted asynchronously', function () { pm.response.to.have.status(202); });",
-                "pm.expect(pm.response.headers.get('Retry-After')).to.eql('2');",
-                "const body = pm.response.json();",
-                "if (body.analysisId) { pm.collectionVariables.set('analysisId', body.analysisId); }"
-              ]
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.collectionVariables.set('standardTextIdempotencyKey', pm.variables.replaceIn('{{$guid}}'));"
+              ] }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Analysis is accepted asynchronously', function () { pm.response.to.have.status(202); });",
+                  "pm.expect(pm.collectionVariables.get('standardTextIdempotencyKey')).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);",
+                  "pm.expect(pm.response.headers.get('Retry-After')).to.eql('2');",
+                  "const body = pm.response.json();",
+                  "if (body.analysisId) { pm.collectionVariables.set('analysisId', body.analysisId); pm.collectionVariables.set('standardTextAnalysisId', body.analysisId); }"
+                ]
+              }
             }
-          }]
+          ]
         },
         {
-          "name": "2. Get text analysis once",
+          "name": "2. Replay text analysis with original key and payload",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" },
+              { "key": "Idempotency-Key", "value": "{{standardTextIdempotencyKey}}" }
+            ],
+            "auth": { "type": "noauth" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"He desarrollado un mecanismo modular que controla el riego según mediciones del suelo.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/analyses/text"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Accepted replay returns 202', function () { pm.response.to.have.status(202); });",
+            "const body = pm.response.json();",
+            "pm.expect(body.analysisId).to.eql(pm.collectionVariables.get('standardTextAnalysisId'));",
+            "pm.expect(pm.response.headers.get('Location')).to.include(body.analysisId);"
+          ] } }]
+        },
+        {
+          "name": "3. Conflict when text payload changes with the same key",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" },
+              { "key": "Idempotency-Key", "value": "{{standardTextIdempotencyKey}}" }
+            ],
+            "auth": { "type": "noauth" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"He desarrollado un mecanismo modular diferente para validar el conflicto idempotente.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/analyses/text"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Changed payload with the same key conflicts', function () { pm.response.to.have.status(409); });",
+            "pm.expect(pm.response.json().code).to.eql('IDEMPOTENCY_KEY_CONFLICT');"
+          ] } }]
+        },
+        {
+          "name": "4. Get text analysis once",
           "request": {
             "method": "GET",
             "auth": { "type": "noauth" },
@@ -258,7 +320,7 @@
           "name": "1. Create PDF analysis and save ID",
           "request": {
             "method": "POST",
-            "header": [{ "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }],
+            "header": [{ "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }, { "key": "Idempotency-Key", "value": "{{standardPdfIdempotencyKey}}" }],
             "auth": { "type": "noauth" },
             "body": {
               "mode": "formdata",
@@ -267,11 +329,17 @@
             "url": "{{baseUrl}}/analyses/pdf",
             "description": "Campo multipart file. Solo application/pdf con firma %PDF-, máximo configurable. La extracción ocurre antes del 202 y no incluye OCR."
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('PDF analysis is accepted asynchronously', function () { pm.response.to.have.status(202); });",
-            "const body = pm.response.json();",
-            "if (body.analysisId) { pm.collectionVariables.set('analysisId', body.analysisId); }"
-          ] } }]
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "pm.collectionVariables.set('standardPdfIdempotencyKey', pm.variables.replaceIn('{{$guid}}'));"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('PDF analysis is accepted asynchronously', function () { pm.response.to.have.status(202); });",
+              "pm.expect(pm.collectionVariables.get('standardPdfIdempotencyKey')).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);",
+              "const body = pm.response.json();",
+              "if (body.analysisId) { pm.collectionVariables.set('analysisId', body.analysisId); }"
+            ] } }
+          ]
         },
         {
           "name": "2. Get PDF analysis once",
@@ -292,7 +360,7 @@
           "name": "1. Create audio analysis and save ID",
           "request": {
             "method": "POST",
-            "header": [{ "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }],
+            "header": [{ "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }, { "key": "Idempotency-Key", "value": "{{standardAudioIdempotencyKey}}" }],
             "auth": { "type": "noauth" },
             "body": {
               "mode": "formdata",
@@ -301,11 +369,17 @@
             "url": "{{baseUrl}}/analyses/audio",
             "description": "Campo multipart file. WebM/MP3/MP4/M4A/3GP/WAV/OGG/FLAC, máximo 20 MiB y 180 s. MP4/M4A/3GP de solo audio puede llegar como video/mp4 o video/3gpp; Python rechaza una pista de video real. La transcripción local ocurre antes del 202 y el audio no se persiste."
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Audio analysis is accepted asynchronously', function () { pm.response.to.have.status(202); });",
-            "const body = pm.response.json();",
-            "if (body.analysisId) { pm.collectionVariables.set('analysisId', body.analysisId); }"
-          ] } }]
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "pm.collectionVariables.set('standardAudioIdempotencyKey', pm.variables.replaceIn('{{$guid}}'));"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Audio analysis is accepted asynchronously', function () { pm.response.to.have.status(202); });",
+              "pm.expect(pm.collectionVariables.get('standardAudioIdempotencyKey')).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);",
+              "const body = pm.response.json();",
+              "if (body.analysisId) { pm.collectionVariables.set('analysisId', body.analysisId); }"
+            ] } }
+          ]
         },
         {
           "name": "2. Get audio analysis once",
@@ -389,7 +463,7 @@
           "name": "1. Create ADMIN text analysis and save ID",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Idempotency-Key", "value": "{{adminTextIdempotencyKey}}" }],
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
             "body": {
               "mode": "raw",
@@ -399,20 +473,64 @@
             "url": "{{baseUrl}}/analyses/text",
             "description": "El backend deriva el ADMIN del JWT. Responde 202 sin crear standard_session ni aceptación STANDARD."
           },
-          "event": [{
-            "listen": "test",
-            "script": {
-              "type": "text/javascript",
-              "exec": [
-                "pm.test('ADMIN analysis is accepted asynchronously', function () { pm.response.to.have.status(202); });",
-                "const body = pm.response.json();",
-                "if (body.analysisId) { pm.collectionVariables.set('adminAnalysisId', body.analysisId); }"
-              ]
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "pm.collectionVariables.set('adminTextIdempotencyKey', pm.variables.replaceIn('{{$guid}}'));"
+            ] } },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('ADMIN analysis is accepted asynchronously', function () { pm.response.to.have.status(202); });",
+                  "pm.expect(pm.collectionVariables.get('adminTextIdempotencyKey')).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);",
+                  "const body = pm.response.json();",
+                  "if (body.analysisId) { pm.collectionVariables.set('adminAnalysisId', body.analysisId); pm.collectionVariables.set('adminTextAnalysisId', body.analysisId); }"
+                ]
+              }
             }
-          }]
+          ]
         },
         {
-          "name": "2. Get ADMIN text analysis once",
+          "name": "2. Replay ADMIN text analysis with original key and payload",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Idempotency-Key", "value": "{{adminTextIdempotencyKey}}" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"He desarrollado un mecanismo modular que controla el riego según mediciones del suelo.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/analyses/text"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('ADMIN accepted replay returns 202', function () { pm.response.to.have.status(202); });",
+            "const body = pm.response.json();",
+            "pm.expect(body.analysisId).to.eql(pm.collectionVariables.get('adminTextAnalysisId'));",
+            "pm.expect(pm.response.headers.get('Location')).to.include(body.analysisId);"
+          ] } }]
+        },
+        {
+          "name": "3. Conflict when ADMIN text payload changes with the same key",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Idempotency-Key", "value": "{{adminTextIdempotencyKey}}" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"He desarrollado un mecanismo modular distinto para validar el conflicto ADMIN.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/analyses/text"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('ADMIN changed payload with the same key conflicts', function () { pm.response.to.have.status(409); });",
+            "pm.expect(pm.response.json().code).to.eql('IDEMPOTENCY_KEY_CONFLICT');"
+          ] } }]
+        },
+        {
+          "name": "4. Get ADMIN text analysis once",
           "request": {
             "method": "GET",
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
@@ -440,6 +558,7 @@
           "name": "1. Create ADMIN PDF analysis and save ID",
           "request": {
             "method": "POST",
+            "header": [{ "key": "Idempotency-Key", "value": "{{adminPdfIdempotencyKey}}" }],
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
             "body": {
               "mode": "formdata",
@@ -448,11 +567,17 @@
             "url": "{{baseUrl}}/analyses/pdf",
             "description": "Campo multipart file. El ADMIN se deriva exclusivamente del JWT y el binario no se persiste."
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('ADMIN PDF analysis is accepted', function () { pm.response.to.have.status(202); });",
-            "const body = pm.response.json();",
-            "if (body.analysisId) { pm.collectionVariables.set('adminAnalysisId', body.analysisId); }"
-          ] } }]
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "pm.collectionVariables.set('adminPdfIdempotencyKey', pm.variables.replaceIn('{{$guid}}'));"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('ADMIN PDF analysis is accepted', function () { pm.response.to.have.status(202); });",
+              "pm.expect(pm.collectionVariables.get('adminPdfIdempotencyKey')).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);",
+              "const body = pm.response.json();",
+              "if (body.analysisId) { pm.collectionVariables.set('adminAnalysisId', body.analysisId); }"
+            ] } }
+          ]
         },
         {
           "name": "2. Get ADMIN PDF analysis once",
@@ -473,6 +598,7 @@
           "name": "1. Create ADMIN audio analysis and save ID",
           "request": {
             "method": "POST",
+            "header": [{ "key": "Idempotency-Key", "value": "{{adminAudioIdempotencyKey}}" }],
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
             "body": {
               "mode": "formdata",
@@ -481,11 +607,17 @@
             "url": "{{baseUrl}}/analyses/audio",
             "description": "Campo multipart file. Admite los aliases video/mp4 y video/3gpp únicamente para contenedores de audio sin pista de video. El ADMIN se deriva exclusivamente del JWT y el audio no se persiste."
           },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('ADMIN audio analysis is accepted', function () { pm.response.to.have.status(202); });",
-            "const body = pm.response.json();",
-            "if (body.analysisId) { pm.collectionVariables.set('adminAnalysisId', body.analysisId); }"
-          ] } }]
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "pm.collectionVariables.set('adminAudioIdempotencyKey', pm.variables.replaceIn('{{$guid}}'));"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('ADMIN audio analysis is accepted', function () { pm.response.to.have.status(202); });",
+              "pm.expect(pm.collectionVariables.get('adminAudioIdempotencyKey')).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);",
+              "const body = pm.response.json();",
+              "if (body.analysisId) { pm.collectionVariables.set('adminAnalysisId', body.analysisId); }"
+            ] } }
+          ]
         },
         {
           "name": "2. Get ADMIN audio analysis once",

@@ -120,6 +120,7 @@ class TextAnalysisIntegrationTest {
 
     @BeforeEach
     void resetState() {
+        jdbcTemplate.update("DELETE FROM analysis_idempotency_keys");
         reportContextRepository.deleteAll();
         resultRepository.deleteAll();
         invocationRepository.deleteAll();
@@ -132,6 +133,49 @@ class TextAnalysisIntegrationTest {
         TestLegalDocumentFixture.ensureCurrent(legalDocumentRepository, legalHistoryRepository);
         reset(provider);
         when(provider.providerId()).thenReturn("fake");
+    }
+
+    @Test
+    void idempotencyReplayReturnsSameAcceptedResponseAndConflictsOnChangedPayload() throws Exception {
+        Browser browser = acceptedBrowser();
+        String key = UUID.randomUUID().toString();
+        String description = "Descripción técnica suficientemente extensa para replay HTTP.";
+
+        MvcResult first = postAnalysis(browser, description, key)
+                .andExpect(status().isAccepted())
+                .andExpect(header().string(HttpHeaders.RETRY_AFTER, "2"))
+                .andReturn();
+        MvcResult replay = postAnalysis(browser, description, key)
+                .andExpect(status().isAccepted())
+                .andExpect(header().string(HttpHeaders.LOCATION,
+                        "/identipat-ia/analyses/" + id(first)))
+                .andReturn();
+
+        assertThat(json(replay)).isEqualTo(json(first));
+        assertThat(analysisRepository.count()).isEqualTo(1);
+        assertThat(inputRepository.count()).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM analysis_idempotency_keys WHERE state = 'ACCEPTED'",
+                Integer.class)).isEqualTo(1);
+
+        postAnalysis(browser,
+                "Descripción distinta suficientemente extensa para provocar conflicto.", key)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("IDEMPOTENCY_KEY_CONFLICT"));
+        assertThat(analysisRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void malformedIdempotencyKeyFailsBeforeCreatingAnalysis() throws Exception {
+        Browser browser = acceptedBrowser();
+
+        postAnalysis(browser, "Descripción suficientemente extensa para validar la clave.", "invalid")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_IDEMPOTENCY_KEY"));
+
+        assertThat(analysisRepository.count()).isZero();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM analysis_idempotency_keys", Integer.class)).isZero();
     }
 
     @Test
@@ -349,6 +393,33 @@ class TextAnalysisIntegrationTest {
         getAdminAnalysis(token, analysisId)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("COMPLETED"));
+    }
+
+    @Test
+    void adminJwtReplayIsAcceptedAndIdempotencyIsIsolatedBetweenAdministrators() throws Exception {
+        User firstAdmin = user("ADMIN", "A");
+        User secondAdmin = user("ADMIN", "A");
+        String firstToken = jwtService.generateToken(firstAdmin.getDoi());
+        String secondToken = jwtService.generateToken(secondAdmin.getDoi());
+        String key = UUID.randomUUID().toString();
+        String description = "Descripción ADMIN suficientemente extensa para validar replay e aislamiento.";
+
+        MvcResult first = postAdminAnalysis(firstToken, description, key)
+                .andExpect(status().isAccepted())
+                .andReturn();
+        MvcResult replay = postAdminAnalysis(firstToken, description, key)
+                .andExpect(status().isAccepted())
+                .andReturn();
+        MvcResult isolated = postAdminAnalysis(secondToken, description, key)
+                .andExpect(status().isAccepted())
+                .andReturn();
+
+        assertThat(id(replay)).isEqualTo(id(first));
+        assertThat(id(isolated)).isNotEqualTo(id(first));
+        assertThat(analysisRepository.count()).isEqualTo(2);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM analysis_idempotency_keys WHERE state = 'ACCEPTED'",
+                Integer.class)).isEqualTo(2);
     }
 
     @Test
@@ -707,6 +778,15 @@ class TextAnalysisIntegrationTest {
                 .content(objectMapper.writeValueAsString(java.util.Map.of("description", description))));
     }
 
+    private org.springframework.test.web.servlet.ResultActions postAdminAnalysis(
+            String token, String description, String idempotencyKey) throws Exception {
+        return mockMvc.perform(post("/analyses/text")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .header("Idempotency-Key", idempotencyKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(java.util.Map.of("description", description))));
+    }
+
     private org.springframework.test.web.servlet.ResultActions getAdminAnalysis(String token, UUID analysisId)
             throws Exception {
         return mockMvc.perform(get("/analyses/{analysisId}", analysisId)
@@ -759,6 +839,15 @@ class TextAnalysisIntegrationTest {
             throws Exception {
         return mockMvc.perform(post("/analyses/text").cookie(browser.session(), browser.csrf().cookie())
                 .header("X-XSRF-TOKEN", browser.csrf().token()).contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(java.util.Map.of("description", description))));
+    }
+
+    private org.springframework.test.web.servlet.ResultActions postAnalysis(
+            Browser browser, String description, String idempotencyKey) throws Exception {
+        return mockMvc.perform(post("/analyses/text").cookie(browser.session(), browser.csrf().cookie())
+                .header("X-XSRF-TOKEN", browser.csrf().token())
+                .header("Idempotency-Key", idempotencyKey)
+                .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(java.util.Map.of("description", description))));
     }
 

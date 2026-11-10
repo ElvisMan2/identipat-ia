@@ -22,6 +22,16 @@ construyen y publican en CI; no se compilan en el host QA de 1 vCPU/2 GiB.
    PREPROCESSING_IMAGE=ghcr.io/elvisman2/identipat-preprocessing@sha256:...
    ```
 
+   Generar el secreto HMAC de idempotencia con un CSPRNG, por ejemplo:
+
+   ```bash
+   openssl rand -base64 48
+   ```
+
+   Guardarlo en `ANALYSIS_IDEMPOTENCY_HMAC_SECRET` sin imprimirlo en logs ni incorporarlo a Git. Debe
+   ser idéntico en todas las réplicas y conservarse entre despliegues al menos durante toda la ventana
+   `ANALYSIS_IDEMPOTENCY_RETENTION`; cambiarlo directamente impide encontrar replays aún vigentes.
+
 4. Si los paquetes son privados, iniciar sesión en GHCR con un token `read:packages` y acceso a
    ambos paquetes:
 
@@ -29,7 +39,20 @@ construyen y publican en CI; no se compilan en el host QA de 1 vCPU/2 GiB.
    echo "$GHCR_TOKEN" | docker login ghcr.io -u USUARIO --password-stdin
    ```
 
-5. Validar y descargar sin construir en el host:
+5. Antes de descargar, verificar que no quede ningún `REPLACE_ME`, que las imágenes usen un digest
+   `@sha256:...`, que `ANALYSIS_ADMISSION_ENABLED=true` y que se cumplan estrictamente estas relaciones:
+
+   - `ANALYSIS_ADMISSION_RESERVATION_TTL` supera `PREPROCESSING_AUDIO_TIMEOUT` más
+     `ANALYSIS_ADMISSION_RESERVATION_SAFETY_MARGIN`.
+   - `ANALYSIS_IDEMPOTENCY_CLAIM_TTL` supera `ANALYSIS_ADMISSION_RESERVATION_TTL`.
+   - `ANALYSIS_IDEMPOTENCY_RETENTION` supera el claim TTL y 24 horas.
+
+   Para el corte que haga obligatorio el header, activar
+   `ANALYSIS_IDEMPOTENCY_REQUIRED=true` solo después de confirmar que todos los clientes envían un
+   UUID v4 distinto por intención. La colección Postman y Angular ya lo envían.
+
+6. Validar y descargar sin construir en el host. `config` debe fallar si el secreto HMAC está vacío o
+   ausente:
 
    ```bash
    docker compose --env-file .env -f compose.yml config
@@ -37,6 +60,10 @@ construyen y publican en CI; no se compilan en el host QA de 1 vCPU/2 GiB.
    docker compose --env-file .env -f compose.yml up -d preprocessing
    docker compose --env-file .env -f compose.yml up -d app
    ```
+
+7. Confirmar en los logs que `app` arranca con `SPRING_PROFILES_ACTIVE=prod`, Flyway llega a la última
+   migración y no aparece ningún error de binding/validación temporal. No copiar a tickets ni chats la
+   salida de `docker compose config`, porque renderiza secretos del `.env`.
 
 `app` espera el health general de `preprocessing`, pero ese health no espera a que Whisper termine
 de cargar. No ejecutar `docker compose down -v`, no borrar `identipat-qa_postgres_data`, no recrear

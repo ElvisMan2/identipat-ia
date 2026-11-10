@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @Service
@@ -39,7 +40,9 @@ public class AnalysisCreationPersistenceService {
             String processedText,
             JsonNode sourceMetadata,
             UserTermsAcceptance acceptance) {
-        Instant now = clock.instant();
+        // PostgreSQL TIMESTAMPTZ is microsecond-precise. Returning the same
+        // precision on the first 202 keeps a durable replay byte-for-byte stable.
+        Instant now = clock.instant().truncatedTo(ChronoUnit.MICROS);
         UUID analysisId = UUID.randomUUID();
 
         Analysis analysis = new Analysis();
