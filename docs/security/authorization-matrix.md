@@ -19,9 +19,9 @@ Las rutas son relativas a `/identipat-ia`. Existen tres categorías separadas:
 | `GET /standard-session` | `STANDARD_SESSION` | Renueva inactividad sin superar el límite absoluto. |
 | `POST /standard-session/consent` | `STANDARD_SESSION + CSRF` | `ACCEPTED` crea/reutiliza aceptación user+hash+momento efectivo; `REJECTED` no persiste ni cierra la sesión. |
 | `DELETE /standard-session` | `STANDARD_SESSION + CSRF` | Revoca server-side y elimina la cookie. |
-| `POST /analyses/text` | `STANDARD_SESSION + consentimiento + CSRF` **o** `ADMIN_JWT` | STANDARD conserva el flujo de sesión. ADMIN se deriva del JWT, no requiere sesión ni consentimiento STANDARD y persiste ambos IDs de contexto como `NULL`. |
-| `POST /analyses/pdf` | `STANDARD_SESSION + consentimiento + CSRF` **o** `ADMIN_JWT` | Extrae antes de persistir; aplica la misma resolución dual y no conserva el binario. |
-| `POST /analyses/audio` | `STANDARD_SESSION + consentimiento + CSRF` **o** `ADMIN_JWT` | Transcribe localmente antes de persistir; aplica la misma resolución dual y no conserva el audio. |
+| `POST /analyses/text` | `STANDARD_SESSION + consentimiento + CSRF` **o** `ADMIN_JWT` | STANDARD conserva el flujo de sesión. ADMIN se deriva del JWT. `Idempotency-Key` se acota a user+sesión STANDARD o user ADMIN y nunca sustituye controles de acceso. |
+| `POST /analyses/pdf` | `STANDARD_SESSION + consentimiento + CSRF` **o** `ADMIN_JWT` | Reclama idempotencia y admisión antes de extraer; aplica la misma resolución dual y no conserva el binario. |
+| `POST /analyses/audio` | `STANDARD_SESSION + consentimiento + CSRF` **o** `ADMIN_JWT` | Reclama idempotencia y admisión antes de transcribir; aplica la misma resolución dual y no conserva el audio. |
 | `GET /analyses/{analysisId}` | `STANDARD_SESSION` propia **o** `ADMIN_JWT` propietario | STANDARD se aísla por `session_id`; ADMIN por `user_id` y `session_id IS NULL`. Un recurso ajeno responde `404`. |
 | `GET /analyses/{analysisId}/report[.pdf]` | `STANDARD_SESSION` propia **o** `ADMIN_JWT` propietario | Misma precedencia Bearer y aislamiento que el análisis. Solo `COMPLETED`; no expone PII ni metadata IA. |
 | `GET /analyses/{analysisId}/guidance` | `STANDARD_SESSION` propia **o** `ADMIN_JWT` propietario | Reutiliza `AnalysisAccessResolver`, solo acepta `COMPLETED` y resuelve el catálogo institucional ACTIVE vigente. |
@@ -48,6 +48,7 @@ La autorización combina la configuración HTTP de Spring Security con validacio
 - `AnalysisAccessResolver` selecciona exactamente un modo: Bearer presente implica intento `ADMIN_JWT`; sin Bearer se usa `STANDARD_SESSION`;
 - `GET /analyses/{analysisId}` consulta por `analysis_id + session_id` para STANDARD o por `analysis_id + user_id + session_id IS NULL` para ADMIN;
 - `POST /analyses/text`, `/analyses/pdf` y `/analyses/audio` exigen aceptación para `user_id + current legal hash + current legal updated_at` únicamente en modo STANDARD, antes de preprocessing o IA.
+- el replay idempotente ocurre solo después de resolver actor, sesión y consentimiento vigentes. Una sesión STANDARD distinta no comparte scope ni recibe el `analysisId`; un Bearer inválido no cae a cookie.
 - `POST /analyses/{analysisId}/guidance/{protectionType}/view` solo continúa en modo STANDARD, exige ownership por `session_id` y rechaza explícitamente el modo ADMIN.
 
 El `permitAll()` técnico de Spring Security para `/analyses/**` no convierte los análisis en recursos públicos: permite que el caso de uso seleccione `STANDARD_SESSION` o `ADMIN_JWT`. Todo endpoint futuro bajo ese prefijo debe conservar esta resolución explícita.

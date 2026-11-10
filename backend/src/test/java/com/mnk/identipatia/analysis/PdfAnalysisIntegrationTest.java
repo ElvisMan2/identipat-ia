@@ -115,6 +115,7 @@ class PdfAnalysisIntegrationTest {
 
     @BeforeEach
     void resetState() {
+        jdbcTemplate.update("DELETE FROM analysis_idempotency_keys");
         reportContextRepository.deleteAll();
         resultRepository.deleteAll();
         invocationRepository.deleteAll();
@@ -129,6 +130,42 @@ class PdfAnalysisIntegrationTest {
         when(provider.providerId()).thenReturn("fake");
         when(aiProperties.enabled()).thenReturn(true);
         when(preprocessingClient.extractPdf(any(byte[].class))).thenReturn(extraction(EXTRACTED_TEXT, 1));
+    }
+
+    @Test
+    void acceptedPdfReplayDoesNotInvokePreprocessingTwice() throws Exception {
+        Browser browser = browser(true);
+        String key = UUID.randomUUID().toString();
+
+        MvcResult first = postPdf(browser, pdf(VALID_PDF, MediaType.APPLICATION_PDF_VALUE), key)
+                .andExpect(status().isAccepted()).andReturn();
+        MvcResult replay = postPdf(browser, pdf(VALID_PDF, MediaType.APPLICATION_PDF_VALUE), key)
+                .andExpect(status().isAccepted()).andReturn();
+
+        assertThat(id(replay)).isEqualTo(id(first));
+        assertThat(analysisRepository.count()).isEqualTo(1);
+        verify(preprocessingClient, org.mockito.Mockito.times(1)).extractPdf(VALID_PDF);
+    }
+
+    @Test
+    void failedPdfPreprocessingCanRetrySafelyWithTheSameKey() throws Exception {
+        Browser browser = browser(true);
+        String key = UUID.randomUUID().toString();
+        when(preprocessingClient.extractPdf(any(byte[].class)))
+                .thenThrow(new PreprocessingServiceUnavailableException("timeout"))
+                .thenReturn(extraction(EXTRACTED_TEXT, 1));
+
+        postPdf(browser, pdf(VALID_PDF, MediaType.APPLICATION_PDF_VALUE), key)
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("PREPROCESSING_SERVICE_UNAVAILABLE"));
+        postPdf(browser, pdf(VALID_PDF, MediaType.APPLICATION_PDF_VALUE), key)
+                .andExpect(status().isAccepted());
+
+        assertThat(analysisRepository.count()).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM analysis_idempotency_keys WHERE state = 'ACCEPTED'
+                """, Integer.class)).isEqualTo(1);
+        verify(preprocessingClient, org.mockito.Mockito.times(2)).extractPdf(VALID_PDF);
     }
 
     @Test
@@ -380,6 +417,14 @@ class PdfAnalysisIntegrationTest {
         return mockMvc.perform(multipart("/analyses/pdf").file(file)
                 .cookie(browser.session(), browser.csrf().cookie())
                 .header("X-XSRF-TOKEN", browser.csrf().token()));
+    }
+
+    private org.springframework.test.web.servlet.ResultActions postPdf(
+            Browser browser, MockMultipartFile file, String idempotencyKey) throws Exception {
+        return mockMvc.perform(multipart("/analyses/pdf").file(file)
+                .cookie(browser.session(), browser.csrf().cookie())
+                .header("X-XSRF-TOKEN", browser.csrf().token())
+                .header("Idempotency-Key", idempotencyKey));
     }
 
     private org.springframework.test.web.servlet.ResultActions getPdf(Browser browser, UUID analysisId)

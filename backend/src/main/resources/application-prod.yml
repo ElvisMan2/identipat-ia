@@ -17,6 +17,9 @@ spring:
       static-locations: classpath:/static/
 
 app:
+  analysis:
+    idempotency:
+      hmac-secret: ${ANALYSIS_IDEMPOTENCY_HMAC_SECRET}
   ai:
     enabled: ${IDENTIPAT_AI_ENABLED}
     provider: ${IDENTIPAT_AI_PROVIDER}

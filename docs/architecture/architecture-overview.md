@@ -155,7 +155,11 @@ POST /analyses/text
       ↓
 validar sesión + CSRF + consentimiento + longitud
       ↓
-persistir Analysis(RECEIVED) + AnalysisInput(TEXT)
+claim/replay idempotente PostgreSQL
+      ↓
+reservar cuota/capacidad PostgreSQL
+      ↓
+persistir atómicamente Analysis + Input + admisión + idempotencia ACCEPTED
       ↓
 202 Accepted
       ↓
@@ -183,11 +187,13 @@ resolver acceso + consentimiento STANDARD
       ↓
 validar MIME + tamaño + firma en Java
       ↓
+claim idempotente + reservar cuota/capacidad
+      ↓
 POST privado /v1/pdf/extract (sin transacción DB)
       ↓
 validar páginas + longitud + disponibilidad IA
       ↓
-persistir Analysis(RECEIVED) + AnalysisInput(PDF)
+persistir atómicamente Analysis + Input + admisión + idempotencia ACCEPTED
       ↓
 202 Accepted → mismo worker/LLM/resultado de TEXT
 ```
@@ -206,13 +212,15 @@ resolver acceso + consentimiento STANDARD
       ↓
 validar MIME + tamaño en Java
       ↓
+claim idempotente + reservar cuota/capacidad
+      ↓
 POST privado /v1/audio/transcribe (sin transacción DB)
       ↓
 decodificar en memoria + validar duración + faster-whisper local
       ↓
 validar longitud + disponibilidad IA
       ↓
-persistir Analysis(RECEIVED) + AnalysisInput(AUDIO)
+persistir atómicamente Analysis + Input + admisión + idempotencia ACCEPTED
       ↓
 202 Accepted → mismo worker/LLM/resultado de TEXT/PDF
 ```

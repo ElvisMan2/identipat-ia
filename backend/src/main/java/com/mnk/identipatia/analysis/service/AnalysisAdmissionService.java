@@ -29,14 +29,17 @@ public class AnalysisAdmissionService {
     private final JdbcTemplate jdbc;
     private final AnalysisAdmissionProperties properties;
     private final AnalysisCreationPersistenceService creationService;
+    private final AnalysisIdempotencyService idempotencyService;
 
     public AnalysisAdmissionService(
             JdbcTemplate jdbc,
             AnalysisAdmissionProperties properties,
-            AnalysisCreationPersistenceService creationService) {
+            AnalysisCreationPersistenceService creationService,
+            AnalysisIdempotencyService idempotencyService) {
         this.jdbc = jdbc;
         this.properties = properties;
         this.creationService = creationService;
+        this.idempotencyService = idempotencyService;
     }
 
     @Transactional
@@ -111,8 +114,25 @@ public class AnalysisAdmissionService {
             String processedText,
             JsonNode sourceMetadata,
             UserTermsAcceptance acceptance) {
+        return confirm(reservation, AnalysisIdempotencyService.Claim.disabled(), access,
+                inputType, originalText, processedText, sourceMetadata, acceptance);
+    }
+
+    @Transactional
+    public AnalysisCreatedResponse confirm(
+            Reservation reservation,
+            AnalysisIdempotencyService.Claim idempotencyClaim,
+            AnalysisAccessContext access,
+            AnalysisInputType inputType,
+            String originalText,
+            String processedText,
+            JsonNode sourceMetadata,
+            UserTermsAcceptance acceptance) {
         if (!reservation.enabled()) {
-            return creationService.create(access, inputType, originalText, processedText, sourceMetadata, acceptance);
+            AnalysisCreatedResponse created = creationService.create(
+                    access, inputType, originalText, processedText, sourceMetadata, acceptance);
+            idempotencyService.accept(idempotencyClaim, created.analysisId());
+            return created;
         }
         lock();
         Instant now = databaseNow();
@@ -136,6 +156,7 @@ public class AnalysisAdmissionService {
         if (changed != 1) {
             throw new IllegalStateException("Analysis reservation changed during confirmation");
         }
+        idempotencyService.accept(idempotencyClaim, created.analysisId());
         return created;
     }
 

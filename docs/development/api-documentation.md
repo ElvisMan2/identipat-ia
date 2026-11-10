@@ -105,6 +105,32 @@ El flujo STANDARD no usa Bearer token: obtiene CSRF y `GET /legal-document`; si 
 | `GET /analyses/{analysisId}/report` | `DiagnosticReport` histórico; solo para `COMPLETED`. |
 | `GET /analyses/{analysisId}/report.pdf` | PDF en memoria con el mismo contenido y disclaimer histórico. |
 
+## Idempotencia y límites de creación
+
+Angular envía `Idempotency-Key: <UUID-v4>` en cada intención nueva de TEXT, PDF o AUDIO y conserva
+la misma clave únicamente para reintentar el mismo contenido. La cabecera sigue siendo opcional para
+clientes anteriores mientras `ANALYSIS_IDEMPOTENCY_REQUIRED=false`; al activar el flag, su ausencia
+produce `400 IDEMPOTENCY_KEY_REQUIRED`. Una clave malformada produce
+`400 INVALID_IDEMPOTENCY_KEY`.
+
+El ámbito durable es `user_id + session_id` para STANDARD y `user_id` para ADMIN. PostgreSQL guarda
+solo HMAC-SHA256 de la clave y del payload, nunca la clave, texto, archivo, filename, cookie o JWT. Un
+replay aceptado durante la retención configurada (48 h por defecto) devuelve el mismo
+`AnalysisCreatedResponse`, `Location` y `Retry-After` sin reservar otra cuota ni repetir Python. Una
+operación todavía reclamada devuelve `409 IDEMPOTENCY_REQUEST_IN_PROGRESS` con `Retry-After`; una
+clave reutilizada con otro payload o tipo devuelve `409 IDEMPOTENCY_KEY_CONFLICT`.
+
+Los claims duran 10 minutos por defecto, usan fencing por token y sobreviven reinicios. Después de
+expirar las 48 h y purgarse el registro, la misma cabecera puede tratarse como una solicitud nueva.
+Las solicitudes legacy sin cabecera conservan el comportamiento de F2-CONSUMO-01 pero no tienen
+garantía de replay. `ANALYSIS_IDEMPOTENCY_HMAC_SECRET` debe ser estable y compartido por todas las
+réplicas durante la ventana de retención.
+
+Los límites existentes devuelven `429 ANALYSIS_QUOTA_EXCEEDED` o
+`ANALYSIS_ALREADY_ACTIVE`, y `503 ANALYSIS_CAPACITY_EXCEEDED` o
+`AUDIO_PREPROCESSING_BUSY`, siempre con un `Retry-After` positivo. CORS permite
+`Idempotency-Key` y expone `Location` y `Retry-After` al frontend.
+
 ## Administración del disclaimer de reporte
 
 `GET /admin/report-disclaimers`, `/active` y `/{id}` consultan versiones; `POST` crea un DRAFT;

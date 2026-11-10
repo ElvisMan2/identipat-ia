@@ -65,6 +65,7 @@ class ProductionConfigurationTest {
         assertThat(yaml)
                 .contains("password: ${DB_PASSWORD}")
                 .contains("secret: ${JWT_SECRET}")
+                .contains("hmac-secret: ${ANALYSIS_IDEMPOTENCY_HMAC_SECRET}")
                 .contains("pepper: ${STANDARD_SESSION_PEPPER}")
                 .contains("base-url: ${PREPROCESSING_SERVICE_BASE_URL}")
                 .contains("enabled: ${IDENTIPAT_AI_ENABLED}")
@@ -74,6 +75,7 @@ class ProductionConfigurationTest {
                 .contains("timeout: ${OPENAI_TIMEOUT}")
                 .doesNotContain("${DB_PASSWORD:")
                 .doesNotContain("${JWT_SECRET:")
+                .doesNotContain("${ANALYSIS_IDEMPOTENCY_HMAC_SECRET:")
                 .doesNotContain("${STANDARD_SESSION_PEPPER:")
                 .doesNotContain("CONSENT_CURRENT_VERSION")
                 .doesNotContain("CONSENT_DOCUMENT_SHA256")
@@ -124,6 +126,24 @@ class ProductionConfigurationTest {
         });
     }
 
+    @Test
+    void incompleteProductionConfigurationFailsForMissingIdempotencyHmacSecret() {
+        productionContext(RequiredIdempotencyHmacSecret.class,
+                "app.analysis.idempotency.hmac-secret=${F2_MISSING_IDEMPOTENCY_HMAC_SECRET}")
+                .run(context -> {
+                    assertThat(context).hasFailed();
+                    assertThat(rootCauseOf(context.getStartupFailure()).getMessage())
+                            .contains("F2_MISSING_IDEMPOTENCY_HMAC_SECRET");
+                });
+    }
+
+    @Test
+    void productionIdempotencyHmacSecretAcceptsAValidValue() {
+        productionContext(RequiredIdempotencyHmacSecret.class,
+                "app.analysis.idempotency.hmac-secret=test-idempotency-hmac-secret-at-least-32-bytes")
+                .run(context -> assertThat(context).hasNotFailed());
+    }
+
     private static Throwable rootCauseOf(Throwable throwable) {
         Throwable rootCause = throwable;
         while (rootCause.getCause() != null) {
@@ -166,6 +186,16 @@ class ProductionConfigurationTest {
 
         @Bean
         Object requiredPreprocessingServiceUrl(@Value("${app.preprocessing.base-url}") String ignored) {
+            return new Object();
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    static class RequiredIdempotencyHmacSecret {
+
+        @Bean
+        Object requiredIdempotencyHmacSecret(
+                @Value("${app.analysis.idempotency.hmac-secret}") String ignored) {
             return new Object();
         }
     }

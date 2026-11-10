@@ -786,6 +786,10 @@ factor de autenticación.
 - protección graduada contra automatización y patrones anómalos;
 - controles de abuso compatibles con STANDARD sin login y ADMIN con JWT;
 - auditoría y alertas saneadas, sin PII ni contenido de análisis.
+- métricas agregadas de idempotencia `new_claim`, `replayed_accepted`, `in_progress`,
+  `payload_conflict`, `expired_claim_recovered` y `release_before_accept`; esta deuda se difiere
+  expresamente desde F2-CONSUMO-02 y no autoriza registrar claves, digests, DNI/CE, textos,
+  credenciales ni metadata técnica sensible.
 
 **Dependencias:** F2-CONSUMO-01; el comportamiento de reintentos debe alinearse con
 F2-CONSUMO-02 y la telemetría con F2-OPS-01.

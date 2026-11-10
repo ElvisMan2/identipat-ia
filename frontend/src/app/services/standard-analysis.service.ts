@@ -158,12 +158,16 @@ export class StandardAnalysisService {
     return this.http.get<DiagnosticReport>('/examples/analysis-result-v2.json');
   }
 
-  createTextAnalysis(description: string, accessToken = ''): Observable<AnalysisCreatedResponse> {
+  createTextAnalysis(
+    description: string,
+    idempotencyKey: string,
+    accessToken = ''
+  ): Observable<AnalysisCreatedResponse> {
     if (accessToken) {
       return this.http.post<AnalysisCreatedResponse>(
         `${this.endpoint}/analyses/text`,
         { description },
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+        { headers: { Authorization: `Bearer ${accessToken}`, 'Idempotency-Key': idempotencyKey } }
       );
     }
 
@@ -171,12 +175,19 @@ export class StandardAnalysisService {
       switchMap(() => this.http.post<AnalysisCreatedResponse>(
         `${this.endpoint}/analyses/text`,
         { description },
-        { headers: this.csrf.headers(), withCredentials: true }
+        {
+          headers: this.csrf.headers().set('Idempotency-Key', idempotencyKey),
+          withCredentials: true
+        }
       ))
     );
   }
 
-  createPdfAnalysis(file: File, accessToken = ''): Observable<AnalysisCreatedResponse> {
+  createPdfAnalysis(
+    file: File,
+    idempotencyKey: string,
+    accessToken = ''
+  ): Observable<AnalysisCreatedResponse> {
     const body = new FormData();
     body.append('file', file, file.name);
 
@@ -184,7 +195,7 @@ export class StandardAnalysisService {
       return this.http.post<AnalysisCreatedResponse>(
         `${this.endpoint}/analyses/pdf`,
         body,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+        { headers: { Authorization: `Bearer ${accessToken}`, 'Idempotency-Key': idempotencyKey } }
       );
     }
 
@@ -192,12 +203,19 @@ export class StandardAnalysisService {
       switchMap(() => this.http.post<AnalysisCreatedResponse>(
         `${this.endpoint}/analyses/pdf`,
         body,
-        { headers: this.csrf.headers(), withCredentials: true }
+        {
+          headers: this.csrf.headers().set('Idempotency-Key', idempotencyKey),
+          withCredentials: true
+        }
       ))
     );
   }
 
-  createAudioAnalysis(file: File, accessToken = ''): Observable<AnalysisCreatedResponse> {
+  createAudioAnalysis(
+    file: File,
+    idempotencyKey: string,
+    accessToken = ''
+  ): Observable<AnalysisCreatedResponse> {
     const body = new FormData();
     body.append('file', file, file.name);
 
@@ -205,7 +223,7 @@ export class StandardAnalysisService {
       return this.http.post<AnalysisCreatedResponse>(
         `${this.endpoint}/analyses/audio`,
         body,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+        { headers: { Authorization: `Bearer ${accessToken}`, 'Idempotency-Key': idempotencyKey } }
       );
     }
 
@@ -213,7 +231,10 @@ export class StandardAnalysisService {
       switchMap(() => this.http.post<AnalysisCreatedResponse>(
         `${this.endpoint}/analyses/audio`,
         body,
-        { headers: this.csrf.headers(), withCredentials: true }
+        {
+          headers: this.csrf.headers().set('Idempotency-Key', idempotencyKey),
+          withCredentials: true
+        }
       ))
     );
   }

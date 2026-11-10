@@ -62,6 +62,13 @@ app:
       reservation-ttl: ${ANALYSIS_ADMISSION_RESERVATION_TTL:8m}
       reservation-safety-margin: ${ANALYSIS_ADMISSION_RESERVATION_SAFETY_MARGIN:60s}
       retry-after: ${ANALYSIS_ADMISSION_RETRY_AFTER:10s}
+    idempotency:
+      required: ${ANALYSIS_IDEMPOTENCY_REQUIRED:false}
+      max-key-length: ${ANALYSIS_IDEMPOTENCY_MAX_KEY_LENGTH:64}
+      claim-ttl: ${ANALYSIS_IDEMPOTENCY_CLAIM_TTL:10m}
+      retention: ${ANALYSIS_IDEMPOTENCY_RETENTION:48h}
+      in-progress-retry-after: ${ANALYSIS_IDEMPOTENCY_IN_PROGRESS_RETRY_AFTER:5s}
+      hmac-secret: ${ANALYSIS_IDEMPOTENCY_HMAC_SECRET:identipat-idempotency-dev-secret-change-me}
   preprocessing:
     base-url: ${PREPROCESSING_SERVICE_BASE_URL:http://localhost:8090}
     connect-timeout: ${PREPROCESSING_SERVICE_CONNECT_TIMEOUT:5s}

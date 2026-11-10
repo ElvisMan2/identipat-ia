@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -45,39 +46,45 @@ public class AnalysisController {
 
     @PostMapping("/text")
     @Operation(summary = "Crear análisis de texto",
-            description = "STANDARD requiere sesión activa, consentimiento vigente y CSRF. ADMIN requiere Bearer JWT y no usa sesión ni consentimiento STANDARD. Persiste antes de responder y nunca espera al LLM.",
+            description = "STANDARD requiere sesión activa, consentimiento vigente y CSRF. ADMIN requiere Bearer JWT y no usa sesión ni consentimiento STANDARD. Idempotency-Key acepta un UUID v4 opcional durante la transición; un replay idéntico devuelve el mismo 202 durante 48 horas. Persiste antes de responder y nunca espera al LLM.",
             security = {
                     @SecurityRequirement(name = OpenApiConfig.STANDARD_SESSION),
                     @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
             })
     @ApiResponses({
             @ApiResponse(responseCode = "202", description = "Análisis recibido"),
+            @ApiResponse(responseCode = "400", description = "INVALID_IDEMPOTENCY_KEY o clave requerida por configuración"),
             @ApiResponse(responseCode = "401", description = "Sesión STANDARD o Bearer ADMIN inválido"),
             @ApiResponse(responseCode = "403", description = "CSRF STANDARD inválido"),
-            @ApiResponse(responseCode = "409", description = "Consentimiento STANDARD vigente no aceptado"),
+            @ApiResponse(responseCode = "409", description = "Consentimiento pendiente, clave en progreso o conflicto de payload"),
             @ApiResponse(responseCode = "429", description = "Cuota o análisis activo STANDARD"),
             @ApiResponse(responseCode = "422", description = "Descripción fuera de límites"),
             @ApiResponse(responseCode = "503", description = "IA no disponible para nuevas consultas")
     })
     public ResponseEntity<AnalysisCreatedResponse> createText(
-            @RequestBody TextAnalysisRequest body, HttpServletRequest request, Authentication authentication) {
+            @RequestBody TextAnalysisRequest body,
+            @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey,
+            HttpServletRequest request,
+            Authentication authentication) {
         AnalysisCreatedResponse created = service.createText(
-                accessResolver.resolve(request, authentication), body == null ? null : body.description());
+                accessResolver.resolve(request, authentication),
+                body == null ? null : body.description(), idempotencyKey);
         return accepted(created);
     }
 
     @PostMapping(value = "/pdf", consumes = "multipart/form-data")
     @Operation(summary = "Crear análisis desde PDF",
-            description = "Acepta un PDF digital application/pdf con firma %PDF-. Los defaults configurables son 10 MiB, 50 páginas y los límites de texto comunes. STANDARD requiere sesión activa, consentimiento vigente y CSRF; ADMIN requiere Bearer JWT. La extracción síncrona no incluye OCR, el binario no se persiste y el análisis reutiliza el pipeline asíncrono existente.",
+            description = "Acepta un PDF digital application/pdf con firma %PDF-. Los defaults configurables son 10 MiB, 50 páginas y los límites de texto comunes. STANDARD requiere sesión activa, consentimiento vigente y CSRF; ADMIN requiere Bearer JWT. Idempotency-Key acepta un UUID v4 opcional durante la transición; el fingerprint usa los bytes exactos y no el filename. La extracción síncrona no incluye OCR, el binario no se persiste y el análisis reutiliza el pipeline asíncrono existente.",
             security = {
                     @SecurityRequirement(name = OpenApiConfig.STANDARD_SESSION),
                     @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
             })
     @ApiResponses({
             @ApiResponse(responseCode = "202", description = "PDF extraído y análisis recibido"),
+            @ApiResponse(responseCode = "400", description = "INVALID_IDEMPOTENCY_KEY o clave requerida por configuración"),
             @ApiResponse(responseCode = "401", description = "Sesión STANDARD o Bearer ADMIN inválido"),
             @ApiResponse(responseCode = "403", description = "CSRF STANDARD inválido"),
-            @ApiResponse(responseCode = "409", description = "Consentimiento STANDARD vigente no aceptado"),
+            @ApiResponse(responseCode = "409", description = "Consentimiento pendiente, clave en progreso o conflicto de payload"),
             @ApiResponse(responseCode = "413", description = "PDF_TOO_LARGE"),
             @ApiResponse(responseCode = "415", description = "UNSUPPORTED_PDF_MEDIA_TYPE"),
             @ApiResponse(responseCode = "429", description = "Cuota o análisis activo STANDARD"),
@@ -86,25 +93,27 @@ public class AnalysisController {
     })
     public ResponseEntity<AnalysisCreatedResponse> createPdf(
             @RequestPart(name = "file", required = false) MultipartFile file,
+            @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey,
             HttpServletRequest request,
             Authentication authentication) {
         AnalysisCreatedResponse created = service.createPdf(
-                accessResolver.resolve(request, authentication), file);
+                accessResolver.resolve(request, authentication), file, idempotencyKey);
         return accepted(created);
     }
 
     @PostMapping(value = "/audio", consumes = "multipart/form-data")
     @Operation(summary = "Crear análisis desde audio",
-            description = "Acepta una descripción hablada en español (WebM, MP3, MP4/M4A/3GP, WAV, OGG o FLAC), con defaults configurables de 20 MiB y 180 segundos. video/mp4 y video/3gpp se admiten solo como aliases de transporte para contenedores de audio; Python exige audio decodificable y rechaza archivos con pista de video. STANDARD requiere sesión activa, consentimiento vigente y CSRF; ADMIN requiere Bearer JWT. La transcripción usa faster-whisper local, el audio no se persiste y el análisis reutiliza el pipeline asíncrono existente.",
+            description = "Acepta una descripción hablada en español (WebM, MP3, MP4/M4A/3GP, WAV, OGG o FLAC), con defaults configurables de 20 MiB y 180 segundos. video/mp4 y video/3gpp se admiten solo como aliases de transporte para contenedores de audio; Python exige audio decodificable y rechaza archivos con pista de video. STANDARD requiere sesión activa, consentimiento vigente y CSRF; ADMIN requiere Bearer JWT. Idempotency-Key acepta un UUID v4 opcional durante la transición; el fingerprint usa tipo normalizado y bytes exactos. La transcripción usa faster-whisper local, el audio no se persiste y el análisis reutiliza el pipeline asíncrono existente.",
             security = {
                     @SecurityRequirement(name = OpenApiConfig.STANDARD_SESSION),
                     @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
             })
     @ApiResponses({
             @ApiResponse(responseCode = "202", description = "Audio transcrito y análisis recibido"),
+            @ApiResponse(responseCode = "400", description = "INVALID_IDEMPOTENCY_KEY o clave requerida por configuración"),
             @ApiResponse(responseCode = "401", description = "Sesión STANDARD o Bearer ADMIN inválido"),
             @ApiResponse(responseCode = "403", description = "CSRF STANDARD inválido"),
-            @ApiResponse(responseCode = "409", description = "Consentimiento STANDARD vigente no aceptado"),
+            @ApiResponse(responseCode = "409", description = "Consentimiento pendiente, clave en progreso o conflicto de payload"),
             @ApiResponse(responseCode = "413", description = "AUDIO_TOO_LARGE"),
             @ApiResponse(responseCode = "415", description = "UNSUPPORTED_AUDIO_MEDIA_TYPE"),
             @ApiResponse(responseCode = "429", description = "Cuota o análisis activo STANDARD"),
@@ -113,10 +122,11 @@ public class AnalysisController {
     })
     public ResponseEntity<AnalysisCreatedResponse> createAudio(
             @RequestPart(name = "file", required = false) MultipartFile file,
+            @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey,
             HttpServletRequest request,
             Authentication authentication) {
         AnalysisCreatedResponse created = service.createAudio(
-                accessResolver.resolve(request, authentication), file);
+                accessResolver.resolve(request, authentication), file, idempotencyKey);
         return accepted(created);
     }
 

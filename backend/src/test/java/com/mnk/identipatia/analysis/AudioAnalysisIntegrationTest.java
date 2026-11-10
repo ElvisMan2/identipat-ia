@@ -117,6 +117,7 @@ class AudioAnalysisIntegrationTest {
 
     @BeforeEach
     void resetState() {
+        jdbcTemplate.update("DELETE FROM analysis_idempotency_keys");
         reportContextRepository.deleteAll();
         resultRepository.deleteAll();
         invocationRepository.deleteAll();
@@ -132,6 +133,43 @@ class AudioAnalysisIntegrationTest {
         when(aiProperties.enabled()).thenReturn(true);
         when(preprocessingClient.transcribeAudio(any(byte[].class), anyString()))
                 .thenReturn(transcription(TRANSCRIPT, 42.31));
+    }
+
+    @Test
+    void acceptedAudioReplayDoesNotInvokeWhisperTwice() throws Exception {
+        Browser browser = browser(true);
+        String key = UUID.randomUUID().toString();
+
+        MvcResult first = postAudio(browser, audio(VALID_AUDIO, "audio/webm"), key)
+                .andExpect(status().isAccepted()).andReturn();
+        MvcResult replay = postAudio(browser, audio(VALID_AUDIO, "audio/webm"), key)
+                .andExpect(status().isAccepted()).andReturn();
+
+        assertThat(id(replay)).isEqualTo(id(first));
+        assertThat(analysisRepository.count()).isEqualTo(1);
+        verify(preprocessingClient, org.mockito.Mockito.times(1))
+                .transcribeAudio(VALID_AUDIO, "audio/webm");
+    }
+
+    @Test
+    void failedAudioPreprocessingCanRetrySafelyWithTheSameKey() throws Exception {
+        Browser browser = browser(true);
+        String key = UUID.randomUUID().toString();
+        when(preprocessingClient.transcribeAudio(any(byte[].class), anyString()))
+                .thenThrow(new PreprocessingServiceUnavailableException("timeout"))
+                .thenReturn(transcription(TRANSCRIPT, 2.5));
+
+        postAudio(browser, audio(VALID_AUDIO, "audio/webm"), key)
+                .andExpect(status().isServiceUnavailable());
+        postAudio(browser, audio(VALID_AUDIO, "audio/webm"), key)
+                .andExpect(status().isAccepted());
+
+        assertThat(analysisRepository.count()).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM analysis_idempotency_keys WHERE state = 'ACCEPTED'
+                """, Integer.class)).isEqualTo(1);
+        verify(preprocessingClient, org.mockito.Mockito.times(2))
+                .transcribeAudio(VALID_AUDIO, "audio/webm");
     }
 
     @Test
@@ -417,6 +455,14 @@ class AudioAnalysisIntegrationTest {
         return mockMvc.perform(multipart("/analyses/audio").file(file)
                 .cookie(browser.session(), browser.csrf().cookie())
                 .header("X-XSRF-TOKEN", browser.csrf().token()));
+    }
+
+    private org.springframework.test.web.servlet.ResultActions postAudio(
+            Browser browser, MockMultipartFile file, String idempotencyKey) throws Exception {
+        return mockMvc.perform(multipart("/analyses/audio").file(file)
+                .cookie(browser.session(), browser.csrf().cookie())
+                .header("X-XSRF-TOKEN", browser.csrf().token())
+                .header("Idempotency-Key", idempotencyKey));
     }
 
     private MockMultipartFile audio(byte[] content, String mediaType) {

@@ -167,6 +167,9 @@ Los controles de UI nunca sustituyen la validación del backend.
 - Rate limit por IP con definición segura de IP real/proxy confiable.
 - Anti-bot graduado y alertas de abuso; no basar seguridad en DNI/CE sin validación.
 - Métricas de admisión/consumo, auditoría saneada y dashboards; investigación de consumo por proveedor.
+- Instrumentar los eventos agregados de idempotencia `new_claim`, `replayed_accepted`, `in_progress`,
+  `payload_conflict`, `expired_claim_recovered` y `release_before_accept`, sin claves, digests, DNI/CE,
+  contenido, credenciales ni metadata técnica sensible.
 - Pruebas de carga 20–50 usuarios activos y ajuste de capacidad según resultados reales.
 
 ## 9. Matriz mínima de pruebas para F2-CONSUMO-01

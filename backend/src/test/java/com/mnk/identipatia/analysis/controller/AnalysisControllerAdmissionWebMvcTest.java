@@ -20,6 +20,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -49,7 +50,7 @@ class AnalysisControllerAdmissionWebMvcTest {
 
     @Test
     void quotaRejectionUsesStableJsonCodeAndRetryAfterHeader() throws Exception {
-        when(service.createText(eq(access), any())).thenThrow(new ApiException(
+        when(service.createText(eq(access), any(), any())).thenThrow(new ApiException(
                 TOO_MANY_REQUESTS, "ANALYSIS_QUOTA_EXCEEDED", "Quota exceeded", 23L));
 
         mvc.perform(post("/analyses/text").contentType(MediaType.APPLICATION_JSON)
@@ -61,7 +62,7 @@ class AnalysisControllerAdmissionWebMvcTest {
 
     @Test
     void busyAudioRejectionUses503AndRetryAfterHeader() throws Exception {
-        when(service.createAudio(eq(access), any())).thenThrow(new ApiException(
+        when(service.createAudio(eq(access), any(), any())).thenThrow(new ApiException(
                 SERVICE_UNAVAILABLE, "AUDIO_PREPROCESSING_BUSY", "Audio busy", 10L));
 
         mvc.perform(multipart("/analyses/audio")
@@ -70,5 +71,16 @@ class AnalysisControllerAdmissionWebMvcTest {
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(header().string("Retry-After", "10"))
                 .andExpect(jsonPath("$.code").value("AUDIO_PREPROCESSING_BUSY"));
+    }
+
+    @Test
+    void requiredIdempotencyModeRejectsMissingHeaderOverHttp() throws Exception {
+        when(service.createText(eq(access), any(), eq(null))).thenThrow(new ApiException(
+                BAD_REQUEST, "IDEMPOTENCY_KEY_REQUIRED", "Idempotency-Key is required"));
+
+        mvc.perform(post("/analyses/text").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"description\":\"Descripción suficientemente extensa sin header.\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("IDEMPOTENCY_KEY_REQUIRED"));
     }
 }

@@ -68,6 +68,7 @@ public class AnalysisApplicationService {
     private final ObjectMapper objectMapper;
     private final PreprocessingServiceClient preprocessingClient;
     private final AnalysisAdmissionService admissionService;
+    private final AnalysisIdempotencyService idempotencyService;
 
     public AnalysisApplicationService(
             AnalysisRepository analysisRepository,
@@ -78,7 +79,8 @@ public class AnalysisApplicationService {
             ObjectProvider<GenerativeAiProvider> provider,
             ObjectMapper objectMapper,
             PreprocessingServiceClient preprocessingClient,
-            AnalysisAdmissionService admissionService) {
+            AnalysisAdmissionService admissionService,
+            AnalysisIdempotencyService idempotencyService) {
         this.analysisRepository = analysisRepository;
         this.resultRepository = resultRepository;
         this.termsAcceptanceService = termsAcceptanceService;
@@ -88,35 +90,58 @@ public class AnalysisApplicationService {
         this.objectMapper = objectMapper;
         this.preprocessingClient = preprocessingClient;
         this.admissionService = admissionService;
+        this.idempotencyService = idempotencyService;
     }
 
     public AnalysisCreatedResponse createText(AnalysisAccessContext access, String originalText) {
+        return createText(access, originalText, null);
+    }
+
+    public AnalysisCreatedResponse createText(
+            AnalysisAccessContext access, String originalText, String idempotencyKey) {
         UserTermsAcceptance acceptance = access.mode() == AnalysisAccessContext.Mode.STANDARD_SESSION
                 ? termsAcceptanceService.requireCurrentAcceptance(access.user().getUserId()) : null;
-        ensureAiAvailable();
-
         String processedText = TextNormalizer.normalize(originalText);
         validateTextLength(processedText);
-        AnalysisAdmissionService.Reservation reservation =
-                admissionService.reserve(access, AnalysisInputType.TEXT);
+        AnalysisIdempotencyService.Claim claim = idempotencyService.claimOrReplay(
+                access, idempotencyKey, AnalysisInputType.TEXT,
+                idempotencyService.fingerprintText(originalText));
+        if (claim.replayed()) {
+            return claim.replay();
+        }
+        AnalysisAdmissionService.Reservation reservation = null;
         try {
-            return admissionService.confirm(reservation, access, AnalysisInputType.TEXT,
+            ensureAiAvailable();
+            reservation = admissionService.reserve(access, AnalysisInputType.TEXT);
+            return admissionService.confirm(reservation, claim, access, AnalysisInputType.TEXT,
                     originalText, processedText, objectMapper.createObjectNode(), acceptance);
         } catch (RuntimeException exception) {
-            admissionService.release(reservation);
+            releaseFailedAttempt(reservation, claim);
             throw exception;
         }
     }
 
     public AnalysisCreatedResponse createPdf(AnalysisAccessContext access, MultipartFile file) {
+        return createPdf(access, file, null);
+    }
+
+    public AnalysisCreatedResponse createPdf(
+            AnalysisAccessContext access, MultipartFile file, String idempotencyKey) {
         UserTermsAcceptance acceptance = access.mode() == AnalysisAccessContext.Mode.STANDARD_SESSION
                 ? termsAcceptanceService.requireCurrentAcceptance(access.user().getUserId()) : null;
         byte[] pdfBytes = validateAndReadPdf(file);
-        ensureAiAvailable();
-        AnalysisAdmissionService.Reservation reservation =
-                admissionService.reserve(access, AnalysisInputType.PDF);
+        AnalysisIdempotencyService.Claim claim = idempotencyService.claimOrReplay(
+                access, idempotencyKey, AnalysisInputType.PDF,
+                idempotencyService.fingerprintFile(
+                        AnalysisInputType.PDF, "application/pdf", pdfBytes));
+        if (claim.replayed()) {
+            return claim.replay();
+        }
+        AnalysisAdmissionService.Reservation reservation = null;
 
         try {
+            ensureAiAvailable();
+            reservation = admissionService.reserve(access, AnalysisInputType.PDF);
             PdfExtractionResponse extraction;
             try {
                 extraction = preprocessingClient.extractPdf(pdfBytes);
@@ -140,23 +165,35 @@ public class AnalysisApplicationService {
             metadata.put("characterCount", extraction.characterCount());
             metadata.put("extractionMethod", extraction.extractionMethod());
             metadata.put("sha256", sha256(pdfBytes));
-            return admissionService.confirm(reservation, access, AnalysisInputType.PDF,
+            return admissionService.confirm(reservation, claim, access, AnalysisInputType.PDF,
                     extraction.text(), processedText, metadata, acceptance);
         } catch (RuntimeException exception) {
-            admissionService.release(reservation);
+            releaseFailedAttempt(reservation, claim);
             throw exception;
         }
     }
 
     public AnalysisCreatedResponse createAudio(AnalysisAccessContext access, MultipartFile file) {
+        return createAudio(access, file, null);
+    }
+
+    public AnalysisCreatedResponse createAudio(
+            AnalysisAccessContext access, MultipartFile file, String idempotencyKey) {
         UserTermsAcceptance acceptance = access.mode() == AnalysisAccessContext.Mode.STANDARD_SESSION
                 ? termsAcceptanceService.requireCurrentAcceptance(access.user().getUserId()) : null;
         ValidatedAudio audio = validateAndReadAudio(file);
-        ensureAiAvailable();
-        AnalysisAdmissionService.Reservation reservation =
-                admissionService.reserve(access, AnalysisInputType.AUDIO);
+        AnalysisIdempotencyService.Claim claim = idempotencyService.claimOrReplay(
+                access, idempotencyKey, AnalysisInputType.AUDIO,
+                idempotencyService.fingerprintFile(
+                        AnalysisInputType.AUDIO, audio.mediaType(), audio.bytes()));
+        if (claim.replayed()) {
+            return claim.replay();
+        }
+        AnalysisAdmissionService.Reservation reservation = null;
 
         try {
+            ensureAiAvailable();
+            reservation = admissionService.reserve(access, AnalysisInputType.AUDIO);
             AudioTranscriptionResponse transcription;
             try {
                 transcription = preprocessingClient.transcribeAudio(audio.bytes(), audio.mediaType());
@@ -182,11 +219,23 @@ public class AnalysisApplicationService {
             metadata.put("transcriptionMethod", transcription.transcriptionMethod());
             metadata.put("model", transcription.model());
             metadata.put("sha256", sha256(audio.bytes()));
-            return admissionService.confirm(reservation, access, AnalysisInputType.AUDIO,
+            return admissionService.confirm(reservation, claim, access, AnalysisInputType.AUDIO,
                     transcription.text(), processedText, metadata, acceptance);
         } catch (RuntimeException exception) {
-            admissionService.release(reservation);
+            releaseFailedAttempt(reservation, claim);
             throw exception;
+        }
+    }
+
+    private void releaseFailedAttempt(
+            AnalysisAdmissionService.Reservation reservation,
+            AnalysisIdempotencyService.Claim claim) {
+        try {
+            if (reservation != null) {
+                admissionService.release(reservation);
+            }
+        } finally {
+            idempotencyService.release(claim);
         }
     }
 

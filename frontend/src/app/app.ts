@@ -19,6 +19,15 @@ import { StandardSessionResponse, StandardSessionService } from './services/stan
 const adminSettingsReloadKey = 'identipat.admin.reloadSection';
 type AdditionalOrientationType = 'INDUSTRIAL_DESIGN' | 'COPYRIGHT' | 'DISTINCTIVE_SIGN' | 'PLANT_BREEDER_CERTIFICATE' | 'TRADE_SECRET';
 type StandardAccessState = 'UNIDENTIFIED' | 'IDENTIFYING' | 'SESSION_CREATING' | 'CONSENT_REQUIRED' | 'READY' | 'BLOCKED';
+type AnalysisIntentType = 'TEXT' | 'PDF' | 'AUDIO';
+
+interface PendingAnalysisIntent {
+  type: AnalysisIntentType;
+  key: string;
+  description: string | null;
+  file: File | null;
+  analysisId: string | null;
+}
 
 interface OrientationEditorState {
   shortDescription: WritableSignal<string>;
@@ -263,6 +272,8 @@ export class App {
   readonly reportPdfError = signal('');
   readonly selectedPdf = signal<File | null>(null);
   readonly selectedAudio = signal<File | null>(null);
+  readonly pendingAnalysisId = signal<string | null>(null);
+  readonly canResumePendingAnalysis = signal(false);
   readonly recordingAudio = signal(false);
   readonly recordingMilliseconds = signal(0);
   private mediaRecorder: MediaRecorder | null = null;
@@ -270,6 +281,7 @@ export class App {
   private recordingChunks: Blob[] = [];
   private recordingTimer: number | null = null;
   private recordingStartedAt = 0;
+  private pendingAnalysisIntent: PendingAnalysisIntent | null = null;
 
   constructor() {
     if (this.document.location.pathname.endsWith('/terminos-y-privacidad')) {
@@ -278,6 +290,7 @@ export class App {
     }
     this.accessForm.controls.doiType.valueChanges.subscribe(() => this.accessForm.controls.doi.updateValueAndValidity());
     this.userForm.controls.doiType.valueChanges.subscribe(() => this.userForm.controls.doi.updateValueAndValidity());
+    this.analysisForm.controls.description.valueChanges.subscribe(() => this.refreshPendingAnalysisResumeState());
 
     const adminIdentity = this.userService.getAdminIdentity();
     if (adminIdentity) {
@@ -718,6 +731,9 @@ export class App {
     this.diagnosticReport.set(null);
     this.analysisGuidance.set(null);
     this.reportLoadError.set('');
+    this.selectedPdf.set(null);
+    this.selectedAudio.set(null);
+    this.clearPendingAnalysisIntent();
     if (!this.adminAuthenticated()) {
       this.standardAccessState.set('READY');
     }
@@ -1935,13 +1951,31 @@ export class App {
 
     const { description } = this.analysisForm.getRawValue();
     const adminAccessToken = this.adminAuthenticated() ? this.userService.getAccessToken() : '';
+    let intent: PendingAnalysisIntent;
+    try {
+      intent = this.resolveAnalysisIntent(description, selectedPdf, selectedAudio);
+    } catch {
+      this.submittingAnalysis.set(false);
+      this.analysisMessage.set('Tu navegador no pudo generar una clave segura. Actualízalo e inténtalo nuevamente.');
+      return;
+    }
+
+    if (intent.analysisId) {
+      this.pendingAnalysisId.set(intent.analysisId);
+      this.pollAnalysis(intent.analysisId, adminAccessToken);
+      return;
+    }
+
     const request = selectedPdf
-      ? this.standardAnalysisService.createPdfAnalysis(selectedPdf, adminAccessToken)
+      ? this.standardAnalysisService.createPdfAnalysis(selectedPdf, intent.key, adminAccessToken)
       : selectedAudio
-        ? this.standardAnalysisService.createAudioAnalysis(selectedAudio, adminAccessToken)
-        : this.standardAnalysisService.createTextAnalysis(description, adminAccessToken);
+        ? this.standardAnalysisService.createAudioAnalysis(selectedAudio, intent.key, adminAccessToken)
+        : this.standardAnalysisService.createTextAnalysis(description, intent.key, adminAccessToken);
     request.subscribe({
       next: ({ analysisId }) => {
+        intent.analysisId = analysisId;
+        this.pendingAnalysisId.set(analysisId);
+        this.refreshPendingAnalysisResumeState();
         this.analysisMessage.set('');
         this.pollAnalysis(analysisId, adminAccessToken);
       },
@@ -1957,9 +1991,134 @@ export class App {
           this.handleExpiredStandardSession();
           return;
         }
-        this.analysisMessage.set('No se pudo iniciar el análisis. Verifica tu sesión, consentimiento e intenta nuevamente.');
+        this.handleAnalysisSubmissionError(error, code);
       }
     });
+  }
+
+  private resolveAnalysisIntent(
+    description: string,
+    pdf: File | null,
+    audio: File | null
+  ): PendingAnalysisIntent {
+    const type: AnalysisIntentType = pdf ? 'PDF' : audio ? 'AUDIO' : 'TEXT';
+    const file = pdf ?? audio;
+    const current = this.pendingAnalysisIntent;
+    const unchanged = current?.type === type
+      && (type === 'TEXT' ? current.description === description : current.file === file);
+    if (unchanged && current) {
+      return current;
+    }
+
+    const intent: PendingAnalysisIntent = {
+      type,
+      key: this.createIdempotencyKey(),
+      description: type === 'TEXT' ? description : null,
+      file,
+      analysisId: null
+    };
+    this.pendingAnalysisIntent = intent;
+    this.pendingAnalysisId.set(null);
+    this.refreshPendingAnalysisResumeState();
+    return intent;
+  }
+
+  private createIdempotencyKey(): string {
+    const secureCrypto = globalThis.crypto;
+    if (!secureCrypto?.getRandomValues) {
+      throw new Error('Secure random UUID generation is unavailable');
+    }
+    if (typeof secureCrypto.randomUUID === 'function') {
+      return secureCrypto.randomUUID();
+    }
+
+    const bytes = secureCrypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, value => value.toString(16).padStart(2, '0')).join('');
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
+
+  private handleAnalysisSubmissionError(error: unknown, code: string | null): void {
+    const retry = this.retryAfterLabel(error);
+    switch (code) {
+      case 'IDEMPOTENCY_REQUEST_IN_PROGRESS':
+        this.analysisMessage.set(
+          `Tu solicitud todavía se está recibiendo; reintenta${retry || ' en unos segundos'}.`
+        );
+        return;
+      case 'IDEMPOTENCY_KEY_CONFLICT':
+        this.clearPendingAnalysisIntent();
+        this.analysisMessage.set(
+          'La solicitud cambió y no puede reutilizar la clave anterior. Vuelve a enviarla para iniciar una nueva.'
+        );
+        return;
+      case 'ANALYSIS_QUOTA_EXCEEDED':
+        this.analysisMessage.set(`Alcanzaste el límite de consultas. Podrás intentar nuevamente${retry}.`);
+        return;
+      case 'ANALYSIS_ALREADY_ACTIVE':
+        this.analysisMessage.set('Ya tienes un análisis en curso. Espera a que termine.');
+        return;
+      case 'AUDIO_PREPROCESSING_BUSY':
+        this.analysisMessage.set(`El servicio de audio está ocupado. Inténtalo más tarde${retry}.`);
+        return;
+      case 'ANALYSIS_CAPACITY_EXCEEDED':
+        this.analysisMessage.set(`El servicio está ocupado. Inténtalo más tarde${retry}.`);
+        return;
+      default:
+        if (error instanceof HttpErrorResponse && error.status === 0) {
+          this.analysisMessage.set(
+            'No pudimos confirmar si la solicitud fue recibida. Reintenta sin cambiar el contenido para recuperarla de forma segura.'
+          );
+          return;
+        }
+        this.analysisMessage.set(
+          'No se pudo iniciar el análisis. Verifica tu sesión, consentimiento e intenta nuevamente.'
+        );
+    }
+  }
+
+  private retryAfterLabel(error: unknown): string {
+    if (!(error instanceof HttpErrorResponse)) {
+      return '';
+    }
+    const raw = error.headers.get('Retry-After');
+    if (raw === null || !/^\d+$/.test(raw)) {
+      return '';
+    }
+    const seconds = Number(raw);
+    if (!Number.isSafeInteger(seconds) || seconds <= 0) {
+      return '';
+    }
+    if (seconds < 60) {
+      return ` en ${seconds} segundo${seconds === 1 ? '' : 's'}`;
+    }
+    const minutes = Math.ceil(seconds / 60);
+    return ` en aproximadamente ${minutes} minuto${minutes === 1 ? '' : 's'}`;
+  }
+
+  private clearPendingAnalysisIntent(): void {
+    this.pendingAnalysisIntent = null;
+    this.pendingAnalysisId.set(null);
+    this.canResumePendingAnalysis.set(false);
+  }
+
+  private refreshPendingAnalysisResumeState(): void {
+    const intent = this.pendingAnalysisIntent;
+    if (!intent?.analysisId || this.pendingAnalysisId() !== intent.analysisId) {
+      this.canResumePendingAnalysis.set(false);
+      return;
+    }
+
+    const pdf = this.selectedPdf();
+    const audio = this.selectedAudio();
+    const currentType: AnalysisIntentType = pdf ? 'PDF' : audio ? 'AUDIO' : 'TEXT';
+    const currentFile = pdf ?? audio;
+    const { description } = this.analysisForm.getRawValue();
+    this.canResumePendingAnalysis.set(
+      intent.type === currentType
+      && (currentType === 'TEXT' ? intent.description === description : intent.file === currentFile)
+    );
   }
 
   private loadExampleAnalysis(inputType: string): void {
@@ -2016,6 +2175,7 @@ export class App {
     this.analysisForm.controls.description.setValue('');
     this.analysisForm.controls.description.markAsUntouched();
     this.analysisMessage.set('');
+    this.clearPendingAnalysisIntent();
   }
 
   removeSelectedPdf(): void {
@@ -2023,6 +2183,7 @@ export class App {
     this.analysisForm.controls.description.setValue('');
     this.analysisForm.controls.description.markAsUntouched();
     this.analysisMessage.set('');
+    this.clearPendingAnalysisIntent();
   }
 
   async toggleAudioRecording(): Promise<void> {
@@ -2058,6 +2219,7 @@ export class App {
         this.recordingStream?.getTracks().forEach(track => track.stop());
         this.recordingStream = null;
         this.analysisMessage.set('');
+        this.clearPendingAnalysisIntent();
       };
       this.mediaRecorder.start();
       this.recordingStartedAt = Date.now();
@@ -2102,6 +2264,7 @@ export class App {
     this.analysisForm.controls.description.setValue('');
     this.analysisForm.controls.description.markAsUntouched();
     this.analysisMessage.set('');
+    this.clearPendingAnalysisIntent();
   }
 
   private downloadAnalysisJson(analysisId: string, report: DiagnosticReport): void {
@@ -2153,6 +2316,7 @@ export class App {
         if (analysis.status === 'COMPLETED' || analysis.status === 'FAILED') {
           this.selectedPdf.set(null);
           this.selectedAudio.set(null);
+          this.clearPendingAnalysisIntent();
           if (analysis.status === 'FAILED') {
             this.submittingAnalysis.set(false);
             this.analysisMessage.set('El análisis no pudo completarse.');
@@ -2173,7 +2337,9 @@ export class App {
           this.handleExpiredStandardSession();
           return;
         }
-        this.analysisMessage.set('No se pudo consultar el resultado del análisis.');
+        this.analysisMessage.set(
+          'No se pudo consultar el resultado. Reanuda el seguimiento sin crear otro análisis.'
+        );
       }
     });
   }
@@ -2654,5 +2820,6 @@ export class App {
     this.selectedPdf.set(null);
     this.selectedAudio.set(null);
     this.submittingAnalysis.set(false);
+    this.clearPendingAnalysisIntent();
   }
 }

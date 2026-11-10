@@ -71,6 +71,9 @@ class SecurityConfigTest {
         assertEquals(List.of("http://localhost:4200"), configuration.getAllowedOrigins());
         assertEquals(Boolean.TRUE, configuration.getAllowCredentials());
         assertTrue(configuration.getAllowedHeaders().contains("X-XSRF-TOKEN"));
+        assertTrue(configuration.getAllowedHeaders().contains("Idempotency-Key"));
+        assertTrue(configuration.getExposedHeaders().contains("Retry-After"));
+        assertTrue(configuration.getExposedHeaders().contains("Location"));
         assertFalse(configuration.getAllowedOrigins().contains("*"));
     }
 
