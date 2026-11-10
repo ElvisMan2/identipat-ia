@@ -15,6 +15,8 @@ spring:
 app:
   analysis:
     worker-enabled: false
+    admission:
+      enabled: false
   ai:
     enabled: false
     provider: openai

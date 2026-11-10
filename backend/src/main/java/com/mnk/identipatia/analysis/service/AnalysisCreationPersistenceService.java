@@ -60,7 +60,7 @@ public class AnalysisCreationPersistenceService {
         input.setSourceMetadata(sourceMetadata);
         input.setCreatedAt(now);
         input.setProcessedAt(now);
-        inputRepository.save(input);
+        inputRepository.saveAndFlush(input);
 
         return new AnalysisCreatedResponse(analysisId, AnalysisStatus.RECEIVED, now);
     }

@@ -2,6 +2,7 @@ package com.mnk.identipatia.advice;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
@@ -106,7 +107,12 @@ public class GlobalExceptionHandler {
         error.put("error", ex.getStatus().getReasonPhrase());
         error.put("code", ex.getCode());
         error.put("message", ex.getMessage());
-        return ResponseEntity.status(ex.getStatus()).contentType(MediaType.APPLICATION_JSON).body(error);
+        ResponseEntity.BodyBuilder builder = ResponseEntity.status(ex.getStatus())
+                .contentType(MediaType.APPLICATION_JSON);
+        if (ex.getRetryAfterSeconds() != null) {
+            builder.header(HttpHeaders.RETRY_AFTER, Long.toString(ex.getRetryAfterSeconds()));
+        }
+        return builder.body(error);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
