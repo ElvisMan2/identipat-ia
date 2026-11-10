@@ -9,9 +9,22 @@ application="identipat-smoke-app-${suffix}"
 response_dir="$(mktemp -d)"
 
 cleanup() {
+  local exit_status=$?
+  trap - EXIT
+
+  if (( exit_status != 0 )) && docker inspect "$application" >/dev/null 2>&1; then
+    echo "Integrated image smoke test failed; Java container state:" >&2
+    docker inspect --format \
+      'status={{.State.Status}} exitCode={{.State.ExitCode}} error={{json .State.Error}} startedAt={{.State.StartedAt}} finishedAt={{.State.FinishedAt}}' \
+      "$application" >&2 || true
+    echo "Integrated image smoke test Java container logs:" >&2
+    docker logs "$application" >&2 || true
+  fi
+
   docker rm -f "$application" "$database" >/dev/null 2>&1 || true
   docker network rm "$network" >/dev/null 2>&1 || true
-  rm -rf "$response_dir"
+  rm -rf "$response_dir" || true
+  exit "$exit_status"
 }
 trap cleanup EXIT
 
@@ -43,6 +56,7 @@ docker run --detach --name "$application" --network "$network" \
   --env OPENAI_TIMEOUT=60s \
   --env PREPROCESSING_SERVICE_BASE_URL=http://preprocessing:8090 \
   --env JWT_SECRET=identipat-smoke-secret-key-at-least-32-chars \
+  --env ANALYSIS_IDEMPOTENCY_HMAC_SECRET=identipat-ci-smoke-hmac-secret-at-least-32-chars \
   --env CORS_ALLOWED_ORIGINS=http://127.0.0.1 \
   --env STANDARD_SESSION_PEPPER=QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE= \
   "$image" >/dev/null
