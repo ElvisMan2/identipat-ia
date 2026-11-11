@@ -14,7 +14,7 @@
           <span class="section-label">Nuevo usuario</span>
           <h2>Completa tu registro</h2>
           <form [formGroup]="userForm" (ngSubmit)="register.emit()" class="registration-form" autocomplete="off" name="identipat-registration">
-            <label>Nombres <input type="text" name="firstName" autocomplete="given-name" formControlName="firstName" maxlength="25" placeholder="Adrian Jesús" /></label>
+            <label>Nombres <input type="text" name="firstName" autocomplete="given-name" formControlName="firstName" maxlength="25" placeholder="Adriana Jesús" /></label>
             <label>Apellido paterno <input type="text" name="paternalLastName" autocomplete="family-name" formControlName="paternalLastName" maxlength="25" placeholder="Lizarbe" /></label>
             <label>Apellido materno <input type="text" name="maternalLastName" autocomplete="additional-name" formControlName="maternalLastName" maxlength="25" placeholder="Estrada" /></label>
             <label>Tipo doc.
@@ -28,7 +28,7 @@
             <label>Correo electrónico <input type="email" name="email" autocomplete="email" formControlName="email" placeholder="micorreo@ejemplo.com" /></label>
             <label>Teléfono <input type="text" name="phone" autocomplete="tel" formControlName="phone" inputmode="numeric" maxlength="9" pattern="[0-9]*" (input)="sanitizePhone.emit({ event: $event, control: userForm.controls['phone'] })" placeholder="01654321" /></label>
             <label>Celular <input type="tel" name="mobilePhone" autocomplete="tel" formControlName="mobilePhone" inputmode="tel" maxlength="15" (input)="sanitizeMobilePhone.emit({ event: $event, control: userForm.controls['mobilePhone'] })" placeholder="912345678" /></label>
-            <label class="registration-wide">Profesión / Ocupación <input type="text" name="profession" autocomplete="organization-title" formControlName="profession" placeholder="Ingeniero" /></label>
+            <label class="registration-wide">Profesión / Ocupación <input type="text" name="profession" autocomplete="organization-title" formControlName="profession" placeholder="Ingeniera" /></label>
             <div class="registration-wide registration-legal-status">
               @if (legalLoading) {
                 <p role="status">Cargando documento legal vigente...</p>
