@@ -119,7 +119,6 @@ public class UserService {
         user.setBirthDate(userDTO.getBirthDate());
         user.setGender(userDTO.getGender());
         user.setEmail(userDTO.getEmail());
-        user.setPhone(userDTO.getPhone());
         user.setMobilePhone(userDTO.getMobilePhone());
         if (userDTO.getUserType() != null && !userDTO.getUserType().isBlank()) {
             user.setUserType(userDTO.getUserType());
@@ -141,7 +140,6 @@ public class UserService {
         user.setBirthDate(userDTO.getBirthDate());
         user.setGender(userDTO.getGender());
         user.setEmail(userDTO.getEmail());
-        user.setPhone(userDTO.getPhone());
         user.setMobilePhone(userDTO.getMobilePhone());
         user.setUserType(resolveUserType(userDTO));
         user.setProfession(userDTO.getProfession());

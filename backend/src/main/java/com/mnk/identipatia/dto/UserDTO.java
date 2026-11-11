@@ -1,6 +1,7 @@
 package com.mnk.identipatia.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
@@ -16,6 +17,7 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties("phone")
 public class UserDTO {
     private Long userId;
 
@@ -49,9 +51,6 @@ public class UserDTO {
     @NotBlank
     @Email
     private String email;
-
-    @NotBlank
-    private String phone;
 
     @NotBlank
     private String mobilePhone;

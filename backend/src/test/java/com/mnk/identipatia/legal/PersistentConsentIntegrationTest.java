@@ -104,7 +104,7 @@ class PersistentConsentIntegrationTest {
     @Test
     void migrationCreatesSingletonHistoryAcceptanceAndTransitionalAnalysisInvariant() {
         assertThat(jdbc.queryForObject("select version from flyway_schema_history order by installed_rank desc limit 1",
-                String.class)).isEqualTo("12");
+                String.class)).isEqualTo("13");
         assertThat(jdbc.queryForObject("select to_regclass('public.legal_document')::text", String.class))
                 .isEqualTo("legal_document");
         assertThat(jdbc.queryForObject("select to_regclass('public.legal_document_history')::text", String.class))
@@ -427,7 +427,7 @@ class PersistentConsentIntegrationTest {
         return """
                 {"firstName":"Ana","paternalLastName":"Torres","maternalLastName":"Salas",
                  "doi":"%s","doiType":"DNI","birthDate":"01/01/1990","gender":"FEMALE",
-                 "email":"%s@example.test","phone":"016543210","mobilePhone":"912345678",
+                 "email":"%s@example.test","mobilePhone":"912345678",
                  "profession":"Abogada","legalAcceptance":%s}
                 """.formatted(doi, doi.toLowerCase(), acceptance);
     }

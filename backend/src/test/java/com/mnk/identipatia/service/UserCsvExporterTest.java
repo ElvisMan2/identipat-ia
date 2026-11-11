@@ -26,7 +26,6 @@ class UserCsvExporterTest {
                 .birthDate(LocalDate.of(1990, 1, 2))
                 .gender("FEMALE")
                 .email("ana@example.test")
-                .phone("016543210")
                 .mobilePhone("912345678")
                 .userType("STANDARD")
                 .profession("Abogada")
@@ -37,7 +36,7 @@ class UserCsvExporterTest {
         String csv = new String(result, StandardCharsets.UTF_8);
 
         assertThat(result).startsWith((byte) 0xEF, (byte) 0xBB, (byte) 0xBF);
-        assertThat(csv).startsWith("\uFEFF\"ID\",\"Nombre completo\",\"Documento\",\"Nacimiento\",\"Género\",\"Correo\",\"Teléfono\",\"Celular\",\"Tipo\",\"Profesión\",\"Estado\"\r\n");
+        assertThat(csv).startsWith("\uFEFF\"ID\",\"Nombre completo\",\"Documento\",\"Nacimiento\",\"Género\",\"Correo\",\"Celular\",\"Tipo\",\"Profesión\",\"Estado\"\r\n");
         assertThat(csv).contains("\"Ana, \"\"Nani\"\" Torres\nSalas Vega\"");
         assertThat(csv).contains("\"02/01/1990\"");
         assertThat(csv).doesNotContain("never-export-this");
@@ -49,7 +48,7 @@ class UserCsvExporterTest {
                 .firstName("=SUM(A1:A2)")
                 .gender("+cmd")
                 .email("-malicious@example.test")
-                .phone("@payload")
+                .mobilePhone("@payload")
                 .profession("  =hidden")
                 .build();
 
@@ -67,7 +66,7 @@ class UserCsvExporterTest {
         String emptyCsv = new String(exporter.export(List.of()), StandardCharsets.UTF_8);
         String nullCsv = new String(exporter.export(List.of(UserDTO.builder().build())), StandardCharsets.UTF_8);
 
-        assertThat(emptyCsv).isEqualTo("\uFEFF\"ID\",\"Nombre completo\",\"Documento\",\"Nacimiento\",\"Género\",\"Correo\",\"Teléfono\",\"Celular\",\"Tipo\",\"Profesión\",\"Estado\"");
-        assertThat(nullCsv).endsWith("\r\n\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\"");
+        assertThat(emptyCsv).isEqualTo("\uFEFF\"ID\",\"Nombre completo\",\"Documento\",\"Nacimiento\",\"Género\",\"Correo\",\"Celular\",\"Tipo\",\"Profesión\",\"Estado\"");
+        assertThat(nullCsv).endsWith("\r\n\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\"");
     }
 }

@@ -47,7 +47,7 @@ Este cambio reemplaza intencionalmente el contrato anterior `List<UserDTO>`. El 
 
 La respuesta `200` usa `Content-Type: text/csv; charset=UTF-8` y `Content-Disposition: attachment; filename="usuarios-YYYY-MM-DD.csv"`. El archivo incluye BOM UTF-8, separador coma, saltos `CRLF`, escape mediante comillas dobles y protección contra fórmulas de hoja de cálculo para valores cuyo primer carácter significativo sea `=`, `+`, `-` o `@`. Si no hay coincidencias, contiene únicamente el BOM y el encabezado. Parámetros inválidos responden `400`; JWT ausente o inválido responde `401`, y un actor autenticado que no sea ADMIN recibe `403`.
 
-Las columnas, en orden, son: `ID`, `Nombre completo`, `Documento`, `Nacimiento`, `Género`, `Correo`, `Teléfono`, `Celular`, `Tipo`, `Profesión` y `Estado`. La contraseña y la metadata interna no se exportan.
+Las columnas, en orden, son: `ID`, `Nombre completo`, `Documento`, `Nacimiento`, `Género`, `Correo`, `Celular`, `Tipo`, `Profesión` y `Estado`. La contraseña y la metadata interna no se exportan.
 
 ## Listado operacional paginado de análisis
 
@@ -65,7 +65,7 @@ La respuesta `200` usa `Content-Type: text/csv; charset=UTF-8`, `Content-Disposi
 
 Los nombres legacy son `identipat-analisis_completo.csv`, `identipat-analisis_desde_<from>.csv`, `identipat-analisis_hasta_<to>.csv` o `identipat-analisis_<from>_<to>.csv`. Si está activo `search`, `status`, `origin` o `inputType`, se agrega `_filtrado`; `sort` por sí solo no cambia el nombre. El archivo se construye completo en memoria desde `OperationalAnalysisReportRow` y el enrichment F1.10A1, usa UTF-8 con BOM, separador coma, registros `CRLF`, todas las celdas entre comillas y neutralización de formula injection para `=`, `+`, `-` y `@` después de whitespace. Sin resultados devuelve BOM y cabecera.
 
-Las 21 columnas, en orden, son: `Id Analisis`, `Conclusion`, `Estado del Analisis`, `Reporte`, `Reporte PDF Disponible`, `Nombres`, `Apellidos`, `Tipo de Documento`, `Numero de Documento`, `Genero`, `Fecha de Nacimiento`, `Telefono`, `Celular`, `Correo`, `Profesion u Oficio`, `Fecha de Creacion`, `Tipo de Entrada`, `Modalidades Identificadas`, `Aplicabilidad por Modalidad`, `Origen del Analisis` y `Orientacion Consultada`. `Fecha de Creacion` se presenta en `America/Lima`. JWT ausente o inválido responde `401` y un actor autenticado no ADMIN recibe `403`.
+Las 20 columnas, en orden, son: `Id Analisis`, `Conclusion`, `Estado del Analisis`, `Reporte`, `Reporte PDF Disponible`, `Nombres`, `Apellidos`, `Tipo de Documento`, `Numero de Documento`, `Genero`, `Fecha de Nacimiento`, `Celular`, `Correo`, `Profesion u Oficio`, `Fecha de Creacion`, `Tipo de Entrada`, `Modalidades Identificadas`, `Aplicabilidad por Modalidad`, `Origen del Analisis` y `Orientacion Consultada`. `Fecha de Creacion` se presenta en `America/Lima`. JWT ausente o inválido responde `401` y un actor autenticado no ADMIN recibe `403`.
 
 ## Postman
 

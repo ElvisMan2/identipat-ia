@@ -63,7 +63,6 @@ class UserSecurityWebMvcTest {
               "birthDate": "01/01/1990",
               "gender": "FEMALE",
               "email": "ana.torres@example.com",
-              "phone": "016543210",
               "mobilePhone": "912345678",
               "profession": "Abogada",
               "legalAcceptance": {
@@ -116,6 +115,51 @@ class UserSecurityWebMvcTest {
                 .andExpect(jsonPath("$.status").doesNotExist());
 
         verify(userService).registerStandard(any());
+    }
+
+    @Test
+    void legacyPhoneIsIgnoredForStandardRegistration() throws Exception {
+        when(userService.registerStandard(any())).thenReturn(new StandardUserRegistrationResponse(true));
+        String legacyRequest = STANDARD_REGISTRATION.replace(
+                "\"mobilePhone\":", "\"phone\": \"016543210\",\n  \"mobilePhone\":");
+
+        mockMvc.perform(post("/users")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(legacyRequest))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void legacyPhoneIsIgnoredForAdministrativeUpdate() throws Exception {
+        when(userService.update(eq(1L), any())).thenReturn(userDto());
+        String legacyRequest = adminUserJson().replace(
+                "\"mobilePhone\":", "\"phone\": \"016543210\",\n  \"mobilePhone\":");
+
+        mockMvc.perform(put("/users/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(legacyRequest))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.phone").doesNotExist())
+                .andExpect(jsonPath("$.mobilePhone").value("912345678"));
+    }
+
+    @Test
+    void standardRegistrationRequiresNonBlankMobilePhone() throws Exception {
+        mockMvc.perform(post("/users")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(STANDARD_REGISTRATION.replace(
+                                "\"mobilePhone\": \"912345678\",", "\"mobilePhone\": \"\",")))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post("/users")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(STANDARD_REGISTRATION.replace(
+                                "  \"mobilePhone\": \"912345678\",\n", "")))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -239,6 +283,7 @@ class UserSecurityWebMvcTest {
         when(userService.findById(1L)).thenReturn(user);
         when(userService.findByDoi("12345678")).thenReturn(user);
         when(userService.update(eq(1L), any())).thenReturn(user);
+        when(userService.updateAll(eq(1L), any())).thenReturn(user);
 
         mockMvc.perform(get("/users"))
                 .andExpect(status().isOk())
@@ -249,11 +294,20 @@ class UserSecurityWebMvcTest {
                 .andExpect(jsonPath("$.totalPages").value(1))
                 .andExpect(jsonPath("$.first").value(true))
                 .andExpect(jsonPath("$.last").value(true))
-                .andExpect(jsonPath("$.content[0].password").doesNotExist());
-        mockMvc.perform(get("/users/1")).andExpect(status().isOk());
+                .andExpect(jsonPath("$.content[0].password").doesNotExist())
+                .andExpect(jsonPath("$.content[0].phone").doesNotExist())
+                .andExpect(jsonPath("$.content[0].mobilePhone").value("912345678"));
+        mockMvc.perform(get("/users/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.phone").doesNotExist())
+                .andExpect(jsonPath("$.mobilePhone").value("912345678"));
         mockMvc.perform(get("/users/doi/12345678")).andExpect(status().isOk());
         mockMvc.perform(put("/users/1").contentType(MediaType.APPLICATION_JSON).content(adminUserJson()))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.phone").doesNotExist());
+        mockMvc.perform(put("/users/admin/1").contentType(MediaType.APPLICATION_JSON).content(adminUserJson()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.phone").doesNotExist());
         mockMvc.perform(delete("/users/1")).andExpect(status().isNoContent());
     }
 
@@ -361,7 +415,6 @@ class UserSecurityWebMvcTest {
                 .birthDate(LocalDate.of(1990, 1, 1))
                 .gender("FEMALE")
                 .email("ana.torres@example.com")
-                .phone("016543210")
                 .mobilePhone("912345678")
                 .userType("STANDARD")
                 .profession("Abogada")
@@ -380,7 +433,6 @@ class UserSecurityWebMvcTest {
                   "birthDate": "01/01/1990",
                   "gender": "FEMALE",
                   "email": "ana.torres@example.com",
-                  "phone": "016543210",
                   "mobilePhone": "912345678",
                   "userType": "STANDARD",
                   "profession": "Abogada",

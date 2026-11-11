@@ -27,7 +27,6 @@ public class User {
     private LocalDate birthDate;
     private String gender;
     private String email;
-    private String phone;
     private String mobilePhone;
     private String userType;
     private String profession;

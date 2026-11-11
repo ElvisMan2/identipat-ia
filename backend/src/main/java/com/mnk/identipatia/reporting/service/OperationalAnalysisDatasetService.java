@@ -170,7 +170,6 @@ public class OperationalAnalysisDatasetService {
                 user.getDoi(),
                 user.getGender(),
                 user.getBirthDate(),
-                user.getPhone(),
                 user.getMobilePhone(),
                 user.getEmail(),
                 user.getProfession(),

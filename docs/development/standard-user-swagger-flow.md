@@ -51,7 +51,6 @@ Ejecute `GET /standard-session/csrf`. La respuesta incluye el token y se emite l
   "birthDate": "15/05/1995",
   "gender": "M",
   "email": "usuario.swagger@example.com",
-  "phone": "014567890",
   "mobilePhone": "987654321",
   "profession": "Ingeniero industrial",
   "legalAcceptance": {

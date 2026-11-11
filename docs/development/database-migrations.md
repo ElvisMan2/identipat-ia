@@ -27,6 +27,8 @@ sesión, usuario y evidencia pertenecen al mismo contexto. Incluye el índice pa
 
 Flyway registra versiones, checksums, tiempo de ejecución y resultado en `flyway_schema_history`. Esta tabla permite verificar qué migraciones se aplicaron en cada base.
 
+`V13__drop_users_phone.sql` elimina exclusivamente `users.phone` por el requerimiento de conservar solo el celular. No recrea la tabla, no elimina usuarios y no modifica `users.mobile_phone` ni otras columnas. Antes de aplicarla en un ambiente compartido debe existir un respaldo verificado: el valor histórico de `phone` no puede recuperarse con una migración inversa sin restaurar ese respaldo. La base migrada a V13 no es compatible con una versión anterior del backend que todavía mapee `users.phone`; cualquier rollback exige coordinar la restauración del esquema/datos y el despliegue de la versión anterior.
+
 ## Inicializar una base nueva
 
 1. Crea una base PostgreSQL vacía y un usuario con permisos para crear objetos en su esquema.
@@ -52,7 +54,7 @@ Después de confirmar esos datos, puede recrearse la base o el volumen del servi
 
 ## Pruebas de integración
 
-Los tests que requieren persistencia levantan PostgreSQL 16 efímero mediante Testcontainers y `@ServiceConnection`. El contenedor comienza con una base vacía y no depende de PostgreSQL local. Flyway aplica V1, V2 y V3 y Hibernate valida el resultado antes de iniciar el contexto.
+Los tests que requieren persistencia levantan PostgreSQL 16 efímero mediante Testcontainers y `@ServiceConnection`. El contenedor comienza con una base vacía y no depende de PostgreSQL local. Flyway aplica todas las migraciones hasta V13 y Hibernate valida el resultado antes de iniciar el contexto.
 
 Docker Engine debe estar disponible para ejecutar:
 

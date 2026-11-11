@@ -1,6 +1,7 @@
 package com.mnk.identipatia.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -10,6 +11,7 @@ import lombok.Data;
 import java.time.LocalDate;
 
 @Data
+@JsonIgnoreProperties("phone")
 @Schema(description = "Datos permitidos para el registro público de un usuario STANDARD. No acepta rol, estado, contraseña ni identificador administrativo.")
 public class StandardUserRegistrationRequest {
 
@@ -38,9 +40,6 @@ public class StandardUserRegistrationRequest {
     @NotBlank
     @Email
     private String email;
-
-    @NotBlank
-    private String phone;
 
     @NotBlank
     private String mobilePhone;

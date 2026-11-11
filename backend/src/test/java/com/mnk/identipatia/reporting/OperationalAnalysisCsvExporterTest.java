@@ -21,7 +21,7 @@ class OperationalAnalysisCsvExporterTest {
     private static final List<String> EXPECTED_HEADERS = List.of(
             "Id Analisis", "Conclusion", "Estado del Analisis", "Reporte",
             "Reporte PDF Disponible", "Nombres", "Apellidos", "Tipo de Documento",
-            "Numero de Documento", "Genero", "Fecha de Nacimiento", "Telefono", "Celular",
+            "Numero de Documento", "Genero", "Fecha de Nacimiento", "Celular",
             "Correo", "Profesion u Oficio", "Fecha de Creacion", "Tipo de Entrada",
             "Modalidades Identificadas", "Aplicabilidad por Modalidad", "Origen del Analisis",
             "Orientacion Consultada");
@@ -53,7 +53,7 @@ class OperationalAnalysisCsvExporterTest {
         List<List<String>> parsed = parse(csv);
 
         assertThat(parsed).hasSize(2);
-        assertThat(parsed.get(1)).hasSize(21);
+        assertThat(parsed.get(1)).hasSize(20);
         assertThat(parsed.get(1).get(1)).isEqualTo("Conclusión, \"citada\"");
         assertThat(parsed.get(1).get(3)).isEqualTo("Línea 1, \"citada\"\nLínea 2\r\nLínea 3");
         assertThat(csv).contains("\"Conclusión, \"\"citada\"\"\"");
@@ -65,7 +65,7 @@ class OperationalAnalysisCsvExporterTest {
                 UUID.fromString("00000000-0000-0000-0000-000000000001"),
                 "=conclusion", AnalysisStatus.RECEIVED, "+report", false,
                 "-name", "@last", "  =type", "08711340", null, null,
-                "043426080", "091234567", null, "  =profession", null,
+                "091234567", null, "  =profession", null,
                 AnalysisInputType.TEXT, List.of("+modalidad"),
                 List.of(new OperationalModalityApplicability("@modalidad", "-aplicabilidad")),
                 OperationalAnalysisOrigin.STANDARD, false);
@@ -75,12 +75,11 @@ class OperationalAnalysisCsvExporterTest {
         assertThat(values).contains("'=conclusion", "'+report", "'-name", "'@last", "'  =type",
                 "'  =profession", "'+modalidad", "'@modalidad: -aplicabilidad");
         assertThat(values.get(8)).isEqualTo("08711340");
-        assertThat(values.get(11)).isEqualTo("043426080");
-        assertThat(values.get(12)).isEqualTo("091234567");
+        assertThat(values.get(11)).isEqualTo("091234567");
         assertThat(values.get(9)).isEmpty();
         assertThat(values.get(10)).isEmpty();
-        assertThat(values.get(13)).isEmpty();
-        assertThat(values.get(15)).isEmpty();
+        assertThat(values.get(12)).isEmpty();
+        assertThat(values.get(14)).isEmpty();
     }
 
     @Test
@@ -101,20 +100,20 @@ class OperationalAnalysisCsvExporterTest {
 
         assertThat(values).extracting(row -> row.get(2))
                 .containsExactly("RECIBIDO", "PREPROCESANDO", "ANALIZANDO", "COMPLETADO", "FALLIDO");
-        assertThat(values).extracting(row -> row.get(16))
+        assertThat(values).extracting(row -> row.get(15))
                 .containsExactly("Texto", "PDF", "Audio", "Texto", "PDF");
         assertThat(values).extracting(row -> row.get(9))
                 .containsExactly("Masculino", "Femenino", "Otro", "HISTORICO", "");
         assertThat(values.get(0).get(4)).isEqualTo("SI");
-        assertThat(values.get(0).get(20)).isEqualTo("NO");
+        assertThat(values.get(0).get(19)).isEqualTo("NO");
         assertThat(values.get(1).get(4)).isEqualTo("NO");
-        assertThat(values.get(1).get(20)).isEqualTo("SI");
+        assertThat(values.get(1).get(19)).isEqualTo("SI");
         assertThat(values.get(0).get(10)).isEqualTo("1990-01-02");
-        assertThat(values.get(0).get(15)).isEqualTo("2026-11-03 13:45:17");
-        assertThat(values.get(0).get(17)).isEqualTo("Patente de invención | Modelo de utilidad");
-        assertThat(values.get(0).get(18)).isEqualTo(
+        assertThat(values.get(0).get(14)).isEqualTo("2026-11-03 13:45:17");
+        assertThat(values.get(0).get(16)).isEqualTo("Patente de invención | Modelo de utilidad");
+        assertThat(values.get(0).get(17)).isEqualTo(
                 "Patente de invención: Se relaciona claramente | Modelo de utilidad: Podría corresponder");
-        assertThat(values).extracting(row -> row.get(19))
+        assertThat(values).extracting(row -> row.get(18))
                 .containsExactly("STANDARD", "ADMIN", "STANDARD", "ADMIN", "ADMIN");
     }
 
@@ -138,7 +137,7 @@ class OperationalAnalysisCsvExporterTest {
             boolean pdf, boolean guidance, OperationalAnalysisOrigin origin) {
         return new OperationalAnalysisReportRow(
                 new UUID(0, id), "Conclusión", status, "Reporte", pdf, "Ana", "Pérez", "DNI",
-                "08711340", gender, LocalDate.of(1990, 1, 2), "043426080", "091234567",
+                "08711340", gender, LocalDate.of(1990, 1, 2), "091234567",
                 "ana@example.test", "Ingeniera", Instant.parse("2026-11-03T18:45:17Z"), inputType,
                 List.of("Patente de invención", "Modelo de utilidad"),
                 List.of(
@@ -154,7 +153,7 @@ class OperationalAnalysisCsvExporterTest {
             String conclusion, String report, String gender) {
         return new OperationalAnalysisReportRow(
                 id, conclusion, status, report, true, "Ana", "Pérez", "DNI", "08711340", gender,
-                LocalDate.of(1990, 1, 2), "043426080", "091234567", "ana@example.test",
+                LocalDate.of(1990, 1, 2), "091234567", "ana@example.test",
                 "Profesión", Instant.parse("2026-11-03T18:45:17Z"), inputType, List.of(), List.of(),
                 OperationalAnalysisOrigin.ADMIN, true);
     }

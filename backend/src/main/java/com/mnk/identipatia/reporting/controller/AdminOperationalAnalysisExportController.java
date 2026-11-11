@@ -52,7 +52,7 @@ public class AdminOperationalAnalysisExportController {
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
-                    description = "CSV operacional de 21 columnas",
+                    description = "CSV operacional de 20 columnas",
                     headers = {
                             @Header(name = HttpHeaders.CONTENT_DISPOSITION,
                                     description = "attachment; filename=identipat-analisis_....csv"),
