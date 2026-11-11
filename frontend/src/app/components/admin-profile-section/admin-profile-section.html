@@ -16,7 +16,6 @@
         <label>Fecha de nacimiento <input type="date" formControlName="birthDate" min="1926-01-01" max="2020-12-31" /></label>
         <label>Género <select formControlName="gender"><option value="" disabled>Seleccione</option><option value="MALE">Masculino</option><option value="FEMALE">Femenino</option></select></label>
         <label>Correo electrónico <input type="email" formControlName="email" /></label>
-        <label>Teléfono <input type="text" formControlName="phone" inputmode="numeric" maxlength="9" pattern="[0-9]*" (input)="phoneInput.emit($event)" /></label>
         <label>Celular <input type="tel" formControlName="mobilePhone" inputmode="tel" maxlength="15" (input)="mobilePhoneInput.emit($event)" /></label>
         <label>Profesión <input type="text" formControlName="profession" /></label>
         @if (profileMessage) { <p [class]="profileMessage.includes('correctamente') ? 'success-message' : 'error'" role="status">{{ profileMessage }}</p> }

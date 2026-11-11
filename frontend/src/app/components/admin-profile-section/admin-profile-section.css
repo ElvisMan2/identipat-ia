@@ -14,7 +14,7 @@ input, select { width: 100%; min-height: 46px; border: 1px solid var(--line); bo
 .actions { display: flex; align-items: center; gap: .55rem; margin-top: .4rem; }
 .actions button { border: 0; border-radius: 5px; padding: .62rem .9rem; color: #fff; background: var(--teal); font-weight: 600; cursor: pointer; }
 button:disabled { opacity: .62; cursor: not-allowed; }
-.security-heading { margin-top: 1.5rem; }
+.panel h2.security-heading { margin-top: 1.5rem; }
 .field-error { color: var(--danger); }
 .error { padding: .65rem; color: #7a2424; background: #fff0ee; }
 .success-message { margin: 0; padding: .65rem; color: var(--teal-dark); background: var(--mint); }

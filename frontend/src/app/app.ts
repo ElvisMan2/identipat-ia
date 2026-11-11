@@ -251,6 +251,7 @@ export class App {
   readonly editErrorMessage = signal('');
   readonly analysesError = signal('');
   readonly editingUserId = signal<number | null>(null);
+  readonly editingUserStatus = signal('A');
   readonly editingUserType = signal('STANDARD');
   readonly editingOriginalUserType = signal('STANDARD');
   readonly showAdminPassword = signal(false);
@@ -441,7 +442,6 @@ export class App {
     birthDate: ['', [Validators.required, this.dateValidator]],
     gender: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.email]],
-    phone: ['', [Validators.required, Validators.maxLength(9), Validators.pattern(/^\d+$/)]],
     mobilePhone: ['', [Validators.required, Validators.maxLength(15), this.mobilePhoneValidator]],
     profession: ['', [Validators.required]],
     password: [''],
@@ -455,7 +455,6 @@ export class App {
     birthDate: ['', [Validators.required, this.dateValidator]],
     gender: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.email]],
-    phone: ['', [Validators.required, Validators.maxLength(9), Validators.pattern(/^\d+$/)]],
     mobilePhone: ['', [Validators.required, Validators.maxLength(15), this.mobilePhoneValidator]],
     profession: ['', [Validators.required]]
   });
@@ -514,15 +513,6 @@ export class App {
       .replace(/[^\d ]/g, '')
       .trimStart()}`;
 
-    if (input.value !== sanitized) {
-      input.value = sanitized;
-      control.setValue(sanitized, { emitEvent: false });
-    }
-  }
-
-  sanitizePhone(event: Event, control: AbstractControl): void {
-    const input = event.target as HTMLInputElement;
-    const sanitized = input.value.replace(/\D/g, '').slice(0, 9);
     if (input.value !== sanitized) {
       input.value = sanitized;
       control.setValue(sanitized, { emitEvent: false });
@@ -918,7 +908,11 @@ export class App {
     if (section === 'predictions') {
       this.loadAnalyses();
     } else if (section === 'profile') {
-      this.loadProfileForm();
+      if (this.currentAdmin()) {
+        this.loadProfileForm();
+      } else {
+        this.loadAdminProfile();
+      }
     } else if (section === 'settings' && !this.settingsLoaded() && !this.settingsLoading()) {
       this.loadReportDisclaimers();
       this.loadPatentOrientationGuide();
@@ -2060,7 +2054,6 @@ export class App {
     if (this.saving()) {
       return;
     }
-    this.userForm.controls.phone.setValue('000000000', { emitEvent: false });
     if (this.userForm.invalid || !this.legalDocument() || this.legalLoading()) {
       this.userForm.markAllAsTouched();
       this.accessMessage.set(this.legalDocument()
@@ -2652,30 +2645,37 @@ export class App {
     });
   }
 
-  deleteEditingUser(): void {
+  toggleEditingUserStatus(): void {
     const userId = this.editingUserId();
     if (userId === null) {
       return;
     }
 
-    const accepted = confirm(
-      `¿Eliminar al usuario #${userId}? Si tiene sesiones STANDARD, se conservará como inactivo.`
-    );
+    const activating = this.editingUserStatus().toUpperCase() === 'I';
+    const action = activating ? 'activar' : 'inactivar';
+    const accepted = confirm(`¿Seguro que quieres ${action} al usuario #${userId}?`);
     if (!accepted) {
       return;
     }
 
     this.saving.set(true);
     this.editErrorMessage.set('');
-    this.userService.delete(userId).subscribe({
+    const user = this.users().find(candidate => candidate.userId === userId);
+    if (!user) {
+      this.saving.set(false);
+      this.editErrorMessage.set('No se pudo encontrar el usuario para actualizar su estado.');
+      return;
+    }
+
+    this.userService.update(userId, { ...user, status: activating ? 'A' : 'I' }).subscribe({
       next: () => {
         this.saving.set(false);
-        this.cancelEdit();
+        this.editingUserStatus.set(activating ? 'A' : 'I');
         this.loadUsers();
       },
       error: () => {
         this.saving.set(false);
-        this.editErrorMessage.set('No se pudo eliminar o inactivar el usuario.');
+        this.editErrorMessage.set(`No se pudo ${action} el usuario.`);
       }
     });
   }
@@ -2686,6 +2686,7 @@ export class App {
     }
 
     this.editingUserId.set(user.userId);
+    this.editingUserStatus.set(user.status?.toUpperCase() === 'I' ? 'I' : 'A');
     this.editErrorMessage.set('');
     this.editingUserType.set(user.userType);
     this.editingOriginalUserType.set(user.userType);
@@ -2709,7 +2710,6 @@ export class App {
       birthDate: this.toDateInputValue(user.birthDate),
       gender: user.gender,
       email: user.email,
-      phone: user.phone,
       mobilePhone: user.mobilePhone,
       profession: user.profession,
       password: '',
@@ -2720,6 +2720,7 @@ export class App {
 
   cancelEdit(): void {
     this.editingUserId.set(null);
+    this.editingUserStatus.set('A');
     this.editErrorMessage.set('');
     this.editingUserType.set('STANDARD');
     this.editingOriginalUserType.set('STANDARD');
@@ -2738,7 +2739,6 @@ export class App {
       birthDate: '',
       gender: '',
       email: '',
-      phone: '',
       mobilePhone: '',
       profession: '',
       password: '',
@@ -2794,7 +2794,6 @@ export class App {
       birthDate: this.toDateInputValue(admin.birthDate),
       gender: admin.gender,
       email: admin.email,
-      phone: admin.phone,
       mobilePhone: admin.mobilePhone,
       profession: admin.profession
     });
@@ -2822,7 +2821,6 @@ export class App {
       birthDate: this.toBackendDate(this.profileForm.controls.birthDate.value),
       gender: formValue.gender,
       email: formValue.email,
-      phone: formValue.phone,
       mobilePhone: formValue.mobilePhone,
       profession: formValue.profession,
       doi: admin.doi,
@@ -2833,8 +2831,9 @@ export class App {
     this.savingProfile.set(true);
     this.profileMessage.set('');
     this.userService.updateProfile(admin.userId, profileData).subscribe({
-      next: () => {
+      next: updatedAdmin => {
         this.savingProfile.set(false);
+        this.adminProfile.set(updatedAdmin);
         this.profileMessage.set('Tus datos se actualizaron correctamente.');
         this.loadUsers();
       },
@@ -2892,7 +2891,6 @@ export class App {
 
     return {
       ...this.personalDataPayload(),
-      phone: '000000000',
       legalAcceptance: {
         contentHash: document.contentHash,
         accepted: true
@@ -2911,7 +2909,6 @@ export class App {
       birthDate: this.toBackendDate(formValue.birthDate),
       gender: formValue.gender,
       email: formValue.email,
-      phone: formValue.phone,
       mobilePhone: formValue.mobilePhone,
       profession: formValue.profession
     };

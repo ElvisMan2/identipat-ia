@@ -60,7 +60,6 @@
         [passwordSuccessModal]="passwordSuccessModal()"
         (updateProfile)="updateProfile()"
         (updatePassword)="updateAdminPassword()"
-        (phoneInput)="sanitizePhone($event, profileForm.controls.phone)"
         (mobilePhoneInput)="sanitizeMobilePhone($event, profileForm.controls.mobilePhone)"
         (togglePasswordVisibility)="toggleAdminPasswordVisibility()"
         (closeSuccessModal)="closePasswordSuccessModal()"
@@ -102,13 +101,12 @@
               <select formControlName="gender"><option value="" disabled>Seleccione</option><option value="MALE">Masculino</option><option value="FEMALE">Femenino</option></select>
             </label>
             <label>Correo electrónico <input type="email" formControlName="email" placeholder="juan@example.com" /></label>
-            <label>Teléfono <input type="text" formControlName="phone" inputmode="numeric" maxlength="9" pattern="[0-9]*" (input)="sanitizePhone($event, userForm.controls.phone)" placeholder="01456789" /></label>
             <label>Celular <input type="tel" formControlName="mobilePhone" inputmode="tel" maxlength="15" (input)="sanitizeMobilePhone($event, userForm.controls.mobilePhone)" placeholder="987654321" /></label>
             <label>Profesión <input type="text" formControlName="profession" placeholder="Ingeniero" /></label>
             @if (editErrorMessage()) { <p class="error" role="alert">{{ editErrorMessage() }}</p> }
             <div class="actions">
               <button type="button" (click)="submit()" [disabled]="saving()">{{ saving() ? 'Guardando...' : 'Actualizar' }}</button>
-              <button type="button" class="danger" (click)="deleteEditingUser()" [disabled]="saving()">Eliminar</button>
+              <button type="button" [class.danger]="editingUserStatus().toUpperCase() !== 'I'" (click)="toggleEditingUserStatus()" [disabled]="saving()">{{ editingUserStatus().toUpperCase() === 'I' ? 'Activar' : 'Inactivar' }}</button>
               <button type="button" class="ghost" (click)="cancelEdit()" [disabled]="saving()">Cancelar</button>
             </div>
           </form>

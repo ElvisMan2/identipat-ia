@@ -25,7 +25,6 @@ export interface StandardUserRegistrationRequest {
   birthDate: string;
   gender: string;
   email: string;
-  phone: string;
   mobilePhone: string;
   profession: string;
   legalAcceptance: {
@@ -37,6 +36,8 @@ export interface StandardUserRegistrationRequest {
 export interface StandardUserRegistrationResponse {
   registered: boolean;
 }
+
+type UserRequest = User;
 
 export interface PagedResponse<T> {
   content: T[];
@@ -163,22 +164,28 @@ export class UserService {
 
   create(user: StandardUserRegistrationRequest): Observable<StandardUserRegistrationResponse> {
     return this.csrf.ensureToken().pipe(
-      switchMap(() => this.http.post<StandardUserRegistrationResponse>(this.endpoint, user, {
+      switchMap(() => this.http.post<StandardUserRegistrationResponse>(this.endpoint, this.withoutPhone(user), {
         headers: this.csrf.headers(),
         withCredentials: true
       }))
     );
   }
 
-  update(userId: number, user: User): Observable<User> {
-    return this.http.put<User>(`${this.endpoint}/admin/${userId}`, user, this.authenticatedOptions);
+  update(userId: number, user: UserRequest): Observable<User> {
+    return this.http.put<User>(`${this.endpoint}/admin/${userId}`, this.withoutPhone(user), this.authenticatedOptions);
   }
 
   delete(userId: number): Observable<void> {
     return this.http.delete<void>(`${this.endpoint}/${userId}`, this.authenticatedOptions);
   }
 
-  updateProfile(userId: number, user: User): Observable<User> {
-    return this.http.put<User>(`${this.endpoint}/${userId}`, user, this.authenticatedOptions);
+  updateProfile(userId: number, user: UserRequest): Observable<User> {
+    return this.http.put<User>(`${this.endpoint}/${userId}`, this.withoutPhone(user), this.authenticatedOptions);
+  }
+
+  private withoutPhone<T extends object>(payload: T): Omit<T, 'phone'> {
+    const { phone, ...requestBody } = payload as T & { phone?: unknown };
+    void phone;
+    return requestBody as Omit<T, 'phone'>;
   }
 }

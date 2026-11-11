@@ -22,7 +22,6 @@ export class AdminProfileSectionComponent {
   @Input() passwordSuccessModal = false;
   @Output() updateProfile = new EventEmitter<void>();
   @Output() updatePassword = new EventEmitter<void>();
-  @Output() phoneInput = new EventEmitter<Event>();
   @Output() mobilePhoneInput = new EventEmitter<Event>();
   @Output() togglePasswordVisibility = new EventEmitter<void>();
   @Output() closeSuccessModal = new EventEmitter<void>();

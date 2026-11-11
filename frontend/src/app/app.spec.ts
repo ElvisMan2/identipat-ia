@@ -17,6 +17,12 @@ function createAppWithBackendAnalysis() {
   return fixture;
 }
 
+function withoutPhone<T extends { phone?: unknown }>(user: T): Omit<T, 'phone'> {
+  const { phone, ...payload } = user;
+  void phone;
+  return payload;
+}
+
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -844,7 +850,6 @@ describe('App', () => {
       birthDate: '01/01/1990',
       gender: 'FEMALE',
       email: 'standard.placeholder@example.test',
-      phone: '016543210',
       mobilePhone: '912345678',
       profession: 'Profesión de prueba',
       password: '',
@@ -855,6 +860,7 @@ describe('App', () => {
     const createButton = fixture.nativeElement.querySelector(
       '.registration-actions button[type="submit"]'
     ) as HTMLButtonElement;
+    expect(createButton.disabled).toBeFalse();
     createButton.click();
     app.registerStandard();
 
@@ -872,7 +878,6 @@ describe('App', () => {
       birthDate: '01/01/1990',
       gender: 'FEMALE',
       email: 'standard.placeholder@example.test',
-      phone: '000000000',
       mobilePhone: '912345678',
       profession: 'Profesión de prueba',
       legalAcceptance: { contentHash: 'hash-current', accepted: true }
@@ -1420,7 +1425,7 @@ describe('App', () => {
     });
     app.userForm.setValue({
       firstName: 'Ana', paternalLastName: 'Rojas', maternalLastName: 'López', doi: '12345678', doiType: 'DNI',
-      birthDate: '01/01/1990', gender: 'FEMALE', email: 'ana@example.test', phone: '016543210',
+      birthDate: '01/01/1990', gender: 'FEMALE', email: 'ana@example.test',
       mobilePhone: '912345678', profession: 'Abogada', password: '', termsAccepted: true
     });
 
@@ -1464,7 +1469,7 @@ describe('App', () => {
 
     const updateRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users/admin/7`);
     expect(updateRequest.request.method).toBe('PUT');
-    expect(updateRequest.request.body).toEqual({ ...user, status: 'I' });
+    expect(updateRequest.request.body).toEqual({ ...withoutPhone(user), status: 'I' });
     httpTesting.expectNone(`${environment.apiBaseUrl}/users/7`);
     updateRequest.flush({ ...user, status: 'I' });
     const reloadRequest = httpTesting.expectOne(request =>
@@ -1483,7 +1488,7 @@ describe('App', () => {
     });
   });
 
-  it('should delete the edited user and reload the user list', () => {
+  it('should toggle the edited user status through an update', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     const httpTesting = TestBed.inject(HttpTestingController);
@@ -1504,23 +1509,46 @@ describe('App', () => {
       status: 'A'
     };
     spyOn(window, 'confirm').and.returnValue(true);
+    app.users.set([user]);
     app.startEdit(user);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Inactivar');
 
-    app.deleteEditingUser();
+    app.toggleEditingUserStatus();
 
-    const deleteRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users/9`);
-    expect(deleteRequest.request.method).toBe('DELETE');
-    deleteRequest.flush(null, { status: 204, statusText: 'No Content' });
-
-    expect(app.showEditModal()).toBeFalse();
+    const inactivateRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users/admin/9`);
+    expect(inactivateRequest.request.method).toBe('PUT');
+    expect(inactivateRequest.request.body.status).toBe('I');
+    inactivateRequest.flush({ ...user, status: 'I' });
     httpTesting.expectOne(request =>
       request.url === `${environment.apiBaseUrl}/users` && request.method === 'GET'
     ).flush({
-      content: [],
+      content: [ { ...user, status: 'I' } ],
       page: 0,
       size: 20,
-      totalElements: 0,
-      totalPages: 0,
+      totalElements: 1,
+      totalPages: 1,
+      first: true,
+      last: true
+    });
+
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Activar');
+
+    app.toggleEditingUserStatus();
+
+    const activateRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users/admin/9`);
+    expect(activateRequest.request.method).toBe('PUT');
+    expect(activateRequest.request.body.status).toBe('A');
+    activateRequest.flush({ ...user, status: 'A' });
+    httpTesting.expectOne(request =>
+      request.url === `${environment.apiBaseUrl}/users` && request.method === 'GET'
+    ).flush({
+      content: [ user ],
+      page: 0,
+      size: 20,
+      totalElements: 1,
+      totalPages: 1,
       first: true,
       last: true
     });
@@ -1552,7 +1580,7 @@ describe('App', () => {
 
     const updateRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users/admin/8`);
     expect(updateRequest.request.method).toBe('PUT');
-    expect(updateRequest.request.body).toEqual({ ...user, status: 'A' });
+    expect(updateRequest.request.body).toEqual({ ...withoutPhone(user), status: 'A' });
     updateRequest.flush({ ...user, status: 'A' });
     const reloadRequest = httpTesting.expectOne(request =>
       request.url === `${environment.apiBaseUrl}/users` && request.method === 'GET'
@@ -1600,7 +1628,6 @@ describe('App', () => {
       birthDate: '1990-01-01',
       gender: admin.gender,
       email: admin.email,
-      phone: admin.phone,
       mobilePhone: admin.mobilePhone,
       profession: admin.profession
     });
@@ -1614,13 +1641,92 @@ describe('App', () => {
 
     const updateRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users/admin/1`);
     expect(updateRequest.request.method).toBe('PUT');
-    expect(updateRequest.request.body).toEqual({ ...admin, password: 'new-secret' });
+    expect(updateRequest.request.body).toEqual({ ...withoutPhone(admin), password: 'new-secret' });
     updateRequest.flush(admin);
     expect(app.securityForm.controls.password.value).toBe('');
     expect(app.securityForm.controls.confirmPassword.value).toBe('');
     expect(app.passwordSuccessModal()).toBeTrue();
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('La contraseña se actualizó correctamente.');
+  });
+
+  it('should load the administrator profile when opening the profile section without cached data', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.accessForm.setValue({ doiType: 'DNI', doi: '12345678' });
+    app.adminAuthenticated.set(true);
+    app.view.set('admin');
+
+    app.setAdminSection('profile');
+
+    const profileRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users/doi/12345678`);
+    expect(profileRequest.request.method).toBe('GET');
+    profileRequest.flush({
+      userId: 1,
+      firstName: 'Admin',
+      paternalLastName: 'Principal',
+      maternalLastName: 'Sistema',
+      doi: '12345678',
+      doiType: 'DNI',
+      birthDate: '01/01/1990',
+      gender: 'OTHER',
+      email: 'admin@example.test',
+      phone: '',
+      mobilePhone: '912345678',
+      userType: 'ADMIN',
+      profession: 'Administrador',
+      status: 'A'
+    });
+
+    expect(app.currentAdmin()?.firstName).toBe('Admin');
+    expect(app.profileForm.controls.firstName.value).toBe('Admin');
+    fixture.detectChanges();
+    const firstNameInput = fixture.nativeElement.querySelector(
+      'app-admin-profile-section input[formControlName="firstName"]'
+    ) as HTMLInputElement;
+    expect(firstNameInput.value).toBe('Admin');
+    expect(fixture.nativeElement.querySelector('app-admin-profile-section input[formControlName="phone"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-admin-profile-section input[formControlName="mobilePhone"]')).not.toBeNull();
+  });
+
+  it('should retain updated administrator profile data when reopening the profile section', () => {
+    const app = TestBed.createComponent(App).componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    const admin = {
+      userId: 1,
+      firstName: 'Admin',
+      paternalLastName: 'Principal',
+      maternalLastName: 'Sistema',
+      doi: '12345678',
+      doiType: 'DNI',
+      birthDate: '01/01/1990',
+      gender: 'OTHER',
+      email: 'admin@example.test',
+      phone: '',
+      mobilePhone: '912345678',
+      userType: 'ADMIN',
+      profession: 'Administrador',
+      status: 'A'
+    };
+    app.adminProfile.set(admin);
+    app.view.set('admin');
+    app.setAdminSection('profile');
+    spyOn(app, 'loadUsers');
+    app.profileForm.patchValue({ firstName: 'Admin actualizado' });
+
+    app.updateProfile();
+
+    const updateRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users/1`);
+    expect(updateRequest.request.method).toBe('PUT');
+    expect(updateRequest.request.body.firstName).toBe('Admin actualizado');
+    expect(updateRequest.request.body.phone).toBeUndefined();
+    updateRequest.flush({ ...admin, firstName: 'Admin actualizado' });
+
+    expect(app.adminProfile()?.firstName).toBe('Admin actualizado');
+    app.setAdminSection('users');
+    app.setAdminSection('profile');
+    expect(app.profileForm.controls.firstName.value).toBe('Admin actualizado');
   });
 
   it('should assign the default admin password when changing the edit form user type', () => {
@@ -1686,6 +1792,7 @@ describe('App', () => {
     const updateRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users/11`);
     expect(updateRequest.request.method).toBe('PUT');
     expect(updateRequest.request.body.password).toBeUndefined();
+    expect(updateRequest.request.body.phone).toBeUndefined();
     updateRequest.flush(admin);
     httpTesting.expectOne(request =>
       request.url === `${environment.apiBaseUrl}/users` && request.method === 'GET'
