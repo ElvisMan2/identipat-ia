@@ -1,0 +1,12 @@
+:host { display: block; }
+.trust-strip { min-height: 92px; display: grid; grid-template-columns: repeat(3, 1fr); padding: 0 max(1.25rem, calc((100vw - 1180px) / 2)); color: #fff; background: var(--ink); }
+.trust-strip div { display: grid; align-content: center; gap: .2rem; padding: 1rem 2rem; border-right: 1px solid rgb(255 255 255 / .18); }
+.trust-strip div:first-child { padding-left: 0; }
+.trust-strip strong { font-family: 'Space Grotesk', sans-serif; }
+.trust-strip span { color: #bfd2cd; font-size: .8rem; }
+:host-context(.admin-page) { width: 100%; margin-top: auto; }
+
+@media (max-width: 700px) {
+  .trust-strip { grid-template-columns: 1fr; padding: 0 1rem; }
+  .trust-strip div, .trust-strip div:first-child { padding: 1rem 0; border-right: 0; border-bottom: 1px solid rgb(255 255 255 / .18); }
+}

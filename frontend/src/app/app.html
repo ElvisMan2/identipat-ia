@@ -17,11 +17,7 @@
         <section class="legal-section legal-rich-content" [innerHTML]="document.contentHtml"></section>
       }
     </article>
-      <footer class="trust-strip" aria-label="Características del servicio">
-        <div><strong>Privado</strong><span>Tus datos bajo control</span></div>
-        <div><strong>Orientativo</strong><span>No reemplaza una resolución oficial de Indecopi</span></div>
-        <div><strong>Especializado</strong><span>Enfocado en propiedad intelectual</span></div>
-      </footer>
+      <app-trust-footer />
   </main>
 } @else if (view() === 'admin') {
   <main class="admin-page">
@@ -652,11 +648,7 @@
       </div>
     }
 
-    <footer class="trust-strip" aria-label="Características del servicio">
-      <div><strong>Privado</strong><span>Tus datos bajo control</span></div>
-      <div><strong>Orientativo</strong><span>No reemplaza una resolución oficial de Indecopi</span></div>
-      <div><strong>Especializado</strong><span>Enfocado en propiedad intelectual</span></div>
-    </footer>
+    <app-trust-footer />
   </main>
 } @else if (view() === 'standard-analysis') {
   <main class="analysis-page">
@@ -802,11 +794,7 @@
       }
     </section>
 
-    <footer class="trust-strip" aria-label="Características del servicio">
-      <div><strong>Privado</strong><span>Tus datos bajo control</span></div>
-      <div><strong>Orientativo</strong><span>No reemplaza una resolución oficial de Indecopi</span></div>
-      <div><strong>Especializado</strong><span>Enfocado en propiedad intelectual</span></div>
-    </footer>
+    <app-trust-footer />
   </main>
 } @else if (view() === 'standard-result') {
   <main class="analysis-page result-page">
@@ -987,11 +975,7 @@
       @if (reportLoadError()) { <p class="error" role="alert">{{ reportLoadError() }}</p> }
     </section>
 
-    <footer class="trust-strip" aria-label="Características del servicio">
-      <div><strong>Privado</strong><span>Tus datos bajo control</span></div>
-      <div><strong>Orientativo</strong><span>No reemplaza una resolución oficial de Indecopi</span></div>
-      <div><strong>Especializado</strong><span>Enfocado en propiedad intelectual</span></div>
-    </footer>
+    <app-trust-footer />
   </main>
 } @else {
   <main class="home-page">
@@ -1116,10 +1100,6 @@
       </figure>
     </section>
 
-    <section class="trust-strip" aria-label="Características del servicio">
-      <div><strong>Privado</strong><span>Tus datos bajo control</span></div>
-      <div><strong>Orientativo</strong><span>No reemplaza una resolución oficial de Indecopi</span></div>
-      <div><strong>Especializado</strong><span>Enfocado en propiedad intelectual</span></div>
-    </section>
+    <app-trust-footer />
   </main>
 }

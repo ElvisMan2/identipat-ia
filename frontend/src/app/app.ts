@@ -15,6 +15,7 @@ import { AnalysisGuidanceResponse, AnalysisResponse, DiagnosticReport, StandardA
 import { CsrfService } from './services/csrf.service';
 import { LegalDocument, LegalDocumentService } from './services/legal-document.service';
 import { StandardSessionResponse, StandardSessionService } from './services/standard-session.service';
+import { TrustFooter } from './components/trust-footer/trust-footer';
 
 const adminSettingsReloadKey = 'identipat.admin.reloadSection';
 type AdditionalOrientationType = 'INDUSTRIAL_DESIGN' | 'COPYRIGHT' | 'DISTINCTIVE_SIGN' | 'PLANT_BREEDER_CERTIFICATE' | 'TRADE_SECRET';
@@ -49,7 +50,7 @@ interface OrientationEditorState {
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, ReactiveFormsModule, CKEditorModule],
+  imports: [CommonModule, ReactiveFormsModule, CKEditorModule, TrustFooter],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
