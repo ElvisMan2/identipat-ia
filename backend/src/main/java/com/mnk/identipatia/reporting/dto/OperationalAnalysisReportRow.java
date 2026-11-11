@@ -20,7 +20,6 @@ public record OperationalAnalysisReportRow(
         String doi,
         String gender,
         LocalDate birthDate,
-        String phone,
         String mobilePhone,
         String email,
         String profession,

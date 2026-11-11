@@ -286,9 +286,9 @@ class OperationalAnalysisDatasetIntegrationTest {
         assertThat(bytes).startsWith((byte) 0xEF, (byte) 0xBB, (byte) 0xBF);
         String csv = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
         String headerRow = csv.substring(1, csv.indexOf("\r\n"));
-        assertThat(headerRow.split(",", -1)).hasSize(21);
+        assertThat(headerRow.split(",", -1)).hasSize(20);
         assertThat(headerRow).contains("\"Id Analisis\"", "\"Orientacion Consultada\"")
-                .doesNotContain("userId", "sessionId", "provider", "model", "tokens");
+                .doesNotContain("Telefono", "userId", "sessionId", "provider", "model", "tokens");
         assertThat(csv).contains(firstId.toString(), secondId.toString(), "\"COMPLETADO\"")
                 .contains("requiere revisión especializada")
                 .doesNotContain(outsideId.toString(), "POTENTIALLY_REQUIRED");
@@ -304,7 +304,6 @@ class OperationalAnalysisDatasetIntegrationTest {
         user.setDoiType("DNI");
         user.setGender("OTHER");
         user.setEmail("perfil@example.test");
-        user.setPhone("01-0000000");
         user.setMobilePhone("900000000");
         user.setProfession("Profesión");
         user.setStatus("A");

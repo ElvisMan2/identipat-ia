@@ -209,7 +209,6 @@ class UserServiceTest {
         assertEquals(LocalDate.of(1990, 1, 1), existing.getBirthDate());
         assertEquals("FEMALE", existing.getGender());
         assertEquals("ana.torres@example.com", existing.getEmail());
-        assertEquals("016543210", existing.getPhone());
         assertEquals("912345678", existing.getMobilePhone());
         assertEquals("STANDARD", existing.getUserType());
         assertEquals("Abogada", existing.getProfession());
@@ -271,7 +270,6 @@ class UserServiceTest {
         request.setBirthDate(LocalDate.of(1990, 1, 1));
         request.setGender("FEMALE");
         request.setEmail("ana.torres@example.com");
-        request.setPhone("016543210");
         request.setMobilePhone("912345678");
         request.setProfession("Abogada");
         request.setLegalAcceptance(new LegalAcceptanceRequest(
@@ -291,7 +289,6 @@ class UserServiceTest {
                 .birthDate(LocalDate.of(1990, 1, 1))
                 .gender("FEMALE")
                 .email("ana.torres@example.com")
-                .phone("016543210")
                 .mobilePhone("912345678")
                 .userType("STANDARD")
                 .profession("Abogada")

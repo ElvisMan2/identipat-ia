@@ -67,7 +67,7 @@
             "auth": { "type": "noauth" },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"Nombre de prueba\",\n  \"paternalLastName\": \"Apellido paterno\",\n  \"maternalLastName\": \"Apellido materno\",\n  \"doi\": \"{{standardDoi}}\",\n  \"doiType\": \"{{standardDoiType}}\",\n  \"birthDate\": \"01/01/1990\",\n  \"gender\": \"FEMALE\",\n  \"email\": \"standard.placeholder@example.test\",\n  \"phone\": \"016543210\",\n  \"mobilePhone\": \"912345678\",\n  \"profession\": \"Profesión de prueba\",\n  \"legalAcceptance\": {\n    \"contentHash\": \"{{legalContentHash}}\",\n    \"accepted\": true\n  }\n}",
+              "raw": "{\n  \"firstName\": \"Nombre de prueba\",\n  \"paternalLastName\": \"Apellido paterno\",\n  \"maternalLastName\": \"Apellido materno\",\n  \"doi\": \"{{standardDoi}}\",\n  \"doiType\": \"{{standardDoiType}}\",\n  \"birthDate\": \"01/01/1990\",\n  \"gender\": \"FEMALE\",\n  \"email\": \"standard.placeholder@example.test\",\n  \"mobilePhone\": \"912345678\",\n  \"profession\": \"Profesión de prueba\",\n  \"legalAcceptance\": {\n    \"contentHash\": \"{{legalContentHash}}\",\n    \"accepted\": true\n  }\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{baseUrl}}/users",
@@ -122,7 +122,7 @@
           "name": "3. Register STANDARD if needed",
           "request": {
             "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }], "auth": { "type": "noauth" },
-            "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Nombre de prueba\",\n  \"paternalLastName\": \"Apellido\",\n  \"maternalLastName\": \"Prueba\",\n  \"doi\": \"{{standardDoi}}\",\n  \"doiType\": \"{{standardDoiType}}\",\n  \"birthDate\": \"01/01/1990\",\n  \"gender\": \"FEMALE\",\n  \"email\": \"standard.placeholder@example.test\",\n  \"phone\": \"016543210\",\n  \"mobilePhone\": \"912345678\",\n  \"profession\": \"Prueba\",\n  \"legalAcceptance\": {\"contentHash\": \"{{legalContentHash}}\", \"accepted\": true}\n}", "options": { "raw": { "language": "json" } } },
+            "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Nombre de prueba\",\n  \"paternalLastName\": \"Apellido\",\n  \"maternalLastName\": \"Prueba\",\n  \"doi\": \"{{standardDoi}}\",\n  \"doiType\": \"{{standardDoiType}}\",\n  \"birthDate\": \"01/01/1990\",\n  \"gender\": \"FEMALE\",\n  \"email\": \"standard.placeholder@example.test\",\n  \"mobilePhone\": \"912345678\",\n  \"profession\": \"Prueba\",\n  \"legalAcceptance\": {\"contentHash\": \"{{legalContentHash}}\", \"accepted\": true}\n}", "options": { "raw": { "language": "json" } } },
             "url": "{{baseUrl}}/users",
             "description": "Ejecutar solo si Identify devuelve registered=false. Use datos ficticios y un DOI de prueba."
           }
@@ -741,7 +741,7 @@
             "method": "GET",
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
             "url": "{{baseUrl}}/admin/analyses/export.csv?search=jose&from={{reportFrom}}&to={{reportTo}}&sort=createdAt,desc",
-            "description": "Descarga las 21 columnas para todo el conjunto filtrado, sin page/size. Comparte search, fechas America/Lima y sort con la tabla; A3 enviará siempre el sort activo."
+            "description": "Descarga las 20 columnas para todo el conjunto filtrado, sin page/size. Comparte search, fechas America/Lima y sort con la tabla; A3 enviará siempre el sort activo."
           },
           "event": [{
             "listen": "test",
@@ -998,7 +998,7 @@
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"Nombre actualizado\",\n  \"paternalLastName\": \"Apellido paterno\",\n  \"maternalLastName\": \"Apellido materno\",\n  \"doi\": \"{{standardDoi}}\",\n  \"doiType\": \"{{standardDoiType}}\",\n  \"birthDate\": \"01/01/1990\",\n  \"gender\": \"FEMALE\",\n  \"email\": \"updated.placeholder@example.test\",\n  \"phone\": \"016543210\",\n  \"mobilePhone\": \"912345678\",\n  \"profession\": \"Profesión actualizada\"\n}",
+              "raw": "{\n  \"firstName\": \"Nombre actualizado\",\n  \"paternalLastName\": \"Apellido paterno\",\n  \"maternalLastName\": \"Apellido materno\",\n  \"doi\": \"{{standardDoi}}\",\n  \"doiType\": \"{{standardDoiType}}\",\n  \"birthDate\": \"01/01/1990\",\n  \"gender\": \"FEMALE\",\n  \"email\": \"updated.placeholder@example.test\",\n  \"mobilePhone\": \"912345678\",\n  \"profession\": \"Profesión actualizada\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{baseUrl}}/users/{{adminUserId}}"
@@ -1012,7 +1012,7 @@
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminJwt}}", "type": "string" }] },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"Nombre administrativo\",\n  \"paternalLastName\": \"Apellido paterno\",\n  \"maternalLastName\": \"Apellido materno\",\n  \"doi\": \"{{adminDoi}}\",\n  \"doiType\": \"DNI\",\n  \"birthDate\": \"01/01/1990\",\n  \"gender\": \"FEMALE\",\n  \"email\": \"admin.placeholder@example.test\",\n  \"phone\": \"016543210\",\n  \"mobilePhone\": \"912345678\",\n  \"userType\": \"ADMIN\",\n  \"profession\": \"Administración\",\n  \"status\": \"A\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "raw": "{\n  \"firstName\": \"Nombre administrativo\",\n  \"paternalLastName\": \"Apellido paterno\",\n  \"maternalLastName\": \"Apellido materno\",\n  \"doi\": \"{{adminDoi}}\",\n  \"doiType\": \"DNI\",\n  \"birthDate\": \"01/01/1990\",\n  \"gender\": \"FEMALE\",\n  \"email\": \"admin.placeholder@example.test\",\n  \"mobilePhone\": \"912345678\",\n  \"userType\": \"ADMIN\",\n  \"profession\": \"Administración\",\n  \"status\": \"A\",\n  \"password\": \"{{adminPassword}}\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{baseUrl}}/users/admin/{{adminUserId}}",
@@ -1081,7 +1081,7 @@
             "auth": { "type": "noauth" },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"Duplicado\",\n  \"paternalLastName\": \"Prueba\",\n  \"maternalLastName\": \"Prueba\",\n  \"doi\": \"{{standardDoi}}\",\n  \"doiType\": \"{{standardDoiType}}\",\n  \"birthDate\": \"01/01/1990\",\n  \"gender\": \"FEMALE\",\n  \"email\": \"duplicate.placeholder@example.test\",\n  \"phone\": \"016543210\",\n  \"mobilePhone\": \"912345678\",\n  \"profession\": \"Prueba\"\n}",
+              "raw": "{\n  \"firstName\": \"Duplicado\",\n  \"paternalLastName\": \"Prueba\",\n  \"maternalLastName\": \"Prueba\",\n  \"doi\": \"{{standardDoi}}\",\n  \"doiType\": \"{{standardDoiType}}\",\n  \"birthDate\": \"01/01/1990\",\n  \"gender\": \"FEMALE\",\n  \"email\": \"duplicate.placeholder@example.test\",\n  \"mobilePhone\": \"912345678\",\n  \"profession\": \"Prueba\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{baseUrl}}/users",

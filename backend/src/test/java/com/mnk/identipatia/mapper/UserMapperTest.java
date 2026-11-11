@@ -26,7 +26,6 @@ class UserMapperTest {
         dto.setBirthDate(LocalDate.of(1990, 5, 20));
         dto.setGender("MALE");
         dto.setEmail("luis.fernandez@example.com");
-        dto.setPhone("014567890");
         dto.setMobilePhone("987654321");
         dto.setUserType("ADMIN");
         dto.setProfession("Ingeniero");
@@ -46,7 +45,6 @@ class UserMapperTest {
         assertEquals(dto.getBirthDate(), entity.getBirthDate());
         assertEquals(dto.getGender(), entity.getGender());
         assertEquals(dto.getEmail(), entity.getEmail());
-        assertEquals(dto.getPhone(), entity.getPhone());
         assertEquals(dto.getMobilePhone(), entity.getMobilePhone());
         assertEquals(dto.getUserType(), entity.getUserType());
         assertEquals(dto.getProfession(), entity.getProfession());
@@ -67,7 +65,6 @@ class UserMapperTest {
         entity.setBirthDate(LocalDate.of(1985, 3, 15));
         entity.setGender("FEMALE");
         entity.setEmail("ana.torres@example.com");
-        entity.setPhone("016543210");
         entity.setMobilePhone("912345678");
         entity.setUserType("STANDARD");
         entity.setProfession("Abogada");
@@ -88,7 +85,6 @@ class UserMapperTest {
         assertEquals(entity.getBirthDate(), dto.getBirthDate());
         assertEquals(entity.getGender(), dto.getGender());
         assertEquals(entity.getEmail(), dto.getEmail());
-        assertEquals(entity.getPhone(), dto.getPhone());
         assertEquals(entity.getMobilePhone(), dto.getMobilePhone());
         assertEquals(entity.getUserType(), dto.getUserType());
         assertEquals(entity.getProfession(), dto.getProfession());

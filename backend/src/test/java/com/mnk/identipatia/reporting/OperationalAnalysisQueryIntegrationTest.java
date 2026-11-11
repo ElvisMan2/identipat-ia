@@ -432,7 +432,6 @@ class OperationalAnalysisQueryIntegrationTest {
         user.setBirthDate(LocalDate.of(1990, 1, 1));
         user.setGender("OTHER");
         user.setEmail(email);
-        user.setPhone("010000000");
         user.setMobilePhone("900000000");
         user.setUserType("STANDARD");
         user.setProfession("Profesional");

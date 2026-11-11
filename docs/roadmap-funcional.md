@@ -601,7 +601,7 @@ El perfil mostrado es el vigente al construir el dataset porque no existe snapsh
 **Estado:** implementada.
 
 El endpoint `GET /admin/analyses/export.csv` reutiliza exclusivamente el dataset A1. La respuesta
-ADMIN-only contiene las 21 columnas contractuales, UTF-8 BOM,
+ADMIN-only contiene las 20 columnas contractuales, UTF-8 BOM,
 registros CRLF, quoting y escape deterministas, protección contra formula injection, nombres de archivo
 según el rango y `Cache-Control: no-store, private`. No se agregó ownership por análisis, acceso
 STANDARD, consulta por fila, migración ni cambio Angular.
@@ -616,7 +616,7 @@ La selección, el count y la paginación se ejecutan en PostgreSQL mediante `Spe
 búsqueda usa un `EXISTS` correlacionado sobre `users` sin agregar una relación JPA. Solo los IDs de
 la página se enriquecen en batch con usuarios, resultados V1/V2 y existencia de guidance. La
 presentación de conclusión y modalidades fue extraída como pieza compartida con A1, preservando
-OTHER y el contrato CSV A2 de 21 columnas.
+OTHER y el contrato CSV A2 de 20 columnas.
 
 ## F1.10A2C — Filtros y orden compartidos para CSV
 
@@ -627,7 +627,7 @@ OTHER y el contrato CSV A2 de 21 columnas.
 `OperationalAnalysisSpecifications`; la tabla usa `Specification + Pageable` y el CSV
 `Specification + Sort`, por lo que exporta todo el conjunto lógico filtrado en el mismo orden global.
 Sin sort mantiene `createdAt ASC, analysisId ASC` por compatibilidad con A2; A3 enviará el sort activo
-de la tabla, incluido `createdAt,desc` cuando corresponda. El enrichment completo y las 21 columnas A1
+de la tabla, incluido `createdAt,desc` cuando corresponda. El enrichment completo y las 20 columnas A1
 permanecen intactos.
 
 ## F1.10A3 — Tabla y descarga Angular ADMIN

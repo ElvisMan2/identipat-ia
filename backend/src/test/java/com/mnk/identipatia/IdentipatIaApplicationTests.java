@@ -149,6 +149,16 @@ class IdentipatIaApplicationTests {
         assertEquals(1, jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'analysis_report_contexts'",
                 Integer.class));
+        assertEquals(0, jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'phone'
+                """, Integer.class));
+        assertEquals(1, jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'mobile_phone'
+                """, Integer.class));
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '13' AND success", Integer.class));
         assertEquals("validate", environment.getRequiredProperty("spring.jpa.hibernate.ddl-auto"));
         assertFalse(environment.getRequiredProperty("spring.flyway.baseline-on-migrate", Boolean.class));
     }
@@ -302,6 +312,12 @@ class IdentipatIaApplicationTests {
         assertThat(registrationProperties.has("userType")).isFalse();
         assertThat(registrationProperties.has("status")).isFalse();
         assertThat(registrationProperties.has("password")).isFalse();
+        assertThat(registrationProperties.has("phone")).isFalse();
+        assertThat(registrationProperties.has("mobilePhone")).isTrue();
+
+        JsonNode userProperties = api.at("/components/schemas/UserDTO/properties");
+        assertThat(userProperties.has("phone")).isFalse();
+        assertThat(userProperties.has("mobilePhone")).isTrue();
 
         JsonNode reportProperties = api.at("/components/schemas/DiagnosticReport/properties");
         assertThat(reportProperties.has("patentScreening")).isTrue();
@@ -330,7 +346,6 @@ class IdentipatIaApplicationTests {
         request.setBirthDate(LocalDate.of(1990, 1, 1));
         request.setGender("FEMALE");
         request.setEmail("f03-" + UUID.randomUUID() + "@example.com");
-        request.setPhone("016543210");
         request.setMobilePhone("912345678");
         request.setProfession("Prueba");
         request.setLegalAcceptance(new LegalAcceptanceRequest(TestLegalDocumentFixture.HASH, true));

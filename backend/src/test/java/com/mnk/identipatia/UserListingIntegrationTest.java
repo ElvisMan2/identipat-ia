@@ -223,7 +223,7 @@ class UserListingIntegrationTest {
     void csvExportWithNoMatchesContainsOnlyBomAndHeader() {
         String csv = export("no-user-can-match-this", null, null, null, "userId,asc");
 
-        assertThat(csv).isEqualTo("\uFEFF\"ID\",\"Nombre completo\",\"Documento\",\"Nacimiento\",\"Género\",\"Correo\",\"Teléfono\",\"Celular\",\"Tipo\",\"Profesión\",\"Estado\"");
+        assertThat(csv).isEqualTo("\uFEFF\"ID\",\"Nombre completo\",\"Documento\",\"Nacimiento\",\"Género\",\"Correo\",\"Celular\",\"Tipo\",\"Profesión\",\"Estado\"");
     }
 
     private PagedResponse<UserDTO> find(
@@ -269,7 +269,6 @@ class UserListingIntegrationTest {
         user.setBirthDate(LocalDate.of(1990, 1, day));
         user.setGender("FEMALE");
         user.setEmail(email);
-        user.setPhone("016543210");
         user.setMobilePhone("912345678");
         user.setUserType(userType);
         user.setProfession(profession);
