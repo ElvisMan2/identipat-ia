@@ -6,6 +6,7 @@
 .table-head h2 { margin: 0; font-size: 1.2rem; }
 .prediction-filters { display: flex; flex-wrap: wrap; align-items: end; gap: .7rem; margin: .85rem 0; }
 .user-search { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem; color: var(--muted); }
+input, select { border: 1px solid var(--line); border-radius: 5px; outline: none; color: var(--ink); background: #fff; font: inherit; }
 .user-search input { width: min(18rem, 34vw); min-height: 36px; padding: .4rem .55rem; }
 .page-size { display: flex; align-items: center; gap: .4rem; color: var(--muted); white-space: nowrap; }
 .page-size input, .page-size select { width: auto; min-height: 36px; padding: .4rem .55rem; }

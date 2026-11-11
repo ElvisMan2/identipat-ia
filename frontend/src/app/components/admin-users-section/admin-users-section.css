@@ -5,6 +5,7 @@
 .table-head { justify-content: space-between; }
 .table-actions { flex-wrap: wrap; }
 .user-search { display: flex; align-items: center; gap: .4rem; color: var(--muted); }
+input, select { border: 1px solid var(--line); border-radius: 5px; outline: none; color: var(--ink); background: #fff; font: inherit; }
 .user-search input { width: min(18rem, 34vw); min-height: 36px; padding: .4rem .55rem; }
 .page-size { display: flex; align-items: center; gap: .4rem; color: var(--muted); white-space: nowrap; }
 .page-size select { width: auto; min-height: 36px; padding: .4rem 1.8rem .4rem .55rem; }
