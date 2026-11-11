@@ -17,6 +17,7 @@ import { LegalDocument, LegalDocumentService } from './services/legal-document.s
 import { StandardSessionResponse, StandardSessionService } from './services/standard-session.service';
 import { TrustFooter } from './components/trust-footer/trust-footer';
 import { LegalPageComponent } from './components/legal-page/legal-page';
+import { AnalysisResultPageComponent, OpenNextStepsRequest } from './components/analysis-result-page/analysis-result-page';
 
 const adminSettingsReloadKey = 'identipat.admin.reloadSection';
 type AdditionalOrientationType = 'INDUSTRIAL_DESIGN' | 'COPYRIGHT' | 'DISTINCTIVE_SIGN' | 'PLANT_BREEDER_CERTIFICATE' | 'TRADE_SECRET';
@@ -51,7 +52,7 @@ interface OrientationEditorState {
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, ReactiveFormsModule, CKEditorModule, TrustFooter, LegalPageComponent],
+  imports: [CommonModule, ReactiveFormsModule, CKEditorModule, TrustFooter, LegalPageComponent, AnalysisResultPageComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -2393,33 +2394,6 @@ export class App {
     return type ? labels[type] ?? type : 'campo faltante';
   }
 
-  reportField(value: string | null | undefined): string {
-    return value?.trim() || 'campo faltante';
-  }
-
-  hasPatentScreeningModality(options: DiagnosticReport['protectionOptions']): boolean {
-    return options?.some(option =>
-      option.type === 'INVENTION_PATENT' || option.type === 'UTILITY_MODEL'
-    ) ?? false;
-  }
-
-  screeningAssessmentLabel(
-    article: string | null | undefined,
-    assessmentLabel: string | null | undefined,
-    assessment: string | null | undefined
-  ): string {
-    if (assessment === 'POTENTIAL_MATCH') {
-      const labels: Record<string, string> = {
-        'Artículo 15': 'Exclusiones a la patentabilidad',
-        'Artículo 20': 'Excepciones a la patentabilidad'
-      };
-      if (article && labels[article]) {
-        return labels[article];
-      }
-    }
-    return assessmentLabel?.trim() || assessment?.trim() || 'campo faltante';
-  }
-
   reportInputTypeLabel(type: string | null | undefined): string {
     const labels: Record<string, string> = {
       TEXT: 'Texto',
@@ -2427,25 +2401,6 @@ export class App {
       AUDIO: 'Audio'
     };
     return type ? labels[type] ?? type : 'campo faltante';
-  }
-
-  reportDateLabel(value: string | null | undefined): string {
-    if (!value) {
-      return 'campo faltante';
-    }
-
-    const date = new Date(value);
-    return Number.isNaN(date.getTime())
-      ? 'campo faltante'
-      : new Intl.DateTimeFormat('es-PE', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-        timeZone: 'America/Lima'
-      }).format(date);
-  }
-
-  guidanceFor(type: string): AnalysisGuidanceResponse['modalities'][number] | null {
-    return this.analysisGuidance()?.modalities.find(modality => modality.protectionType === type) ?? null;
   }
 
   openNextStepsModal(
@@ -2474,15 +2429,8 @@ export class App {
     this.nextStepsModal.set(null);
   }
 
-  applicabilityLabel(applicability: string | null | undefined): string {
-    const labels: Record<string, string> = {
-      POSSIBLE: 'Posible',
-      LIKELY: 'Probable',
-      UNLIKELY: 'Poco probable',
-      NO_POTENTIAL_MATCH: 'Sin coincidencia potencial',
-      INSUFFICIENT_INFORMATION: 'Información insuficiente'
-    };
-    return applicability ? labels[applicability] ?? applicability : 'campo faltante';
+  handleOpenNextSteps(request: OpenNextStepsRequest): void {
+    this.openNextStepsModal(request.modality, request.protectionType, request.guidance);
   }
 
   submit(): void {

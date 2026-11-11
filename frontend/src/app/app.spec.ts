@@ -1201,6 +1201,84 @@ describe('App', () => {
     expect(fixture.nativeElement.querySelector('app-legal-page')).not.toBeNull();
   });
 
+  it('should render the analysis result and forward its actions', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.view.set('standard-result');
+    app.analysisResult.set({
+      analysisId: 'analysis-result',
+      inputType: 'TEXT',
+      status: 'COMPLETED',
+      createdAt: '2026-11-03T06:00:00Z',
+      startedAt: '2026-11-03T06:00:00Z',
+      completedAt: '2026-11-03T06:01:00Z',
+      failedAt: null,
+      result: null,
+      failure: null
+    });
+    app.diagnosticReport.set({
+      reportVersion: null,
+      analysisId: 'analysis-result',
+      sourceResultVersion: null,
+      inputType: 'TEXT',
+      analysisCompletedAt: '2026-11-03T06:01:00Z',
+      title: 'Diagnóstico de prueba',
+      summary: 'Resumen de prueba',
+      applicabilityNote: null,
+      protectionOptions: [{
+        type: 'INVENTION_PATENT',
+        name: 'Patente de invención',
+        relationshipQuestion: null,
+        applicability: 'POSSIBLE',
+        applicabilityLabel: 'Posible',
+        protectedSubjectMatter: 'Una creación',
+        rationale: 'Cumple criterios',
+        legalBasis: null,
+        orientation: null
+      }],
+      patentScreening: null,
+      geneticResourceAccess: null,
+      historicalPatentability: null,
+      observations: null,
+      warnings: null,
+      scope: null,
+      disclaimer: { id: null, version: null, title: 'Aviso', content: 'Contenido del aviso' }
+    });
+    const guidance = {
+      guidanceVersion: 'v1',
+      analysisId: 'analysis-result',
+      resolvedAt: '2026-11-03T06:01:00Z',
+      modalities: [{
+        protectionType: 'INVENTION_PATENT',
+        name: 'Patente de invención',
+        applicability: 'POSSIBLE',
+        applicabilityLabel: 'Posible',
+        guideVersion: 1,
+        shortDescription: 'Protección de una invención',
+        nextSteps: { contentHtml: '<p>Revisar requisitos</p>' },
+        lastVerifiedAt: '2026-11-03T06:01:00Z'
+      }]
+    };
+    app.analysisGuidance.set(guidance);
+    const downloadReport = spyOn(app, 'downloadReportPdf');
+    const openNextSteps = spyOn(app, 'openNextStepsModal');
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('app-analysis-result-page')).not.toBeNull();
+    expect(compiled.textContent).toContain('Diagnóstico de prueba');
+    expect(compiled.textContent).toContain('Resumen de prueba');
+    compiled.querySelector<HTMLButtonElement>('.analysis-result .hero-main .outline-button')?.click();
+    compiled.querySelector<HTMLButtonElement>('.modality-next-steps')?.click();
+
+    expect(downloadReport).toHaveBeenCalled();
+    expect(openNextSteps).toHaveBeenCalledWith(
+      'Patente de invención',
+      'INVENTION_PATENT',
+      guidance.modalities[0]
+    );
+  });
+
   it('should retry loading the public legal document from the legal page', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;

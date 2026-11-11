@@ -784,186 +784,22 @@
     <app-trust-footer />
   </main>
 } @else if (view() === 'standard-result') {
-  <main class="analysis-page result-page">
-    <header class="topbar">
-      <a class="brand" href="/" (click)="$event.preventDefault(); exitResult()">IDENTIPAT IA</a>
-      <div class="result-actions">
-        <button class="outline-button" type="button" (click)="startNewAnalysis()">Nuevo análisis</button>
-        <button class="outline-button" type="button" (click)="exitResult()" [disabled]="navigationPending()">Salir</button>
-      </div>
-    </header>
-
-    @if (navigationPending(); as pending) {
-      <section class="access-progress-modal" role="status" aria-live="polite">
-        <div class="access-progress">
-          <span class="analysis-spinner" aria-hidden="true"></span>
-          <div>
-            <h2>{{ pending === 'exit' ? 'Saliendo' : 'Cargando predicciones' }}</h2>
-            <p>{{ pending === 'exit' ? 'Estamos cerrando la sesión.' : 'Estamos preparando la pantalla solicitada.' }}</p>
-          </div>
-        </div>
-      </section>
-    }
-
-    @if (exitError()) { <p class="error" role="alert">{{ exitError() }}</p> }
-
-    <section class="analysis-shell">
-      @if (analysisResult()?.status === 'COMPLETED' && diagnosticReport(); as report) {
-        <section class="analysis-result" aria-live="polite">
-          <section class="hero">
-            <div class="hero-main">
-              <div class="hero-left">
-                <h2>{{ reportField(report.title) }}</h2>
-                <p class="lead">Consulta el diagnóstico y la orientación institucional asociada a las modalidades identificadas.</p>
-              </div>
-              @if (analysisResult()?.analysisId !== 'example-analysis') {
-                <button class="outline-button" type="button" (click)="downloadReportPdf()" [disabled]="downloadingReportPdf()">
-                  {{ downloadingReportPdf() ? 'Descargando PDF...' : 'Descargar reporte PDF' }}
-                </button>
-              }
-            </div>
-            <div class="meta-stats two">
-              <div class="meta-item">
-                <span>Fecha de análisis:</span>
-                <strong>{{ reportDateLabel(report.analysisCompletedAt) }}</strong>
-              </div>
-              <div class="meta-item">
-                <span>Modalidades identificadas</span>
-                <strong>{{ report.protectionOptions?.length ?? 0 }}</strong>
-              </div>
-            </div>
-          </section>
-          @if (reportPdfError()) { <p class="error" role="alert">{{ reportPdfError() }}</p> }
-          <section class="summary-card">
-            <div class="summary-content">
-              <div class="summary-kicker">Resumen</div>
-              <p>{{ reportField(report.summary) }}</p>
-            </div>
-          </section>
-          <section class="modalities-grid">
-            <h2>Modalidades identificadas</h2>
-            @for (option of report.protectionOptions ?? []; track option.name) {
-                @let guidance = guidanceFor(option.type ?? '');
-                <article>
-                  <div class="modality-heading">
-                    <span>{{ reportField(option.name) }}</span>
-                    <span>{{ guidance?.shortDescription || '' }}</span>
-                    <b>{{ reportField(option.applicabilityLabel || applicabilityLabel(option.applicability)) }}</b>
-                  </div>
-                  <div class="diagnosis-panel">
-                      <div class="diag-item">
-                        <strong>{{ reportField(option.relationshipQuestion || '¿Qué parte de tu creación podría proteger?') }}</strong>
-                        <p>{{ reportField(option.protectedSubjectMatter) }}</p>
-                      </div>
-                      <div class="diag-item">
-                        <strong>¿Por qué se identificó?</strong>
-                        <p>{{ reportField(option.rationale) }}</p>
-                      </div>
-                      @if (option.orientation) {
-                        <div class="diag-item">
-                          <strong>Orientación diagnóstica</strong>
-                          <p>{{ reportField(option.orientation) }}</p>
-                        </div>
-                      }
-                  </div>
-                  <button class="outline-button modality-next-steps" type="button" (click)="openNextStepsModal(option.name || 'Modalidad', option.type, guidance)">Próximos pasos</button>
-                </article>
-            } @empty {
-              <p>No se identificaron modalidades.</p>
-            }
-          </section>
-          @let hasVisiblePatentScreening = report.patentScreening && (report.patentScreening.article15?.assessment === 'POTENTIAL_MATCH' || report.patentScreening.article20?.assessment === 'POTENTIAL_MATCH');
-          @if (hasPatentScreeningModality(report.protectionOptions)) {
-            <section class="context-section">
-              <h2>Información complementaria del diagnóstico</h2>
-              <div class="context-grid">
-                @if (hasVisiblePatentScreening && report.patentScreening; as screening) {
-                  <article class="context-card full">
-                    <h3>{{ reportField(screening.title) }}</h3>
-                    @if (screening.context && (screening.article15?.assessment === 'POTENTIAL_MATCH' || screening.article20?.assessment === 'POTENTIAL_MATCH')) {
-                      <p>{{ reportField(screening.context) }}</p>
-                    }
-                    @for (article of [screening.article15, screening.article20]; track article?.article) {
-                      @if (article; as screeningArticle) {
-                        @if (screeningArticle.assessment !== 'NO_POTENTIAL_MATCH') {
-                        <div class="screening-article">
-                          <strong>{{ reportField(screeningArticle.article) }} · {{ screeningAssessmentLabel(screeningArticle.article, screeningArticle.assessmentLabel, screeningArticle.assessment) }}</strong>
-                          <p>{{ reportField(screeningArticle.rationale) }}@if (screeningArticle.matches?.length) {<br /><span> @for (match of screeningArticle.matches; track match.literal; let first = $first) { @if (!first) { <span>; </span> }<b>{{ reportField(match.literal) }}</b>: {{ reportField(match.rationale) }}}</span> }</p>
-                        </div>
-                        }
-                      }
-                    }
-                  </article>
-                }
-                @if (report.historicalPatentability; as historical) {
-                  <article class="context-card full">
-                    <h3>Antecedente histórico de patentabilidad</h3>
-                    <p><strong>{{ reportField(historical.outcome) }}</strong></p>
-                    <p>{{ reportField(historical.rationale) }}</p>
-                  </article>
-                }
-              </div>
-            </section>
-          }
-          @if (report.geneticResourceAccess; as geneticAccess) {
-            <section class="context-card">
-              <h3>Recursos genéticos</h3>
-              <p><b>{{ reportField(geneticAccess.assessmentLabel || geneticAccess.assessment) }}</b></p>
-              <p>{{ reportField(geneticAccess.rationale) }}</p>
-              @if (geneticAccess.missingInformation?.length) {
-                <p>Información faltante</p>
-                <ul>@for (item of geneticAccess.missingInformation; track item) { <li>{{ reportField(item) }}</li> }</ul>
-              }
-            </section>
-          }
-          @if (nextStepsModal(); as nextSteps) {
-            <div class="modal-backdrop" (click)="closeNextStepsModal()" (keydown.escape)="closeNextStepsModal()">
-              <article class="panel modal-panel" role="dialog" aria-modal="true" aria-labelledby="next-steps-modal-title" (click)="$event.stopPropagation()">
-                <h2 id="next-steps-modal-title">Próximos pasos</h2>
-                <h3>{{ nextSteps.modality }}</h3>
-                @if (nextSteps.contentHtml) {
-                  <div class="rich-content" [innerHTML]="nextSteps.contentHtml"></div>
-                } @else {
-                  <p>No hay próximos pasos disponibles para esta modalidad.</p>
-                }
-                <div class="actions">
-                  <button type="button" (click)="closeNextStepsModal()">Cerrar</button>
-                </div>
-              </article>
-            </div>
-          }
-          @if (report.observations?.length) {
-            <section class="context-card observation">
-              <h3>Aspectos a considerar</h3>
-              <ul>@for (observation of report.observations; track observation) { <li>{{ reportField(observation) }}</li> }</ul>
-            </section>
-          }
-          @if (report.warnings?.length) {
-            <section class="context-card warning">
-              <h3>Advertencias del caso</h3>
-              <ul>@for (warning of report.warnings; track warning) { <li>{{ reportField(warning) }}</li> }</ul>
-            </section>
-          }
-
-          <section class="disclaimer-card">
-            <h2>{{ reportField(report.disclaimer?.title) }}</h2>
-            <p>{{ reportField(report.disclaimer?.content) }}</p>
-          </section>
-        </section>
-      }
-
-      @if (analysisResult()?.status === 'FAILED' && analysisResult()?.failure; as failure) {
-        <section class="analysis-failure" role="alert">
-          <p class="eyebrow">Resultado del análisis</p>
-          <h1>No se pudo completar el análisis</h1>
-          <p>{{ failure.message }}</p>
-        </section>
-      }
-      @if (reportLoadError()) { <p class="error" role="alert">{{ reportLoadError() }}</p> }
-    </section>
-
-    <app-trust-footer />
-  </main>
+  <app-analysis-result-page
+    [analysis]="analysisResult()"
+    [report]="diagnosticReport()"
+    [guidance]="analysisGuidance()"
+    [navigationPending]="navigationPending()"
+    [exitError]="exitError()"
+    [reportLoadError]="reportLoadError()"
+    [downloadingPdf]="downloadingReportPdf()"
+    [reportPdfError]="reportPdfError()"
+    [nextStepsModal]="nextStepsModal()"
+    (downloadPdf)="downloadReportPdf()"
+    (exit)="exitResult()"
+    (newAnalysis)="startNewAnalysis()"
+    (openNextSteps)="handleOpenNextSteps($event)"
+    (closeNextSteps)="closeNextStepsModal()"
+  />
 } @else {
   <main class="home-page">
     <header class="topbar">
