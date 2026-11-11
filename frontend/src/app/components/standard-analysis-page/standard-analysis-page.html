@@ -77,13 +77,13 @@
       @if (selectedPdf; as pdf) {
         <div class="pdf-selection" role="status" aria-label="Archivo PDF seleccionado" style="height: 188px; position: relative; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 5px;">
           <button type="button" aria-label="Quitar archivo PDF" title="Quitar archivo PDF" (click)="removePdf.emit()" style="position: absolute; top: 8px; right: 8px; z-index: 1; width: 32px; height: 32px; padding: 5px; border: 0; border-radius: 50%; background: #fff; cursor: pointer;"><img src="close.png" alt="" style="display: block; width: 22px; height: 22px; object-fit: contain;" /></button>
-          <img src="/Icon_pdf_file.svg.webp" alt="" style="width: 72px; height: 72px;" />
+          <img src="Icon_pdf_file.svg.webp" alt="" style="width: 72px; height: 72px;" />
           <span style="max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ pdf.name }}</span>
         </div>
       } @else if (selectedAudio) {
         <div class="pdf-selection" role="status" aria-label="Grabación de audio seleccionada" style="position: relative; display: grid; place-items: center; gap: .65rem; height: 188px; padding: 1rem; border: 1px solid var(--line); border-radius: 5px; background: #fff;">
           <button type="button" aria-label="Quitar grabación de audio" title="Quitar grabación de audio" (click)="removeAudio.emit()" style="position: absolute; top: 8px; right: 8px; z-index: 1; width: 32px; height: 32px; padding: 5px; border: 0; border-radius: 50%; background: #fff; cursor: pointer;"><img src="close.png" alt="" style="display: block; width: 22px; height: 22px; object-fit: contain;" /></button>
-          <img src="/audio.png" alt="Grabación de audio" style="display: block; width: 96px; height: 96px; object-fit: contain; background: #fff;" />
+          <img src="audio.png" alt="Grabación de audio" style="display: block; width: 96px; height: 96px; object-fit: contain; background: #fff;" />
           <span>Grabación de voz</span>
         </div>
       } @else {
@@ -112,7 +112,7 @@
     @if (recordingAudio) {
       <section class="recording-modal" role="dialog" aria-modal="true" aria-labelledby="audio-recording-title">
         <div class="recording-card">
-          <img src="/microphone.png" alt="Micrófono" />
+          <img src="microphone.png" alt="Micrófono" />
           <h2 id="audio-recording-title">Grabando voz</h2>
           <p aria-live="polite">{{ recordingTimeLabel }}</p>
           <button class="primary-button" type="button" (click)="stopRecording.emit()">Detener grabación</button>
