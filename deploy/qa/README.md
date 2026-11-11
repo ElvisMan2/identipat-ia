@@ -1,5 +1,12 @@
 # Despliegue QA de Java/Angular y preprocessing
 
+QA/PREPROD usa un único archivo `compose.yml`, ubicado en `/opt/identipat-qa/app`. Ejecutar los
+comandos de Compose desde ese directorio con `docker compose --env-file .env -f compose.yml ...`.
+Los archivos legacy `compose.initial.yml` y `compose.f2.yml` eran overrides locales; su configuración
+se consolidó en `compose.yml` y no se necesitan para despliegues nuevos. En el servidor se comparó
+la configuración resuelta de los tres archivos con la del archivo consolidado y el resultado fue
+idéntico.
+
 Este Compose despliega dos imágenes independientes: la aplicación integrada Java + Angular y
 `preprocessing-service`. PostgreSQL (`db`) continúa administrado por el Compose existente y se
 alcanza mediante la red externa `identipat-qa_internal`. Python también usa esa red, pero el puerto
