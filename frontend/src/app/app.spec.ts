@@ -1198,6 +1198,32 @@ describe('App', () => {
 
     expect(fixture.nativeElement.textContent).toContain('Documento legal dinámico');
     expect(fixture.nativeElement.textContent).toContain('Texto dinámico');
+    expect(fixture.nativeElement.querySelector('app-legal-page')).not.toBeNull();
+  });
+
+  it('should retry loading the public legal document from the legal page', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.view.set('legal');
+    app.legalError.set('No se pudo cargar el documento legal.');
+    fixture.detectChanges();
+
+    const retryButton = fixture.nativeElement.querySelector('.legal-state-error button') as HTMLButtonElement;
+    retryButton.click();
+
+    const request = httpTesting.expectOne(`${environment.apiBaseUrl}/legal-document`);
+    expect(request.request.method).toBe('GET');
+    request.flush({
+      documentId: 'legal-retry',
+      title: 'Documento recuperado',
+      contentHtml: '<p>Contenido recuperado</p>',
+      contentHash: 'hash-retry',
+      updatedAt: '2026-11-03T06:00:00Z'
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Documento recuperado');
   });
 
   it('should allow first ADMIN legal configuration and replace local HTML with the sanitized response', () => {
