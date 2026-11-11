@@ -42,6 +42,5 @@ export class PublicAccessPageComponent {
   @Output() registrationCancel = new EventEmitter<void>();
   @Output() retryLegal = new EventEmitter<void>();
   @Output() sanitizeDni = new EventEmitter<AccessSanitizeRequest>();
-  @Output() sanitizePhone = new EventEmitter<AccessSanitizeRequest>();
   @Output() sanitizeMobilePhone = new EventEmitter<AccessSanitizeRequest>();
 }

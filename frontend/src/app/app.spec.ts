@@ -832,6 +832,8 @@ describe('App', () => {
     });
     app.userForm.controls.termsAccepted.enable({ emitEvent: false });
     fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.registration-form input[name="phone"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.registration-form input[name="mobilePhone"]')).not.toBeNull();
 
     app.userForm.setValue({
       firstName: 'Nombre de prueba',
@@ -870,7 +872,7 @@ describe('App', () => {
       birthDate: '01/01/1990',
       gender: 'FEMALE',
       email: 'standard.placeholder@example.test',
-      phone: '016543210',
+      phone: '000000000',
       mobilePhone: '912345678',
       profession: 'Profesión de prueba',
       legalAcceptance: { contentHash: 'hash-current', accepted: true }

@@ -26,21 +26,18 @@
               <select name="gender" autocomplete="sex" formControlName="gender"><option value="" disabled>Seleccione</option><option value="MALE">Masculino</option><option value="FEMALE">Femenino</option></select>
             </label>
             <label>Correo electrónico <input type="email" name="email" autocomplete="email" formControlName="email" placeholder="micorreo@ejemplo.com" /></label>
-            <label>Teléfono <input type="text" name="phone" autocomplete="tel" formControlName="phone" inputmode="numeric" maxlength="9" pattern="[0-9]*" (input)="sanitizePhone.emit({ event: $event, control: userForm.controls['phone'] })" placeholder="01654321" /></label>
             <label>Celular <input type="tel" name="mobilePhone" autocomplete="tel" formControlName="mobilePhone" inputmode="tel" maxlength="15" (input)="sanitizeMobilePhone.emit({ event: $event, control: userForm.controls['mobilePhone'] })" placeholder="912345678" /></label>
-            <label class="registration-wide">Profesión / Ocupación <input type="text" name="profession" autocomplete="organization-title" formControlName="profession" placeholder="Ingeniera" /></label>
-            <div class="registration-wide registration-legal-status">
-              @if (legalLoading) {
+            <label>Profesión / Ocupación <input type="text" name="profession" autocomplete="organization-title" formControlName="profession" placeholder="Ingeniera" /></label>
+            @if (legalLoading || legalError) {
+              <div class="registration-wide registration-legal-status">
+                @if (legalLoading) {
                 <p role="status">Cargando documento legal vigente...</p>
-              } @else if (legalError) {
-                <p class="error" role="alert">{{ legalError }}</p>
-                <button type="button" class="outline-button" (click)="retryLegal.emit()">Reintentar</button>
-              } @else if (legalDocument; as document) {
-                <strong>{{ document.title }}</strong>
-                <span>Actualizado: {{ legalDateLabel(document.updatedAt) }}</span>
-                <a href="terminos-y-privacidad" target="_blank" rel="noopener noreferrer">Leer documento completo</a>
+                } @else {
+                  <p class="error" role="alert">{{ legalError }}</p>
+                  <button type="button" class="outline-button" (click)="retryLegal.emit()">Reintentar</button>
+                }
+              </div>
               }
-            </div>
             <label class="registration-wide terms-checkbox">
               <span><input type="checkbox" formControlName="termsAccepted" /> He leído y acepto los <a href="terminos-y-privacidad" target="_blank" rel="noopener noreferrer">Términos de uso y la Política de Privacidad</a> vigentes.</span>
             </label>

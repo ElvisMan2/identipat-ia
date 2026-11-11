@@ -2060,6 +2060,7 @@ export class App {
     if (this.saving()) {
       return;
     }
+    this.userForm.controls.phone.setValue('000000000', { emitEvent: false });
     if (this.userForm.invalid || !this.legalDocument() || this.legalLoading()) {
       this.userForm.markAllAsTouched();
       this.accessMessage.set(this.legalDocument()
@@ -2891,6 +2892,7 @@ export class App {
 
     return {
       ...this.personalDataPayload(),
+      phone: '000000000',
       legalAcceptance: {
         contentHash: document.contentHash,
         accepted: true
