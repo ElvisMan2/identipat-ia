@@ -2443,18 +2443,6 @@ export class App {
     this.clearPendingAnalysisIntent();
   }
 
-  private downloadAnalysisJson(analysisId: string, report: DiagnosticReport): void {
-    const link = this.document.createElement('a');
-    const url = URL.createObjectURL(new Blob([
-      JSON.stringify(report, null, 2)
-    ], { type: 'application/json;charset=utf-8' }));
-
-    link.href = url;
-    link.download = `analysis-${analysisId}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-  }
-
   downloadReportPdf(): void {
     const analysisId = this.analysisResult()?.analysisId;
     if (!analysisId || analysisId === 'example-analysis' || this.downloadingReportPdf()) {
@@ -2524,7 +2512,6 @@ export class App {
     this.standardAnalysisService.getReport(analysisId, accessToken).subscribe({
       next: report => {
         this.diagnosticReport.set(report);
-        this.downloadAnalysisJson(analysisId, report);
         this.standardAnalysisService.getGuidance(analysisId, accessToken).subscribe({
           next: guidance => this.analysisGuidance.set(guidance),
           error: error => {
