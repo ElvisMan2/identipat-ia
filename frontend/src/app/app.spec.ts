@@ -1,8 +1,10 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
-import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { CKEditorComponent } from '@ckeditor/ckeditor5-angular';
+import { firstValueFrom, of } from 'rxjs';
 import { App } from './app';
 import { AdminAnalysisService } from './services/admin-analysis.service';
 import { AdminReportDisclaimerService } from './services/admin-report-disclaimer.service';
@@ -15,6 +17,13 @@ function createAppWithBackendAnalysis() {
   const fixture = TestBed.createComponent(App);
   Object.defineProperty(fixture.componentInstance, 'useExampleAnalysis', { value: false });
   return fixture;
+}
+
+async function waitForEditorsToBeReady(fixture: ComponentFixture<App>): Promise<void> {
+  const readyEvents = fixture.debugElement
+    .queryAll(By.directive(CKEditorComponent))
+    .map(debugElement => firstValueFrom((debugElement.componentInstance as CKEditorComponent).ready));
+  await Promise.all(readyEvents);
 }
 
 function withoutPhone<T extends { phone?: unknown }>(user: T): Omit<T, 'phone'> {
@@ -205,13 +214,14 @@ describe('App', () => {
     }]);
   });
 
-  it('should show only the latest disclaimer when entering settings', () => {
+  it('should show only the latest disclaimer when entering settings', async () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     const httpTesting = TestBed.inject(HttpTestingController);
     app.view.set('admin');
     app.setAdminSection('settings');
     fixture.detectChanges();
+    await waitForEditorsToBeReady(fixture);
 
     const disclaimersRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/admin/report-disclaimers`);
     expect(disclaimersRequest.request.method).toBe('GET');
@@ -288,7 +298,7 @@ describe('App', () => {
     });
   });
 
-  it('should save disclaimer title and content together as a draft', () => {
+  it('should save disclaimer title and content together as a draft', async () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     const disclaimerService = TestBed.inject(AdminReportDisclaimerService);
@@ -326,6 +336,7 @@ describe('App', () => {
     app.disclaimerContent.set(activeDisclaimer.content);
     app.savedDisclaimerContent.set(activeDisclaimer.content);
     fixture.detectChanges();
+    await waitForEditorsToBeReady(fixture);
 
     const root = fixture.nativeElement as HTMLElement;
     const titleInput = root.querySelector<HTMLInputElement>('input#disclaimer-title')!;
@@ -772,13 +783,14 @@ describe('App', () => {
     expect(fixture.nativeElement.textContent).toContain('Completa tu registro');
   });
 
-  it('should show the analysis form and admin panel access after a successful admin login', async () => {
+  it('should show the analysis form and admin panel access after a successful admin login', () => {
     const userService = TestBed.inject(UserService);
     userService.clearAccessToken();
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     const httpTesting = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
+    spyOn<any>(app, 'finishAccess').and.callFake((_startedAt: number, complete: () => void) => complete());
 
     app.accessForm.setValue({ doiType: 'DNI', doi: '12345678' });
     app.identifyDocument();
@@ -786,6 +798,8 @@ describe('App', () => {
       registered: true,
       passwordRequired: true
     });
+    expect(app.view()).toBe('admin-login');
+
     app.loginForm.setValue({ password: 'secret' });
     app.loginAdmin();
 
@@ -793,7 +807,6 @@ describe('App', () => {
       tokenType: 'Bearer',
       accessToken: 'test-token'
     });
-    await new Promise(resolve => setTimeout(resolve, 510));
     fixture.detectChanges();
 
     expect(app.view()).toBe('standard-analysis');
@@ -1509,16 +1522,24 @@ describe('App', () => {
       status: 'A'
     };
     spyOn(window, 'confirm').and.returnValue(true);
+    app.view.set('admin');
+    app.adminSection.set('users');
     app.users.set([user]);
     app.startEdit(user);
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Inactivar');
+    const initialDialog = fixture.nativeElement.querySelector('[role="dialog"]') as HTMLElement | null;
+    expect(initialDialog).not.toBeNull();
+    expect(initialDialog?.textContent).toContain('Inactivar');
+    expect(initialDialog?.querySelector('input[formControlName="mobilePhone"]')).not.toBeNull();
+    expect(initialDialog?.querySelector('input[formControlName="phone"]')).toBeNull();
 
     app.toggleEditingUserStatus();
 
     const inactivateRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users/admin/9`);
     expect(inactivateRequest.request.method).toBe('PUT');
     expect(inactivateRequest.request.body.status).toBe('I');
+    expect(inactivateRequest.request.body.phone).toBeUndefined();
+    expect(inactivateRequest.request.body.mobilePhone).toBe(user.mobilePhone);
     inactivateRequest.flush({ ...user, status: 'I' });
     httpTesting.expectOne(request =>
       request.url === `${environment.apiBaseUrl}/users` && request.method === 'GET'
@@ -1533,13 +1554,17 @@ describe('App', () => {
     });
 
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Activar');
+    const inactiveDialog = fixture.nativeElement.querySelector('[role="dialog"]') as HTMLElement | null;
+    expect(inactiveDialog).not.toBeNull();
+    expect(inactiveDialog?.textContent).toContain('Activar');
 
     app.toggleEditingUserStatus();
 
     const activateRequest = httpTesting.expectOne(`${environment.apiBaseUrl}/users/admin/9`);
     expect(activateRequest.request.method).toBe('PUT');
     expect(activateRequest.request.body.status).toBe('A');
+    expect(activateRequest.request.body.phone).toBeUndefined();
+    expect(activateRequest.request.body.mobilePhone).toBe(user.mobilePhone);
     activateRequest.flush({ ...user, status: 'A' });
     httpTesting.expectOne(request =>
       request.url === `${environment.apiBaseUrl}/users` && request.method === 'GET'
