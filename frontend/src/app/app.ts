@@ -2330,6 +2330,14 @@ export class App {
     const file = input.files?.[0];
     input.value = '';
 
+    this.selectPdf(file);
+  }
+
+  onPdfDropped(file: File): void {
+    this.selectPdf(file);
+  }
+
+  private selectPdf(file: File | undefined): void {
     if (!file) {
       return;
     }

@@ -31,6 +31,9 @@ export class StandardAnalysisPageComponent {
   @Input() submittingAnalysis = false;
   @Input() canResumePendingAnalysis = false;
 
+  pdfDragOver = false;
+  private pdfDragDepth = 0;
+
   @Output() exit = new EventEmitter<void>();
   @Output() openAdminPanel = new EventEmitter<void>();
   @Output() reviewLegal = new EventEmitter<void>();
@@ -41,6 +44,47 @@ export class StandardAnalysisPageComponent {
   @Output() removeAudio = new EventEmitter<void>();
   @Output() toggleRecording = new EventEmitter<void>();
   @Output() pdfSelected = new EventEmitter<Event>();
+  @Output() pdfDropped = new EventEmitter<File>();
   @Output() submitAnalysis = new EventEmitter<void>();
   @Output() stopRecording = new EventEmitter<void>();
+
+  onPdfDragEnter(event: DragEvent): void {
+    if (!event.dataTransfer?.types.includes('Files')) {
+      return;
+    }
+
+    event.preventDefault();
+    this.pdfDragDepth++;
+    this.pdfDragOver = true;
+  }
+
+  onPdfDragOver(event: DragEvent): void {
+    if (!event.dataTransfer?.types.includes('Files')) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+  }
+
+  onPdfDragLeave(event: DragEvent): void {
+    if (!event.dataTransfer?.types.includes('Files')) {
+      return;
+    }
+
+    event.preventDefault();
+    this.pdfDragDepth = Math.max(0, this.pdfDragDepth - 1);
+    this.pdfDragOver = this.pdfDragDepth > 0;
+  }
+
+  onPdfDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.pdfDragDepth = 0;
+    this.pdfDragOver = false;
+
+    const file = event.dataTransfer?.files.item(0);
+    if (file) {
+      this.pdfDropped.emit(file);
+    }
+  }
 }

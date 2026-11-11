@@ -74,21 +74,24 @@
 
     <form [formGroup]="analysisForm" (ngSubmit)="submitAnalysis.emit()" class="analysis-form">
       <label for="description">Descripción de la creación</label>
-      @if (selectedPdf; as pdf) {
-        <div class="pdf-selection" role="status" aria-label="Archivo PDF seleccionado" style="height: 188px; position: relative; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 5px;">
-          <button type="button" aria-label="Quitar archivo PDF" title="Quitar archivo PDF" (click)="removePdf.emit()" style="position: absolute; top: 8px; right: 8px; z-index: 1; width: 32px; height: 32px; padding: 5px; border: 0; border-radius: 50%; background: #fff; cursor: pointer;"><img src="close.png" alt="" style="display: block; width: 22px; height: 22px; object-fit: contain;" /></button>
-          <img src="Icon_pdf_file.svg.webp" alt="" style="width: 72px; height: 72px;" />
-          <span style="max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ pdf.name }}</span>
-        </div>
-      } @else if (selectedAudio) {
-        <div class="pdf-selection" role="status" aria-label="Grabación de audio seleccionada" style="position: relative; display: grid; place-items: center; gap: .65rem; height: 188px; padding: 1rem; border: 1px solid var(--line); border-radius: 5px; background: #fff;">
-          <button type="button" aria-label="Quitar grabación de audio" title="Quitar grabación de audio" (click)="removeAudio.emit()" style="position: absolute; top: 8px; right: 8px; z-index: 1; width: 32px; height: 32px; padding: 5px; border: 0; border-radius: 50%; background: #fff; cursor: pointer;"><img src="close.png" alt="" style="display: block; width: 22px; height: 22px; object-fit: contain;" /></button>
-          <img src="audio.png" alt="Grabación de audio" style="display: block; width: 96px; height: 96px; object-fit: contain; background: #fff;" />
-          <span>Grabación de voz</span>
-        </div>
-      } @else {
-        <textarea id="description" formControlName="description" rows="10" placeholder="Escribe aquí la descripción de tu creación..."></textarea>
-      }
+      <div class="pdf-drop-zone" [class.drag-over]="pdfDragOver" (dragenter)="onPdfDragEnter($event)" (dragover)="onPdfDragOver($event)" (dragleave)="onPdfDragLeave($event)" (drop)="onPdfDrop($event)">
+        @if (selectedPdf; as pdf) {
+          <div class="pdf-selection" role="status" aria-label="Archivo PDF seleccionado" style="height: 188px; position: relative; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 5px;">
+            <button type="button" aria-label="Quitar archivo PDF" title="Quitar archivo PDF" (click)="removePdf.emit()" style="position: absolute; top: 8px; right: 8px; z-index: 1; width: 32px; height: 32px; padding: 5px; border: 0; border-radius: 50%; background: #fff; cursor: pointer;"><img src="close.png" alt="" style="display: block; width: 22px; height: 22px; object-fit: contain;" /></button>
+            <img src="Icon_pdf_file.svg.webp" alt="" style="width: 72px; height: 72px;" />
+            <span style="max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ pdf.name }}</span>
+          </div>
+        } @else if (selectedAudio) {
+          <div class="pdf-selection" role="status" aria-label="Grabación de audio seleccionada" style="position: relative; display: grid; place-items: center; gap: .65rem; height: 188px; padding: 1rem; border: 1px solid var(--line); border-radius: 5px; background: #fff;">
+            <button type="button" aria-label="Quitar grabación de audio" title="Quitar grabación de audio" (click)="removeAudio.emit()" style="position: absolute; top: 8px; right: 8px; z-index: 1; width: 32px; height: 32px; padding: 5px; border: 0; border-radius: 50%; background: #fff; cursor: pointer;"><img src="close.png" alt="" style="display: block; width: 22px; height: 22px; object-fit: contain;" /></button>
+            <img src="audio.png" alt="Grabación de audio" style="display: block; width: 96px; height: 96px; object-fit: contain; background: #fff;" />
+            <span>Grabación de voz</span>
+          </div>
+        } @else {
+          <textarea id="description" formControlName="description" rows="10" placeholder="Escribe aquí la descripción de tu creación..."></textarea>
+          <p class="drop-hint">También puedes arrastrar un archivo PDF aquí.</p>
+        }
+      </div>
       @if (!selectedPdf && !selectedAudio && analysisForm.controls['description']?.touched && analysisForm.controls['description']?.invalid) {
         <p class="field-error">La descripción debe tener entre 20 y 20 000 caracteres.</p>
       }

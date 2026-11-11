@@ -14,6 +14,9 @@
 label { display: grid; gap: .38rem; color: var(--ink); font-weight: 600; }
 textarea { width: 100%; resize: vertical; border: 1px solid var(--line); border-radius: 5px; padding: .8rem; outline: none; color: var(--ink); background: #fff; font: inherit; line-height: 1.55; }
 textarea:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgb(20 108 99 / .13); }
+.pdf-drop-zone { position: relative; }
+.pdf-drop-zone.drag-over::after { position: absolute; inset: 0; border: 2px dashed var(--teal); background: rgb(20 108 99 / .08); content: ''; pointer-events: none; }
+.drop-hint { margin: .45rem 0 0; color: var(--muted); font-size: .8rem; }
 .input-actions { display: flex; justify-content: flex-end; gap: .6rem; margin: .65rem 0 .35rem; }
 .voice-button, .pdf-button { border: 1px solid var(--teal); border-radius: 5px; padding: .58rem .85rem; color: var(--teal-dark); background: transparent; font-weight: 600; cursor: pointer; }
 .voice-button.recording { color: #fff; border-color: var(--danger); background: var(--danger); }
