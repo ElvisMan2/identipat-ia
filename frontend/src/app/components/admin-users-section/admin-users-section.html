@@ -1,0 +1,46 @@
+<section class="layout">
+  <article class="panel table-panel">
+    <div class="table-head">
+      <div class="table-actions">
+        <label class="user-search">Buscar
+          <input type="search" [value]="searchTerm" (input)="action.emit({ type: 'searchChange', event: $event })" (keydown.enter)="$event.preventDefault(); action.emit({ type: 'search' })" placeholder="Nombre, documento, correo..." aria-label="Buscar usuarios" />
+          <button class="ghost" type="button" (click)="action.emit({ type: 'search' })" [disabled]="loading">Buscar</button>
+        </label>
+        <label class="page-size">Estado
+          <select [value]="status" (change)="action.emit({ type: 'statusChange', event: $event })" [disabled]="loading"><option value="">Todos</option><option value="A">Activos</option><option value="I">Inactivos</option></select>
+        </label>
+        <label class="page-size">Tipo
+          <select [value]="userType" (change)="action.emit({ type: 'typeChange', event: $event })" [disabled]="loading"><option value="">Todos</option><option value="STANDARD">Estándar</option><option value="ADMIN">Administradores</option></select>
+        </label>
+        <label class="page-size">Mostrar
+          <select [value]="pageSize" (change)="action.emit({ type: 'pageSizeChange', event: $event })"><option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option></select>
+        </label>
+        <button class="ghost" type="button" (click)="action.emit({ type: 'download' })" [disabled]="downloading">{{ downloading ? 'Descargando...' : 'Descargar' }}</button>
+        <button class="ghost" type="button" (click)="action.emit({ type: 'refresh' })" [disabled]="loading">{{ loading ? 'Cargando...' : 'Refrescar' }}</button>
+      </div>
+    </div>
+    @if (error) { <p class="error" role="alert">{{ error }}</p> }
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>ID</th><th>Nombre completo</th><th>Tipo doc.</th><th>Num doc.</th><th>Género</th><th>Correo</th><th>Tipo</th><th>Profesión</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody>
+          @for (user of users; track user.userId) {
+            <tr [class.editing]="editingUserId === user.userId">
+              <td>{{ user.userId }}</td><td>{{ user.firstName }} {{ user.paternalLastName }} {{ user.maternalLastName }}</td>
+              <td>{{ user.doiType }}</td><td>{{ user.doi }}</td><td>{{ user.gender }}</td><td>{{ user.email }}</td>
+              <td>{{ user.userType.toUpperCase() === 'ADMIN' ? 'Administrador' : '' }}</td><td>{{ user.profession }}</td><td>{{ user.status }}</td>
+              <td class="row-actions"><button type="button" class="ghost" (click)="action.emit({ type: 'edit', user })">Editar</button></td>
+            </tr>
+          } @empty { <tr><td colspan="10" class="empty">No hay usuarios registrados.</td></tr> }
+        </tbody>
+      </table>
+    </div>
+    <nav class="pagination" aria-label="Paginación de usuarios">
+      <span>Página {{ page + 1 }} de {{ totalPages || 1 }} · {{ totalElements }} usuarios</span>
+      <div class="table-actions">
+        <button class="ghost" type="button" (click)="action.emit({ type: 'pageChange', page: page - 1 })" [disabled]="loading || page === 0">Anterior</button>
+        <button class="ghost" type="button" (click)="action.emit({ type: 'pageChange', page: page + 1 })" [disabled]="loading || page >= totalPages - 1">Siguiente</button>
+      </div>
+    </nav>
+  </article>
+</section>

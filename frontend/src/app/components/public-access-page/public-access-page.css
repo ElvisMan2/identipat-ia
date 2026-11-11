@@ -1,0 +1,54 @@
+:host { display: block; }
+.home-page { min-height: 100dvh; background: linear-gradient(90deg, rgb(20 108 99 / .05) 1px, transparent 1px), linear-gradient(rgb(20 108 99 / .05) 1px, transparent 1px), var(--paper); background-size: 40px 40px; }
+.topbar { height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0 max(1.25rem, calc((100vw - 1180px) / 2)); border-bottom: 1px solid var(--line); background: rgb(251 250 246 / .94); }
+.brand { color: var(--ink); font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; font-weight: 700; letter-spacing: .08em; text-decoration: none; }
+.hero { width: min(1180px, calc(100% - 2.5rem)); min-height: calc(100dvh - 168px); margin: 0 auto; padding: clamp(2.5rem, 6vw, 5rem) 0 3rem; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr); align-items: center; gap: clamp(2rem, 6vw, 5rem); }
+.hero h1 { max-width: 720px; margin: 0; font-size: clamp(2.35rem, 5.3vw, 4.8rem); line-height: 1.02; letter-spacing: 0; }
+.eyebrow { margin: 0 0 .75rem; color: var(--coral); font-size: .76rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.intro { max-width: 630px; margin: 1.4rem 0 2rem; color: var(--muted); font-size: 1.08rem; line-height: 1.7; }
+.access-block { max-width: 650px; padding: 1.35rem; border-left: 4px solid var(--coral); background: #fff; box-shadow: 0 18px 50px rgb(24 51 47 / .1); }
+.section-label { color: var(--teal); font-size: .76rem; font-weight: 700; text-transform: uppercase; }
+.access-block h2 { margin: .25rem 0 1rem; font-size: 1.25rem; }
+.document-fields { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: .75rem; }
+.registration-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.registration-wide { grid-column: 1 / -1; }
+.registration-actions { display: flex; align-items: center; gap: .75rem; }
+.registration-actions .primary-button { width: auto; margin-top: 0; }
+.registration-legal-status { display: flex; align-items: center; flex-wrap: wrap; gap: .45rem .75rem; padding: .85rem 1rem; border: 1px solid var(--line); background: #f7faf9; color: var(--muted); font-size: .84rem; }
+.registration-legal-status strong { width: 100%; color: var(--ink); }
+.registration-legal-status p { margin: 0; }
+.registration-legal-status a, .terms-checkbox a { color: var(--teal-dark); }
+.registration-legal-status a { font-weight: 600; }
+.terms-checkbox { display: block; }
+.terms-checkbox span { display: flex; align-items: center; gap: .4rem; font-weight: 600; }
+.terms-checkbox input { width: auto; min-height: auto; }
+.registration-form input.ng-invalid.ng-touched:not([type='checkbox']), .registration-form select.ng-invalid.ng-touched { border-color: var(--danger); background: #fff5f3; box-shadow: 0 0 0 3px rgb(168 50 50 / .12); }
+.registration-form .terms-checkbox input.ng-invalid.ng-touched { outline: 2px solid var(--danger); }
+label { display: grid; gap: .38rem; color: var(--ink); font-size: .82rem; font-weight: 600; }
+input, select { width: 100%; min-height: 46px; border: 1px solid var(--line); border-radius: 5px; padding: .68rem .75rem; outline: none; color: var(--ink); background: #fff; transition: border-color 150ms ease, box-shadow 150ms ease; }
+input:focus, select:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgb(20 108 99 / .13); }
+.password-field { margin-top: .8rem; }
+.primary-button { width: 100%; min-height: 48px; margin-top: 1rem; border: 0; border-radius: 5px; padding: .75rem 1rem; color: #fff; background: var(--teal); font-weight: 700; cursor: pointer; }
+.primary-button:hover { background: var(--teal-dark); }
+.outline-button { border: 1px solid var(--teal); border-radius: 6px; padding: .68rem 1rem; color: var(--teal-dark); background: transparent; font-weight: 600; cursor: pointer; }
+.access-register-button { width: 100%; margin-top: .65rem; }
+button:disabled { opacity: .62; cursor: not-allowed; }
+.field-error, .access-message { margin: .6rem 0 0; font-size: .86rem; }
+.field-error { color: var(--danger); }
+.access-message { border-left: 3px solid var(--teal); padding: .55rem .75rem; color: var(--teal-dark); background: var(--mint); }
+.access-message.access-error { border-left-color: var(--danger); color: var(--danger); background: #fbe8e5; }
+.privacy-note { margin: .9rem 0 0; color: var(--muted); font-size: .78rem; }
+.hero-visual { position: relative; margin: 0; min-height: 610px; overflow: hidden; background: var(--mint); }
+.hero-visual::before { content: ''; position: absolute; inset: 18px; z-index: 1; border: 1px solid rgb(255 255 255 / .75); pointer-events: none; }
+.hero-visual img { width: 100%; height: 610px; display: block; object-fit: cover; }
+.hero-visual figcaption { position: absolute; right: 0; bottom: 0; z-index: 2; width: min(82%, 340px); padding: 1rem 1.3rem; color: #fff; background: var(--teal-dark); font-family: 'Space Grotesk', sans-serif; }
+.privacy-note a { color: var(--teal-dark); }
+.registration-progress-modal, .access-progress-modal { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 1rem; background: rgb(15 26 24 / .55); }
+.registration-progress, .access-progress { display: flex; align-items: center; gap: 1rem; width: min(520px, 100%); padding: 1.25rem; border: 1px solid var(--line); background: #fff; box-shadow: 0 18px 50px rgb(24 51 47 / .18); }
+.registration-progress h2, .access-progress h2 { margin: 0; font-size: 1.15rem; }
+.registration-progress p, .access-progress p { margin: .3rem 0 0; color: var(--muted); line-height: 1.5; }
+.registration-success-icon { display: grid; width: 2rem; height: 2rem; flex: 0 0 auto; place-items: center; border-radius: 50%; color: #fff; background: #17643a; font-size: 1.35rem; font-weight: 700; }
+.analysis-spinner { width: 2rem; height: 2rem; flex: 0 0 auto; border: 3px solid var(--mint); border-top-color: var(--teal); border-radius: 50%; animation: analysis-spin .8s linear infinite; }
+@keyframes analysis-spin { to { transform: rotate(360deg); } }
+@media (max-width: 920px) { .hero { grid-template-columns: 1fr; padding-top: 2.5rem; } .hero-visual, .hero-visual img { height: 420px; min-height: 420px; } }
+@media (max-width: 620px) { .topbar { height: 68px; padding-inline: 1rem; } .outline-button { padding: .55rem .65rem; font-size: .78rem; } .hero { width: min(100% - 2rem, 1180px); gap: 2.25rem; } .hero h1 { font-size: 2.45rem; } .document-fields { grid-template-columns: 92px minmax(0, 1fr); } .registration-form { grid-template-columns: 1fr; } .registration-wide { grid-column: auto; } .access-block { padding: 1rem; } }

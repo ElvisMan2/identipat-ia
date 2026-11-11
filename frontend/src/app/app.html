@@ -7,601 +7,82 @@
     (retry)="loadPublicLegalDocument()"
   />
 } @else if (view() === 'admin') {
-  <main class="admin-page">
-    <header class="topbar admin-bar">
-      <div><a class="brand" href="/" (click)="$event.preventDefault(); logout()">IDENTIPAT IA</a><span>Panel administrativo</span></div>
-      <div class="result-actions">
-        <button class="outline-button" type="button" (click)="openPredictions()" [disabled]="navigationPending()">Predicciones</button>
-        <button class="outline-button" type="button" (click)="logout()">Cerrar sesión</button>
-      </div>
-    </header>
-
-    @if (navigationPending(); as pending) {
-      <section class="access-progress-modal" role="status" aria-live="polite">
-        <div class="access-progress">
-          <span class="analysis-spinner" aria-hidden="true"></span>
-          <div>
-            <h2>{{ pending === 'admin' ? 'Cargando panel de administración' : 'Cargando formulario de predicciones' }}</h2>
-            <p>Estamos preparando la pantalla solicitada.</p>
-          </div>
-        </div>
-      </section>
-    }
-
-    <section class="admin-title">
-      <p class="eyebrow">Administración</p>
-      <h1>{{ adminSection() === 'users' ? 'Gestión de usuarios' : adminSection() === 'predictions' ? 'Predicciones' : adminSection() === 'profile' ? 'Perfil' : 'Configuraciones' }}</h1>
-      <p>
-        @if (adminSection() === 'users') { Consulta, registra y actualiza la información de los usuarios. }
-        @else if (adminSection() === 'predictions') { Consulta el historial de predicciones realizadas en el sistema. }
-        @else if (adminSection() === 'profile') { Revisa y actualiza tu información de administrador. }
-        @else { Administra las opciones del sistema. }
-      </p>
-    </section>
-
-    <nav class="admin-tabs" aria-label="Secciones del panel administrativo">
-      <button type="button" [class.active]="adminSection() === 'predictions'" (click)="setAdminSection('predictions')">Predicciones</button>
-      <button type="button" [class.active]="adminSection() === 'users'" (click)="setAdminSection('users')">Gestión de usuarios</button>
-      <button type="button" [class.active]="adminSection() === 'profile'" (click)="setAdminSection('profile')">Perfil</button>
-      <button type="button" [class.active]="adminSection() === 'settings'" (click)="setAdminSection('settings')">Configuraciones</button>
-    </nav>
-
+  <app-admin-panel-shell
+    [section]="adminSection()"
+    [navigationPending]="navigationPending()"
+    (logout)="logout()"
+    (openPredictions)="openPredictions()"
+    (sectionChange)="setAdminSection($event)"
+  >
     @if (adminSection() === 'predictions') {
-    <section class="layout">
-      <article class="panel table-panel">
-        <div class="table-head">
-          <h2>Historial de predicciones</h2>
-          <div class="table-actions">
-            <button class="ghost" type="button" (click)="downloadAnalysesCsv()" [disabled]="downloadingAnalyses()">{{ downloadingAnalyses() ? 'Descargando...' : 'Descargar' }}</button>
-            <button class="ghost" type="button" (click)="loadAnalyses()" [disabled]="analysesLoading()">{{ analysesLoading() ? 'Cargando...' : 'Refrescar' }}</button>
-          </div>
-        </div>
-        <div class="prediction-filters">
-          <label class="user-search">Buscar
-            <input type="search" [value]="analysisSearch()" (input)="updateAnalysisSearch($event)" (keydown.enter)="$event.preventDefault(); searchAnalyses()" placeholder="Nombre, apellidos, documento o correo..." />
-            <button class="ghost" type="button" (click)="searchAnalyses()" [disabled]="analysesLoading()">Buscar</button>
-          </label>
-          <label class="page-size">Fecha inicio
-            <input type="date" [value]="analysisFrom()" (change)="updateAnalysisFrom($event)" />
-          </label>
-          <label class="page-size">Fecha fin
-            <input type="date" [value]="analysisTo()" (change)="updateAnalysisTo($event)" />
-          </label>
-          <label class="page-size">Mostrar
-            <select [value]="analysisPageSize()" (change)="changeAnalysisPageSize($event)" [disabled]="analysesLoading()">
-              <option value="5">5</option>
-              <option value="10">10</option>
-              <option value="20">20</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-          </label>
-        </div>
-        @if (analysesError()) { <p class="error" role="alert">{{ analysesError() }}</p> }
-        <div class="table-wrap">
-          <table class="predictions-table">
-            <thead><tr><th>Fecha</th><th>Nombres</th><th>Apellidos</th><th>Conclusión</th><th>Modalidades identificadas</th><th>Orientación consultada</th></tr></thead>
-            <tbody>
-              @for (analysis of analyses(); track analysis.analysisId) {
-                <tr>
-                  <td class="prediction-date">{{ analysis.createdAt | date:'dd/MM/yyyy' }}</td>
-                  <td>{{ analysis.firstName }}</td>
-                  <td>{{ analysis.lastNames }}</td>
-                  <td class="prediction-summary">{{ analysisSummary(analysis.conclusion) }}</td>
-                  <td>{{ analysis.identifiedModalities.join(', ') || 'Ninguna' }}</td>
-                  <td>{{ analysis.guidanceConsulted ? 'Sí' : 'No' }}</td>
-                </tr>
-              } @empty {
-                @if (!analysesLoading()) { <tr><td colspan="6" class="empty">No hay predicciones registradas.</td></tr> }
-              }
-            </tbody>
-          </table>
-        </div>
-        <nav class="pagination" aria-label="Paginación del historial de predicciones">
-          <span>Página {{ analysisPage() + 1 }} de {{ analysisTotalPages() || 1 }} · {{ analysisTotalElements() }} predicciones</span>
-          <div class="table-actions">
-            <button class="ghost" type="button" (click)="changeAnalysisPage(analysisPage() - 1)" [disabled]="analysesLoading() || analysisPage() === 0">Anterior</button>
-            <button class="ghost" type="button" (click)="changeAnalysisPage(analysisPage() + 1)" [disabled]="analysesLoading() || analysisPage() >= analysisTotalPages() - 1">Siguiente</button>
-          </div>
-        </nav>
-      </article>
-    </section>
-    }
-
-    @if (adminSection() === 'users') {
-    <section class="layout">
-      <article class="panel table-panel">
-        <div class="table-head">
-          <div class="table-actions">
-            <label class="user-search">Buscar
-              <input type="search" [value]="userSearch()" (input)="updateUserSearch($event)" (keydown.enter)="$event.preventDefault(); searchUsers()" placeholder="Nombre, documento, correo..." aria-label="Buscar usuarios" />
-              <button class="ghost" type="button" (click)="searchUsers()" [disabled]="loading()">Buscar</button>
-            </label>
-            <label class="page-size">Estado
-              <select [value]="userStatus()" (change)="changeUserStatus($event)" [disabled]="loading()">
-                <option value="">Todos</option>
-                <option value="A">Activos</option>
-                <option value="I">Inactivos</option>
-              </select>
-            </label>
-            <label class="page-size">Tipo
-              <select [value]="userType()" (change)="changeUserType($event)" [disabled]="loading()">
-                <option value="">Todos</option>
-                <option value="STANDARD">Estándar</option>
-                <option value="ADMIN">Administradores</option>
-              </select>
-            </label>
-            <label class="page-size">Mostrar
-              <select [value]="userPageSize()" (change)="changeUserPageSize($event)">
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-              </select>
-            </label>
-            <button class="ghost" type="button" (click)="downloadUsersCsv()" [disabled]="downloadingUsers()">{{ downloadingUsers() ? 'Descargando...' : 'Descargar' }}</button>
-            <button class="ghost" type="button" (click)="loadUsers()" [disabled]="loading()">{{ loading() ? 'Cargando...' : 'Refrescar' }}</button>
-          </div>
-        </div>
-        @if (errorMessage()) { <p class="error" role="alert">{{ errorMessage() }}</p> }
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>ID</th><th>Nombre completo</th><th>Tipo doc.</th><th>Num doc.</th><th>Género</th><th>Correo</th><th>Tipo</th><th>Profesión</th><th>Estado</th><th>Acciones</th></tr></thead>
-            <tbody>
-              @for (user of users(); track user.userId) {
-                <tr [class.editing]="isEditing(user)">
-                  <td>{{ user.userId }}</td><td>{{ user.firstName }} {{ user.paternalLastName }} {{ user.maternalLastName }}</td>
-                  <td>{{ user.doiType }}</td><td>{{ user.doi }}</td><td>{{ user.gender }}</td><td>{{ user.email }}</td>
-                  <td>{{ user.userType.toUpperCase() === 'ADMIN' ? 'Administrador' : '' }}</td><td>{{ user.profession }}</td><td>{{ user.status }}</td>
-                  <td class="row-actions">
-                    <button type="button" class="ghost" (click)="startEdit(user)">Editar</button>
-                  </td>
-                </tr>
-              } @empty { <tr><td colspan="10" class="empty">No hay usuarios registrados.</td></tr> }
-            </tbody>
-          </table>
-        </div>
-        <nav class="pagination" aria-label="Paginación de usuarios">
-          <span>Página {{ userPage() + 1 }} de {{ userTotalPages() || 1 }} · {{ userTotalElements() }} usuarios</span>
-          <div class="table-actions">
-            <button class="ghost" type="button" (click)="changeUserPage(userPage() - 1)" [disabled]="loading() || userPage() === 0">Anterior</button>
-            <button class="ghost" type="button" (click)="changeUserPage(userPage() + 1)" [disabled]="loading() || userPage() >= userTotalPages() - 1">Siguiente</button>
-          </div>
-        </nav>
-      </article>
-    </section>
-    }
-
-    @if (adminSection() === 'profile') {
-    <section class="layout">
-      <article class="panel">
-        <h2>Mi perfil</h2>
-        @if (!currentAdmin()) {
-          <p class="empty-state">No se pudo cargar tu información. Refresca la sección de usuarios e inténtalo nuevamente.</p>
-        } @else {
-          <div class="profile-readonly">
-            <p><strong>Documento:</strong> {{ currentAdmin()?.doiType }} {{ currentAdmin()?.doi }}</p>
-            <p><strong>Tipo de usuario:</strong> Administrador</p>
-            <p><strong>Estado:</strong> {{ isInactive(currentAdmin()!) ? 'Inactivo' : 'Activo' }}</p>
-          </div>
-          <form [formGroup]="profileForm" (ngSubmit)="updateProfile()" class="form-grid registration-form">
-            <label>Nombres <input type="text" formControlName="firstName" maxlength="30" /></label>
-            <label>Apellido paterno <input type="text" formControlName="paternalLastName" maxlength="30" /></label>
-            <label>Apellido materno <input type="text" formControlName="maternalLastName" maxlength="30" /></label>
-            <label>Fecha de nacimiento <input type="date" formControlName="birthDate" min="1926-01-01" max="2020-12-31" /></label>
-            <label>Género
-              <select formControlName="gender"><option value="" disabled>Seleccione</option><option value="MALE">Masculino</option><option value="FEMALE">Femenino</option></select>
-            </label>
-            <label>Correo electrónico <input type="email" formControlName="email" /></label>
-            <label>Teléfono <input type="text" formControlName="phone" inputmode="numeric" maxlength="9" pattern="[0-9]*" (input)="sanitizePhone($event, profileForm.controls.phone)" /></label>
-            <label>Celular <input type="tel" formControlName="mobilePhone" inputmode="tel" maxlength="15" (input)="sanitizeMobilePhone($event, profileForm.controls.mobilePhone)" /></label>
-            <label>Profesión <input type="text" formControlName="profession" /></label>
-            @if (profileMessage()) {
-              <p [class]="profileMessage().includes('correctamente') ? 'success-message' : 'error'" role="status">{{ profileMessage() }}</p>
-            }
-            <div class="actions">
-              <button type="submit" [disabled]="savingProfile()">{{ savingProfile() ? 'Guardando...' : 'Actualizar mis datos' }}</button>
-            </div>
-          </form>
-          <h2 style="margin-top: 1.5rem">Seguridad</h2>
-          <form [formGroup]="securityForm" (ngSubmit)="updateAdminPassword()" class="form-grid registration-form">
-            <label>Contraseña nueva
-              <input id="profile-password" [type]="showAdminPassword() ? 'text' : 'password'" formControlName="password" autocomplete="new-password" />
-            </label>
-            <label>Confirmar contraseña nueva
-              <input id="profile-confirm-password" [type]="showAdminPassword() ? 'text' : 'password'" formControlName="confirmPassword" autocomplete="new-password" />
-              @if (securityForm.hasError('passwordMismatch') && securityForm.controls.confirmPassword.touched) {
-                <span class="field-error" role="alert">Las contraseñas no coinciden.</span>
-              }
-            </label>
-            <label class="terms-checkbox">
-              <span><input type="checkbox" [checked]="showAdminPassword()" (change)="toggleAdminPasswordVisibility()" /> Mostrar contraseña</span>
-            </label>
-            @if (passwordMessage()) {
-              <p class="error" role="alert">{{ passwordMessage() }}</p>
-            }
-            <div class="actions">
-              <button type="submit" [disabled]="savingPassword()">{{ savingPassword() ? 'Guardando...' : 'Actualizar contraseña' }}</button>
-            </div>
-          </form>
-          @if (passwordSuccessModal()) {
-            <div class="modal-backdrop" (click)="closePasswordSuccessModal()" (keydown.escape)="closePasswordSuccessModal()">
-              <article class="panel" role="dialog" aria-modal="true" aria-labelledby="password-success-title" (click)="$event.stopPropagation()" style="width: min(420px, 100%); text-align: center">
-                <h2 id="password-success-title">Contraseña actualizada</h2>
-                <p role="status">La contraseña se actualizó correctamente.</p>
-                <div class="actions" style="justify-content: center">
-                  <button type="button" (click)="closePasswordSuccessModal()">Cerrar</button>
-                </div>
-              </article>
-            </div>
-          }
-        }
-      </article>
-    </section>
-    }
-
-    @if (adminSection() === 'settings') {
-    <section class="layout" style="margin-bottom: 1.5rem">
-      <article class="panel table-panel">
-        <div class="table-head">
-          <h2>Orientación</h2>
-        </div>
-        <p class="empty-state">Orientación personalizada por cada tipo de registro.</p>
-        <details class="orientation-subsection">
-          <summary>
-            <span class="orientation-summary-content">
-              <span class="orientation-summary-title">Patente de invención</span>
-              <span class="status-badge" [attr.data-status]="latestPatentGuide()?.status ?? 'NONE'">
-                Estado actual: {{ latestPatentGuide()?.status === 'DRAFT' ? 'Borrador' : latestPatentGuide()?.status === 'ACTIVE' ? 'Activo' : 'Sin versión' }}
-              </span>
-            </span>
-            <span class="orientation-chevron" aria-hidden="true"></span>
-          </summary>
-
-          <input
-            id="patent-orientation-short-description"
-            type="text"
-            [value]="patentOrientationShortDescription()"
-            (input)="updatePatentOrientationShortDescription($event)"
-            [style.border-color]="patentOrientationShortDescriptionInvalid() ? 'var(--danger)' : null"
-            [attr.aria-invalid]="patentOrientationShortDescriptionInvalid()"
-            minlength="20"
-            maxlength="240"
-            required
-            style="margin-top: 1rem; margin-bottom: 1rem"
-            placeholder="Orientación para Patente de invención"
-          />
-          @if (patentOrientationShortDescriptionInvalid()) {
-            <p class="field-error">
-              La descripción corta debe tener entre 20 y 240 caracteres.
-            </p>
-          }
-          <ckeditor
-            [editor]="patentEditor"
-            [config]="patentEditorConfig"
-            (ready)="onPatentEditorReady($event)"
-            (change)="updatePatentOrientationHtml($event)"
-            (blur)="updatePatentOrientationHtml($event)"
-            aria-label="Orientación de Patente de invención"
-          ></ckeditor>
-          <div class="actions">
-            <button type="button" (click)="savePatentOrientationDraft()" [disabled]="!patentOrientationCanSave() || !hasPatentOrientationChanges() || savingPatentOrientation()">
-              {{ savingPatentOrientation() ? 'Guardando...' : 'Guardar borrador' }}
-            </button>
-            @if (savedPatentOrientationDraft(); as draft) {
-              <button type="button" class="outline-button" (click)="openPublishPatentOrientationModal()" [disabled]="hasPatentOrientationChanges() || activatingPatentOrientation() || savingPatentOrientation()">
-                {{ activatingPatentOrientation() ? 'Publicando...' : 'Publicar' }}
-              </button>
-            }
-          </div>
-          @if (patentOrientationError()) {
-            <p class="error" role="alert">{{ patentOrientationError() }}</p>
-          }
-        </details>
-        @if (patentOrientationMessage()) {
-          <p class="success-message" role="status">{{ patentOrientationMessage() }}</p>
-        }
-        @if (showPublishPatentOrientationModal(); as publishModal) {
-          @if (savedPatentOrientationDraft(); as draft) {
-          <div class="modal-backdrop" (click)="closePublishPatentOrientationModal()" (keydown.escape)="closePublishPatentOrientationModal()">
-            <article class="panel modal-panel" role="dialog" aria-modal="true" aria-labelledby="publish-patent-orientation-title" (click)="$event.stopPropagation()" style="text-align: center">
-              <h2 id="publish-patent-orientation-title">Publicar orientación</h2>
-              <p>¿Confirmas publicar este borrador? Reemplazará la orientación activa actual.</p>
-              @if (patentOrientationError()) {
-                <p class="error" role="alert">{{ patentOrientationError() }}</p>
-              }
-              <div class="actions" style="justify-content: center">
-                <button type="button" class="ghost" (click)="closePublishPatentOrientationModal()" [disabled]="activatingPatentOrientation()">Cancelar</button>
-                <button type="button" (click)="activatePatentOrientationDraft()" [disabled]="activatingPatentOrientation()">
-                  {{ activatingPatentOrientation() ? 'Publicando...' : 'Confirmar publicación' }}
-                </button>
-              </div>
-            </article>
-          </div>
-          }
-        }
-        @if (utilityModelOrientationMessage()) {
-          <p class="success-message" role="status">{{ utilityModelOrientationMessage() }}</p>
-        }
-        <details class="orientation-subsection">
-          <summary>
-            <span class="orientation-summary-content">
-              <span class="orientation-summary-title">Modelo de utilidad</span>
-              <span class="status-badge" [attr.data-status]="latestUtilityModelGuide()?.status ?? 'NONE'">
-                Estado actual: {{ latestUtilityModelGuide()?.status === 'DRAFT' ? 'Borrador' : latestUtilityModelGuide()?.status === 'ACTIVE' ? 'Activo' : 'Sin versión' }}
-              </span>
-            </span>
-            <span class="orientation-chevron" aria-hidden="true"></span>
-          </summary>
-
-          <input
-            id="utility-model-orientation-short-description"
-            type="text"
-            [value]="utilityModelOrientationShortDescription()"
-            (input)="updateUtilityModelOrientationShortDescription($event)"
-            [style.border-color]="utilityModelOrientationShortDescriptionInvalid() ? 'var(--danger)' : null"
-            [attr.aria-invalid]="utilityModelOrientationShortDescriptionInvalid()"
-            minlength="20"
-            maxlength="240"
-            required
-            style="margin-top: 1rem; margin-bottom: 1rem"
-            placeholder="Orientación para Modelo de utilidad"
-          />
-          @if (utilityModelOrientationShortDescriptionInvalid()) {
-            <p class="field-error">
-              La descripción corta debe tener entre 20 y 240 caracteres.
-            </p>
-          }
-          <ckeditor
-            [editor]="utilityModelEditor"
-            [config]="patentEditorConfig"
-            (ready)="onUtilityModelEditorReady($event)"
-            (change)="updateUtilityModelOrientationHtml($event)"
-            (blur)="updateUtilityModelOrientationHtml($event)"
-            aria-label="Orientación de Modelo de utilidad"
-          ></ckeditor>
-          <div class="actions">
-            <button type="button" (click)="saveUtilityModelOrientationDraft()" [disabled]="!utilityModelOrientationCanSave() || !hasUtilityModelOrientationChanges() || savingUtilityModelOrientation()">
-              {{ savingUtilityModelOrientation() ? 'Guardando...' : 'Guardar borrador' }}
-            </button>
-            @if (savedUtilityModelOrientationDraft(); as draft) {
-              <button type="button" class="outline-button" (click)="openPublishUtilityModelOrientationModal()" [disabled]="hasUtilityModelOrientationChanges() || activatingUtilityModelOrientation() || savingUtilityModelOrientation()">
-                {{ activatingUtilityModelOrientation() ? 'Publicando...' : 'Publicar' }}
-              </button>
-            }
-          </div>
-          @if (utilityModelOrientationError()) {
-            <p class="error" role="alert">{{ utilityModelOrientationError() }}</p>
-          }
-        </details>
-        @if (showPublishUtilityModelOrientationModal(); as publishModal) {
-          @if (savedUtilityModelOrientationDraft(); as draft) {
-          <div class="modal-backdrop" (click)="closePublishUtilityModelOrientationModal()" (keydown.escape)="closePublishUtilityModelOrientationModal()">
-            <article class="panel modal-panel" role="dialog" aria-modal="true" aria-labelledby="publish-utility-model-orientation-title" (click)="$event.stopPropagation()" style="text-align: center">
-              <h2 id="publish-utility-model-orientation-title">Publicar orientación</h2>
-              <p>¿Confirmas publicar este borrador? Reemplazará la orientación activa actual.</p>
-              @if (utilityModelOrientationError()) {
-                <p class="error" role="alert">{{ utilityModelOrientationError() }}</p>
-              }
-              <div class="actions" style="justify-content: center">
-                <button type="button" class="ghost" (click)="closePublishUtilityModelOrientationModal()" [disabled]="activatingUtilityModelOrientation()">Cancelar</button>
-                <button type="button" (click)="activateUtilityModelOrientationDraft()" [disabled]="activatingUtilityModelOrientation()">
-                  {{ activatingUtilityModelOrientation() ? 'Publicando...' : 'Confirmar publicación' }}
-                </button>
-              </div>
-            </article>
-          </div>
-          }
-        }
-        @for (section of additionalOrientationSections; track section.type) {
-          @let state = orientationState(section.type);
-          <details class="orientation-subsection">
-            <summary>
-              <span class="orientation-summary-content">
-                <span class="orientation-summary-title">{{ section.label }}</span>
-                <span class="status-badge" [attr.data-status]="state.latestGuide()?.status ?? 'NONE'">
-                  Estado actual: {{ state.latestGuide()?.status === 'DRAFT' ? 'Borrador' : state.latestGuide()?.status === 'ACTIVE' ? 'Activo' : 'Sin versión' }}
-                </span>
-              </span>
-              <span class="orientation-chevron" aria-hidden="true"></span>
-            </summary>
-
-            <input
-              [id]="section.type + '-orientation-short-description'"
-              type="text"
-              [value]="state.shortDescription()"
-              (input)="updateAdditionalOrientationShortDescription(section.type, $event)"
-              [style.border-color]="state.shortDescriptionInvalid() ? 'var(--danger)' : null"
-              [attr.aria-invalid]="state.shortDescriptionInvalid()"
-              minlength="20"
-              maxlength="240"
-              required
-              style="margin-top: 1rem; margin-bottom: 1rem"
-              [placeholder]="'Orientación para ' + section.label"
-            />
-            @if (state.shortDescriptionInvalid()) {
-              <p class="field-error">
-                La descripción corta debe tener entre 20 y 240 caracteres.
-              </p>
-            }
-            <ckeditor
-              [editor]="additionalOrientationEditor"
-              [config]="patentEditorConfig"
-              (ready)="onAdditionalOrientationEditorReady(section.type, $event)"
-              (change)="updateAdditionalOrientationHtml(section.type, $event)"
-              (blur)="updateAdditionalOrientationHtml(section.type, $event)"
-              [attr.aria-label]="'Orientación de ' + section.label"
-            ></ckeditor>
-            <div class="actions">
-              <button type="button" (click)="saveAdditionalOrientationDraft(section.type)" [disabled]="!state.canSave() || !state.hasChanges() || state.saving()">
-                {{ state.saving() ? 'Guardando...' : 'Guardar borrador' }}
-              </button>
-              @if (state.savedDraft()) {
-                <button type="button" class="outline-button" (click)="openPublishAdditionalOrientationModal(section.type)" [disabled]="state.hasChanges() || state.activating() || state.saving()">
-                  {{ state.activating() ? 'Publicando...' : 'Publicar' }}
-                </button>
-              }
-            </div>
-            @if (state.error()) {
-              <p class="error" role="alert">{{ state.error() }}</p>
-            }
-          </details>
-          @if (state.message()) {
-            <p class="success-message" role="status">{{ state.message() }}</p>
-          }
-          @if (state.showPublishModal()) {
-            @if (state.savedDraft()) {
-              <div class="modal-backdrop" (click)="closePublishAdditionalOrientationModal(section.type)" (keydown.escape)="closePublishAdditionalOrientationModal(section.type)">
-                <article class="panel modal-panel" role="dialog" aria-modal="true" [attr.aria-labelledby]="'publish-' + section.type + '-orientation-title'" (click)="$event.stopPropagation()" style="text-align: center">
-                  <h2 [id]="'publish-' + section.type + '-orientation-title'">Publicar orientación</h2>
-                  <p>¿Confirmas publicar este borrador? Reemplazará la orientación activa actual.</p>
-                  @if (state.error()) {
-                    <p class="error" role="alert">{{ state.error() }}</p>
-                  }
-                  <div class="actions" style="justify-content: center">
-                    <button type="button" class="ghost" (click)="closePublishAdditionalOrientationModal(section.type)" [disabled]="state.activating()">Cancelar</button>
-                    <button type="button" (click)="activateAdditionalOrientationDraft(section.type)" [disabled]="state.activating()">
-                      {{ state.activating() ? 'Publicando...' : 'Confirmar publicación' }}
-                    </button>
-                  </div>
-                </article>
-              </div>
-            }
-          }
-        }
-      </article>
-      <article class="panel table-panel admin-legal-panel">
-        <details class="legal-admin-subsection">
-          <summary class="legal-admin-summary">
-            <h2>Términos de uso y Política de Privacidad</h2>
-            <span class="orientation-chevron" aria-hidden="true"></span>
-          </summary>
-          @if (legalAdminLoading()) {
-            <p role="status">Cargando documento legal...</p>
-          } @else {
-            <div class="legal-admin-fields">
-              <label for="legal-admin-title">Título</label>
-              <input
-                id="legal-admin-title"
-                type="text"
-                [value]="legalAdminTitle()"
-                (input)="updateLegalAdminTitle($event)"
-                [disabled]="legalAdminSaving()"
-                maxlength="200"
-              />
-              <label class="legal-admin-content-label">Contenido</label>
-              <ckeditor
-                [editor]="legalAdminEditor"
-                [config]="legalAdminEditorConfig"
-                (ready)="onLegalAdminEditorReady($event)"
-                (change)="updateLegalAdminHtml($event)"
-                (blur)="updateLegalAdminHtml($event)"
-                aria-label="Contenido del documento legal"
-              ></ckeditor>
-              @if (legalAdminDocument(); as document) {
-                <p class="legal-admin-updated">Última actualización: {{ legalDateLabel(document.updatedAt) }}</p>
-              } @else {
-                <p class="legal-admin-updated">Primera configuración</p>
-              }
-              @if (legalAdminMessage()) {
-                <p class="success-message" role="status">{{ legalAdminMessage() }}</p>
-              }
-              @if (legalAdminError()) {
-                <p class="error" role="alert">{{ legalAdminError() }}</p>
-              }
-              <div class="actions legal-admin-actions">
-                <button
-                  type="button"
-                  (click)="saveAdminLegalDocument()"
-                  [disabled]="legalAdminSaving() || !legalAdminTitle().trim() || !legalAdminHtml().trim() || (!legalAdminHasChanges() && !!legalAdminDocument())"
-                >
-                  {{ legalAdminSaving() ? 'Guardando...' : 'Guardar cambios' }}
-                </button>
-              </div>
-            </div>
-          }
-        </details>
-      </article>
-      <article class="panel table-panel">
-        <details class="legal-admin-subsection">
-          <summary class="legal-admin-summary">
-            <h2>Disclaimer Institucional</h2>
-            <span class="orientation-chevron" aria-hidden="true"></span>
-          </summary>
-          @if (settingsLoading()) {
-            <p role="status">Cargando disclaimers...</p>
-          } @else if (settingsError()) {
-            <p class="error" role="alert">{{ settingsError() }}</p>
-            <button class="ghost" type="button" (click)="loadReportDisclaimers()">Reintentar</button>
-          } @else if (latestReportDisclaimer(); as disclaimer) {
-            <div class="report-disclaimer-details">
-            <label for="disclaimer-title" style="margin-top: .75rem">Título del disclaimer</label>
-            <input id="disclaimer-title" type="text" [value]="disclaimerTitle()" (input)="updateDisclaimerTitle($event)" [disabled]="savingDisclaimerDraft() || activatingDisclaimer()" style="margin-bottom: .75rem" />
-            <label for="disclaimer-content">Contenido del disclaimer</label>
-            <textarea
-              id="disclaimer-content"
-              class="report-disclaimer-editor"
-              [value]="disclaimerContent()"
-              (input)="updateDisclaimerContent($event)"
-              [disabled]="savingDisclaimerDraft() || activatingDisclaimer()"
-              maxlength="5000"
-              rows="5"
-            ></textarea>
-            @if (disclaimerDraftMessage()) {
-              <p class="success-message" role="status">{{ disclaimerDraftMessage() }}</p>
-            }
-            @if (disclaimerDraftError()) {
-              <p class="error" role="alert">{{ disclaimerDraftError() }}</p>
-            }
-            <div class="actions">
-              <button type="button" (click)="saveDisclaimerDraft()" [disabled]="!hasUnsavedDisclaimerChanges() || savingDisclaimerDraft()">
-                {{ savingDisclaimerDraft() ? 'Guardando...' : 'Guardar borrador' }}
-              </button>
-              @if (savedDisclaimerDraft(); as draft) {
-                <button type="button" class="outline-button" (click)="openPublishDisclaimerModal()" [disabled]="hasUnsavedDisclaimerChanges() || activatingDisclaimer() || savingDisclaimerDraft()">
-                  {{ activatingDisclaimer() ? 'Publicando...' : 'Publicar' }}
-                </button>
-              }
-            </div>
-            @if (disclaimerActivationMessage()) {
-              <p class="success-message" role="status">{{ disclaimerActivationMessage() }}</p>
-            }
-            @if (disclaimerActivationError()) {
-              <p class="error" role="alert">{{ disclaimerActivationError() }}</p>
-            }
-            </div>
-          }
-          @if (settingsLoaded() && !latestReportDisclaimer() && !settingsError()) {
-            <p class="empty-state">No hay disclaimers registrados.</p>
-          }
-          @if (showPublishDisclaimerModal(); as publishModal) {
-            @if (savedDisclaimerDraft(); as draft) {
-              <div class="modal-backdrop" (click)="closePublishDisclaimerModal()" (keydown.escape)="closePublishDisclaimerModal()">
-                <article class="panel modal-panel" role="dialog" aria-modal="true" aria-labelledby="publish-disclaimer-title" (click)="$event.stopPropagation()" style="text-align: center">
-                  <h2 id="publish-disclaimer-title">Publicar disclaimer</h2>
-                  <p>¿Confirmas publicar este borrador? Reemplazará el disclaimer activo actual.</p>
-                  @if (disclaimerActivationError()) {
-                    <p class="error" role="alert">{{ disclaimerActivationError() }}</p>
-                  }
-                  <div class="actions" style="justify-content: center">
-                    <button type="button" class="ghost" (click)="closePublishDisclaimerModal()" [disabled]="activatingDisclaimer()">Cancelar</button>
-                    <button type="button" (click)="publishDisclaimerDraft()" [disabled]="activatingDisclaimer()">
-                      {{ activatingDisclaimer() ? 'Publicando...' : 'Confirmar publicación' }}
-                    </button>
-                  </div>
-                </article>
-              </div>
-            }
-          }
-        </details>
-      </article>
-    </section>
+      <app-admin-predictions-section
+        [analyses]="analyses()"
+        [searchTerm]="analysisSearch()"
+        [from]="analysisFrom()"
+        [to]="analysisTo()"
+        [pageSize]="analysisPageSize()"
+        [page]="analysisPage()"
+        [totalPages]="analysisTotalPages()"
+        [totalElements]="analysisTotalElements()"
+        [loading]="analysesLoading()"
+        [downloading]="downloadingAnalyses()"
+        [error]="analysesError()"
+        [summarize]="analysisSummary.bind(this)"
+        (action)="handleAdminPredictionsAction($event)"
+      />
+    } @else if (adminSection() === 'users') {
+      <app-admin-users-section
+        [users]="users()"
+        [searchTerm]="userSearch()"
+        [status]="userStatus()"
+        [userType]="userType()"
+        [pageSize]="userPageSize()"
+        [page]="userPage()"
+        [totalPages]="userTotalPages()"
+        [totalElements]="userTotalElements()"
+        [loading]="loading()"
+        [downloading]="downloadingUsers()"
+        [error]="errorMessage()"
+        [editingUserId]="editingUserId()"
+        (action)="handleAdminUsersAction($event)"
+      />
+    } @else if (adminSection() === 'profile') {
+      <app-admin-profile-section
+        [currentAdmin]="currentAdmin()"
+        [inactive]="currentAdmin() ? isInactive(currentAdmin()!) : false"
+        [profileForm]="profileForm"
+        [securityForm]="securityForm"
+        [profileMessage]="profileMessage()"
+        [passwordMessage]="passwordMessage()"
+        [savingProfile]="savingProfile()"
+        [savingPassword]="savingPassword()"
+        [showPassword]="showAdminPassword()"
+        [passwordSuccessModal]="passwordSuccessModal()"
+        (updateProfile)="updateProfile()"
+        (updatePassword)="updateAdminPassword()"
+        (phoneInput)="sanitizePhone($event, profileForm.controls.phone)"
+        (mobilePhoneInput)="sanitizeMobilePhone($event, profileForm.controls.mobilePhone)"
+        (togglePasswordVisibility)="toggleAdminPasswordVisibility()"
+        (closeSuccessModal)="closePasswordSuccessModal()"
+      />
+    } @else {
+      <app-admin-settings-section
+        [model]="adminSettingsViewModel()"
+        [editor]="patentEditor"
+        [additionalEditor]="additionalOrientationEditor"
+        [legalEditor]="legalAdminEditor"
+        [editorConfig]="patentEditorConfig"
+        [legalEditorConfig]="legalAdminEditorConfig"
+        [orientationSections]="additionalOrientationSections"
+        [legalDateLabel]="legalDateLabel"
+        (action)="handleAdminSettingsAction($event)"
+      />
     }
 
     @if (showEditModal()) {
       <div class="modal-backdrop" (click)="cancelEdit()">
-        <article class="panel modal-panel" (click)="$event.stopPropagation()">
-          <h2>Editar usuario</h2>
+        <article class="panel modal-panel" role="dialog" aria-modal="true" aria-labelledby="edit-user-title" (click)="$event.stopPropagation()">
+          <h2 id="edit-user-title">Editar usuario</h2>
           <form [formGroup]="userForm" (ngSubmit)="submit()" class="form-grid">
             <label>Nombres <input type="text" formControlName="firstName" maxlength="25" placeholder="Juan" /></label>
             <label>Apellido paterno <input type="text" formControlName="paternalLastName" maxlength="25" placeholder="Pérez" /></label>
@@ -609,12 +90,12 @@
             <label>Tipo doc.
               <select formControlName="doiType"><option value="" disabled>Seleccione</option><option value="DNI">DNI</option><option value="CE">CE</option></select>
             </label>
-              <label>Tipo de usuario
-                <select [value]="editingUserType()" (change)="changeEditingUserType($event)">
-                  <option value="STANDARD">Estándar</option>
-                  <option value="ADMIN">Administrador</option>
-                </select>
-              </label>
+            <label>Tipo de usuario
+              <select [value]="editingUserType()" (change)="changeEditingUserType($event)">
+                <option value="STANDARD">Estándar</option>
+                <option value="ADMIN">Administrador</option>
+              </select>
+            </label>
             <label>Num doc. <input type="text" formControlName="doi" [attr.maxlength]="userForm.controls.doiType.value === 'DNI' ? 8 : 11" placeholder="12345678" /></label>
             <label>Fecha de nacimiento <input type="date" formControlName="birthDate" min="1926-01-01" max="2020-12-31" /></label>
             <label>Género
@@ -636,153 +117,41 @@
     }
 
     <app-trust-footer />
-  </main>
+  </app-admin-panel-shell>
 } @else if (view() === 'standard-analysis') {
-  <main class="analysis-page">
-    <header class="topbar">
-      <a class="brand" href="/" (click)="$event.preventDefault(); exitAnalysis()">IDENTIPAT IA</a>
-      <div class="result-actions">
-        @if (adminAuthenticated()) {
-          <button class="outline-button" type="button" (click)="openAdminPanel()" [disabled]="navigationPending()">Panel de administración</button>
-        }
-        <button class="outline-button" type="button" (click)="exitAnalysis()" [disabled]="navigationPending()">Salir</button>
-      </div>
-    </header>
-
-    @if (navigationPending(); as pending) {
-      <section class="access-progress-modal" role="status" aria-live="polite">
-        <div class="access-progress">
-          <span class="analysis-spinner" aria-hidden="true"></span>
-          <div>
-            <h2>{{ pending === 'admin' ? 'Cargando panel de administración' : pending === 'predictions' ? 'Cargando predicciones' : 'Saliendo' }}</h2>
-            <p>{{ pending === 'exit' ? 'Estamos cerrando la sesión.' : 'Estamos preparando la pantalla solicitada.' }}</p>
-          </div>
-        </div>
-      </section>
-    }
-
-    @if (exitError()) { <p class="error" role="alert">{{ exitError() }}</p> }
-
-    @if (!adminAuthenticated() && (standardAccessState() === 'CONSENT_REQUIRED' || standardAccessState() === 'BLOCKED')) {
-      <section class="consent-gate" role="dialog" aria-modal="true" aria-labelledby="consent-gate-title">
-        <article class="consent-card">
-          @if (legalLoading()) {
-            <div class="consent-loading" role="status">
-              <span class="analysis-spinner" aria-hidden="true"></span>
-              <p>Cargando el documento legal vigente...</p>
-            </div>
-          } @else if (legalError()) {
-            <p class="eyebrow">Acceso temporalmente no disponible</p>
-            <h2 id="consent-gate-title">Documento legal no disponible</h2>
-            <p class="error" role="alert">{{ legalError() }}</p>
-            <div class="consent-actions">
-              <button type="button" class="outline-button" (click)="reviewLegalDocument()" autofocus>Reintentar</button>
-              <button type="button" class="outline-button" (click)="exitAnalysis()">Salir</button>
-            </div>
-          } @else if (legalDocument(); as document) {
-            @if (standardAccessState() === 'BLOCKED') {
-              <p class="eyebrow">Decisión registrada</p>
-              <h2 id="consent-gate-title">Se requiere tu aceptación para continuar</h2>
-              <p class="consent-blocked-message" role="alert">{{ consentMessage() }}</p>
-              <div class="consent-actions">
-                <button type="button" class="primary-button" (click)="reviewLegalDocument()" autofocus>Revisar nuevamente</button>
-                <button type="button" class="outline-button" (click)="exitAnalysis()">Salir</button>
-              </div>
-            } @else {
-              <p class="eyebrow">Consentimiento obligatorio</p>
-              <h2 id="consent-gate-title">{{ document.title }}</h2>
-              <p class="legal-updated">Última actualización: {{ legalDateLabel(document.updatedAt) }}</p>
-              @if (consentMessage()) {
-                <p class="consent-notice" role="status">{{ consentMessage() }}</p>
-              }
-              <div class="consent-document legal-rich-content" tabindex="0" [innerHTML]="document.contentHtml"></div>
-              <label class="consent-explicit-check">
-                <input type="checkbox" [checked]="consentChecked()" (change)="updateConsentChecked($event)" autofocus />
-                <span>He leído y acepto expresamente los Términos de uso y la Política de Privacidad vigentes.</span>
-              </label>
-              <div class="consent-actions">
-                <button type="button" class="outline-button" (click)="rejectLegalDocument()" [disabled]="consentSaving()">No aceptar</button>
-                <button type="button" class="primary-button" (click)="acceptLegalDocument()" [disabled]="!consentChecked() || consentSaving()">
-                  {{ consentSaving() ? 'Guardando...' : 'Aceptar y continuar' }}
-                </button>
-              </div>
-            }
-          }
-        </article>
-      </section>
-    }
-
-    <section
-      class="analysis-shell"
-      [attr.inert]="!adminAuthenticated() && standardAccessState() !== 'READY' ? '' : null"
-      [attr.aria-hidden]="!adminAuthenticated() && standardAccessState() !== 'READY' ? 'true' : null"
-    >
-      <div class="analysis-heading">
-        <p class="eyebrow">Análisis de tu creación</p>
-        <h1>Cuéntanos qué quieres proteger</h1>
-        <p>Describe tu creación con el mayor detalle posible. Esta información será la base para orientarte sobre sus alternativas de protección.</p>
-      </div>
-
-      <form [formGroup]="analysisForm" (ngSubmit)="submitAnalysis()" class="analysis-form">
-        <label for="description">Descripción de la creación</label>
-        @if (selectedPdf(); as pdf) {
-          <div class="pdf-selection" role="status" aria-label="Archivo PDF seleccionado" style="height: 188px; position: relative; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 5px;">
-            <button type="button" aria-label="Quitar archivo PDF" title="Quitar archivo PDF" (click)="removeSelectedPdf()" style="position: absolute; top: 8px; right: 8px; z-index: 1; width: 32px; height: 32px; padding: 5px; border: 0; border-radius: 50%; background: #fff; cursor: pointer;">
-              <img src="close.png" alt="" style="display: block; width: 22px; height: 22px; object-fit: contain;" />
-            </button>
-            <img src="/Icon_pdf_file.svg.webp" alt="" style="width: 72px; height: 72px;" />
-            <span style="max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ pdf.name }}</span>
-          </div>
-        } @else if (selectedAudio(); as audio) {
-          <div class="pdf-selection" role="status" aria-label="Grabación de audio seleccionada" style="position: relative; display: grid; place-items: center; gap: .65rem; height: 188px; padding: 1rem; border: 1px solid var(--line); border-radius: 5px; background: #fff;">
-            <button type="button" aria-label="Quitar grabación de audio" title="Quitar grabación de audio" (click)="removeSelectedAudio()" style="position: absolute; top: 8px; right: 8px; z-index: 1; width: 32px; height: 32px; padding: 5px; border: 0; border-radius: 50%; background: #fff; cursor: pointer;"><img src="close.png" alt="" style="display: block; width: 22px; height: 22px; object-fit: contain;" /></button>
-            <img src="/audio.png" alt="Grabación de audio" style="display: block; width: 96px; height: 96px; object-fit: contain; background: #fff;" />
-            <span>Grabación de voz</span>
-          </div>
-        } @else {
-          <textarea id="description" formControlName="description" rows="10" placeholder="Escribe aquí la descripción de tu creación..."></textarea>
-        }
-        @if (!selectedPdf() && !selectedAudio() && analysisForm.controls.description.touched && analysisForm.controls.description.invalid) {
-          <p class="field-error">La descripción debe tener entre 20 y 20 000 caracteres.</p>
-        }
-        <div class="input-actions">
-          <button class="voice-button" type="button" [class.recording]="recordingAudio()" [attr.aria-label]="recordingAudio() ? 'Detener grabación' : 'Grabar descripción por voz'" (click)="toggleAudioRecording()">{{ recordingAudio() ? 'Detener grabación' : 'Grabar voz' }}</button>
-          <input #pdfInput type="file" accept="application/pdf" hidden (change)="onPdfSelected($event)" />
-          <button class="pdf-button" type="button" aria-label="Adjuntar archivo PDF" (click)="pdfInput.click()">Adjuntar PDF</button>
-        </div>
-        <div class="analysis-actions">
-          <span [class.success-message]="analysisMessage().startsWith('Análisis recibido')" [class.error]="analysisMessage().startsWith('No se pudo')">{{ analysisMessage() }}</span>
-          <button class="primary-button" type="submit" [disabled]="submittingAnalysis() || (!adminAuthenticated() && standardAccessState() !== 'READY')">{{ submittingAnalysis() ? 'Enviando...' : canResumePendingAnalysis() ? 'Reanudar seguimiento' : 'Iniciar análisis' }}</button>
-        </div>
-      </form>
-      <p class="analysis-disclaimer">Identipat es una herramienta de Inteligencia artificial y puede cometer errores, verifica la información importante.</p>
-
-      @if (submittingAnalysis()) {
-        <section class="analysis-progress-modal" role="status" aria-live="polite">
-          <div class="analysis-progress">
-            <span class="analysis-spinner" aria-hidden="true"></span>
-            <div>
-              <h2>Analizando con IA</h2>
-              <p>Estamos revisando la información de tu creación. Este proceso puede tardar unos segundos.</p>
-            </div>
-          </div>
-        </section>
-      }
-
-      @if (recordingAudio()) {
-        <section role="dialog" aria-modal="true" aria-labelledby="audio-recording-title" style="position: fixed; inset: 0; z-index: 35; display: grid; place-items: center; padding: 1rem; background: rgb(15 26 24 / .58);">
-          <div style="display: grid; justify-items: center; gap: .75rem; width: min(360px, 100%); padding: 2rem; border: 1px solid var(--line); background: #fff; box-shadow: 0 18px 50px rgb(24 51 47 / .18); text-align: center;">
-            <img src="/microphone.png" alt="Micrófono" style="width: 96px; height: 96px; object-fit: contain;" />
-            <h2 id="audio-recording-title" style="margin: 0; font-size: 1.35rem;">Grabando voz</h2>
-            <p aria-live="polite" style="margin: 0; color: var(--teal-dark); font-family: 'Space Grotesk', sans-serif; font-size: 2rem; font-weight: 700; letter-spacing: .06em;">{{ recordingTimeLabel() }}</p>
-            <button class="primary-button" type="button" (click)="stopAudioRecording()" style="width: 100%; margin-top: .5rem;">Detener grabación</button>
-          </div>
-        </section>
-      }
-    </section>
-
-    <app-trust-footer />
-  </main>
+  <app-standard-analysis-page
+    [analysisForm]="analysisForm"
+    [adminAuthenticated]="adminAuthenticated()"
+    [navigationPending]="navigationPending()"
+    [exitError]="exitError()"
+    [standardAccessState]="standardAccessState()"
+    [legalLoading]="legalLoading()"
+    [legalError]="legalError()"
+    [legalDocument]="legalDocument()"
+    [consentMessage]="consentMessage()"
+    [consentChecked]="consentChecked()"
+    [consentSaving]="consentSaving()"
+    [legalDateLabel]="legalDateLabel"
+    [selectedPdf]="selectedPdf()"
+    [selectedAudio]="selectedAudio()"
+    [recordingAudio]="recordingAudio()"
+    [recordingTimeLabel]="recordingTimeLabel()"
+    [analysisMessage]="analysisMessage()"
+    [submittingAnalysis]="submittingAnalysis()"
+    [canResumePendingAnalysis]="canResumePendingAnalysis()"
+    (exit)="exitAnalysis()"
+    (openAdminPanel)="openAdminPanel()"
+    (reviewLegal)="reviewLegalDocument()"
+    (rejectLegal)="rejectLegalDocument()"
+    (acceptLegal)="acceptLegalDocument()"
+    (consentCheckedChange)="updateConsentChecked($event)"
+    (removePdf)="removeSelectedPdf()"
+    (removeAudio)="removeSelectedAudio()"
+    (toggleRecording)="toggleAudioRecording()"
+    (pdfSelected)="onPdfSelected($event)"
+    (submitAnalysis)="submitAnalysis()"
+    (stopRecording)="stopAudioRecording()"
+  />
 } @else if (view() === 'standard-result') {
   <app-analysis-result-page
     [analysis]="analysisResult()"
@@ -801,128 +170,29 @@
     (closeNextSteps)="closeNextStepsModal()"
   />
 } @else {
-  <main class="home-page">
-    <header class="topbar">
-      <a class="brand" href="/">IDENTIPAT IA</a>
-    </header>
-
-    <section class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">Orientación en propiedad intelectual</p>
-        <h1>Descubre cómo proteger la propiedad intelectual de tu creación</h1>
-        <p class="intro">IDENTIPAT IA analiza la descripción de tu invención con inteligencia artificial para orientarte sobre su potencial de protección y la modalidad más adecuada: patente, modelo de utilidad, diseño industrial, signo distintivo o derechos de autor.</p>
-
-        <div class="access-block">
-          @if (view() === 'registration') {
-            <span class="section-label">Nuevo usuario</span>
-            <h2>Completa tu registro</h2>
-            <form [formGroup]="userForm" (ngSubmit)="registerStandard()" class="registration-form" autocomplete="off" name="identipat-registration">
-              <label>Nombres <input type="text" name="firstName" autocomplete="given-name" formControlName="firstName" maxlength="25" placeholder="Adrian Jesús" /></label>
-              <label>Apellido paterno <input type="text" name="paternalLastName" autocomplete="family-name" formControlName="paternalLastName" maxlength="25" placeholder="Lizarbe" /></label>
-              <label>Apellido materno <input type="text" name="maternalLastName" autocomplete="additional-name" formControlName="maternalLastName" maxlength="25" placeholder="Estrada" /></label>
-              <label>Tipo doc.
-                <select name="doiType" autocomplete="off" formControlName="doiType"><option value="DNI">DNI</option><option value="CE">CE</option></select>
-              </label>
-              <label>Num doc. <input type="text" name="document-number" autocomplete="off" formControlName="doi" inputmode="numeric" [attr.maxlength]="userForm.controls.doiType.value === 'DNI' ? 8 : 11" (input)="userForm.controls.doiType.value === 'DNI' && sanitizeDni($event, userForm.controls.doi)" /></label>
-              <label>Fecha de nacimiento <input type="date" name="birthDate" autocomplete="bday" formControlName="birthDate" min="1926-01-01" max="2020-12-31" /></label>
-              <label>Género
-                <select name="gender" autocomplete="sex" formControlName="gender"><option value="" disabled>Seleccione</option><option value="MALE">Masculino</option><option value="FEMALE">Femenino</option></select>
-              </label>
-              <label>Correo electrónico <input type="email" name="email" autocomplete="email" formControlName="email" placeholder="micorreo@ejemplo.com" /></label>
-              <label>Teléfono <input type="text" name="phone" autocomplete="tel" formControlName="phone" inputmode="numeric" maxlength="9" pattern="[0-9]*" (input)="sanitizePhone($event, userForm.controls.phone)" placeholder="01654321" /></label>
-              <label>Celular <input type="tel" name="mobilePhone" autocomplete="tel" formControlName="mobilePhone" inputmode="tel" maxlength="15" (input)="sanitizeMobilePhone($event, userForm.controls.mobilePhone)" placeholder="912345678" /></label>
-              <label class="registration-wide">Profesión / Ocupación <input type="text" name="profession" autocomplete="organization-title" formControlName="profession" placeholder="Ingeniero" /></label>
-              <div class="registration-wide registration-legal-status">
-                @if (legalLoading()) {
-                  <p role="status">Cargando documento legal vigente...</p>
-                } @else if (legalError()) {
-                  <p class="error" role="alert">{{ legalError() }}</p>
-                  <button type="button" class="outline-button" (click)="openRegistration()">Reintentar</button>
-                } @else if (legalDocument(); as document) {
-                  <strong>{{ document.title }}</strong>
-                  <span>Actualizado: {{ legalDateLabel(document.updatedAt) }}</span>
-                  <a href="terminos-y-privacidad" target="_blank" rel="noopener noreferrer">Leer documento completo</a>
-                }
-              </div>
-              <label class="registration-wide terms-checkbox">
-                <span><input type="checkbox" formControlName="termsAccepted" /> He leído y acepto los <a href="terminos-y-privacidad" target="_blank" rel="noopener noreferrer">Términos de uso y la Política de Privacidad</a> vigentes.</span>
-              </label>
-              @if (accessMessage()) { <p class="access-message registration-wide" role="alert">{{ accessMessage() }}</p> }
-              <div class="registration-actions registration-wide">
-                <button class="primary-button" type="submit" [disabled]="saving() || legalLoading() || !legalDocument() || userForm.invalid">{{ saving() ? 'Registrando...' : 'Registrarme' }}</button>
-                <button class="outline-button" type="button" (click)="cancelRegistration()" [disabled]="saving()">Volver</button>
-              </div>
-            </form>
-          } @else {
-            <span class="section-label">{{ view() === 'admin-login' ? 'Acceso seguro' : 'Comienza aquí' }}</span>
-            <h2>{{ view() === 'admin-login' ? 'Ingresa como administrador' : 'Identifícate para continuar' }}</h2>
-            <form [formGroup]="accessForm" (ngSubmit)="view() === 'admin-login' ? loginAdmin() : identifyDocument()">
-              <div class="document-fields">
-                <label>Tipo
-                  <select formControlName="doiType" aria-label="Tipo doc."><option value="DNI">DNI</option><option value="CE">CE</option></select>
-                </label>
-                <label>Num doc.
-                  <input type="text" inputmode="numeric" autocomplete="username" formControlName="doi" [attr.maxlength]="accessForm.controls.doiType.value === 'DNI' ? 8 : 11" placeholder="Ingresa tu documento" />
-                </label>
-              </div>
-              @if (accessForm.controls.doi.touched && accessForm.controls.doi.invalid) { <p class="field-error">Para DNI ingresa 8 dígitos; para CE, entre 6 y 11.</p> }
-              @if (view() === 'admin-login') {
-                <label class="password-field">Contraseña
-                  <input type="password" autocomplete="current-password" [formControl]="loginForm.controls.password" placeholder="Ingresa tu contraseña" />
-                </label>
-              }
-              @if (accessMessage()) { <p class="access-message" [class.access-error]="accessMessage() === 'Usuario no registrado'" role="status">{{ accessMessage() }}</p> }
-              <button class="primary-button" type="submit" [disabled]="checkingDocument() || authenticating()">
-                @if (view() === 'admin-login') { {{ authenticating() ? 'Verificando...' : 'Acceder como administrador' }} }
-                @else { {{ checkingDocument() ? 'Verificando...' : 'Ingresar' }} }
-              </button>
-            </form>
-            @if (view() !== 'admin-login') {
-              <button class="outline-button access-register-button" type="button" (click)="openRegistration()">Registrarme</button>
-            }
-          }
-        </div>
-        @if (registrationModal(); as registrationStatus) {
-          <section class="registration-progress-modal" role="status" aria-live="polite">
-            <div class="registration-progress">
-              @if (registrationStatus === 'registering') {
-                <span class="analysis-spinner" aria-hidden="true"></span>
-                <div>
-                  <h2>Registrando usuario</h2>
-                  <p>Estamos registrando tu información.</p>
-                </div>
-              } @else {
-                <span class="registration-success-icon" aria-hidden="true">✓</span>
-                <div>
-                  <h2>Usuario registrado con éxito</h2>
-                  <p>Tu registro se completó correctamente.</p>
-                </div>
-              }
-            </div>
-          </section>
-        }
-        @if (authenticating() || (checkingDocument() && standardAccessPending())) {
-          <section class="access-progress-modal" role="status" aria-live="polite">
-            <div class="access-progress">
-              <span class="analysis-spinner" aria-hidden="true"></span>
-              <div>
-                <h2>Accediendo</h2>
-                <p>Estamos verificando tus datos.</p>
-              </div>
-            </div>
-          </section>
-        }
-        @if (view() !== 'registration') {
-          <p class="privacy-note">Consulta los <a href="terminos-y-privacidad" target="_blank" rel="noopener noreferrer">Términos de uso y la Política de Privacidad de Identipat IA</a>. Si se requiere tu aceptación, podrás revisarlos antes de usar la herramienta.</p>
-        }
-      </div>
-
-      <figure class="hero-visual">
-        <img src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1200&q=85" alt="Persona revisando documentos de propiedad intelectual" />
-        <figcaption>Identifica el potencial de protección de tu creación.</figcaption>
-      </figure>
-    </section>
-
-    <app-trust-footer />
-  </main>
+  <app-public-access-page
+    [view]="view()"
+    [accessForm]="accessForm"
+    [loginForm]="loginForm"
+    [userForm]="userForm"
+    [legalLoading]="legalLoading()"
+    [legalError]="legalError()"
+    [legalDocument]="legalDocument()"
+    [accessMessage]="accessMessage()"
+    [registrationModal]="registrationModal()"
+    [saving]="saving()"
+    [checkingDocument]="checkingDocument()"
+    [standardAccessPending]="standardAccessPending()"
+    [authenticating]="authenticating()"
+    [legalDateLabel]="legalDateLabel"
+    (identify)="identifyDocument()"
+    (register)="registerStandard()"
+    (login)="loginAdmin()"
+    (registrationOpen)="openRegistration()"
+    (registrationCancel)="cancelRegistration()"
+    (retryLegal)="openRegistration()"
+    (sanitizeDni)="sanitizeDni($event.event, $event.control)"
+    (sanitizePhone)="sanitizePhone($event.event, $event.control)"
+    (sanitizeMobilePhone)="sanitizeMobilePhone($event.event, $event.control)"
+  />
 }

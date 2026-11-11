@@ -3,7 +3,6 @@ import { DOCUMENT } from '@angular/common';
 import { Component, computed, inject, Signal, signal, WritableSignal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
-import { CKEditorModule } from '@ckeditor/ckeditor5-angular';
 import { Alignment, Bold, ClassicEditor, EditorConfig, Essentials, FindAndReplace, Heading, Image, ImageInsert, Italic, Link, List, Paragraph, RemoveFormat, SourceEditing, Strikethrough, Underline } from 'ckeditor5';
 import { Observable } from 'rxjs';
 import { StandardUserRegistrationRequest, UserService } from './services/user.service';
@@ -18,6 +17,13 @@ import { StandardSessionResponse, StandardSessionService } from './services/stan
 import { TrustFooter } from './components/trust-footer/trust-footer';
 import { LegalPageComponent } from './components/legal-page/legal-page';
 import { AnalysisResultPageComponent, OpenNextStepsRequest } from './components/analysis-result-page/analysis-result-page';
+import { PublicAccessPageComponent } from './components/public-access-page/public-access-page';
+import { StandardAnalysisPageComponent } from './components/standard-analysis-page/standard-analysis-page';
+import { AdminPanelShellComponent } from './components/admin-panel-shell/admin-panel-shell';
+import { AdminPredictionsAction, AdminPredictionsSectionComponent } from './components/admin-predictions-section/admin-predictions-section';
+import { AdminProfileSectionComponent } from './components/admin-profile-section/admin-profile-section';
+import { AdminSettingsSectionComponent, AdminSettingsViewModel, OrientationViewState, SettingsAction } from './components/admin-settings-section/admin-settings-section';
+import { AdminUsersAction, AdminUsersSectionComponent } from './components/admin-users-section/admin-users-section';
 
 const adminSettingsReloadKey = 'identipat.admin.reloadSection';
 type AdditionalOrientationType = 'INDUSTRIAL_DESIGN' | 'COPYRIGHT' | 'DISTINCTIVE_SIGN' | 'PLANT_BREEDER_CERTIFICATE' | 'TRADE_SECRET';
@@ -52,7 +58,7 @@ interface OrientationEditorState {
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, ReactiveFormsModule, CKEditorModule, TrustFooter, LegalPageComponent, AnalysisResultPageComponent],
+  imports: [CommonModule, ReactiveFormsModule, TrustFooter, LegalPageComponent, AnalysisResultPageComponent, PublicAccessPageComponent, StandardAnalysisPageComponent, AdminPanelShellComponent, AdminPredictionsSectionComponent, AdminProfileSectionComponent, AdminSettingsSectionComponent, AdminUsersSectionComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -338,6 +344,83 @@ export class App {
       && user.doi === doi
       && user.doiType === doiType
     ) ?? null;
+  });
+
+  readonly adminSettingsViewModel = computed<AdminSettingsViewModel>(() => {
+    const toViewState = (state: OrientationEditorState): OrientationViewState => ({
+      shortDescription: state.shortDescription(),
+      shortDescriptionInvalid: state.shortDescriptionInvalid(),
+      canSave: state.canSave(),
+      hasChanges: state.hasChanges(),
+      saving: state.saving(),
+      message: state.message(),
+      error: state.error(),
+      latestGuide: state.latestGuide(),
+      savedDraft: state.savedDraft(),
+      activating: state.activating(),
+      showPublishModal: state.showPublishModal()
+    });
+
+    return {
+      patent: {
+        shortDescription: this.patentOrientationShortDescription(),
+        shortDescriptionInvalid: this.patentOrientationShortDescriptionInvalid(),
+        canSave: this.patentOrientationCanSave(),
+        hasChanges: this.hasPatentOrientationChanges(),
+        saving: this.savingPatentOrientation(),
+        message: this.patentOrientationMessage(),
+        error: this.patentOrientationError(),
+        latestGuide: this.latestPatentGuide(),
+        savedDraft: this.savedPatentOrientationDraft(),
+        activating: this.activatingPatentOrientation(),
+        showPublishModal: this.showPublishPatentOrientationModal()
+      },
+      utility: {
+        shortDescription: this.utilityModelOrientationShortDescription(),
+        shortDescriptionInvalid: this.utilityModelOrientationShortDescriptionInvalid(),
+        canSave: this.utilityModelOrientationCanSave(),
+        hasChanges: this.hasUtilityModelOrientationChanges(),
+        saving: this.savingUtilityModelOrientation(),
+        message: this.utilityModelOrientationMessage(),
+        error: this.utilityModelOrientationError(),
+        latestGuide: this.latestUtilityModelGuide(),
+        savedDraft: this.savedUtilityModelOrientationDraft(),
+        activating: this.activatingUtilityModelOrientation(),
+        showPublishModal: this.showPublishUtilityModelOrientationModal()
+      },
+      additional: this.additionalOrientationSections.map(section => ({
+        type: section.type,
+        label: section.label,
+        state: toViewState(this.orientationState(section.type))
+      })),
+      legal: {
+        loading: this.legalAdminLoading(),
+        title: this.legalAdminTitle(),
+        content: this.legalAdminHtml(),
+        saving: this.legalAdminSaving(),
+        document: this.legalAdminDocument(),
+        message: this.legalAdminMessage(),
+        error: this.legalAdminError(),
+        hasChanges: this.legalAdminHasChanges()
+      },
+      disclaimer: {
+        loading: this.settingsLoading(),
+        error: this.settingsError(),
+        loaded: this.settingsLoaded(),
+        title: this.disclaimerTitle(),
+        content: this.disclaimerContent(),
+        message: this.disclaimerDraftMessage(),
+        draftError: this.disclaimerDraftError(),
+        savedDraft: this.savedDisclaimerDraft(),
+        hasChanges: this.hasUnsavedDisclaimerChanges(),
+        saving: this.savingDisclaimerDraft(),
+        activating: this.activatingDisclaimer(),
+        activationMessage: this.disclaimerActivationMessage(),
+        activationError: this.disclaimerActivationError(),
+        showPublishModal: this.showPublishDisclaimerModal(),
+        latest: this.latestReportDisclaimer()
+      }
+    };
   });
 
   readonly accessForm = this.fb.nonNullable.group({
@@ -840,6 +923,94 @@ export class App {
       this.loadReportDisclaimers();
       this.loadPatentOrientationGuide();
       this.loadAdminLegalDocument();
+    }
+  }
+
+  handleAdminPredictionsAction(action: AdminPredictionsAction): void {
+    switch (action.type) {
+      case 'download': this.downloadAnalysesCsv(); break;
+      case 'refresh': this.loadAnalyses(); break;
+      case 'search': this.searchAnalyses(); break;
+      case 'searchChange': this.updateAnalysisSearch(action.event); break;
+      case 'dateFromChange': this.updateAnalysisFrom(action.event); break;
+      case 'dateToChange': this.updateAnalysisTo(action.event); break;
+      case 'pageSizeChange': this.changeAnalysisPageSize(action.event); break;
+      case 'pageChange': this.changeAnalysisPage(action.page); break;
+    }
+  }
+
+  handleAdminUsersAction(action: AdminUsersAction): void {
+    switch (action.type) {
+      case 'search': this.searchUsers(); break;
+      case 'searchChange': this.updateUserSearch(action.event); break;
+      case 'statusChange':
+        this.userStatus.set((action.event.target as HTMLSelectElement).value);
+        this.loadUsers(0);
+        break;
+      case 'typeChange':
+        this.userType.set((action.event.target as HTMLSelectElement).value);
+        this.loadUsers(0);
+        break;
+      case 'pageSizeChange': this.changeUserPageSize(action.event); break;
+      case 'download': this.downloadUsersCsv(); break;
+      case 'refresh': this.loadUsers(); break;
+      case 'pageChange': this.changeUserPage(action.page); break;
+      case 'edit': this.startEdit(action.user); break;
+    }
+  }
+
+  handleAdminSettingsAction(action: SettingsAction): void {
+    const event = action.event as Event;
+    const editorEvent = action.event as { editor: { getData(): string } };
+    const editor = action.editor;
+
+    switch (action.type) {
+      case 'patentShortDescription': this.updatePatentOrientationShortDescription(event); break;
+      case 'patentEditorReady': if (editor) this.onPatentEditorReady(editor); break;
+      case 'patentHtml': this.updatePatentOrientationHtml(editorEvent); break;
+      case 'savePatent': this.savePatentOrientationDraft(); break;
+      case 'openPatentPublish': this.openPublishPatentOrientationModal(); break;
+      case 'closePatentPublish': this.closePublishPatentOrientationModal(); break;
+      case 'activatePatent': this.activatePatentOrientationDraft(); break;
+      case 'utilityShortDescription': this.updateUtilityModelOrientationShortDescription(event); break;
+      case 'utilityEditorReady': if (editor) this.onUtilityModelEditorReady(editor); break;
+      case 'utilityHtml': this.updateUtilityModelOrientationHtml(editorEvent); break;
+      case 'saveUtility': this.saveUtilityModelOrientationDraft(); break;
+      case 'openUtilityPublish': this.openPublishUtilityModelOrientationModal(); break;
+      case 'closeUtilityPublish': this.closePublishUtilityModelOrientationModal(); break;
+      case 'activateUtility': this.activateUtilityModelOrientationDraft(); break;
+      case 'additionalShortDescription':
+        if (action.sectionType) this.updateAdditionalOrientationShortDescription(action.sectionType, event);
+        break;
+      case 'additionalEditorReady':
+        if (action.sectionType && editor) this.onAdditionalOrientationEditorReady(action.sectionType, editor);
+        break;
+      case 'additionalHtml':
+        if (action.sectionType) this.updateAdditionalOrientationHtml(action.sectionType, editorEvent);
+        break;
+      case 'saveAdditional':
+        if (action.sectionType) this.saveAdditionalOrientationDraft(action.sectionType);
+        break;
+      case 'openAdditionalPublish':
+        if (action.sectionType) this.openPublishAdditionalOrientationModal(action.sectionType);
+        break;
+      case 'closeAdditionalPublish':
+        if (action.sectionType) this.closePublishAdditionalOrientationModal(action.sectionType);
+        break;
+      case 'activateAdditional':
+        if (action.sectionType) this.activateAdditionalOrientationDraft(action.sectionType);
+        break;
+      case 'legalTitle': this.updateLegalAdminTitle(event); break;
+      case 'legalEditorReady': if (editor) this.onLegalAdminEditorReady(editor); break;
+      case 'legalHtml': this.updateLegalAdminHtml(editorEvent); break;
+      case 'saveLegal': this.saveAdminLegalDocument(); break;
+      case 'retryDisclaimer': this.loadReportDisclaimers(); break;
+      case 'disclaimerTitle': this.updateDisclaimerTitle(event); break;
+      case 'disclaimerContent': this.updateDisclaimerContent(event); break;
+      case 'saveDisclaimer': this.saveDisclaimerDraft(); break;
+      case 'openDisclaimerPublish': this.openPublishDisclaimerModal(); break;
+      case 'closeDisclaimerPublish': this.closePublishDisclaimerModal(); break;
+      case 'publishDisclaimer': this.publishDisclaimerDraft(); break;
     }
   }
 

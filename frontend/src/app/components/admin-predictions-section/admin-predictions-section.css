@@ -1,0 +1,24 @@
+:host { display: block; }
+.layout { display: grid; width: min(1200px, calc(100% - 2rem)); margin: 0 auto; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+.panel { border: 1px solid var(--line); border-radius: 7px; padding: 1rem; background: #fff; box-shadow: 0 10px 25px rgb(24 51 47 / .06); }
+.table-head, .table-actions { display: flex; align-items: center; gap: .55rem; }
+.table-head { justify-content: space-between; }
+.table-head h2 { margin: 0; font-size: 1.2rem; }
+.prediction-filters { display: flex; flex-wrap: wrap; align-items: end; gap: .7rem; margin: .85rem 0; }
+.user-search { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem; color: var(--muted); }
+.user-search input { width: min(18rem, 34vw); min-height: 36px; padding: .4rem .55rem; }
+.page-size { display: flex; align-items: center; gap: .4rem; color: var(--muted); white-space: nowrap; }
+.page-size input, .page-size select { width: auto; min-height: 36px; padding: .4rem .55rem; }
+.ghost { border: 0; border-radius: 5px; padding: .62rem .9rem; color: var(--teal-dark); background: var(--mint); font-weight: 600; cursor: pointer; }
+button:disabled { opacity: .62; cursor: not-allowed; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: .72rem .4rem; border-bottom: 1px solid var(--line); text-align: left; font-size: .86rem; }
+th { color: var(--muted); font-size: .72rem; text-transform: uppercase; }
+.predictions-table { min-width: 1500px; }
+.prediction-date { white-space: nowrap; }
+.prediction-summary { min-width: 240px; max-width: 420px; line-height: 1.45; }
+.empty { padding: 2rem; color: var(--muted); text-align: center; }
+.error { padding: .65rem; color: #7a2424; background: #fff0ee; }
+.pagination { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-top: .9rem; color: var(--muted); font-size: .86rem; }
+@media (max-width: 620px) { .table-head, .pagination { align-items: flex-start; flex-direction: column; } .table-actions { flex-wrap: wrap; } .user-search input { width: min(18rem, 62vw); } }

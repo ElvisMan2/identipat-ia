@@ -1,0 +1,50 @@
+<section class="layout">
+  <article class="panel table-panel">
+    <div class="table-head">
+      <h2>Historial de predicciones</h2>
+      <div class="table-actions">
+        <button class="ghost" type="button" (click)="action.emit({ type: 'download' })" [disabled]="downloading">{{ downloading ? 'Descargando...' : 'Descargar' }}</button>
+        <button class="ghost" type="button" (click)="action.emit({ type: 'refresh' })" [disabled]="loading">{{ loading ? 'Cargando...' : 'Refrescar' }}</button>
+      </div>
+    </div>
+    <div class="prediction-filters">
+      <label class="user-search">Buscar
+        <input type="search" [value]="searchTerm" (input)="action.emit({ type: 'searchChange', event: $event })" (keydown.enter)="$event.preventDefault(); action.emit({ type: 'search' })" placeholder="Nombre, apellidos, documento o correo..." />
+        <button class="ghost" type="button" (click)="action.emit({ type: 'search' })" [disabled]="loading">Buscar</button>
+      </label>
+      <label class="page-size">Fecha inicio <input type="date" [value]="from" (change)="action.emit({ type: 'dateFromChange', event: $event })" /></label>
+      <label class="page-size">Fecha fin <input type="date" [value]="to" (change)="action.emit({ type: 'dateToChange', event: $event })" /></label>
+      <label class="page-size">Mostrar
+        <select [value]="pageSize" (change)="action.emit({ type: 'pageSizeChange', event: $event })" [disabled]="loading">
+          <option value="5">5</option><option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option>
+        </select>
+      </label>
+    </div>
+    @if (error) { <p class="error" role="alert">{{ error }}</p> }
+    <div class="table-wrap">
+      <table class="predictions-table">
+        <thead><tr><th>Fecha</th><th>Nombres</th><th>Apellidos</th><th>Conclusión</th><th>Modalidades identificadas</th><th>Orientación consultada</th></tr></thead>
+        <tbody>
+          @for (analysis of analyses; track analysis.analysisId) {
+            <tr>
+              <td class="prediction-date">{{ analysis.createdAt | date:'dd/MM/yyyy' }}</td>
+              <td>{{ analysis.firstName }}</td><td>{{ analysis.lastNames }}</td>
+              <td class="prediction-summary">{{ summarize(analysis.conclusion) }}</td>
+              <td>{{ analysis.identifiedModalities.join(', ') || 'Ninguna' }}</td>
+              <td>{{ analysis.guidanceConsulted ? 'Sí' : 'No' }}</td>
+            </tr>
+          } @empty {
+            @if (!loading) { <tr><td colspan="6" class="empty">No hay predicciones registradas.</td></tr> }
+          }
+        </tbody>
+      </table>
+    </div>
+    <nav class="pagination" aria-label="Paginación del historial de predicciones">
+      <span>Página {{ page + 1 }} de {{ totalPages || 1 }} · {{ totalElements }} predicciones</span>
+      <div class="table-actions">
+        <button class="ghost" type="button" (click)="action.emit({ type: 'pageChange', page: page - 1 })" [disabled]="loading || page === 0">Anterior</button>
+        <button class="ghost" type="button" (click)="action.emit({ type: 'pageChange', page: page + 1 })" [disabled]="loading || page >= totalPages - 1">Siguiente</button>
+      </div>
+    </nav>
+  </article>
+</section>

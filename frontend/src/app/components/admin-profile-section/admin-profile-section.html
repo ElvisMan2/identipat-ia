@@ -1,0 +1,47 @@
+<section class="layout">
+  <article class="panel">
+    <h2>Mi perfil</h2>
+    @if (!currentAdmin) {
+      <p class="empty-state">No se pudo cargar tu información. Refresca la sección de usuarios e inténtalo nuevamente.</p>
+    } @else {
+      <div class="profile-readonly">
+        <p><strong>Documento:</strong> {{ currentAdmin.doiType }} {{ currentAdmin.doi }}</p>
+        <p><strong>Tipo de usuario:</strong> Administrador</p>
+        <p><strong>Estado:</strong> {{ inactive ? 'Inactivo' : 'Activo' }}</p>
+      </div>
+      <form [formGroup]="profileForm" (ngSubmit)="updateProfile.emit()" class="form-grid registration-form">
+        <label>Nombres <input type="text" formControlName="firstName" maxlength="30" /></label>
+        <label>Apellido paterno <input type="text" formControlName="paternalLastName" maxlength="30" /></label>
+        <label>Apellido materno <input type="text" formControlName="maternalLastName" maxlength="30" /></label>
+        <label>Fecha de nacimiento <input type="date" formControlName="birthDate" min="1926-01-01" max="2020-12-31" /></label>
+        <label>Género <select formControlName="gender"><option value="" disabled>Seleccione</option><option value="MALE">Masculino</option><option value="FEMALE">Femenino</option></select></label>
+        <label>Correo electrónico <input type="email" formControlName="email" /></label>
+        <label>Teléfono <input type="text" formControlName="phone" inputmode="numeric" maxlength="9" pattern="[0-9]*" (input)="phoneInput.emit($event)" /></label>
+        <label>Celular <input type="tel" formControlName="mobilePhone" inputmode="tel" maxlength="15" (input)="mobilePhoneInput.emit($event)" /></label>
+        <label>Profesión <input type="text" formControlName="profession" /></label>
+        @if (profileMessage) { <p [class]="profileMessage.includes('correctamente') ? 'success-message' : 'error'" role="status">{{ profileMessage }}</p> }
+        <div class="actions"><button type="submit" [disabled]="savingProfile">{{ savingProfile ? 'Guardando...' : 'Actualizar mis datos' }}</button></div>
+      </form>
+      <h2 class="security-heading">Seguridad</h2>
+      <form [formGroup]="securityForm" (ngSubmit)="updatePassword.emit()" class="form-grid registration-form">
+        <label>Contraseña nueva <input id="profile-password" [type]="showPassword ? 'text' : 'password'" formControlName="password" autocomplete="new-password" /></label>
+        <label>Confirmar contraseña nueva
+          <input id="profile-confirm-password" [type]="showPassword ? 'text' : 'password'" formControlName="confirmPassword" autocomplete="new-password" />
+          @if (securityForm.hasError('passwordMismatch') && securityForm.controls['confirmPassword']?.touched) { <span class="field-error" role="alert">Las contraseñas no coinciden.</span> }
+        </label>
+        <label class="terms-checkbox"><span><input type="checkbox" [checked]="showPassword" (change)="togglePasswordVisibility.emit()" /> Mostrar contraseña</span></label>
+        @if (passwordMessage) { <p class="error" role="alert">{{ passwordMessage }}</p> }
+        <div class="actions"><button type="submit" [disabled]="savingPassword">{{ savingPassword ? 'Guardando...' : 'Actualizar contraseña' }}</button></div>
+      </form>
+      @if (passwordSuccessModal) {
+        <div class="modal-backdrop" (click)="closeSuccessModal.emit()" (keydown.escape)="closeSuccessModal.emit()">
+          <article class="panel modal-panel success-dialog" role="dialog" aria-modal="true" aria-labelledby="password-success-title" (click)="$event.stopPropagation()">
+            <h2 id="password-success-title">Contraseña actualizada</h2>
+            <p role="status">La contraseña se actualizó correctamente.</p>
+            <div class="actions"><button type="button" (click)="closeSuccessModal.emit()">Cerrar</button></div>
+          </article>
+        </div>
+      }
+    }
+  </article>
+</section>

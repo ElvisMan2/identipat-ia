@@ -1,0 +1,24 @@
+:host { display: block; min-height: 100dvh; }
+.admin-page { min-height: 100dvh; display: flex; flex-direction: column; background: #f4f7f6; }
+.topbar { height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0 max(1.25rem, calc((100vw - 1180px) / 2)); border-bottom: 1px solid var(--line); background: #fff; }
+.admin-bar > div:first-child { display: grid; }
+.admin-bar .result-actions { display: flex; }
+.admin-bar span { color: var(--muted); font-size: .72rem; }
+.brand { color: var(--ink); font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; font-weight: 700; letter-spacing: .08em; text-decoration: none; }
+.outline-button { border: 1px solid var(--teal); border-radius: 6px; padding: .68rem 1rem; color: var(--teal-dark); background: transparent; font: inherit; font-weight: 600; cursor: pointer; }
+.result-actions { display: flex; align-items: center; gap: .65rem; }
+.admin-title, .admin-tabs { width: min(1200px, calc(100% - 2rem)); margin-inline: auto; }
+.admin-title { padding: 2rem 0 1.25rem; }
+.admin-title h1 { margin: 0; font-size: clamp(1.9rem, 4vw, 2.8rem); }
+.admin-title > p:last-child { margin: .35rem 0 0; color: var(--muted); }
+.eyebrow { margin: 0 0 .75rem; color: var(--coral); font-size: .76rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.admin-tabs { display: flex; gap: .5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--line); }
+.admin-tabs button { border: 0; background: none; padding: .75rem 1rem; font: inherit; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; }
+.admin-tabs button.active { color: var(--teal-dark); border-bottom-color: var(--teal); }
+.access-progress-modal { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 1rem; background: rgb(15 26 24 / .55); }
+.access-progress { display: flex; align-items: center; gap: 1rem; width: min(520px, 100%); padding: 1.25rem; border: 1px solid var(--line); background: #fff; box-shadow: 0 18px 50px rgb(24 51 47 / .18); }
+.access-progress h2 { margin: 0; font-size: 1.15rem; }
+.access-progress p { margin: .3rem 0 0; color: var(--muted); line-height: 1.5; }
+.analysis-spinner { width: 2rem; height: 2rem; flex: 0 0 auto; border: 3px solid var(--mint); border-top-color: var(--teal); border-radius: 50%; animation: analysis-spin .8s linear infinite; }
+@keyframes analysis-spin { to { transform: rotate(360deg); } }
+@media (max-width: 620px) { .topbar { height: 68px; padding-inline: 1rem; } .outline-button { padding: .55rem .65rem; font-size: .78rem; } .admin-bar .result-actions { gap: .35rem; } .admin-tabs { width: calc(100% - 2rem); overflow-x: auto; } .admin-tabs button { white-space: nowrap; } }

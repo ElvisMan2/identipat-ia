@@ -1,0 +1,124 @@
+<main class="analysis-page">
+  <header class="topbar">
+    <a class="brand" href="/" (click)="$event.preventDefault(); exit.emit()">IDENTIPAT IA</a>
+    <div class="result-actions">
+      @if (adminAuthenticated) {
+        <button class="outline-button" type="button" (click)="openAdminPanel.emit()" [disabled]="!!navigationPending">Panel de administración</button>
+      }
+      <button class="outline-button" type="button" (click)="exit.emit()" [disabled]="!!navigationPending">Salir</button>
+    </div>
+  </header>
+
+  @if (navigationPending; as pending) {
+    <section class="access-progress-modal" role="status" aria-live="polite">
+      <div class="access-progress">
+        <span class="analysis-spinner" aria-hidden="true"></span>
+        <div>
+          <h2>{{ pending === 'admin' ? 'Cargando panel de administración' : pending === 'predictions' ? 'Cargando predicciones' : 'Saliendo' }}</h2>
+          <p>{{ pending === 'exit' ? 'Estamos cerrando la sesión.' : 'Estamos preparando la pantalla solicitada.' }}</p>
+        </div>
+      </div>
+    </section>
+  }
+
+  @if (exitError) { <p class="error" role="alert">{{ exitError }}</p> }
+
+  @if (!adminAuthenticated && (standardAccessState === 'CONSENT_REQUIRED' || standardAccessState === 'BLOCKED')) {
+    <section class="consent-gate" role="dialog" aria-modal="true" aria-labelledby="consent-gate-title">
+      <article class="consent-card">
+        @if (legalLoading) {
+          <div class="consent-loading" role="status"><span class="analysis-spinner" aria-hidden="true"></span><p>Cargando el documento legal vigente...</p></div>
+        } @else if (legalError) {
+          <p class="eyebrow">Acceso temporalmente no disponible</p>
+          <h2 id="consent-gate-title">Documento legal no disponible</h2>
+          <p class="error" role="alert">{{ legalError }}</p>
+          <div class="consent-actions">
+            <button type="button" class="outline-button" (click)="reviewLegal.emit()" autofocus>Reintentar</button>
+            <button type="button" class="outline-button" (click)="exit.emit()">Salir</button>
+          </div>
+        } @else if (legalDocument; as document) {
+          @if (standardAccessState === 'BLOCKED') {
+            <p class="eyebrow">Decisión registrada</p>
+            <h2 id="consent-gate-title">Se requiere tu aceptación para continuar</h2>
+            <p class="consent-blocked-message" role="alert">{{ consentMessage }}</p>
+            <div class="consent-actions">
+              <button type="button" class="primary-button" (click)="reviewLegal.emit()" autofocus>Revisar nuevamente</button>
+              <button type="button" class="outline-button" (click)="exit.emit()">Salir</button>
+            </div>
+          } @else {
+            <p class="eyebrow">Consentimiento obligatorio</p>
+            <h2 id="consent-gate-title">{{ document.title }}</h2>
+            <p class="legal-updated">Última actualización: {{ legalDateLabel(document.updatedAt) }}</p>
+            @if (consentMessage) { <p class="consent-notice" role="status">{{ consentMessage }}</p> }
+            <div class="consent-document legal-rich-content" tabindex="0" [innerHTML]="document.contentHtml"></div>
+            <label class="consent-explicit-check">
+              <input type="checkbox" [checked]="consentChecked" (change)="consentCheckedChange.emit($event)" autofocus />
+              <span>He leído y acepto expresamente los Términos de uso y la Política de Privacidad vigentes.</span>
+            </label>
+            <div class="consent-actions">
+              <button type="button" class="outline-button" (click)="rejectLegal.emit()" [disabled]="consentSaving">No aceptar</button>
+              <button type="button" class="primary-button" (click)="acceptLegal.emit()" [disabled]="!consentChecked || consentSaving">{{ consentSaving ? 'Guardando...' : 'Aceptar y continuar' }}</button>
+            </div>
+          }
+        }
+      </article>
+    </section>
+  }
+
+  <section class="analysis-shell" [attr.inert]="!adminAuthenticated && standardAccessState !== 'READY' ? '' : null" [attr.aria-hidden]="!adminAuthenticated && standardAccessState !== 'READY' ? 'true' : null">
+    <div class="analysis-heading">
+      <p class="eyebrow">Análisis de tu creación</p>
+      <h1>Cuéntanos qué quieres proteger</h1>
+      <p>Describe tu creación con el mayor detalle posible. Esta información será la base para orientarte sobre sus alternativas de protección.</p>
+    </div>
+
+    <form [formGroup]="analysisForm" (ngSubmit)="submitAnalysis.emit()" class="analysis-form">
+      <label for="description">Descripción de la creación</label>
+      @if (selectedPdf; as pdf) {
+        <div class="pdf-selection" role="status" aria-label="Archivo PDF seleccionado" style="height: 188px; position: relative; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 5px;">
+          <button type="button" aria-label="Quitar archivo PDF" title="Quitar archivo PDF" (click)="removePdf.emit()" style="position: absolute; top: 8px; right: 8px; z-index: 1; width: 32px; height: 32px; padding: 5px; border: 0; border-radius: 50%; background: #fff; cursor: pointer;"><img src="close.png" alt="" style="display: block; width: 22px; height: 22px; object-fit: contain;" /></button>
+          <img src="/Icon_pdf_file.svg.webp" alt="" style="width: 72px; height: 72px;" />
+          <span style="max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ pdf.name }}</span>
+        </div>
+      } @else if (selectedAudio) {
+        <div class="pdf-selection" role="status" aria-label="Grabación de audio seleccionada" style="position: relative; display: grid; place-items: center; gap: .65rem; height: 188px; padding: 1rem; border: 1px solid var(--line); border-radius: 5px; background: #fff;">
+          <button type="button" aria-label="Quitar grabación de audio" title="Quitar grabación de audio" (click)="removeAudio.emit()" style="position: absolute; top: 8px; right: 8px; z-index: 1; width: 32px; height: 32px; padding: 5px; border: 0; border-radius: 50%; background: #fff; cursor: pointer;"><img src="close.png" alt="" style="display: block; width: 22px; height: 22px; object-fit: contain;" /></button>
+          <img src="/audio.png" alt="Grabación de audio" style="display: block; width: 96px; height: 96px; object-fit: contain; background: #fff;" />
+          <span>Grabación de voz</span>
+        </div>
+      } @else {
+        <textarea id="description" formControlName="description" rows="10" placeholder="Escribe aquí la descripción de tu creación..."></textarea>
+      }
+      @if (!selectedPdf && !selectedAudio && analysisForm.controls['description']?.touched && analysisForm.controls['description']?.invalid) {
+        <p class="field-error">La descripción debe tener entre 20 y 20 000 caracteres.</p>
+      }
+      <div class="input-actions">
+        <button class="voice-button" type="button" [class.recording]="recordingAudio" [attr.aria-label]="recordingAudio ? 'Detener grabación' : 'Grabar descripción por voz'" (click)="toggleRecording.emit()">{{ recordingAudio ? 'Detener grabación' : 'Grabar voz' }}</button>
+        <input #pdfInput type="file" accept="application/pdf" hidden (change)="pdfSelected.emit($event)" />
+        <button class="pdf-button" type="button" aria-label="Adjuntar archivo PDF" (click)="pdfInput.click()">Adjuntar PDF</button>
+      </div>
+      <div class="analysis-actions">
+        <span [class.success-message]="analysisMessage.startsWith('Análisis recibido')" [class.error]="analysisMessage.startsWith('No se pudo')">{{ analysisMessage }}</span>
+        <button class="primary-button" type="submit" [disabled]="submittingAnalysis || (!adminAuthenticated && standardAccessState !== 'READY')">{{ submittingAnalysis ? 'Enviando...' : canResumePendingAnalysis ? 'Reanudar seguimiento' : 'Iniciar análisis' }}</button>
+      </div>
+    </form>
+    <p class="analysis-disclaimer">Identipat es una herramienta de Inteligencia artificial y puede cometer errores, verifica la información importante.</p>
+
+    @if (submittingAnalysis) {
+      <section class="analysis-progress-modal" role="status" aria-live="polite">
+        <div class="analysis-progress"><span class="analysis-spinner" aria-hidden="true"></span><div><h2>Analizando con IA</h2><p>Estamos revisando la información de tu creación. Este proceso puede tardar unos segundos.</p></div></div>
+      </section>
+    }
+    @if (recordingAudio) {
+      <section class="recording-modal" role="dialog" aria-modal="true" aria-labelledby="audio-recording-title">
+        <div class="recording-card">
+          <img src="/microphone.png" alt="Micrófono" />
+          <h2 id="audio-recording-title">Grabando voz</h2>
+          <p aria-live="polite">{{ recordingTimeLabel }}</p>
+          <button class="primary-button" type="button" (click)="stopRecording.emit()">Detener grabación</button>
+        </div>
+      </section>
+    }
+  </section>
+  <app-trust-footer />
+</main>

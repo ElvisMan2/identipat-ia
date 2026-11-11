@@ -11,6 +11,12 @@ import { StandardAnalysisService } from './services/standard-analysis.service';
 import { UserService } from './services/user.service';
 import { environment } from '../environments/environment';
 
+function createAppWithBackendAnalysis() {
+  const fixture = TestBed.createComponent(App);
+  Object.defineProperty(fixture.componentInstance, 'useExampleAnalysis', { value: false });
+  return fixture;
+}
+
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -51,6 +57,74 @@ describe('App', () => {
     expect(app.analysisSummary('a'.repeat(150))).toBe('a'.repeat(150));
     expect(app.analysisSummary('a'.repeat(151))).toBe(`${'a'.repeat(147)}...`);
     expect(app.analysisSummary(null)).toBe('Aún no disponible.');
+  });
+
+  it('renders the public access component and forwards registration', () => {
+    const fixture = TestBed.createComponent(App);
+    const openRegistration = spyOn(fixture.componentInstance, 'openRegistration');
+    fixture.detectChanges();
+
+    const registerButton = fixture.nativeElement.querySelector('.access-register-button') as HTMLButtonElement;
+    registerButton.click();
+
+    expect(fixture.nativeElement.querySelector('app-public-access-page')).not.toBeNull();
+    expect(openRegistration).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries the registration legal document through its registration handler', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.view.set('registration');
+    app.legalError.set('Documento no disponible');
+    const openRegistration = spyOn(app, 'openRegistration');
+    fixture.detectChanges();
+
+    (fixture.nativeElement.querySelector('.registration-legal-status button') as HTMLButtonElement).click();
+
+    expect(openRegistration).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders the standard analysis component and forwards submission', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const submitAnalysis = spyOn(app, 'submitAnalysis');
+    app.view.set('standard-analysis');
+    fixture.detectChanges();
+
+    const form = fixture.nativeElement.querySelector('app-standard-analysis-page form') as HTMLFormElement;
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    expect(submitAnalysis).toHaveBeenCalledTimes(1);
+  });
+
+  it('connects the admin user status filter to App state and reload', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const loadUsers = spyOn(app, 'loadUsers');
+    app.view.set('admin');
+    app.adminSection.set('users');
+    fixture.detectChanges();
+
+    const statusFilter = fixture.nativeElement.querySelector('app-admin-users-section select') as HTMLSelectElement;
+    statusFilter.value = 'I';
+    statusFilter.dispatchEvent(new Event('change', { bubbles: true }));
+
+    expect(app.userStatus()).toBe('I');
+    expect(loadUsers).toHaveBeenCalledWith(0);
+  });
+
+  it('maps settings actions and legal content into the settings view model', () => {
+    const app = TestBed.createComponent(App).componentInstance;
+    const input = document.createElement('input');
+    input.value = 'Términos actualizados';
+    const event = new Event('input');
+    Object.defineProperty(event, 'target', { value: input });
+
+    app.handleAdminSettingsAction({ type: 'legalTitle', event });
+    app.legalAdminHtml.set('<p>Contenido legal</p>');
+
+    expect(app.adminSettingsViewModel().legal.title).toBe('Términos actualizados');
+    expect(app.adminSettingsViewModel().legal.content).toBe('<p>Contenido legal</p>');
   });
 
   it('should fetch an admin diagnostic report by analysis id', () => {
@@ -713,7 +787,7 @@ describe('App', () => {
       tokenType: 'Bearer',
       accessToken: 'test-token'
     });
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 510));
     fixture.detectChanges();
 
     expect(app.view()).toBe('standard-analysis');
@@ -909,7 +983,7 @@ describe('App', () => {
   });
 
   it('should preserve analysis input and avoid automatic retry when consent becomes required', () => {
-    const fixture = TestBed.createComponent(App);
+    const fixture = createAppWithBackendAnalysis();
     const app = fixture.componentInstance;
     const httpTesting = TestBed.inject(HttpTestingController);
     app.standardAccessState.set('READY');
@@ -941,7 +1015,7 @@ describe('App', () => {
   });
 
   it('should reuse the idempotency key after an uncertain network error and replace it for changed text', () => {
-    const fixture = TestBed.createComponent(App);
+    const fixture = createAppWithBackendAnalysis();
     const app = fixture.componentInstance;
     const httpTesting = TestBed.inject(HttpTestingController);
     app.standardAccessState.set('READY');
@@ -974,7 +1048,7 @@ describe('App', () => {
   });
 
   it('should resume polling the accepted analysis instead of posting another request', () => {
-    const fixture = TestBed.createComponent(App);
+    const fixture = createAppWithBackendAnalysis();
     const app = fixture.componentInstance;
     const httpTesting = TestBed.inject(HttpTestingController);
     app.standardAccessState.set('READY');
@@ -1003,7 +1077,7 @@ describe('App', () => {
   });
 
   it('should stop offering polling resume when text changes after a polling failure', () => {
-    const fixture = TestBed.createComponent(App);
+    const fixture = createAppWithBackendAnalysis();
     const app = fixture.componentInstance;
     const httpTesting = TestBed.inject(HttpTestingController);
     app.standardAccessState.set('READY');
@@ -1049,7 +1123,7 @@ describe('App', () => {
   });
 
   it('should show quota, capacity and idempotency messages with defensive Retry-After handling', () => {
-    const fixture = TestBed.createComponent(App);
+    const fixture = createAppWithBackendAnalysis();
     const app = fixture.componentInstance;
     const httpTesting = TestBed.inject(HttpTestingController);
     app.standardAccessState.set('READY');
@@ -1082,7 +1156,7 @@ describe('App', () => {
   });
 
   it('should reuse one STANDARD session for a second analysis without creating or accepting anything again', () => {
-    const fixture = TestBed.createComponent(App);
+    const fixture = createAppWithBackendAnalysis();
     const app = fixture.componentInstance;
     const httpTesting = TestBed.inject(HttpTestingController);
     app.standardAccessState.set('READY');
@@ -1116,7 +1190,7 @@ describe('App', () => {
   });
 
   it('should clear local STANDARD state when polling reports an expired session', () => {
-    const fixture = TestBed.createComponent(App);
+    const fixture = createAppWithBackendAnalysis();
     const app = fixture.componentInstance;
     const httpTesting = TestBed.inject(HttpTestingController);
     app.standardAccessState.set('READY');

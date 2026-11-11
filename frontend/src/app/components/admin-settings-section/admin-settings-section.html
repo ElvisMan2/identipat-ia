@@ -1,0 +1,87 @@
+<section class="layout">
+  <article class="panel table-panel">
+    <h2>Orientación</h2>
+    <p class="empty-state">Orientación personalizada por cada tipo de registro.</p>
+
+    <details class="orientation-subsection">
+      <summary><span class="orientation-summary-content"><span class="orientation-summary-title">Patente de invención</span><span class="status-badge" [attr.data-status]="model.patent.latestGuide?.status ?? 'NONE'">Estado actual: {{ model.patent.latestGuide?.status === 'DRAFT' ? 'Borrador' : model.patent.latestGuide?.status === 'ACTIVE' ? 'Activo' : 'Sin versión' }}</span></span><span class="orientation-chevron" aria-hidden="true"></span></summary>
+      <input id="patent-orientation-short-description" type="text" [value]="model.patent.shortDescription" (input)="action.emit({ type: 'patentShortDescription', event: $event })" [style.border-color]="model.patent.shortDescriptionInvalid ? 'var(--danger)' : null" [attr.aria-invalid]="model.patent.shortDescriptionInvalid" minlength="20" maxlength="240" required placeholder="Orientación para Patente de invención" />
+      @if (model.patent.shortDescriptionInvalid) { <p class="field-error">La descripción corta debe tener entre 20 y 240 caracteres.</p> }
+      <ckeditor [editor]="editor" [config]="editorConfig" (ready)="action.emit({ type: 'patentEditorReady', editor: $event })" (change)="action.emit({ type: 'patentHtml', event: $event })" (blur)="action.emit({ type: 'patentHtml', event: $event })" aria-label="Orientación de Patente de invención"></ckeditor>
+      <div class="actions"><button type="button" (click)="action.emit({ type: 'savePatent' })" [disabled]="!model.patent.canSave || !model.patent.hasChanges || model.patent.saving">{{ model.patent.saving ? 'Guardando...' : 'Guardar borrador' }}</button>@if (model.patent.savedDraft) { <button type="button" class="outline-button" (click)="action.emit({ type: 'openPatentPublish' })" [disabled]="model.patent.hasChanges || model.patent.activating || model.patent.saving">{{ model.patent.activating ? 'Publicando...' : 'Publicar' }}</button> }</div>
+      @if (model.patent.error) { <p class="error" role="alert">{{ model.patent.error }}</p> }
+    </details>
+    @if (model.patent.message) { <p class="success-message" role="status">{{ model.patent.message }}</p> }
+    @if (model.patent.showPublishModal && model.patent.savedDraft) {
+      <div class="modal-backdrop" (click)="action.emit({ type: 'closePatentPublish' })" (keydown.escape)="action.emit({ type: 'closePatentPublish' })"><article class="panel modal-panel" role="dialog" aria-modal="true" aria-labelledby="publish-patent-title" (click)="$event.stopPropagation()"><h2 id="publish-patent-title">Publicar orientación</h2><p>¿Confirmas publicar este borrador? Reemplazará la orientación activa actual.</p>@if (model.patent.error) { <p class="error" role="alert">{{ model.patent.error }}</p> }<div class="actions"><button class="ghost" type="button" (click)="action.emit({ type: 'closePatentPublish' })" [disabled]="model.patent.activating">Cancelar</button><button type="button" (click)="action.emit({ type: 'activatePatent' })" [disabled]="model.patent.activating">{{ model.patent.activating ? 'Publicando...' : 'Confirmar publicación' }}</button></div></article></div>
+    }
+
+    <details class="orientation-subsection">
+      <summary><span class="orientation-summary-content"><span class="orientation-summary-title">Modelo de utilidad</span><span class="status-badge" [attr.data-status]="model.utility.latestGuide?.status ?? 'NONE'">Estado actual: {{ model.utility.latestGuide?.status === 'DRAFT' ? 'Borrador' : model.utility.latestGuide?.status === 'ACTIVE' ? 'Activo' : 'Sin versión' }}</span></span><span class="orientation-chevron" aria-hidden="true"></span></summary>
+      <input id="utility-model-orientation-short-description" type="text" [value]="model.utility.shortDescription" (input)="action.emit({ type: 'utilityShortDescription', event: $event })" [style.border-color]="model.utility.shortDescriptionInvalid ? 'var(--danger)' : null" [attr.aria-invalid]="model.utility.shortDescriptionInvalid" minlength="20" maxlength="240" required placeholder="Orientación para Modelo de utilidad" />
+      @if (model.utility.shortDescriptionInvalid) { <p class="field-error">La descripción corta debe tener entre 20 y 240 caracteres.</p> }
+      <ckeditor [editor]="editor" [config]="editorConfig" (ready)="action.emit({ type: 'utilityEditorReady', editor: $event })" (change)="action.emit({ type: 'utilityHtml', event: $event })" (blur)="action.emit({ type: 'utilityHtml', event: $event })" aria-label="Orientación de Modelo de utilidad"></ckeditor>
+      <div class="actions"><button type="button" (click)="action.emit({ type: 'saveUtility' })" [disabled]="!model.utility.canSave || !model.utility.hasChanges || model.utility.saving">{{ model.utility.saving ? 'Guardando...' : 'Guardar borrador' }}</button>@if (model.utility.savedDraft) { <button type="button" class="outline-button" (click)="action.emit({ type: 'openUtilityPublish' })" [disabled]="model.utility.hasChanges || model.utility.activating || model.utility.saving">{{ model.utility.activating ? 'Publicando...' : 'Publicar' }}</button> }</div>
+      @if (model.utility.error) { <p class="error" role="alert">{{ model.utility.error }}</p> }
+    </details>
+    @if (model.utility.message) { <p class="success-message" role="status">{{ model.utility.message }}</p> }
+    @if (model.utility.showPublishModal && model.utility.savedDraft) {
+      <div class="modal-backdrop" (click)="action.emit({ type: 'closeUtilityPublish' })" (keydown.escape)="action.emit({ type: 'closeUtilityPublish' })"><article class="panel modal-panel" role="dialog" aria-modal="true" aria-labelledby="publish-utility-title" (click)="$event.stopPropagation()"><h2 id="publish-utility-title">Publicar orientación</h2><p>¿Confirmas publicar este borrador? Reemplazará la orientación activa actual.</p>@if (model.utility.error) { <p class="error" role="alert">{{ model.utility.error }}</p> }<div class="actions"><button class="ghost" type="button" (click)="action.emit({ type: 'closeUtilityPublish' })" [disabled]="model.utility.activating">Cancelar</button><button type="button" (click)="action.emit({ type: 'activateUtility' })" [disabled]="model.utility.activating">{{ model.utility.activating ? 'Publicando...' : 'Confirmar publicación' }}</button></div></article></div>
+    }
+
+    @for (section of model.additional; track section.type) {
+      <details class="orientation-subsection">
+        <summary><span class="orientation-summary-content"><span class="orientation-summary-title">{{ section.label }}</span><span class="status-badge" [attr.data-status]="section.state.latestGuide?.status ?? 'NONE'">Estado actual: {{ section.state.latestGuide?.status === 'DRAFT' ? 'Borrador' : section.state.latestGuide?.status === 'ACTIVE' ? 'Activo' : 'Sin versión' }}</span></span><span class="orientation-chevron" aria-hidden="true"></span></summary>
+        <input [id]="section.type + '-orientation-short-description'" type="text" [value]="section.state.shortDescription" (input)="action.emit({ type: 'additionalShortDescription', event: $event, sectionType: section.type })" [style.border-color]="section.state.shortDescriptionInvalid ? 'var(--danger)' : null" [attr.aria-invalid]="section.state.shortDescriptionInvalid" minlength="20" maxlength="240" required [placeholder]="'Orientación para ' + section.label" />
+        @if (section.state.shortDescriptionInvalid) { <p class="field-error">La descripción corta debe tener entre 20 y 240 caracteres.</p> }
+        <ckeditor [editor]="additionalEditor" [config]="editorConfig" (ready)="action.emit({ type: 'additionalEditorReady', editor: $event, sectionType: section.type })" (change)="action.emit({ type: 'additionalHtml', event: $event, sectionType: section.type })" (blur)="action.emit({ type: 'additionalHtml', event: $event, sectionType: section.type })" [attr.aria-label]="'Orientación de ' + section.label"></ckeditor>
+        <div class="actions"><button type="button" (click)="action.emit({ type: 'saveAdditional', sectionType: section.type })" [disabled]="!section.state.canSave || !section.state.hasChanges || section.state.saving">{{ section.state.saving ? 'Guardando...' : 'Guardar borrador' }}</button>@if (section.state.savedDraft) { <button type="button" class="outline-button" (click)="action.emit({ type: 'openAdditionalPublish', sectionType: section.type })" [disabled]="section.state.hasChanges || section.state.activating || section.state.saving">{{ section.state.activating ? 'Publicando...' : 'Publicar' }}</button> }</div>
+        @if (section.state.error) { <p class="error" role="alert">{{ section.state.error }}</p> }
+      </details>
+      @if (section.state.message) { <p class="success-message" role="status">{{ section.state.message }}</p> }
+      @if (section.state.showPublishModal && section.state.savedDraft) {
+        <div class="modal-backdrop" (click)="action.emit({ type: 'closeAdditionalPublish', sectionType: section.type })" (keydown.escape)="action.emit({ type: 'closeAdditionalPublish', sectionType: section.type })"><article class="panel modal-panel" role="dialog" aria-modal="true" [attr.aria-labelledby]="'publish-' + section.type + '-title'" (click)="$event.stopPropagation()"><h2 [id]="'publish-' + section.type + '-title'">Publicar orientación</h2><p>¿Confirmas publicar este borrador? Reemplazará la orientación activa actual.</p>@if (section.state.error) { <p class="error" role="alert">{{ section.state.error }}</p> }<div class="actions"><button class="ghost" type="button" (click)="action.emit({ type: 'closeAdditionalPublish', sectionType: section.type })" [disabled]="section.state.activating">Cancelar</button><button type="button" (click)="action.emit({ type: 'activateAdditional', sectionType: section.type })" [disabled]="section.state.activating">{{ section.state.activating ? 'Publicando...' : 'Confirmar publicación' }}</button></div></article></div>
+      }
+    }
+  </article>
+
+  <article class="panel table-panel admin-legal-panel">
+    <details class="legal-admin-subsection">
+      <summary class="legal-admin-summary"><h2>Términos de uso y Política de Privacidad</h2><span class="orientation-chevron" aria-hidden="true"></span></summary>
+      @if (model.legal.loading) { <p role="status">Cargando documento legal...</p> } @else {
+        <div class="legal-admin-fields">
+          <label for="legal-admin-title">Título</label><input id="legal-admin-title" type="text" [value]="model.legal.title" (input)="action.emit({ type: 'legalTitle', event: $event })" [disabled]="model.legal.saving" maxlength="200" />
+          <label class="legal-admin-content-label">Contenido</label>
+          <ckeditor [editor]="legalEditor" [config]="legalEditorConfig" (ready)="action.emit({ type: 'legalEditorReady', editor: $event })" (change)="action.emit({ type: 'legalHtml', event: $event })" (blur)="action.emit({ type: 'legalHtml', event: $event })" aria-label="Contenido del documento legal"></ckeditor>
+          <p class="legal-admin-updated">{{ model.legal.document ? 'Última actualización: ' + legalDateLabel(model.legal.document.updatedAt) : 'Primera configuración' }}</p>
+          @if (model.legal.message) { <p class="success-message" role="status">{{ model.legal.message }}</p> }
+          @if (model.legal.error) { <p class="error" role="alert">{{ model.legal.error }}</p> }
+          <div class="actions legal-admin-actions"><button type="button" (click)="action.emit({ type: 'saveLegal' })" [disabled]="model.legal.saving || !model.legal.title.trim() || !model.legal.content.trim() || !model.legal.hasChanges">{{ model.legal.saving ? 'Guardando...' : 'Guardar cambios' }}</button></div>
+        </div>
+      }
+    </details>
+  </article>
+
+  <article class="panel table-panel">
+    <details class="legal-admin-subsection">
+      <summary class="legal-admin-summary"><h2>Disclaimer Institucional</h2><span class="orientation-chevron" aria-hidden="true"></span></summary>
+      @if (model.disclaimer.loading) { <p role="status">Cargando disclaimers...</p> }
+      @else if (model.disclaimer.error) { <p class="error" role="alert">{{ model.disclaimer.error }}</p><button class="ghost" type="button" (click)="action.emit({ type: 'retryDisclaimer' })">Reintentar</button> }
+      @else if (model.disclaimer.latest) {
+        <div class="report-disclaimer-details">
+          <label for="disclaimer-title">Título del disclaimer</label><input id="disclaimer-title" type="text" [value]="model.disclaimer.title" (input)="action.emit({ type: 'disclaimerTitle', event: $event })" [disabled]="model.disclaimer.saving || model.disclaimer.activating" />
+          <label for="disclaimer-content">Contenido del disclaimer</label><textarea id="disclaimer-content" class="report-disclaimer-editor" [value]="model.disclaimer.content" (input)="action.emit({ type: 'disclaimerContent', event: $event })" [disabled]="model.disclaimer.saving || model.disclaimer.activating" maxlength="5000" rows="5"></textarea>
+          @if (model.disclaimer.message) { <p class="success-message" role="status">{{ model.disclaimer.message }}</p> }
+          @if (model.disclaimer.draftError) { <p class="error" role="alert">{{ model.disclaimer.draftError }}</p> }
+          <div class="actions"><button type="button" (click)="action.emit({ type: 'saveDisclaimer' })" [disabled]="!model.disclaimer.hasChanges || model.disclaimer.saving">{{ model.disclaimer.saving ? 'Guardando...' : 'Guardar borrador' }}</button>@if (model.disclaimer.savedDraft) { <button type="button" class="outline-button" (click)="action.emit({ type: 'openDisclaimerPublish' })" [disabled]="model.disclaimer.hasChanges || model.disclaimer.activating || model.disclaimer.saving">{{ model.disclaimer.activating ? 'Publicando...' : 'Publicar' }}</button> }</div>
+          @if (model.disclaimer.activationMessage) { <p class="success-message" role="status">{{ model.disclaimer.activationMessage }}</p> }
+          @if (model.disclaimer.activationError) { <p class="error" role="alert">{{ model.disclaimer.activationError }}</p> }
+        </div>
+      }
+      @if (model.disclaimer.loaded && !model.disclaimer.latest && !model.disclaimer.error) { <p class="empty-state">No hay disclaimers registrados.</p> }
+      @if (model.disclaimer.showPublishModal && model.disclaimer.savedDraft) {
+        <div class="modal-backdrop" (click)="action.emit({ type: 'closeDisclaimerPublish' })" (keydown.escape)="action.emit({ type: 'closeDisclaimerPublish' })"><article class="panel modal-panel" role="dialog" aria-modal="true" aria-labelledby="publish-disclaimer-title" (click)="$event.stopPropagation()"><h2 id="publish-disclaimer-title">Publicar disclaimer</h2><p>¿Confirmas publicar este borrador? Reemplazará el disclaimer activo actual.</p>@if (model.disclaimer.activationError) { <p class="error" role="alert">{{ model.disclaimer.activationError }}</p> }<div class="actions"><button class="ghost" type="button" (click)="action.emit({ type: 'closeDisclaimerPublish' })" [disabled]="model.disclaimer.activating">Cancelar</button><button type="button" (click)="action.emit({ type: 'publishDisclaimer' })" [disabled]="model.disclaimer.activating">{{ model.disclaimer.activating ? 'Publicando...' : 'Confirmar publicación' }}</button></div></article></div>
+      }
+    </details>
+  </article>
+</section>

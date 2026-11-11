@@ -1,0 +1,20 @@
+<main class="legal-page">
+  <header class="topbar">
+    <a class="brand" href="/">IDENTIPAT IA</a>
+  </header>
+  <article class="legal-content">
+    @if (loading) {
+      <p class="legal-state" role="status">Cargando documento legal...</p>
+    } @else if (error) {
+      <div class="legal-state legal-state-error" role="alert">
+        <p>{{ error }}</p>
+        <button type="button" class="outline-button" (click)="retry.emit()">Reintentar</button>
+      </div>
+    } @else if (document; as legalDocument) {
+      <h1>{{ legalDocument.title }}</h1>
+      <p class="legal-updated">Última actualización: {{ updatedAtLabel }}</p>
+      <section class="legal-section legal-rich-content" [innerHTML]="legalDocument.contentHtml"></section>
+    }
+  </article>
+  <app-trust-footer />
+</main>
