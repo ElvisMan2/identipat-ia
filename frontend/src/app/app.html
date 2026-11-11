@@ -1,24 +1,11 @@
 @if (view() === 'legal') {
-  <main class="legal-page">
-      <header class="topbar">
-        <a class="brand" href="/">IDENTIPAT IA</a>
-      </header>
-    <article class="legal-content">
-      @if (legalLoading()) {
-        <p class="legal-state" role="status">Cargando documento legal...</p>
-      } @else if (legalError()) {
-        <div class="legal-state legal-state-error" role="alert">
-          <p>{{ legalError() }}</p>
-          <button type="button" class="outline-button" (click)="loadPublicLegalDocument()">Reintentar</button>
-        </div>
-      } @else if (legalDocument(); as document) {
-        <h1>{{ document.title }}</h1>
-        <p class="legal-updated">Última actualización: {{ legalDateLabel(document.updatedAt) }}</p>
-        <section class="legal-section legal-rich-content" [innerHTML]="document.contentHtml"></section>
-      }
-    </article>
-      <app-trust-footer />
-  </main>
+  <app-legal-page
+    [document]="legalDocument()"
+    [loading]="legalLoading()"
+    [error]="legalError()"
+    [updatedAtLabel]="legalDateLabel(legalDocument()?.updatedAt)"
+    (retry)="loadPublicLegalDocument()"
+  />
 } @else if (view() === 'admin') {
   <main class="admin-page">
     <header class="topbar admin-bar">
