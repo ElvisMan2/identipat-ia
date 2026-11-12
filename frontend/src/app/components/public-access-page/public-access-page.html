@@ -54,7 +54,7 @@
             </label>
             @if (accessMessage) { <p class="access-message registration-wide" role="alert">{{ accessMessage }}</p> }
             <div class="registration-actions registration-wide">
-              <button class="primary-button" type="submit" [disabled]="saving || legalLoading || !legalDocument || userForm.invalid">{{ saving ? 'Registrando...' : 'Registrarme' }}</button>
+              <button class="primary-button registration-submit" type="submit" [disabled]="saving || legalLoading || !legalDocument || userForm.invalid">{{ saving ? 'Registrando...' : 'Registrarme' }}</button>
               <button class="outline-button" type="button" (click)="registrationCancel.emit()" [disabled]="saving">Volver</button>
             </div>
           </form>
