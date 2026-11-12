@@ -553,8 +553,8 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent)
-      .toContain('Descubre cómo proteger la propiedad intelectual de tu creación');
+    expect(compiled.querySelector('h2')?.textContent)
+      .toContain('¿Qué creaciones puedes analizar?');
     expect(compiled.textContent).not.toContain('Usuarios registrados');
   });
 
