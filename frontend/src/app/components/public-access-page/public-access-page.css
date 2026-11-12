@@ -4,11 +4,9 @@
 .home-banner img { width: 100vw; max-width: none; height: auto; display: block; }
 .topbar { height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0 max(1.25rem, calc((100vw - 1180px) / 2)); border-bottom: 1px solid var(--line); background: rgb(251 250 246 / .94); }
 .brand { color: var(--ink); font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; font-weight: 700; letter-spacing: .08em; text-decoration: none; }
-.hero { width: min(1180px, calc(100% - 2.5rem)); min-height: calc(100dvh - 168px); margin: 0 auto; padding: clamp(2.5rem, 6vw, 5rem) 0 3rem; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr); align-items: center; gap: clamp(2rem, 6vw, 5rem); }
-.hero h1 { max-width: 720px; margin: 0; font-size: clamp(2.35rem, 5.3vw, 4.8rem); line-height: 1.02; letter-spacing: 0; }
-.eyebrow { margin: 0 0 .75rem; color: var(--coral); font-size: .76rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
-.intro { max-width: 630px; margin: 1.4rem 0 2rem; color: var(--muted); font-size: 1.08rem; line-height: 1.7; }
+.hero { width: min(1180px, calc(100% - 2.5rem)); min-height: calc(100dvh - 168px); margin: 0 auto; padding: clamp(2.5rem, 6vw, 5rem) 0 3rem; display: grid; grid-template-columns: minmax(0, 650px); justify-content: center; align-items: center; }
 .access-block { max-width: 650px; padding: 1.35rem; border-left: 4px solid var(--coral); background: #fff; box-shadow: 0 18px 50px rgb(24 51 47 / .1); }
+.access-block.home-access .section-label, .access-block.home-access h2 { text-align: center; }
 .section-label { color: var(--teal); font-size: .76rem; font-weight: 700; text-transform: uppercase; }
 .access-block h2 { margin: .25rem 0 1rem; font-size: 1.25rem; }
 .document-fields { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: .75rem; }
@@ -40,10 +38,6 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .access-message { border-left: 3px solid var(--teal); padding: .55rem .75rem; color: var(--teal-dark); background: var(--mint); }
 .access-message.access-error { border-left-color: var(--danger); color: var(--danger); background: #fbe8e5; }
 .privacy-note { margin: .9rem 0 0; color: var(--muted); font-size: .78rem; }
-.hero-visual { position: relative; margin: 0; min-height: 610px; overflow: hidden; background: var(--mint); }
-.hero-visual::before { content: ''; position: absolute; inset: 18px; z-index: 1; border: 1px solid rgb(255 255 255 / .75); pointer-events: none; }
-.hero-visual img { width: 100%; height: 610px; display: block; object-fit: cover; }
-.hero-visual figcaption { position: absolute; right: 0; bottom: 0; z-index: 2; width: min(82%, 340px); padding: 1rem 1.3rem; color: #fff; background: var(--teal-dark); font-family: 'Space Grotesk', sans-serif; }
 .privacy-note a { color: var(--teal-dark); }
 .registration-progress-modal, .access-progress-modal { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 1rem; background: rgb(15 26 24 / .55); }
 .registration-progress, .access-progress { display: flex; align-items: center; gap: 1rem; width: min(520px, 100%); padding: 1.25rem; border: 1px solid var(--line); background: #fff; box-shadow: 0 18px 50px rgb(24 51 47 / .18); }
@@ -52,5 +46,5 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .registration-success-icon { display: grid; width: 2rem; height: 2rem; flex: 0 0 auto; place-items: center; border-radius: 50%; color: #fff; background: #17643a; font-size: 1.35rem; font-weight: 700; }
 .analysis-spinner { width: 2rem; height: 2rem; flex: 0 0 auto; border: 3px solid var(--mint); border-top-color: var(--teal); border-radius: 50%; animation: analysis-spin .8s linear infinite; }
 @keyframes analysis-spin { to { transform: rotate(360deg); } }
-@media (max-width: 920px) { .hero { grid-template-columns: 1fr; padding-top: 2.5rem; } .hero-visual, .hero-visual img { height: 420px; min-height: 420px; } }
+@media (max-width: 920px) { .hero { grid-template-columns: 1fr; padding-top: 2.5rem; } }
 @media (max-width: 620px) { .topbar { height: 68px; padding-inline: 1rem; } .outline-button { padding: .55rem .65rem; font-size: .78rem; } .hero { width: min(100% - 2rem, 1180px); gap: 2.25rem; } .hero h1 { font-size: 2.45rem; } .document-fields { grid-template-columns: 92px minmax(0, 1fr); } .registration-form { grid-template-columns: 1fr; } .registration-wide { grid-column: auto; } .access-block { padding: 1rem; } }
