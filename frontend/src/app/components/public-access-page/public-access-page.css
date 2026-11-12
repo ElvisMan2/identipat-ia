@@ -1,5 +1,5 @@
 :host { display: block; }
-.home-page { min-height: 100dvh; background: linear-gradient(90deg, rgb(20 108 99 / .05) 1px, transparent 1px), linear-gradient(rgb(20 108 99 / .05) 1px, transparent 1px), var(--paper); background-size: 40px 40px; }
+.home-page { min-height: 100dvh; background: transparent; }
 .home-banner { width: 100vw; margin: 0; border-bottom: 1px solid var(--line); background: var(--mint); }
 .home-banner img { width: 100vw; max-width: none; height: auto; display: block; }
 .creation-analysis-intro { padding: 2rem 1rem; text-align: center; }
