@@ -5,6 +5,13 @@
     </figure>
   }
 
+  @if (view === 'home') {
+    <section class="creation-analysis-intro">
+      <h2>¿Qué <span class="creation-highlight">creaciones</span> puedes analizar?</h2>
+      <p>Puedes analizarlas en su etapa inicial, durante su desarrollo o ya terminado</p>
+    </section>
+  }
+
   <section class="hero">
     <div class="hero-copy">
       <div class="access-block" [class.home-access]="view === 'home'">
