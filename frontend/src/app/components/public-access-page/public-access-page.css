@@ -1,5 +1,7 @@
 :host { display: block; }
 .home-page { min-height: 100dvh; background: linear-gradient(90deg, rgb(20 108 99 / .05) 1px, transparent 1px), linear-gradient(rgb(20 108 99 / .05) 1px, transparent 1px), var(--paper); background-size: 40px 40px; }
+.home-banner { width: 100vw; margin: 0; border-bottom: 1px solid var(--line); background: var(--mint); }
+.home-banner img { width: 100vw; max-width: none; height: auto; display: block; }
 .topbar { height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0 max(1.25rem, calc((100vw - 1180px) / 2)); border-bottom: 1px solid var(--line); background: rgb(251 250 246 / .94); }
 .brand { color: var(--ink); font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; font-weight: 700; letter-spacing: .08em; text-decoration: none; }
 .hero { width: min(1180px, calc(100% - 2.5rem)); min-height: calc(100dvh - 168px); margin: 0 auto; padding: clamp(2.5rem, 6vw, 5rem) 0 3rem; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr); align-items: center; gap: clamp(2rem, 6vw, 5rem); }

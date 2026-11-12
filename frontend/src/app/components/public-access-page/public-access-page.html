@@ -1,7 +1,9 @@
 <main class="home-page">
-  <header class="topbar">
-    <a class="brand" href="/">IDENTIPAT IA</a>
-  </header>
+  @if (view === 'home') {
+    <figure class="home-banner">
+      <img src="/banner.png" alt="Banner principal de Identipat IA" />
+    </figure>
+  }
 
   <section class="hero">
     <div class="hero-copy">
