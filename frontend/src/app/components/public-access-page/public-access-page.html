@@ -16,9 +16,14 @@
       <img src="/img%202.png" alt="Creación analizable 2" />
       <img src="/img%203.png" alt="Creación analizable 3" />
     </section>
+
+    <section class="report-intro">
+      <h2>Obten tu reporte <span class="report-highlight">accede aquí</span></h2>
+      <p>Descubre cómo funciona Identipat IA y comienza a analizar tu creación</p>
+    </section>
   }
 
-  <section class="hero" [class.home-hero]="view === 'home'">
+  <section class="hero" [class.home-hero]="view === 'home'" [class.registration-hero]="view === 'registration'">
     <div class="hero-copy">
       <div class="access-block" [class.home-access]="view === 'home'">
         @if (view === 'registration') {
@@ -59,7 +64,9 @@
             </div>
           </form>
         } @else {
-          <h2>{{ view === 'admin-login' ? 'Ingresa como administrador' : 'Iniciar sesión' }}</h2>
+          @if (view !== 'home') {
+            <h2>{{ view === 'admin-login' ? 'Ingresa como administrador' : 'Iniciar sesión' }}</h2>
+          }
           <form [formGroup]="accessForm" (ngSubmit)="view === 'admin-login' ? login.emit() : identify.emit()">
             <div class="document-fields">
               <label>Tipo
