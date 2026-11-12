@@ -10,9 +10,15 @@
       <h2>¿Qué <span class="creation-highlight">creaciones</span> puedes analizar?</h2>
       <p>Puedes analizarlas en su etapa inicial, durante su desarrollo o ya terminado</p>
     </section>
+
+    <section class="creation-images" aria-label="Tipos de creaciones analizables">
+      <img src="/img%201.png" alt="Creación analizable 1" />
+      <img src="/img%202.png" alt="Creación analizable 2" />
+      <img src="/img%203.png" alt="Creación analizable 3" />
+    </section>
   }
 
-  <section class="hero">
+  <section class="hero" [class.home-hero]="view === 'home'">
     <div class="hero-copy">
       <div class="access-block" [class.home-access]="view === 'home'">
         @if (view === 'registration') {
