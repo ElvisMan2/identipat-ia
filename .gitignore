@@ -75,3 +75,6 @@ __pycache__/
 
 # Codex local working prompts
 codex-prompts/
+
+# playwright
+.playwright-mcp/
