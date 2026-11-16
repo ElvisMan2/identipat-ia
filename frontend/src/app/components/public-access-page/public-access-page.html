@@ -1,7 +1,7 @@
 <main class="home-page">
   @if (view === 'home' || view === 'registration' || view === 'login') {
     <header class="home-banner">
-      <img src="banner.png" alt="Banner principal de Identipat IA" />
+      <img [src]="view === 'home' ? 'banner.png' : 'banner-interior.png'" alt="Banner principal de Identipat IA" />
     </header>
   }
 
