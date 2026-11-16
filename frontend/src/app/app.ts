@@ -301,6 +301,8 @@ export class App {
     const currentPath = this.document.location.pathname.replace(/\/+$/, '') || '/';
     if (currentPath === '/registro') {
       this.showRegistration();
+    } else if (currentPath === '/iniciar-sesion') {
+      this.showLogin();
     } else if (currentPath.endsWith('/terminos-y-privacidad')) {
       this.view.set('legal');
       this.loadPublicLegalDocument();
@@ -312,7 +314,11 @@ export class App {
       const path = event.urlAfterRedirects.split(/[?#]/, 1)[0].replace(/\/+$/, '') || '/';
       if (path === '/registro' && this.view() !== 'registration') {
         this.showRegistration();
+      } else if (path === '/iniciar-sesion' && this.view() !== 'login') {
+        this.showLogin();
       } else if (path === '/' && this.view() === 'registration') {
+        this.showHome();
+      } else if (path === '/' && this.view() === 'login') {
         this.showHome();
       }
     });
@@ -829,6 +835,11 @@ export class App {
   }
 
   openLogin(): void {
+    this.showLogin();
+    void this.router.navigateByUrl('/iniciar-sesion');
+  }
+
+  private showLogin(): void {
     this.accessMessage.set('');
     this.view.set('login');
   }

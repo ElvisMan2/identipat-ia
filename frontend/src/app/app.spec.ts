@@ -810,18 +810,43 @@ describe('App', () => {
     expect(router.url).toBe('/');
   });
 
-  it('should open the standard login view with the home banner and footer', () => {
+  it('should open the standard login view at /iniciar-sesion and follow browser history', async () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
+    const router = TestBed.inject(Router);
     fixture.detectChanges();
 
     const loginLink = fixture.nativeElement.querySelectorAll('.report-step-link')[1] as HTMLButtonElement;
     loginLink.click();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     expect(app.view()).toBe('login');
+    expect(router.url).toBe('/iniciar-sesion');
     expect(fixture.nativeElement.querySelector('.home-banner')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('app-trust-footer')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.document-fields')).not.toBeNull();
+
+    await router.navigateByUrl('/');
+    fixture.detectChanges();
+    expect(app.view()).toBe('home');
+
+    await router.navigateByUrl('/iniciar-sesion');
+    fixture.detectChanges();
+    expect(app.view()).toBe('login');
+  });
+
+  it('should render the standard login form when navigating directly to /iniciar-sesion', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const router = TestBed.inject(Router);
+    fixture.detectChanges();
+
+    await router.navigateByUrl('/iniciar-sesion');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(app.view()).toBe('login');
     expect(fixture.nativeElement.querySelector('.document-fields')).not.toBeNull();
   });
 
