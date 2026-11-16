@@ -26,4 +26,25 @@ describe('StandardAnalysisPageComponent', () => {
     expect(fixture.nativeElement.querySelector('#description')).not.toBeNull();
     expect(submit).toHaveBeenCalledTimes(1);
   });
+
+  it('shows and dismisses the oversized PDF modal', () => {
+    TestBed.configureTestingModule({
+      imports: [StandardAnalysisPageComponent],
+      providers: [provideZonelessChangeDetection()]
+    });
+    const fixture = TestBed.createComponent(StandardAnalysisPageComponent);
+    const component = fixture.componentInstance;
+    component.analysisForm = new FormGroup({
+      description: new FormControl('', [Validators.required])
+    });
+    component.pdfTooLarge = true;
+    fixture.detectChanges();
+
+    const dismissed = jasmine.createSpy('dismissed');
+    component.dismissPdfTooLarge.subscribe(dismissed);
+    expect(fixture.nativeElement.querySelector('[role="dialog"]')?.textContent).toContain('10 MiB');
+    (fixture.nativeElement.querySelector('.pdf-limit-modal button') as HTMLButtonElement).click();
+
+    expect(dismissed).toHaveBeenCalledTimes(1);
+  });
 });

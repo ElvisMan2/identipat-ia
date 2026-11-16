@@ -24,6 +24,7 @@ export class StandardAnalysisPageComponent {
   @Input() consentSaving = false;
   @Input() legalDateLabel = (_value: string | null | undefined): string => '';
   @Input() selectedPdf: File | null = null;
+  @Input() pdfTooLarge = false;
   @Input() selectedAudio: File | null = null;
   @Input() recordingAudio = false;
   @Input() recordingTimeLabel = '';
@@ -45,6 +46,7 @@ export class StandardAnalysisPageComponent {
   @Output() toggleRecording = new EventEmitter<void>();
   @Output() pdfSelected = new EventEmitter<Event>();
   @Output() pdfDropped = new EventEmitter<File>();
+  @Output() dismissPdfTooLarge = new EventEmitter<void>();
   @Output() submitAnalysis = new EventEmitter<void>();
   @Output() stopRecording = new EventEmitter<void>();
 

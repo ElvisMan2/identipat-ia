@@ -131,6 +131,7 @@
     [consentSaving]="consentSaving()"
     [legalDateLabel]="legalDateLabel"
     [selectedPdf]="selectedPdf()"
+    [pdfTooLarge]="pdfTooLarge()"
     [selectedAudio]="selectedAudio()"
     [recordingAudio]="recordingAudio()"
     [recordingTimeLabel]="recordingTimeLabel()"
@@ -148,6 +149,7 @@
     (toggleRecording)="toggleAudioRecording()"
     (pdfSelected)="onPdfSelected($event)"
     (pdfDropped)="onPdfDropped($event)"
+    (dismissPdfTooLarge)="dismissPdfTooLarge()"
     (submitAnalysis)="submitAnalysis()"
     (stopRecording)="stopAudioRecording()"
   />
