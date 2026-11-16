@@ -16,7 +16,7 @@ export interface AccessSanitizeRequest {
   styleUrl: './public-access-page.css'
 })
 export class PublicAccessPageComponent {
-  @Input({ required: true }) view: 'home' | 'registration' | 'admin-login' | 'standard-analysis' | 'standard-result' | 'admin' | 'legal' = 'home';
+  @Input({ required: true }) view: 'home' | 'registration' | 'login' | 'admin-login' | 'standard-analysis' | 'standard-result' | 'admin' | 'legal' = 'home';
   @Input({ required: true }) accessForm!: FormGroup;
   @Input({ required: true }) loginForm!: FormGroup;
   @Input({ required: true }) userForm!: FormGroup;
@@ -39,6 +39,7 @@ export class PublicAccessPageComponent {
   @Output() register = new EventEmitter<void>();
   @Output() login = new EventEmitter<void>();
   @Output() registrationOpen = new EventEmitter<void>();
+  @Output() loginOpen = new EventEmitter<void>();
   @Output() registrationCancel = new EventEmitter<void>();
   @Output() retryLegal = new EventEmitter<void>();
   @Output() sanitizeDni = new EventEmitter<AccessSanitizeRequest>();

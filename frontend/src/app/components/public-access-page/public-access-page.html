@@ -1,11 +1,11 @@
 <main class="home-page">
-  @if (view === 'home' || view === 'registration') {
-    <figure class="home-banner">
+  @if (view === 'home' || view === 'registration' || view === 'login') {
+    <header class="home-banner">
       <img src="banner.png" alt="Banner principal de Identipat IA" />
-    </figure>
+    </header>
   }
 
-  @if (view === 'home' || view === 'registration') {
+  @if (view === 'home') {
     <section class="creation-analysis-intro">
       <h2>¿Qué <span class="creation-highlight">creaciones</span> puedes analizar?</h2>
       <p>Puedes analizarlas en su etapa inicial, durante su desarrollo o ya terminado</p>
@@ -26,6 +26,7 @@
           <div>
             <h3>1. REGÍSTRATE</h3>
             <p><b>Completa tus datos</b> en el breve formulario de la herramienta y crea tu cuenta en Identipat IA.</p>
+            <button type="button" class="report-step-link" (click)="registrationOpen.emit()">Crear cuenta</button>
           </div>
         </div>
         <div class="report-step">
@@ -33,6 +34,7 @@
           <div>
             <h3>2. INGRESA</h3>
             <p><b>Accede a la plataforma</b> colocando tu número de DNI o carnet de extranjería con el que te registraste.</p>
+            <button type="button" class="report-step-link" (click)="loginOpen.emit()">Iniciar sesión</button>
           </div>
         </div>
         <div class="report-step">

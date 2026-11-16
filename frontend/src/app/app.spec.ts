@@ -770,17 +770,35 @@ describe('App', () => {
     expect(fixture.nativeElement.textContent).toContain('Usuario no registrado');
   });
 
-  it('should open registration directly from the access screen', () => {
+  it('should open registration from the home steps with the shared banner and footer', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     fixture.detectChanges();
 
-    const registerButton = fixture.nativeElement.querySelector('.access-register-button') as HTMLButtonElement;
-    registerButton.click();
+    const registerLink = fixture.nativeElement.querySelector('.report-step-link') as HTMLButtonElement;
+    registerLink.click();
     fixture.detectChanges();
 
     expect(app.view()).toBe('registration');
+    expect(fixture.nativeElement.querySelector('.home-banner')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('app-trust-footer')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.registration-form')).not.toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Completa tu registro');
+  });
+
+  it('should open the standard login view with the home banner and footer', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    fixture.detectChanges();
+
+    const loginLink = fixture.nativeElement.querySelectorAll('.report-step-link')[1] as HTMLButtonElement;
+    loginLink.click();
+    fixture.detectChanges();
+
+    expect(app.view()).toBe('login');
+    expect(fixture.nativeElement.querySelector('.home-banner')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('app-trust-footer')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.document-fields')).not.toBeNull();
   });
 
   it('should show the analysis form and admin panel access after a successful admin login', () => {

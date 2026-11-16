@@ -37,6 +37,7 @@
 }
 .report-step h3 { margin: 0 0 .4rem; font-size: 1rem; }
 .report-step p { margin: 0; color: var(--muted); line-height: 1.45; }
+.report-step-link { margin-top: .5rem; border: 0; padding: 0; color: var(--teal-dark); background: transparent; font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
 .creation-images {
 	width: 100%;
 	max-width: 1024px;
@@ -62,7 +63,7 @@
 .section-label { color: var(--teal); font-size: .76rem; font-weight: 700; text-transform: uppercase; }
 .access-block h2 { margin: .25rem 0 1rem; font-size: 1.25rem; }
 .document-fields { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: .75rem; }
-.registration-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.registration-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin-top: 1.5rem; }
 .registration-wide { grid-column: 1 / -1; }
 .registration-actions { display: flex; align-items: center; gap: .75rem; }
 .registration-actions .primary-button { width: auto; margin-top: 0; }

@@ -257,7 +257,7 @@ export class App {
   readonly showAdminPassword = signal(false);
   readonly showEditModal = signal(false);
   readonly adminSection = signal<'users' | 'predictions' | 'profile' | 'settings'>('predictions');
-  readonly view = signal<'home' | 'registration' | 'standard-analysis' | 'standard-result' | 'admin-login' | 'admin' | 'legal'>('home');
+  readonly view = signal<'home' | 'registration' | 'login' | 'standard-analysis' | 'standard-result' | 'admin-login' | 'admin' | 'legal'>('home');
   readonly checkingDocument = signal(false);
   readonly standardAccessPending = signal(false);
   readonly authenticating = signal(false);
@@ -799,6 +799,11 @@ export class App {
     this.userForm.controls.termsAccepted.markAsUntouched();
     this.view.set('registration');
     this.loadLegalDocumentForRegistration();
+  }
+
+  openLogin(): void {
+    this.accessMessage.set('');
+    this.view.set('login');
   }
 
   startNewAnalysis(): void {
