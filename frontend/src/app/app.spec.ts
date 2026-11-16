@@ -3,6 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
+import { provideRouter, Router } from '@angular/router';
 import { CKEditorComponent } from '@ckeditor/ckeditor5-angular';
 import { firstValueFrom, of } from 'rxjs';
 import { App } from './app';
@@ -11,6 +12,7 @@ import { AdminReportDisclaimerService } from './services/admin-report-disclaimer
 import { AdminProtectionGuideService } from './services/admin-protection-guide.service';
 import { StandardAnalysisService } from './services/standard-analysis.service';
 import { UserService } from './services/user.service';
+import { routes } from './app.routes';
 import { environment } from '../environments/environment';
 
 function createAppWithBackendAnalysis() {
@@ -36,7 +38,7 @@ describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideZonelessChangeDetection(), provideHttpClient(), provideHttpClientTesting()]
+      providers: [provideZonelessChangeDetection(), provideHttpClient(), provideHttpClientTesting(), provideRouter(routes)]
     }).compileComponents();
   });
 
@@ -770,20 +772,42 @@ describe('App', () => {
     expect(fixture.nativeElement.textContent).toContain('Usuario no registrado');
   });
 
-  it('should open registration from the home steps with the shared banner and footer', () => {
+  it('should open registration at /registro and return to home', async () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
+    const router = TestBed.inject(Router);
     fixture.detectChanges();
 
     const registerLink = fixture.nativeElement.querySelector('.report-step-link') as HTMLButtonElement;
     registerLink.click();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     expect(app.view()).toBe('registration');
+    expect(router.url).toBe('/registro');
     expect(fixture.nativeElement.querySelector('.home-banner')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('app-trust-footer')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.registration-form')).not.toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Completa tu registro');
+
+    await router.navigateByUrl('/');
+    fixture.detectChanges();
+
+    expect(router.url).toBe('/');
+    expect(app.view()).toBe('home');
+
+    await router.navigateByUrl('/registro');
+    fixture.detectChanges();
+
+    expect(router.url).toBe('/registro');
+    expect(app.view()).toBe('registration');
+
+    (fixture.nativeElement.querySelector('.registration-actions .outline-button') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(app.view()).toBe('home');
+    expect(router.url).toBe('/');
   });
 
   it('should open the standard login view with the home banner and footer', () => {
@@ -799,6 +823,20 @@ describe('App', () => {
     expect(fixture.nativeElement.querySelector('.home-banner')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('app-trust-footer')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.document-fields')).not.toBeNull();
+  });
+
+  it('should render registration when navigating directly to /registro', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const router = TestBed.inject(Router);
+    fixture.detectChanges();
+
+    await router.navigateByUrl('/registro');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(app.view()).toBe('registration');
+    expect(fixture.nativeElement.querySelector('.registration-form')).not.toBeNull();
   });
 
   it('should show the analysis form and admin panel access after a successful admin login', () => {

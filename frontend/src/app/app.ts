@@ -3,8 +3,10 @@ import { DOCUMENT } from '@angular/common';
 import { Component, computed, inject, Signal, signal, WritableSignal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { NavigationEnd, Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Alignment, Bold, ClassicEditor, EditorConfig, Essentials, FindAndReplace, Heading, Image, ImageInsert, Italic, Link, List, Paragraph, RemoveFormat, SourceEditing, Strikethrough, Underline } from 'ckeditor5';
-import { Observable } from 'rxjs';
+import { filter, Observable } from 'rxjs';
 import { StandardUserRegistrationRequest, UserService } from './services/user.service';
 import { User } from './models/user.model';
 import { AdminAnalysis, AdminAnalysisService, AnalysisStatus } from './services/admin-analysis.service';
@@ -65,6 +67,7 @@ interface OrientationEditorState {
 export class App {
   private readonly fb = inject(FormBuilder);
   private readonly document = inject(DOCUMENT);
+  private readonly router = inject(Router);
   private readonly userService = inject(UserService);
   private readonly adminAnalysisService = inject(AdminAnalysisService);
   private readonly adminReportDisclaimerService = inject(AdminReportDisclaimerService);
@@ -295,10 +298,24 @@ export class App {
   private pendingAnalysisIntent: PendingAnalysisIntent | null = null;
 
   constructor() {
-    if (this.document.location.pathname.endsWith('/terminos-y-privacidad')) {
+    const currentPath = this.document.location.pathname.replace(/\/+$/, '') || '/';
+    if (currentPath === '/registro') {
+      this.showRegistration();
+    } else if (currentPath.endsWith('/terminos-y-privacidad')) {
       this.view.set('legal');
       this.loadPublicLegalDocument();
     }
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      takeUntilDestroyed()
+    ).subscribe(event => {
+      const path = event.urlAfterRedirects.split(/[?#]/, 1)[0].replace(/\/+$/, '') || '/';
+      if (path === '/registro' && this.view() !== 'registration') {
+        this.showRegistration();
+      } else if (path === '/' && this.view() === 'registration') {
+        this.showHome();
+      }
+    });
     this.accessForm.controls.doiType.valueChanges.subscribe(() => this.accessForm.controls.doi.updateValueAndValidity());
     this.userForm.controls.doiType.valueChanges.subscribe(() => this.userForm.controls.doi.updateValueAndValidity());
     this.analysisForm.controls.description.valueChanges.subscribe(() => this.refreshPendingAnalysisResumeState());
@@ -742,6 +759,11 @@ export class App {
   }
 
   backHome(): void {
+    this.showHome();
+    void this.router.navigateByUrl('/');
+  }
+
+  private showHome(): void {
     this.view.set('home');
     this.accessMessage.set('');
     this.loginForm.reset({ password: '' });
@@ -793,6 +815,11 @@ export class App {
   }
 
   openRegistration(): void {
+    this.showRegistration();
+    void this.router.navigateByUrl('/registro');
+  }
+
+  private showRegistration(): void {
     this.cancelEdit();
     this.accessMessage.set('');
     this.userForm.controls.termsAccepted.setValue(false);
