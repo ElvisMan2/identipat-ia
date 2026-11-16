@@ -281,6 +281,7 @@ export class App {
   readonly downloadingReportPdf = signal(false);
   readonly reportPdfError = signal('');
   readonly selectedPdf = signal<File | null>(null);
+  readonly pdfTooLarge = signal(false);
   readonly selectedAudio = signal<File | null>(null);
   readonly pendingAnalysisId = signal<string | null>(null);
   readonly canResumePendingAnalysis = signal(false);
@@ -2342,7 +2343,8 @@ export class App {
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      this.analysisMessage.set('El PDF no puede superar los 10 MiB.');
+      this.pdfTooLarge.set(true);
+      this.analysisMessage.set('');
       return;
     }
 
@@ -2360,6 +2362,10 @@ export class App {
     this.analysisForm.controls.description.markAsUntouched();
     this.analysisMessage.set('');
     this.clearPendingAnalysisIntent();
+  }
+
+  dismissPdfTooLarge(): void {
+    this.pdfTooLarge.set(false);
   }
 
   async toggleAudioRecording(): Promise<void> {

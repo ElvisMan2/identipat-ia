@@ -41,7 +41,7 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .analysis-progress p, .access-progress p { margin: .3rem 0 0; color: var(--muted); line-height: 1.5; }
 .analysis-spinner { width: 2rem; height: 2rem; flex: 0 0 auto; border: 3px solid var(--mint); border-top-color: var(--teal); border-radius: 50%; animation: analysis-spin .8s linear infinite; }
 @keyframes analysis-spin { to { transform: rotate(360deg); } }
-.consent-gate, .recording-modal { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; overflow-y: auto; padding: 1.25rem; background: rgb(15 26 24 / .72); }
+.consent-gate, .recording-modal, .pdf-limit-modal { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; overflow-y: auto; padding: 1.25rem; background: rgb(15 26 24 / .72); }
 .consent-card { width: min(760px, 100%); max-height: calc(100dvh - 2.5rem); overflow-y: auto; padding: clamp(1.25rem, 4vw, 2rem); border-top: 4px solid var(--coral); background: #fff; box-shadow: 0 24px 70px rgb(15 26 24 / .3); }
 .consent-card h2 { margin: .35rem 0 0; font-size: clamp(1.5rem, 4vw, 2.25rem); }
 .consent-loading { display: flex; align-items: center; gap: 1rem; }
