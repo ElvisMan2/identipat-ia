@@ -89,7 +89,7 @@
           </div>
         } @else {
           <textarea id="description" formControlName="description" rows="10" placeholder="Escribe aquí la descripción de tu creación..."></textarea>
-          <p class="drop-hint">También puedes arrastrar un archivo PDF aquí.</p>
+          <p class="drop-hint">También puedes arrastrar un archivo PDF aquí (peso máximo: 10 MiB).</p>
         }
       </div>
       @if (!selectedPdf && !selectedAudio && analysisForm.controls['description']?.touched && analysisForm.controls['description']?.invalid) {
