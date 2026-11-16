@@ -9,6 +9,33 @@
 .report-highlight { color: #9d64f9; }
 .report-intro { text-align: center; }
 .report-intro h2 { font-size: 1.6em; }
+.report-steps {
+	width: min(1024px, calc(100% - 2rem));
+	margin: 1.5rem auto 2rem;
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 1rem;
+	text-align: left;
+}
+.report-step {
+	min-width: 0;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 1rem;
+	padding: 1rem;
+	border: 1px solid var(--line);
+	background: #fff;
+}
+.report-step img {
+	display: block;
+	width: 88px;
+	height: 88px;
+	flex: 0 0 88px;
+	object-fit: cover;
+}
+.report-step h3 { margin: 0 0 .4rem; font-size: 1rem; }
+.report-step p { margin: 0; color: var(--muted); line-height: 1.45; }
 .creation-images {
 	width: 100%;
 	max-width: 1024px;
@@ -72,4 +99,4 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .analysis-spinner { width: 2rem; height: 2rem; flex: 0 0 auto; border: 3px solid var(--mint); border-top-color: var(--teal); border-radius: 50%; animation: analysis-spin .8s linear infinite; }
 @keyframes analysis-spin { to { transform: rotate(360deg); } }
 @media (max-width: 920px) { .hero { grid-template-columns: 1fr; padding-top: 2.5rem; } }
-@media (max-width: 620px) { .topbar { height: 68px; padding-inline: 1rem; } .outline-button { padding: .55rem .65rem; font-size: .78rem; } .hero { width: min(100% - 2rem, 1180px); gap: 2.25rem; } .hero h1 { font-size: 2.45rem; } .document-fields { grid-template-columns: 92px minmax(0, 1fr); } .registration-form { grid-template-columns: 1fr; } .registration-wide { grid-column: auto; } .access-block { padding: 1rem; } }
+@media (max-width: 620px) { .topbar { height: 68px; padding-inline: 1rem; } .outline-button { padding: .55rem .65rem; font-size: .78rem; } .hero { width: min(100% - 2rem, 1180px); gap: 2.25rem; } .hero h1 { font-size: 2.45rem; } .document-fields { grid-template-columns: 92px minmax(0, 1fr); } .registration-form { grid-template-columns: 1fr; } .registration-wide { grid-column: auto; } .access-block { padding: 1rem; } .report-steps { grid-template-columns: 1fr; } .report-step { width: 100%; } .report-step img { width: 72px; height: 72px; flex-basis: 72px; } }
