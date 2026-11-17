@@ -1,7 +1,7 @@
 <main class="home-page">
   @if (view === 'home' || view === 'registration' || view === 'login') {
-    <header class="home-banner" [class.home-banner-home]="view === 'home'" [class.home-banner-interior]="view !== 'home'" aria-label="Banner principal de Identipat IA">
-      <a class="home-logo-link" href="/" aria-label="Ir al inicio">
+    <header class="home-banner" [class.home-banner-home]="view === 'home'" [class.home-banner-interior]="view !== 'home'" [style.background-image]="view === 'home' ? homeBannerUrl : interiorBannerUrl" aria-label="Banner principal de Identipat IA">
+      <a class="home-logo-link" href="./" aria-label="Ir al inicio">
         <img src="logo-identipat-main.png" alt="Identipat IA" />
       </a>
       @if (view === 'home') {

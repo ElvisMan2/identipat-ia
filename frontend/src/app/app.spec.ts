@@ -1012,6 +1012,65 @@ describe('App', () => {
     httpTesting.expectNone(`${environment.apiBaseUrl}/standard-session/consent`);
   });
 
+  it('should submit a selected PDF immediately and display the backend size error', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.standardAccessState.set('READY');
+    app.view.set('standard-analysis');
+    fixture.detectChanges();
+
+    const input = document.createElement('input');
+    const file = new File([new Uint8Array(11 * 1024 * 1024)], 'archivo.pdf', {
+      type: 'application/pdf'
+    });
+    Object.defineProperty(input, 'files', { value: [file] });
+
+    app.onPdfSelected({ target: input } as unknown as Event);
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    httpTesting.expectOne(`${environment.apiBaseUrl}/standard-session/csrf`).flush({
+      token: 'csrf',
+      headerName: 'X-XSRF-TOKEN'
+    });
+    httpTesting.expectOne(`${environment.apiBaseUrl}/analyses/pdf`).flush(
+      { code: 'PDF_TOO_LARGE', message: 'The PDF exceeds the configured size limit' },
+      { status: 413, statusText: 'Payload Too Large' }
+    );
+    fixture.detectChanges();
+
+    expect(app.selectedPdf()).toBe(file);
+    expect(app.pdfErrorMessage()).toBe('El archivo PDF supera el límite de tamaño configurado.');
+
+    app.dismissPdfTooLarge();
+
+    expect(app.pdfErrorMessage()).toBe('');
+    expect(app.selectedPdf()).toBeNull();
+  });
+
+  it('should translate controlled PDF submission errors to Spanish', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const handler = app as unknown as {
+      handleAnalysisSubmissionError(error: unknown, code: string | null): void;
+    };
+    const cases: Array<[string, string]> = [
+      ['PDF_TOO_LARGE', 'El archivo PDF supera el límite de tamaño configurado.'],
+      ['PDF_PAGE_LIMIT_EXCEEDED', 'El PDF supera el máximo configurado de 50 páginas.'],
+      ['PDF_TEXT_NOT_EXTRACTABLE', 'El PDF debe contener al menos 20 caracteres de texto legible. Los documentos escaneados sin texto digital no se pueden procesar.'],
+      ['PDF_TEXT_TOO_LONG', 'El texto extraído supera el máximo configurado de caracteres.'],
+      ['PDF_ENCRYPTED_NOT_SUPPORTED', 'El PDF está cifrado o protegido por contraseña. Quita la protección y vuelve a adjuntarlo.'],
+      ['INVALID_PDF', 'El archivo no es un PDF válido o está dañado.'],
+      ['UNSUPPORTED_PDF_MEDIA_TYPE', 'El archivo seleccionado no tiene un formato PDF compatible.'],
+      ['PREPROCESSING_SERVICE_UNAVAILABLE', 'El servicio de procesamiento de PDF no está disponible temporalmente. Inténtalo nuevamente.']
+    ];
+
+    for (const [code, message] of cases) {
+      handler.handleAnalysisSubmissionError(null, code);
+      expect(app.pdfErrorMessage()).toBe(message);
+    }
+  });
+
   it('should show the consent gate and enable analysis only after explicit acceptance', async () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;

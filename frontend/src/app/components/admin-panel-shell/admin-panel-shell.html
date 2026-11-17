@@ -1,6 +1,6 @@
 <main class="admin-page">
   <header class="topbar admin-bar">
-    <div><a class="brand" href="/" (click)="$event.preventDefault(); logout.emit()">IDENTIPAT IA</a><span>Panel administrativo</span></div>
+    <div><a class="brand" href="./" (click)="$event.preventDefault(); logout.emit()">IDENTIPAT IA</a><span>Panel administrativo</span></div>
     <div class="result-actions">
       <button class="outline-button" type="button" (click)="openPredictions.emit()" [disabled]="!!navigationPending">Predicciones</button>
       <button class="outline-button" type="button" (click)="logout.emit()">Cerrar sesión</button>

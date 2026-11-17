@@ -1,8 +1,8 @@
 :host { display: block; }
 .home-page { min-height: 100dvh; background: transparent; }
 .home-banner { position: relative; width: 100vw; aspect-ratio: 2060 / 563; margin: 0; border-bottom: 1px solid var(--line); background-color: var(--mint); background-position: center; background-repeat: no-repeat; background-size: 100% 100%; }
-.home-banner-home { height: 75dvh; aspect-ratio: auto; background-image: url('/banner.png'); }
-.home-banner-interior { aspect-ratio: 1920 / 226; height: auto; background-image: url('/banner-interior.png'); background-size: cover; }
+.home-banner-home { height: 75dvh; aspect-ratio: auto; background-size: cover; }
+.home-banner-interior { aspect-ratio: 1920 / 226; height: auto; background-size: cover; }
 .home-logo-link { position: absolute; top: 1.5rem; left: max(1.25rem, calc((100vw - 1180px) / 2)); z-index: 1; display: block; }
 .home-logo-link img { display: block; width: 250px; height: auto; }
 .home-header-copy { position: absolute; top: 6rem; left: max(1.25rem, calc((100vw - 1180px) / 2)); display: grid; gap: .3rem; color: #fff; }

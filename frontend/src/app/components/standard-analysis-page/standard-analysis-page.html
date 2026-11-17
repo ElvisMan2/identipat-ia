@@ -1,6 +1,6 @@
 <main class="analysis-page">
   <header class="topbar">
-    <a class="brand" href="/" (click)="$event.preventDefault(); exit.emit()">IDENTIPAT IA</a>
+    <a class="brand" href="./" (click)="$event.preventDefault(); exit.emit()">IDENTIPAT IA</a>
     <div class="result-actions">
       @if (adminAuthenticated) {
         <button class="outline-button" type="button" (click)="openAdminPanel.emit()" [disabled]="!!navigationPending">Panel de administración</button>
@@ -89,7 +89,7 @@
           </div>
         } @else {
           <textarea id="description" formControlName="description" rows="10" placeholder="Escribe aquí la descripción de tu creación..."></textarea>
-          <p class="drop-hint">También puedes arrastrar un archivo PDF aquí (peso máximo: 10 MiB).</p>
+          <p class="drop-hint">También puedes arrastrar un archivo PDF aquí.</p>
         }
       </div>
       @if (!selectedPdf && !selectedAudio && analysisForm.controls['description']?.touched && analysisForm.controls['description']?.invalid) {

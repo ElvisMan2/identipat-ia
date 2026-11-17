@@ -1,5 +1,5 @@
-import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { CommonModule, DOCUMENT } from '@angular/common';
+import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { LegalDocument } from '../../services/legal-document.service';
 import { TrustFooter } from '../trust-footer/trust-footer';
@@ -17,6 +17,11 @@ export interface AccessSanitizeRequest {
   styleUrl: './public-access-page.css'
 })
 export class PublicAccessPageComponent {
+  private readonly document = inject(DOCUMENT);
+
+  readonly homeBannerUrl = `url('${new URL('banner.png', this.document.baseURI).href}')`;
+  readonly interiorBannerUrl = `url('${new URL('banner-interior.png', this.document.baseURI).href}')`;
+
   @Input({ required: true }) view: 'home' | 'registration' | 'login' | 'admin-login' | 'standard-analysis' | 'standard-result' | 'admin' | 'legal' = 'home';
   @Input({ required: true }) accessForm!: FormGroup;
   @Input({ required: true }) loginForm!: FormGroup;

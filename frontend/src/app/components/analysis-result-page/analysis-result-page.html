@@ -1,6 +1,6 @@
 <main class="analysis-page result-page">
   <header class="topbar">
-    <a class="brand" href="/" (click)="$event.preventDefault(); exit.emit()">IDENTIPAT IA</a>
+    <a class="brand" href="./" (click)="$event.preventDefault(); exit.emit()">IDENTIPAT IA</a>
     <div class="result-actions">
       <button class="outline-button" type="button" (click)="newAnalysis.emit()">Nuevo análisis</button>
       <button class="outline-button" type="button" (click)="exit.emit()" [disabled]="navigationPending">Salir</button>

@@ -1,5 +1,4 @@
 :host { display: block; width: 100%; }
-@font-face { font-family: 'Myriad Pro'; src: url('/MYRIADPRO-REGULAR.OTF') format('opentype'); font-style: normal; font-weight: 400; font-display: swap; }
 .trust-strip { width: 100%; min-height: 92px; display: grid; grid-template-columns: 1fr; padding: 0; color: #fff; font-family: 'Myriad Pro', sans-serif; }
 .trust-strip div { display: grid; align-content: center; gap: .2rem; padding: 1rem 2rem;}
 .trust-strip > div:first-child { display: block; width: 100%; box-sizing: border-box; color: var(--ink); background:#ededed; }

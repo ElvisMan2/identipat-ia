@@ -2257,27 +2257,39 @@ export class App {
 
   private handleAnalysisSubmissionError(error: unknown, code: string | null): void {
     const retry = this.retryAfterLabel(error);
+    if (error instanceof HttpErrorResponse && error.status === 413) {
+      this.showPdfError(
+        code === 'AUDIO_TOO_LARGE'
+          ? 'El archivo de audio supera el límite de tamaño configurado.'
+          : 'El archivo PDF supera el límite de tamaño configurado.'
+      );
+      return;
+    }
     switch (code) {
       case 'PDF_TOO_LARGE':
-        this.pdfErrorMessage.set('El archivo supera el límite de tamaño permitido (10 MiB por defecto; configurable).');
+        this.showPdfError('El archivo PDF supera el límite de tamaño configurado.');
         return;
       case 'PDF_PAGE_LIMIT_EXCEEDED':
-        this.pdfErrorMessage.set('El PDF supera el máximo de páginas permitido (50 por defecto; configurable).');
+        this.showPdfError('El PDF supera el máximo configurado de 50 páginas.');
         return;
       case 'PDF_TEXT_NOT_EXTRACTABLE':
-        this.pdfErrorMessage.set('El PDF debe contener al menos 20 caracteres de texto legible (mínimo predeterminado y configurable). Los documentos escaneados sin texto digital no se pueden procesar.');
+        this.showPdfError('El PDF debe contener al menos 20 caracteres de texto legible. Los documentos escaneados sin texto digital no se pueden procesar.');
         return;
       case 'PDF_TEXT_TOO_LONG':
-        this.pdfErrorMessage.set('El texto extraído supera los 20.000 caracteres (máximo predeterminado y configurable).');
+        this.showPdfError('El texto extraído supera el máximo configurado de caracteres.');
         return;
+      case 'PDF_ENCRYPTED':
       case 'PDF_ENCRYPTED_NOT_SUPPORTED':
-        this.pdfErrorMessage.set('El PDF está cifrado o protegido por contraseña. Quita la protección y vuelve a adjuntarlo.');
+        this.showPdfError('El PDF está cifrado o protegido por contraseña. Quita la protección y vuelve a adjuntarlo.');
         return;
       case 'INVALID_PDF':
-        this.pdfErrorMessage.set('El archivo no es un PDF válido o está dañado.');
+        this.showPdfError('El archivo no es un PDF válido o está dañado.');
         return;
       case 'UNSUPPORTED_PDF_MEDIA_TYPE':
-        this.pdfErrorMessage.set('El archivo seleccionado no tiene un formato PDF compatible.');
+        this.showPdfError('El archivo seleccionado no tiene un formato PDF compatible.');
+        return;
+      case 'PREPROCESSING_SERVICE_UNAVAILABLE':
+        this.showPdfError('El servicio de procesamiento de PDF no está disponible temporalmente. Inténtalo nuevamente.');
         return;
       case 'IDEMPOTENCY_REQUEST_IN_PROGRESS':
         this.analysisMessage.set(
@@ -2405,18 +2417,6 @@ export class App {
       return;
     }
 
-    if (file.type !== 'application/pdf') {
-      this.pdfErrorMessage.set('El archivo seleccionado no es un PDF compatible.');
-      this.analysisMessage.set('');
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      this.pdfErrorMessage.set('El archivo supera el límite de tamaño permitido de esta interfaz: 10 MiB.');
-      this.analysisMessage.set('');
-      return;
-    }
-
     this.pdfErrorMessage.set('');
     this.selectedPdf.set(file);
     this.selectedAudio.set(null);
@@ -2424,6 +2424,7 @@ export class App {
     this.analysisForm.controls.description.markAsUntouched();
     this.analysisMessage.set('');
     this.clearPendingAnalysisIntent();
+    window.setTimeout(() => this.submitAnalysis(), 0);
   }
 
   removeSelectedPdf(): void {
@@ -2436,6 +2437,7 @@ export class App {
 
   dismissPdfTooLarge(): void {
     this.pdfErrorMessage.set('');
+    this.removeSelectedPdf();
   }
 
   async toggleAudioRecording(): Promise<void> {
@@ -2983,6 +2985,19 @@ export class App {
     }
     const body = error.error as { code?: unknown } | null;
     return typeof body?.code === 'string' ? body.code : null;
+  }
+
+  private apiErrorMessage(error: unknown): string | null {
+    if (!(error instanceof HttpErrorResponse)) {
+      return null;
+    }
+    const body = error.error as { message?: unknown } | null;
+    return typeof body?.message === 'string' ? body.message : null;
+  }
+
+  private showPdfError(message: string): void {
+    this.pdfErrorMessage.set(message);
+    window.setTimeout(() => this.pdfErrorMessage.set(message), 0);
   }
 
   private handleExpiredStandardSession(): void {
