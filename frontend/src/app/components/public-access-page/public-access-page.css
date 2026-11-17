@@ -1,7 +1,10 @@
 :host { display: block; }
 .home-page { min-height: 100dvh; background: transparent; }
-.home-banner { width: 100vw; margin: 0; border-bottom: 1px solid var(--line); background: var(--mint); }
-.home-banner img { width: 100vw; max-width: none; height: auto; display: block; }
+.home-banner { position: relative; width: 100vw; aspect-ratio: 2060 / 563; margin: 0; border-bottom: 1px solid var(--line); background-color: var(--mint); background-position: center; background-repeat: no-repeat; background-size: 100% 100%; }
+.home-banner-home { height: 75dvh; aspect-ratio: auto; background-image: url('/banner.png'); }
+.home-banner-interior { background-image: url('/banner-interior.png'); }
+.home-logo-link { position: absolute; top: 1.5rem; left: max(1.25rem, calc((100vw - 1180px) / 2)); z-index: 1; display: block; }
+.home-logo-link img { display: block; width: 250px; height: auto; }
 .creation-analysis-intro { padding: 2rem 1rem; text-align: center; }
 .creation-analysis-intro h2 { margin-left: auto; margin-right: auto; font-weight: 700; font-size: 1.6em; }
 .creation-analysis-intro p { margin-left: auto; margin-right: auto; }
