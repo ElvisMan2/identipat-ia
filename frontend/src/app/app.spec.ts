@@ -708,6 +708,8 @@ describe('App', () => {
     await new Promise(resolve => setTimeout(resolve, 550));
     fixture.detectChanges();
 
+    expect(app.view()).toBe('login');
+    expect(app.adminLoginPending()).toBeTrue();
     expect(fixture.nativeElement.textContent).not.toContain('Acceso administrativo');
     expect(fixture.nativeElement.querySelector('input[type="password"]')).not.toBeNull();
   });

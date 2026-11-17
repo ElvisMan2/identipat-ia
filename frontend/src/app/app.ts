@@ -263,6 +263,7 @@ export class App {
   readonly view = signal<'home' | 'registration' | 'login' | 'standard-analysis' | 'standard-result' | 'admin-login' | 'admin' | 'legal'>('home');
   readonly checkingDocument = signal(false);
   readonly standardAccessPending = signal(false);
+  readonly adminLoginPending = signal(false);
   readonly authenticating = signal(false);
   readonly adminAuthenticated = signal(false);
   readonly navigationPending = signal<'admin' | 'predictions' | 'exit' | null>(null);
@@ -583,7 +584,7 @@ export class App {
             this.accessMessage.set('Usuario inactivo');
           } else if (passwordRequired) {
             this.standardAccessState.set('UNIDENTIFIED');
-            this.view.set('admin-login');
+            this.adminLoginPending.set(true);
             this.loginForm.reset({ password: '' });
           } else if (!registered) {
             this.standardAccessState.set('UNIDENTIFIED');
@@ -771,6 +772,7 @@ export class App {
 
   private showHome(): void {
     this.view.set('home');
+    this.adminLoginPending.set(false);
     this.accessMessage.set('');
     this.loginForm.reset({ password: '' });
   }
@@ -842,6 +844,7 @@ export class App {
 
   private showLogin(): void {
     this.accessMessage.set('');
+    this.adminLoginPending.set(false);
     this.view.set('login');
   }
 

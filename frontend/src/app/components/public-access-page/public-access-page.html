@@ -119,24 +119,24 @@
       </form>
     } @else {
       @if (view !== 'home') {
-        <h2>{{ view === 'admin-login' ? 'Ingresa como administrador' : 'Iniciar sesión' }}</h2>
+        <h2>{{ adminLoginPending || view === 'admin-login' ? 'Ingresa como administrador' : 'Iniciar sesión' }}</h2>
       }
-      <form [formGroup]="accessForm" (ngSubmit)="view === 'admin-login' ? login.emit() : identify.emit()">
-        <div class="document-fields">
+      <form [formGroup]="accessForm" (ngSubmit)="adminLoginPending || view === 'admin-login' ? login.emit() : identify.emit()">
+        <div class="document-fields" [class.document-fields-admin]="adminLoginPending || view === 'admin-login'">
           <select formControlName="doiType" aria-label="Tipo de documento"><option value="DNI">DNI</option><option value="CE">CE</option></select>
           <input type="text" inputmode="numeric" autocomplete="username" formControlName="doi" [attr.maxlength]="accessForm.controls['doiType']?.value === 'DNI' ? 8 : 11" placeholder="Ingresa tu documento" aria-label="Número de documento" />
+          @if (adminLoginPending || view === 'admin-login') {
+            <input class="password-field" type="password" autocomplete="current-password" [formControl]="passwordControl" placeholder="Contraseña" aria-label="Contraseña" />
+          }
         </div>
         @if (accessForm.controls['doi']?.touched && accessForm.controls['doi']?.invalid) { <p class="field-error">Para DNI ingresa 8 dígitos; para CE, entre 6 y 11.</p> }
-        @if (view === 'admin-login') {
-          <input class="password-field" type="password" autocomplete="current-password" [formControl]="passwordControl" placeholder="Ingresa tu contraseña" aria-label="Contraseña" />
-        }
         @if (accessMessage) { <p class="access-message" [class.access-error]="accessMessage === 'Usuario no registrado'" role="status">{{ accessMessage }}</p> }
         <div class="access-actions">
           <button class="primary-button" type="submit" [disabled]="checkingDocument || authenticating">
-            @if (view === 'admin-login') { {{ authenticating ? 'Verificando...' : 'Acceder como administrador' }} }
+            @if (adminLoginPending || view === 'admin-login') { {{ authenticating ? 'Verificando...' : 'Acceder como administrador' }} }
             @else { {{ checkingDocument ? 'Verificando...' : 'Ingresar' }} }
           </button>
-          @if (view !== 'admin-login') {
+          @if (view !== 'admin-login' && !adminLoginPending) {
             <button class="outline-button access-register-button" type="button" (click)="registrationOpen.emit()">Registrarme</button>
           }
         </div>

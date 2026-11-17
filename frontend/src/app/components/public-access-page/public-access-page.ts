@@ -29,6 +29,7 @@ export class PublicAccessPageComponent {
   @Input() saving = false;
   @Input() checkingDocument = false;
   @Input() standardAccessPending = false;
+  @Input() adminLoginPending = false;
   @Input() authenticating = false;
   @Input() legalDateLabel = (_value: string | null | undefined): string => '';
 
