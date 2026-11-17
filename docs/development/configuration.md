@@ -24,6 +24,11 @@ El launcher carga `.env` solo en el entorno del proceso, fuerza siempre
 servicio PostgreSQL `db` mediante Docker Compose y ejecuta el Maven Wrapper desde `backend/`. No
 inicia pgAdmin ni imprime secretos.
 
+Para desarrollo con hot reload del frontend, usa
+`.\scripts\run-dev-hot-reload-ps51.ps1`. Este launcher no compila ni copia los estáticos de Angular:
+levanta los servicios y Spring Boot en segundo plano, y ejecuta `npm start` desde `frontend/` en el
+puerto 4200 por defecto.
+
 Spring Boot y Maven no leen `.env` por sí mismos. Docker Compose sí usa el `.env` local de la raíz;
 el script carga ese mismo archivo para que Spring Boot reciba la configuración. Los defaults DEV no
 sensibles viven en `application-dev.yml`; `.env` es la configuración local completa del
