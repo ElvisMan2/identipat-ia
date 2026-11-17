@@ -284,7 +284,7 @@ export class App {
   readonly downloadingReportPdf = signal(false);
   readonly reportPdfError = signal('');
   readonly selectedPdf = signal<File | null>(null);
-  readonly pdfTooLarge = signal(false);
+  readonly pdfErrorMessage = signal('');
   readonly selectedAudio = signal<File | null>(null);
   readonly pendingAnalysisId = signal<string | null>(null);
   readonly canResumePendingAnalysis = signal(false);
@@ -2254,6 +2254,27 @@ export class App {
   private handleAnalysisSubmissionError(error: unknown, code: string | null): void {
     const retry = this.retryAfterLabel(error);
     switch (code) {
+      case 'PDF_TOO_LARGE':
+        this.pdfErrorMessage.set('El archivo supera el peso máximo permitido de 10 MiB.');
+        return;
+      case 'PDF_PAGE_LIMIT_EXCEEDED':
+        this.pdfErrorMessage.set('El PDF supera el máximo configurado de páginas (50 por defecto).');
+        return;
+      case 'PDF_TEXT_NOT_EXTRACTABLE':
+        this.pdfErrorMessage.set('El PDF debe contener al menos 20 caracteres de texto legible (mínimo predeterminado). Los documentos escaneados sin texto digital no se pueden procesar.');
+        return;
+      case 'PDF_TEXT_TOO_LONG':
+        this.pdfErrorMessage.set('El texto extraído supera los 20.000 caracteres (máximo predeterminado).');
+        return;
+      case 'PDF_ENCRYPTED_NOT_SUPPORTED':
+        this.pdfErrorMessage.set('El PDF está cifrado o protegido por contraseña. Quita la protección y vuelve a adjuntarlo.');
+        return;
+      case 'INVALID_PDF':
+        this.pdfErrorMessage.set('El archivo no es un PDF válido o está dañado.');
+        return;
+      case 'UNSUPPORTED_PDF_MEDIA_TYPE':
+        this.pdfErrorMessage.set('El archivo seleccionado no tiene un formato PDF compatible.');
+        return;
       case 'IDEMPOTENCY_REQUEST_IN_PROGRESS':
         this.analysisMessage.set(
           `Tu solicitud todavía se está recibiendo; reintenta${retry || ' en unos segundos'}.`
@@ -2386,11 +2407,12 @@ export class App {
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      this.pdfTooLarge.set(true);
+      this.pdfErrorMessage.set('El archivo supera el peso máximo permitido de 10 MiB.');
       this.analysisMessage.set('');
       return;
     }
 
+    this.pdfErrorMessage.set('');
     this.selectedPdf.set(file);
     this.selectedAudio.set(null);
     this.analysisForm.controls.description.setValue('');
@@ -2408,7 +2430,7 @@ export class App {
   }
 
   dismissPdfTooLarge(): void {
-    this.pdfTooLarge.set(false);
+    this.pdfErrorMessage.set('');
   }
 
   async toggleAudioRecording(): Promise<void> {
@@ -2976,6 +2998,7 @@ export class App {
     this.consentSaving.set(false);
     this.consentMessage.set('');
     this.analysisForm.reset({ description: '' });
+    this.pdfErrorMessage.set('');
     this.analysisMessage.set('');
     this.analysisResult.set(null);
     this.diagnosticReport.set(null);

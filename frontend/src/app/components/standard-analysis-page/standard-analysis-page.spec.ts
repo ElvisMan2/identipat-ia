@@ -37,14 +37,39 @@ describe('StandardAnalysisPageComponent', () => {
     component.analysisForm = new FormGroup({
       description: new FormControl('', [Validators.required])
     });
-    component.pdfTooLarge = true;
+    component.pdfErrorMessage = 'El archivo supera el peso máximo permitido de 10 MiB.';
     fixture.detectChanges();
 
     const dismissed = jasmine.createSpy('dismissed');
     component.dismissPdfTooLarge.subscribe(dismissed);
-    expect(fixture.nativeElement.querySelector('[role="dialog"]')?.textContent).toContain('10 MiB');
+    expect(fixture.nativeElement.querySelector('[role="dialog"]')?.textContent).toContain('El archivo supera el peso máximo permitido de 10 MiB.');
     (fixture.nativeElement.querySelector('.pdf-limit-modal button') as HTMLButtonElement).click();
 
     expect(dismissed).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders specific PDF validation messages in the modal', () => {
+    TestBed.configureTestingModule({
+      imports: [StandardAnalysisPageComponent],
+      providers: [provideZonelessChangeDetection()]
+    });
+    const fixture = TestBed.createComponent(StandardAnalysisPageComponent);
+    const component = fixture.componentInstance;
+    component.analysisForm = new FormGroup({
+      description: new FormControl('', [Validators.required])
+    });
+
+    const messages = [
+      'El PDF supera el máximo configurado de páginas (50 por defecto).',
+      'El PDF debe contener al menos 20 caracteres de texto legible (mínimo predeterminado).',
+      'El texto extraído supera los 20.000 caracteres (máximo predeterminado).',
+      'El PDF está cifrado o protegido por contraseña.'
+    ];
+
+    for (const message of messages) {
+      fixture.componentRef.setInput('pdfErrorMessage', message);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('[role="dialog"]')?.textContent).toContain(message);
+    }
   });
 });

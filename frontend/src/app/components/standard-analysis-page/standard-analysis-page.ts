@@ -24,7 +24,7 @@ export class StandardAnalysisPageComponent {
   @Input() consentSaving = false;
   @Input() legalDateLabel = (_value: string | null | undefined): string => '';
   @Input() selectedPdf: File | null = null;
-  @Input() pdfTooLarge = false;
+  @Input() pdfErrorMessage = '';
   @Input() selectedAudio: File | null = null;
   @Input() recordingAudio = false;
   @Input() recordingTimeLabel = '';
