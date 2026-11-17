@@ -1040,7 +1040,7 @@ describe('App', () => {
     fixture.detectChanges();
 
     expect(app.selectedPdf()).toBe(file);
-    expect(app.pdfErrorMessage()).toBe('El archivo PDF supera el límite de tamaño configurado.');
+    expect(app.pdfErrorMessage()).toBe('El archivo PDF supera el límite de tamaño configurado (10 mb).');
 
     app.dismissPdfTooLarge();
 
@@ -1055,10 +1055,10 @@ describe('App', () => {
       handleAnalysisSubmissionError(error: unknown, code: string | null): void;
     };
     const cases: Array<[string, string]> = [
-      ['PDF_TOO_LARGE', 'El archivo PDF supera el límite de tamaño configurado.'],
+      ['PDF_TOO_LARGE', 'El archivo PDF supera el límite de tamaño configurado (10 mb).'],
       ['PDF_PAGE_LIMIT_EXCEEDED', 'El PDF supera el máximo configurado de 50 páginas.'],
       ['PDF_TEXT_NOT_EXTRACTABLE', 'El PDF debe contener al menos 20 caracteres de texto legible. Los documentos escaneados sin texto digital no se pueden procesar.'],
-      ['PDF_TEXT_TOO_LONG', 'El texto extraído supera el máximo configurado de caracteres.'],
+      ['PDF_TEXT_TOO_LONG', 'El texto extraído supera el máximo configurado de caracteres. (20000)'],
       ['PDF_ENCRYPTED_NOT_SUPPORTED', 'El PDF está cifrado o protegido por contraseña. Quita la protección y vuelve a adjuntarlo.'],
       ['INVALID_PDF', 'El archivo no es un PDF válido o está dañado.'],
       ['UNSUPPORTED_PDF_MEDIA_TYPE', 'El archivo seleccionado no tiene un formato PDF compatible.'],

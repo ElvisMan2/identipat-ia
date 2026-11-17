@@ -2261,13 +2261,13 @@ export class App {
       this.showPdfError(
         code === 'AUDIO_TOO_LARGE'
           ? 'El archivo de audio supera el límite de tamaño configurado.'
-          : 'El archivo PDF supera el límite de tamaño configurado.'
+          : 'El archivo PDF supera el límite de tamaño configurado (10 mb).'
       );
       return;
     }
     switch (code) {
       case 'PDF_TOO_LARGE':
-        this.showPdfError('El archivo PDF supera el límite de tamaño configurado.');
+        this.showPdfError('El archivo PDF supera el límite de tamaño configurado (10 mb).');
         return;
       case 'PDF_PAGE_LIMIT_EXCEEDED':
         this.showPdfError('El PDF supera el máximo configurado de 50 páginas.');
@@ -2276,7 +2276,7 @@ export class App {
         this.showPdfError('El PDF debe contener al menos 20 caracteres de texto legible. Los documentos escaneados sin texto digital no se pueden procesar.');
         return;
       case 'PDF_TEXT_TOO_LONG':
-        this.showPdfError('El texto extraído supera el máximo configurado de caracteres.');
+        this.showPdfError('El texto extraído supera el máximo configurado de caracteres. (20000)');
         return;
       case 'PDF_ENCRYPTED':
       case 'PDF_ENCRYPTED_NOT_SUPPORTED':
