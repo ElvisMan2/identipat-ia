@@ -5,6 +5,12 @@
         <img src="logo-identipat-main.png" alt="Identipat IA" />
       </a>
       @if (view === 'home') {
+        <div class="home-header-copy">
+          <strong>Analiza e identifica con IA:</strong>
+          <span>Descubre patentes y diseños<br />industriales en tus creaciones*</span>
+        </div>
+      }
+      @if (view === 'home') {
         <section class="home-header-access" aria-label="Acceso a Identipat IA">
           <ng-container *ngTemplateOutlet="accessBlock"></ng-container>
         </section>
