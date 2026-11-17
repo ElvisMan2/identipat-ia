@@ -708,7 +708,7 @@ describe('App', () => {
     await new Promise(resolve => setTimeout(resolve, 550));
     fixture.detectChanges();
 
-    expect(app.view()).toBe('login');
+    expect(app.view()).toBe('home');
     expect(app.adminLoginPending()).toBeTrue();
     expect(fixture.nativeElement.textContent).not.toContain('Acceso administrativo');
     expect(fixture.nativeElement.querySelector('input[type="password"]')).not.toBeNull();
@@ -882,7 +882,8 @@ describe('App', () => {
       registered: true,
       passwordRequired: true
     });
-    expect(app.view()).toBe('admin-login');
+    expect(app.view()).toBe('home');
+    expect(app.adminLoginPending()).toBeTrue();
 
     app.loginForm.setValue({ password: 'secret' });
     app.loginAdmin();
