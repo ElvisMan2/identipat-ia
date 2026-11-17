@@ -2259,16 +2259,16 @@ export class App {
     const retry = this.retryAfterLabel(error);
     switch (code) {
       case 'PDF_TOO_LARGE':
-        this.pdfErrorMessage.set('El archivo supera el peso máximo permitido de 10 MiB.');
+        this.pdfErrorMessage.set('El archivo supera el límite de tamaño permitido (10 MiB por defecto; configurable).');
         return;
       case 'PDF_PAGE_LIMIT_EXCEEDED':
-        this.pdfErrorMessage.set('El PDF supera el máximo configurado de páginas (50 por defecto).');
+        this.pdfErrorMessage.set('El PDF supera el máximo de páginas permitido (50 por defecto; configurable).');
         return;
       case 'PDF_TEXT_NOT_EXTRACTABLE':
-        this.pdfErrorMessage.set('El PDF debe contener al menos 20 caracteres de texto legible (mínimo predeterminado). Los documentos escaneados sin texto digital no se pueden procesar.');
+        this.pdfErrorMessage.set('El PDF debe contener al menos 20 caracteres de texto legible (mínimo predeterminado y configurable). Los documentos escaneados sin texto digital no se pueden procesar.');
         return;
       case 'PDF_TEXT_TOO_LONG':
-        this.pdfErrorMessage.set('El texto extraído supera los 20.000 caracteres (máximo predeterminado).');
+        this.pdfErrorMessage.set('El texto extraído supera los 20.000 caracteres (máximo predeterminado y configurable).');
         return;
       case 'PDF_ENCRYPTED_NOT_SUPPORTED':
         this.pdfErrorMessage.set('El PDF está cifrado o protegido por contraseña. Quita la protección y vuelve a adjuntarlo.');
@@ -2406,12 +2406,13 @@ export class App {
     }
 
     if (file.type !== 'application/pdf') {
-      this.analysisMessage.set('Selecciona un archivo PDF válido.');
+      this.pdfErrorMessage.set('El archivo seleccionado no es un PDF compatible.');
+      this.analysisMessage.set('');
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      this.pdfErrorMessage.set('El archivo supera el peso máximo permitido de 10 MiB.');
+      this.pdfErrorMessage.set('El archivo supera el límite de tamaño permitido de esta interfaz: 10 MiB.');
       this.analysisMessage.set('');
       return;
     }
