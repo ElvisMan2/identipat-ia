@@ -862,6 +862,7 @@ describe('App', () => {
 
     expect(app.view()).toBe('registration');
     expect(fixture.nativeElement.querySelector('.registration-form')).not.toBeNull();
+    expect(app.userForm.controls.doiType.value).toBe('DNI');
   });
 
   it('should show the analysis form and admin panel access after a successful admin login', () => {

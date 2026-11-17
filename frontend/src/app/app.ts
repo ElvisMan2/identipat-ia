@@ -828,6 +828,7 @@ export class App {
   private showRegistration(): void {
     this.cancelEdit();
     this.accessMessage.set('');
+    this.userForm.controls.doiType.setValue('DNI');
     this.userForm.controls.termsAccepted.setValue(false);
     this.userForm.controls.termsAccepted.markAsUntouched();
     this.view.set('registration');
