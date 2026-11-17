@@ -1,3 +1,4 @@
+import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { LegalDocument } from '../../services/legal-document.service';
@@ -11,7 +12,7 @@ export interface AccessSanitizeRequest {
 @Component({
   selector: 'app-public-access-page',
   standalone: true,
-  imports: [ReactiveFormsModule, TrustFooter],
+  imports: [CommonModule, ReactiveFormsModule, TrustFooter],
   templateUrl: './public-access-page.html',
   styleUrl: './public-access-page.css'
 })
