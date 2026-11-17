@@ -125,8 +125,8 @@
     @if (pdfErrorMessage) {
       <section class="pdf-limit-modal" role="dialog" aria-modal="true" aria-labelledby="pdf-limit-title">
         <div class="recording-card pdf-limit-card">
-          <h2 id="pdf-limit-title">No se pudo procesar el PDF</h2>
-          <p>{{ pdfErrorMessage }}</p>
+          <h2 id="pdf-limit-title">El archivo supera el peso máximo</h2>
+          <p>El PDF excede el límite permitido de 10 MiB. Selecciona un archivo más pequeño.</p>
           <button class="primary-button" type="button" (click)="dismissPdfTooLarge.emit()">Entendido</button>
         </div>
       </section>

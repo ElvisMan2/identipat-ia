@@ -1,7 +1,20 @@
 <main class="home-page">
   @if (view === 'home' || view === 'registration' || view === 'login') {
-    <header class="home-banner">
-      <img [src]="view === 'home' ? 'banner.png' : 'banner-interior.png'" alt="Banner principal de Identipat IA" />
+    <header class="home-banner" [class.home-banner-home]="view === 'home'" [class.home-banner-interior]="view !== 'home'" aria-label="Banner principal de Identipat IA">
+      <a class="home-logo-link" href="/" aria-label="Ir al inicio">
+        <img src="logo-identipat-main.png" alt="Identipat IA" />
+      </a>
+      @if (view === 'home') {
+        <div class="home-header-copy">
+          <strong>Analiza e identifica con IA:</strong>
+          <span>Descubre patentes y diseños<br />industriales en tus creaciones*</span>
+        </div>
+      }
+      @if (view === 'home') {
+        <section class="home-header-access" aria-label="Acceso a Identipat IA">
+          <ng-container *ngTemplateOutlet="accessBlock"></ng-container>
+        </section>
+      }
     </header>
   }
 
@@ -55,98 +68,101 @@
     </section>
   }
 
-  <section class="hero" [class.home-hero]="view === 'home'" [class.registration-hero]="view === 'registration'">
+  @if (view !== 'home') {
+  <section class="hero" [class.registration-hero]="view === 'registration'">
     <div class="hero-copy">
-      <div class="access-block" [class.home-access]="view === 'home'">
-        @if (view === 'registration') {
-          <span class="section-label">Nuevo usuario</span>
-          <h2>Completa tu registro</h2>
-          <form [formGroup]="userForm" (ngSubmit)="register.emit()" class="registration-form" autocomplete="off" name="identipat-registration">
-            <label>Nombres <input type="text" name="firstName" autocomplete="given-name" formControlName="firstName" maxlength="25" placeholder="Adriana Jesús" /></label>
-            <label>Apellido paterno <input type="text" name="paternalLastName" autocomplete="family-name" formControlName="paternalLastName" maxlength="25" placeholder="Lizarbe" /></label>
-            <label>Apellido materno <input type="text" name="maternalLastName" autocomplete="additional-name" formControlName="maternalLastName" maxlength="25" placeholder="Estrada" /></label>
-            <label>Tipo doc.
-              <select name="doiType" autocomplete="off" formControlName="doiType"><option value="DNI">DNI</option><option value="CE">CE</option></select>
-            </label>
-            <label>Num doc. <input type="text" name="document-number" autocomplete="off" formControlName="doi" inputmode="numeric" [attr.maxlength]="userForm.controls['doiType']?.value === 'DNI' ? 8 : 11" (input)="userForm.controls['doiType']?.value === 'DNI' && sanitizeDni.emit({ event: $event, control: userForm.controls['doi'] })" /></label>
-            <label>Fecha de nacimiento <input type="date" name="birthDate" autocomplete="bday" formControlName="birthDate" min="1926-01-01" max="2020-12-31" /></label>
-            <label>Género
-              <select name="gender" autocomplete="sex" formControlName="gender"><option value="" disabled>Seleccione</option><option value="MALE">Masculino</option><option value="FEMALE">Femenino</option></select>
-            </label>
-            <label>Correo electrónico <input type="email" name="email" autocomplete="email" formControlName="email" placeholder="micorreo@ejemplo.com" /></label>
-            <label>Celular <input type="tel" name="mobilePhone" autocomplete="tel" formControlName="mobilePhone" inputmode="tel" maxlength="15" (input)="sanitizeMobilePhone.emit({ event: $event, control: userForm.controls['mobilePhone'] })" placeholder="912345678" /></label>
-            <label>Profesión / Ocupación <input type="text" name="profession" autocomplete="organization-title" formControlName="profession" placeholder="Ingeniera" /></label>
-            @if (legalLoading || legalError) {
-              <div class="registration-wide registration-legal-status">
-                @if (legalLoading) {
-                <p role="status">Cargando documento legal vigente...</p>
-                } @else {
-                  <p class="error" role="alert">{{ legalError }}</p>
-                  <button type="button" class="outline-button" (click)="retryLegal.emit()">Reintentar</button>
-                }
-              </div>
-              }
-            <label class="registration-wide terms-checkbox">
-              <span><input type="checkbox" formControlName="termsAccepted" /> He leído y acepto los <a href="terminos-y-privacidad" target="_blank" rel="noopener noreferrer">Términos de uso y la Política de Privacidad</a> vigentes.</span>
-            </label>
-            @if (accessMessage) { <p class="access-message registration-wide" role="alert">{{ accessMessage }}</p> }
-            <div class="registration-actions registration-wide">
-              <button class="primary-button registration-submit" type="submit" [disabled]="saving || legalLoading || !legalDocument || userForm.invalid">{{ saving ? 'Registrando...' : 'Registrarme' }}</button>
-              <button class="outline-button" type="button" (click)="registrationCancel.emit()" [disabled]="saving">Volver</button>
-            </div>
-          </form>
-        } @else {
-          @if (view !== 'home') {
-            <h2>{{ view === 'admin-login' ? 'Ingresa como administrador' : 'Iniciar sesión' }}</h2>
-          }
-          <form [formGroup]="accessForm" (ngSubmit)="view === 'admin-login' ? login.emit() : identify.emit()">
-            <div class="document-fields">
-              <label>Tipo
-                <select formControlName="doiType" aria-label="Tipo doc."><option value="DNI">DNI</option><option value="CE">CE</option></select>
-              </label>
-              <label>Num doc.
-                <input type="text" inputmode="numeric" autocomplete="username" formControlName="doi" [attr.maxlength]="accessForm.controls['doiType']?.value === 'DNI' ? 8 : 11" placeholder="Ingresa tu documento" />
-              </label>
-            </div>
-            @if (accessForm.controls['doi']?.touched && accessForm.controls['doi']?.invalid) { <p class="field-error">Para DNI ingresa 8 dígitos; para CE, entre 6 y 11.</p> }
-            @if (view === 'admin-login') {
-              <label class="password-field">Contraseña
-                <input type="password" autocomplete="current-password" [formControl]="passwordControl" placeholder="Ingresa tu contraseña" />
-              </label>
-            }
-            @if (accessMessage) { <p class="access-message" [class.access-error]="accessMessage === 'Usuario no registrado'" role="status">{{ accessMessage }}</p> }
-            <button class="primary-button" type="submit" [disabled]="checkingDocument || authenticating">
-              @if (view === 'admin-login') { {{ authenticating ? 'Verificando...' : 'Acceder como administrador' }} }
-              @else { {{ checkingDocument ? 'Verificando...' : 'Ingresar' }} }
-            </button>
-          </form>
-          @if (view !== 'admin-login') {
-            <button class="outline-button access-register-button" type="button" (click)="registrationOpen.emit()">Registrarme</button>
-          }
-        }
-      </div>
-      @if (registrationModal; as registrationStatus) {
-        <section class="registration-progress-modal" role="status" aria-live="polite">
-          <div class="registration-progress">
-            @if (registrationStatus === 'registering') {
-              <span class="analysis-spinner" aria-hidden="true"></span>
-              <div><h2>Registrando usuario</h2><p>Estamos registrando tu información.</p></div>
-            } @else {
-              <span class="registration-success-icon" aria-hidden="true">✓</span>
-              <div><h2>Usuario registrado con éxito</h2><p>Tu registro se completó correctamente.</p></div>
-            }
-          </div>
-        </section>
-      }
-      @if (authenticating || (checkingDocument && standardAccessPending)) {
-        <section class="access-progress-modal" role="status" aria-live="polite">
-          <div class="access-progress"><span class="analysis-spinner" aria-hidden="true"></span><div><h2>Accediendo</h2><p>Estamos verificando tus datos.</p></div></div>
-        </section>
-      }
-      @if (view !== 'registration') {
-        <p class="privacy-note">Consulta los <a href="terminos-y-privacidad" target="_blank" rel="noopener noreferrer">Términos de uso y la Política de Privacidad de Identipat IA</a>. Si se requiere tu aceptación, podrás revisarlos antes de usar la herramienta.</p>
-      }
+      <ng-container *ngTemplateOutlet="accessBlock"></ng-container>
     </div>
   </section>
+  }
   <app-trust-footer />
 </main>
+
+<ng-template #accessBlock>
+  <div class="access-block" [class.home-access]="view === 'home'">
+    @if (view === 'registration') {
+      <span class="section-label">Nuevo usuario</span>
+      <h2>Completa tu registro</h2>
+      <form [formGroup]="userForm" (ngSubmit)="register.emit()" class="registration-form" autocomplete="off" name="identipat-registration">
+        <label>Nombres <input type="text" name="firstName" autocomplete="given-name" formControlName="firstName" maxlength="25" placeholder="Adriana Jesús" /></label>
+        <label>Apellido paterno <input type="text" name="paternalLastName" autocomplete="family-name" formControlName="paternalLastName" maxlength="25" placeholder="Lizarbe" /></label>
+        <label>Apellido materno <input type="text" name="maternalLastName" autocomplete="additional-name" formControlName="maternalLastName" maxlength="25" placeholder="Estrada" /></label>
+        <label>Tipo doc.
+          <select name="doiType" autocomplete="off" formControlName="doiType"><option value="DNI">DNI</option><option value="CE">CE</option></select>
+        </label>
+        <label>Num doc. <input type="text" name="document-number" autocomplete="off" formControlName="doi" inputmode="numeric" [attr.maxlength]="userForm.controls['doiType']?.value === 'DNI' ? 8 : 11" placeholder="71234568" (input)="userForm.controls['doiType']?.value === 'DNI' && sanitizeDni.emit({ event: $event, control: userForm.controls['doi'] })" /></label>
+        <label>Fecha de nacimiento <input type="date" name="birthDate" autocomplete="bday" formControlName="birthDate" min="1926-01-01" max="2020-12-31" /></label>
+        <label>Género
+          <select name="gender" autocomplete="sex" formControlName="gender"><option value="" disabled>Seleccione</option><option value="MALE">Masculino</option><option value="FEMALE">Femenino</option></select>
+        </label>
+        <label>Correo electrónico <input type="email" name="email" autocomplete="email" formControlName="email" placeholder="micorreo@ejemplo.com" /></label>
+        <label>Celular <input type="tel" name="mobilePhone" autocomplete="tel" formControlName="mobilePhone" inputmode="tel" maxlength="15" (input)="sanitizeMobilePhone.emit({ event: $event, control: userForm.controls['mobilePhone'] })" placeholder="912345678" /></label>
+        <label>Profesión / Ocupación <input type="text" name="profession" autocomplete="organization-title" formControlName="profession" placeholder="Ingeniera" /></label>
+        @if (legalLoading || legalError) {
+          <div class="registration-wide registration-legal-status">
+            @if (legalLoading) {
+            <p role="status">Cargando documento legal vigente...</p>
+            } @else {
+              <p class="error" role="alert">{{ legalError }}</p>
+              <button type="button" class="outline-button" (click)="retryLegal.emit()">Reintentar</button>
+            }
+          </div>
+          }
+        <label class="registration-wide terms-checkbox">
+          <span><input type="checkbox" formControlName="termsAccepted" /> He leído y acepto los <a href="terminos-y-privacidad" target="_blank" rel="noopener noreferrer">Términos de uso y la Política de Privacidad</a> vigentes.</span>
+        </label>
+        @if (accessMessage) { <p class="access-message registration-wide" role="alert">{{ accessMessage }}</p> }
+        <div class="registration-actions registration-wide">
+          <button class="primary-button registration-submit" type="submit" [disabled]="saving || legalLoading || !legalDocument || userForm.invalid">{{ saving ? 'Registrando...' : 'Registrarme' }}</button>
+          <button class="outline-button" type="button" (click)="registrationCancel.emit()" [disabled]="saving">Volver</button>
+        </div>
+      </form>
+    } @else {
+      @if (view !== 'home') {
+        <h2>{{ adminLoginPending || view === 'admin-login' ? 'Ingresa como administrador' : 'Iniciar sesión' }}</h2>
+      }
+      <form [formGroup]="accessForm" (ngSubmit)="adminLoginPending || view === 'admin-login' ? login.emit() : identify.emit()">
+        <div class="document-fields" [class.document-fields-admin]="adminLoginPending || view === 'admin-login'">
+          <select formControlName="doiType" aria-label="Tipo de documento"><option value="DNI">DNI</option><option value="CE">CE</option></select>
+          <input type="text" inputmode="numeric" autocomplete="username" formControlName="doi" [attr.maxlength]="accessForm.controls['doiType']?.value === 'DNI' ? 8 : 11" placeholder="Ingresa tu documento" aria-label="Número de documento" />
+          @if (adminLoginPending || view === 'admin-login') {
+            <input class="password-field" type="password" autocomplete="current-password" [formControl]="passwordControl" placeholder="Contraseña" aria-label="Contraseña" />
+          }
+        </div>
+        @if (accessForm.controls['doi']?.touched && accessForm.controls['doi']?.invalid) { <p class="field-error">Para DNI ingresa 8 dígitos; para CE, entre 6 y 11.</p> }
+        @if (accessMessage) { <p class="access-message" [class.access-error]="accessMessage === 'Usuario no registrado'" role="status">{{ accessMessage }}</p> }
+        <div class="access-actions">
+          <button class="primary-button" type="submit" [disabled]="checkingDocument || authenticating">
+            @if (adminLoginPending || view === 'admin-login') { {{ authenticating ? 'Verificando...' : 'Acceder como administrador' }} }
+            @else { {{ checkingDocument ? 'Verificando...' : 'Ingresar' }} }
+          </button>
+          @if (view !== 'admin-login' && !adminLoginPending) {
+            <button class="outline-button access-register-button" type="button" (click)="registrationOpen.emit()">Registrarme</button>
+          }
+        </div>
+      </form>
+    }
+    @if (registrationModal; as registrationStatus) {
+      <section class="registration-progress-modal" role="status" aria-live="polite">
+        <div class="registration-progress">
+          @if (registrationStatus === 'registering') {
+            <span class="analysis-spinner" aria-hidden="true"></span>
+            <div><h2>Registrando usuario</h2><p>Estamos registrando tu información.</p></div>
+          } @else {
+            <span class="registration-success-icon" aria-hidden="true">✓</span>
+            <div><h2>Usuario registrado con éxito</h2><p>Tu registro se completó correctamente.</p></div>
+          }
+        </div>
+      </section>
+    }
+    @if (authenticating || (checkingDocument && standardAccessPending)) {
+      <section class="access-progress-modal" role="status" aria-live="polite">
+        <div class="access-progress"><span class="analysis-spinner" aria-hidden="true"></span><div><h2>Accediendo</h2><p>Estamos verificando tus datos.</p></div>
+        </div>
+        </section>
+    }
+    @if (view !== 'registration') {
+      <p class="privacy-note"><em>El resultado no reemplaza un análisis oficial por parte del Indecopi.</em></p>
+    }
+  </div>
+</ng-template>

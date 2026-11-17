@@ -1,3 +1,4 @@
+import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { LegalDocument } from '../../services/legal-document.service';
@@ -11,7 +12,7 @@ export interface AccessSanitizeRequest {
 @Component({
   selector: 'app-public-access-page',
   standalone: true,
-  imports: [ReactiveFormsModule, TrustFooter],
+  imports: [CommonModule, ReactiveFormsModule, TrustFooter],
   templateUrl: './public-access-page.html',
   styleUrl: './public-access-page.css'
 })
@@ -28,6 +29,7 @@ export class PublicAccessPageComponent {
   @Input() saving = false;
   @Input() checkingDocument = false;
   @Input() standardAccessPending = false;
+  @Input() adminLoginPending = false;
   @Input() authenticating = false;
   @Input() legalDateLabel = (_value: string | null | undefined): string => '';
 

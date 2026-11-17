@@ -74,6 +74,11 @@ Docker Compose, espera el health general y el readiness del modelo de audio, y e
 Maven Wrapper. No levanta pgAdmin. Puede invocarse desde otra ubicación porque resuelve el
 repositorio mediante su propia ruta.
 
+Para editar Angular con hot reload sin compilar ni copiar el frontend al backend, usa
+`.\scripts\run-dev-hot-reload-ps51.ps1`. El script levanta los mismos servicios, inicia Spring Boot
+en segundo plano y ejecuta `npm start` desde `frontend/`; Angular queda disponible por defecto en
+`http://localhost:4200` y usa el proxy local hacia la API.
+
 Spring Boot no carga `.env` automáticamente. Docker Compose sí usa el `.env` local de la raíz y el
 launcher lo carga además para Spring Boot. `application-dev.yml` aporta defaults DEV no sensibles;
 `.env` es la configuración local completa y puede contener secretos. `.env.example` es la plantilla
