@@ -4,6 +4,34 @@ import { TestBed } from '@angular/core/testing';
 import { StandardAnalysisPageComponent } from './standard-analysis-page';
 
 describe('StandardAnalysisPageComponent', () => {
+  it('rotates through distinct curiosities every six seconds while analysis is submitting', () => {
+    jasmine.clock().install();
+    TestBed.configureTestingModule({
+      imports: [StandardAnalysisPageComponent],
+      providers: [provideZonelessChangeDetection()]
+    });
+    const fixture = TestBed.createComponent(StandardAnalysisPageComponent);
+    const component = fixture.componentInstance;
+    component.analysisForm = new FormGroup({
+      description: new FormControl('', [Validators.required])
+    });
+    fixture.componentRef.setInput('submittingAnalysis', true);
+    fixture.detectChanges();
+
+    const paragraph = () => fixture.nativeElement.querySelector('.analysis-fact p')?.textContent.trim();
+    const firstCuriosity = paragraph();
+    jasmine.clock().tick(6_000);
+    fixture.detectChanges();
+
+    expect(component.curiosities).toContain(firstCuriosity);
+    expect(paragraph()).not.toBe(firstCuriosity);
+
+    fixture.componentRef.setInput('submittingAnalysis', false);
+    fixture.detectChanges();
+    fixture.destroy();
+    jasmine.clock().uninstall();
+  });
+
   it('renders the analysis form and emits submit without owning its orchestration', () => {
     TestBed.configureTestingModule({
       imports: [StandardAnalysisPageComponent],

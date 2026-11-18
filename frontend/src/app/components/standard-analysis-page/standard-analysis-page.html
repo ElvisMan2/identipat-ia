@@ -111,8 +111,8 @@
       <section class="analysis-progress-modal" role="status" aria-live="polite">
         <div class="analysis-progress">
           <aside class="analysis-fact">
-            <h3>¿Sabías que ...?</h3>
-            <p>La primera patente en el Perú fue concedida en 1837 a Carmen Noriega por una máquina para moler chocolate.</p>
+            <h3>¿Sabías que...?</h3>
+            <p [class.curiosity-fade-in]="curiosityFadeIn">{{ currentCuriosity }}</p>
           </aside>
           <div class="analysis-progress-status">
             <span class="analysis-spinner" aria-hidden="true"></span>
