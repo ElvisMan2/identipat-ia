@@ -86,12 +86,18 @@
 	border: 0;
 	background: transparent;
 }
-.report-step img {
+.report-step-image {
+	width: 88px;
+	height: 88px;
+	flex: 0 0 88px;
+	display: grid;
+	place-items: center;
+	margin: 0;
+}
+.report-step-image img {
 	display: block;
 	width: auto;
 	height: auto;
-	max-width: 100%;
-	flex: 0 1 auto;
 	object-fit: contain;
 }
 .report-step h3 { margin: 0 0 .4rem; font-size: 1rem; }
