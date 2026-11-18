@@ -779,8 +779,10 @@ describe('App', () => {
 
     expect(app.view()).toBe('home');
     expect(app.adminLoginPending()).toBeTrue();
-    expect(fixture.nativeElement.textContent).not.toContain('Acceso administrativo');
-    expect(fixture.nativeElement.querySelector('input[type="password"]')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Acceso administrativo');
+    expect(fixture.nativeElement.querySelector('.admin-login-modal')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.admin-login-modal input[type="password"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.header-login-form .document-fields-admin')).toBeNull();
   });
 
   it('should show the verification modal for a registered standard user', () => {

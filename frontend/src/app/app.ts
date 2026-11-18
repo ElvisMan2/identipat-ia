@@ -844,6 +844,12 @@ export class App {
     void this.router.navigateByUrl('/iniciar-sesion');
   }
 
+  closeAdminLogin(): void {
+    this.adminLoginPending.set(false);
+    this.loginForm.reset({ password: '' });
+    this.accessMessage.set('');
+  }
+
   private showLogin(): void {
     this.accessMessage.set('');
     this.adminLoginPending.set(false);
@@ -890,6 +896,7 @@ export class App {
           const { doiType } = this.accessForm.getRawValue();
           this.userService.setAccessToken(accessToken, doi, doiType);
           this.authenticating.set(false);
+          this.adminLoginPending.set(false);
           this.adminAuthenticated.set(true);
           this.analysisForm.reset({ description: '' });
           this.analysisMessage.set('');

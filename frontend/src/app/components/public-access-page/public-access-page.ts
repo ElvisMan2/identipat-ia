@@ -45,6 +45,7 @@ export class PublicAccessPageComponent {
   @Output() identify = new EventEmitter<void>();
   @Output() register = new EventEmitter<void>();
   @Output() login = new EventEmitter<void>();
+  @Output() closeAdminLogin = new EventEmitter<void>();
   @Output() registrationOpen = new EventEmitter<void>();
   @Output() loginOpen = new EventEmitter<void>();
   @Output() registrationCancel = new EventEmitter<void>();
