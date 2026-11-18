@@ -152,7 +152,9 @@
 .access-block h2 { margin: .25rem 0 1rem; font-size: 1.25rem; }
 .document-fields { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: .75rem; }
 .document-fields-admin { grid-template-columns: 120px minmax(0, 1fr) minmax(0, 1fr); }
-.registration-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin-top: 1.5rem; }
+.registration-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: .75rem; margin-top: 1.5rem; }
+.registration-document-field { display: grid; gap: .38rem; align-content: start; }
+.registration-document-field .field-error { margin: 0; }
 .registration-wide { grid-column: 1 / -1; }
 .registration-actions { display: flex; align-items: center; gap: .75rem; }
 .registration-actions .primary-button { width: auto; margin-top: 0; }

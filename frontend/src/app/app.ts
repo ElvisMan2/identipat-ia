@@ -501,7 +501,7 @@ export class App {
     }
 
     const doiType = control.parent?.get('doiType')?.value;
-    const pattern = doiType === 'DNI' ? /^\d{8}$/ : /^\d{6,11}$/;
+    const pattern = doiType === 'DNI' ? /^\d{8}$/ : /^[A-Za-z0-9]{6,11}$/;
     return pattern.test(control.value) ? null : { doiFormat: true };
   }
 

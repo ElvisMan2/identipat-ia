@@ -531,6 +531,42 @@ describe('App', () => {
     expect(app.userForm.controls.doi.value).toBe('12345678');
   });
 
+  it('should validate DNI as exactly 8 digits in registration and identification', () => {
+    const app = TestBed.createComponent(App).componentInstance;
+
+    app.userForm.controls.doiType.setValue('DNI');
+    app.userForm.controls.doi.setValue('1234567');
+    expect(app.userForm.controls.doi.invalid).toBeTrue();
+    app.userForm.controls.doi.setValue('1234567A');
+    expect(app.userForm.controls.doi.invalid).toBeTrue();
+    app.userForm.controls.doi.setValue('12345678');
+    expect(app.userForm.controls.doi.valid).toBeTrue();
+
+    app.accessForm.controls.doiType.setValue('DNI');
+    app.accessForm.controls.doi.setValue('12345678');
+    expect(app.accessForm.controls.doi.valid).toBeTrue();
+  });
+
+  it('should validate CE as 6 to 11 alphanumeric characters', () => {
+    const app = TestBed.createComponent(App).componentInstance;
+
+    app.userForm.controls.doiType.setValue('CE');
+    app.userForm.controls.doi.setValue('A1234');
+    expect(app.userForm.controls.doi.invalid).toBeTrue();
+    app.userForm.controls.doi.setValue('A1B2C3');
+    expect(app.userForm.controls.doi.valid).toBeTrue();
+    app.userForm.controls.doi.setValue('A1234567890');
+    expect(app.userForm.controls.doi.valid).toBeTrue();
+    app.userForm.controls.doi.setValue('A12345678901');
+    expect(app.userForm.controls.doi.invalid).toBeTrue();
+    app.userForm.controls.doi.setValue('AB-1234');
+    expect(app.userForm.controls.doi.invalid).toBeTrue();
+
+    app.accessForm.controls.doiType.setValue('CE');
+    app.accessForm.controls.doi.setValue('AB1234');
+    expect(app.accessForm.controls.doi.valid).toBeTrue();
+  });
+
   it('should replace editor line breaks with non-breaking spaces before storing HTML', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
@@ -1015,6 +1051,10 @@ describe('App', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.registration-form input[name="phone"]')).toBeNull();
     expect(fixture.nativeElement.querySelector('.registration-form input[name="mobilePhone"]')).not.toBeNull();
+    const createButton = fixture.nativeElement.querySelector(
+      '.registration-actions button[type="submit"]'
+    ) as HTMLButtonElement;
+    expect(createButton.disabled).toBeTrue();
 
     app.userForm.setValue({
       firstName: 'Nombre de prueba',
@@ -1032,10 +1072,19 @@ describe('App', () => {
     });
 
     fixture.detectChanges();
-    const createButton = fixture.nativeElement.querySelector(
-      '.registration-actions button[type="submit"]'
-    ) as HTMLButtonElement;
     expect(createButton.disabled).toBeFalse();
+
+    app.userForm.controls.termsAccepted.setValue(false);
+    fixture.detectChanges();
+    expect(createButton.disabled).toBeTrue();
+    app.userForm.controls.termsAccepted.setValue(true);
+    app.userForm.controls.email.setValue('correo-invalido');
+    fixture.detectChanges();
+    expect(createButton.disabled).toBeTrue();
+    app.userForm.controls.email.setValue('standard.placeholder@example.test');
+    fixture.detectChanges();
+    expect(createButton.disabled).toBeFalse();
+
     createButton.click();
     app.registerStandard();
 

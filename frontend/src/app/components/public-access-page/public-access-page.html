@@ -147,9 +147,9 @@
     <form [formGroup]="accessForm" (ngSubmit)="identify.emit()" autocomplete="on" name="identipat-header-login">
       <div class="document-fields">
         <select formControlName="doiType" aria-label="Tipo de documento"><option value="DNI">DNI</option><option value="CE">CE</option></select>
-        <input type="text" inputmode="numeric" autocomplete="username" formControlName="doi" [attr.maxlength]="accessForm.controls['doiType']?.value === 'DNI' ? 8 : 11" placeholder="Ingresa tu documento" aria-label="Número de documento" />
+        <input type="text" [attr.inputmode]="accessForm.controls['doiType']?.value === 'DNI' ? 'numeric' : 'text'" autocomplete="username" formControlName="doi" [attr.maxlength]="accessForm.controls['doiType']?.value === 'DNI' ? 8 : 11" placeholder="Ingresa tu documento" aria-label="Número de documento" />
       </div>
-      @if (accessForm.controls['doi']?.touched && accessForm.controls['doi']?.invalid) { <p class="field-error">Para DNI ingresa 8 dígitos; para CE, entre 6 y 11.</p> }
+      @if (accessForm.controls['doi']?.touched && accessForm.controls['doi']?.invalid) { <p class="field-error">DNI: 8 dígitos. CE: de 6 a 11 letras o números.</p> }
       @if (accessMessage) { <p class="access-message" [class.access-error]="accessMessage === 'Usuario no registrado'" role="status">{{ accessMessage }}</p> }
       <div class="access-actions header-access-actions">
         <button class="primary-button" type="submit" [disabled]="checkingDocument || authenticating">
@@ -173,12 +173,12 @@
     <form [formGroup]="accessForm" (ngSubmit)="view === 'admin-login' ? login.emit() : identify.emit()" autocomplete="on" name="identipat-login-page">
       <div class="document-fields" [class.document-fields-admin]="view === 'admin-login'">
         <select formControlName="doiType" aria-label="Tipo de documento"><option value="DNI">DNI</option><option value="CE">CE</option></select>
-        <input type="text" inputmode="numeric" autocomplete="username" formControlName="doi" [attr.maxlength]="accessForm.controls['doiType']?.value === 'DNI' ? 8 : 11" placeholder="Ingresa tu documento" aria-label="Número de documento" />
+        <input type="text" [attr.inputmode]="accessForm.controls['doiType']?.value === 'DNI' ? 'numeric' : 'text'" autocomplete="username" formControlName="doi" [attr.maxlength]="accessForm.controls['doiType']?.value === 'DNI' ? 8 : 11" placeholder="Ingresa tu documento" aria-label="Número de documento" />
         @if (view === 'admin-login') {
           <input class="password-field" type="password" autocomplete="current-password" [formControl]="passwordControl" placeholder="Contraseña" aria-label="Contraseña" />
         }
       </div>
-      @if (accessForm.controls['doi']?.touched && accessForm.controls['doi']?.invalid) { <p class="field-error">Para DNI ingresa 8 dígitos; para CE, entre 6 y 11.</p> }
+      @if (accessForm.controls['doi']?.touched && accessForm.controls['doi']?.invalid) { <p class="field-error">DNI: 8 dígitos. CE: de 6 a 11 letras o números.</p> }
       @if (accessMessage) { <p class="access-message" [class.access-error]="accessMessage === 'Usuario no registrado'" role="status">{{ accessMessage }}</p> }
       <div class="access-actions login-view-actions">
         <button class="primary-button" type="submit" [disabled]="checkingDocument || authenticating">
@@ -214,7 +214,10 @@
       <label>Tipo doc.
         <select name="doiType" autocomplete="off" formControlName="doiType"><option value="DNI">DNI</option><option value="CE">CE</option></select>
       </label>
-      <label>Num doc. <input type="text" name="document-number" autocomplete="off" formControlName="doi" inputmode="numeric" [attr.maxlength]="userForm.controls['doiType']?.value === 'DNI' ? 8 : 11" placeholder="71234568" (input)="userForm.controls['doiType']?.value === 'DNI' && sanitizeDni.emit({ event: $event, control: userForm.controls['doi'] })" /></label>
+      <div class="registration-document-field">
+        <label>Num doc. <input type="text" name="document-number" autocomplete="off" formControlName="doi" [attr.inputmode]="userForm.controls['doiType']?.value === 'DNI' ? 'numeric' : 'text'" [attr.maxlength]="userForm.controls['doiType']?.value === 'DNI' ? 8 : 11" [attr.placeholder]="userForm.controls['doiType']?.value === 'DNI' ? '71234568' : 'A12345'" (input)="userForm.controls['doiType']?.value === 'DNI' && sanitizeDni.emit({ event: $event, control: userForm.controls['doi'] })" /></label>
+        @if (userForm.controls['doi']?.touched && userForm.controls['doi']?.invalid) { <p class="field-error">DNI: 8 dígitos. CE: de 6 a 11 letras o números.</p> }
+      </div>
       <label>Fecha de nacimiento <input type="date" name="birthDate" autocomplete="bday" formControlName="birthDate" min="1926-01-01" max="2020-12-31" /></label>
       <label>Género
         <select name="gender" autocomplete="sex" formControlName="gender"><option value="" disabled>Seleccione</option><option value="MALE">Masculino</option><option value="FEMALE">Femenino</option></select>
