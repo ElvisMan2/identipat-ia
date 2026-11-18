@@ -23,7 +23,7 @@
 	.trust-strip > div:first-child > div:first-child > div:nth-child(2) { padding-left: 100px; }
 }
 
-@media (max-width: 425px) {
+@media (max-width: 426px) {
 	.trust-strip > div:first-child > div:first-child {
 		flex-direction: column;
 		padding-inline: 0;
