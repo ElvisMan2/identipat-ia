@@ -325,6 +325,9 @@ export class App {
       } else if (path === '/' && this.view() === 'login') {
         this.showHome();
       }
+      if (path === '/' || path === '/registro' || path === '/iniciar-sesion') {
+        this.scrollToTop();
+      }
     });
     this.accessForm.controls.doiType.valueChanges.subscribe(() => this.accessForm.controls.doi.updateValueAndValidity());
     this.userForm.controls.doiType.valueChanges.subscribe(() => this.userForm.controls.doi.updateValueAndValidity());
@@ -358,6 +361,10 @@ export class App {
         },
         error: () => this.logout()
       });
+    }
+
+    if (currentPath === '/' || currentPath === '/registro' || currentPath === '/iniciar-sesion') {
+      this.scrollToTop();
     }
   }
 
@@ -769,7 +776,11 @@ export class App {
   }
 
   private scrollToTop(): void {
-    this.document.defaultView?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    const view = this.document.defaultView;
+    view?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    view?.setTimeout(() => {
+      view.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }, 0);
   }
 
   backHome(): void {
@@ -783,6 +794,7 @@ export class App {
     this.adminLoginInline.set(false);
     this.accessMessage.set('');
     this.loginForm.reset({ password: '' });
+    this.scrollToTop();
   }
 
   exitSession(): void {
@@ -843,6 +855,7 @@ export class App {
     this.userForm.controls.termsAccepted.markAsUntouched();
     this.view.set('registration');
     this.loadLegalDocumentForRegistration();
+    this.scrollToTop();
   }
 
   openLogin(): void {
@@ -862,6 +875,7 @@ export class App {
     this.adminLoginPending.set(false);
     this.adminLoginInline.set(false);
     this.view.set('login');
+    this.scrollToTop();
   }
 
   startNewAnalysis(): void {
