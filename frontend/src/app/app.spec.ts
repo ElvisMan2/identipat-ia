@@ -823,6 +823,29 @@ describe('App', () => {
     expect(fixture.nativeElement.querySelector('.header-login-form .document-fields-admin')).toBeNull();
   });
 
+  it('should show the admin password inline when an admin is identified on the login page', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const httpTesting = TestBed.inject(HttpTestingController);
+    app.view.set('login');
+    spyOn<any>(app, 'finishAccess').and.callFake((_startedAt: number, complete: () => void) => complete());
+    fixture.detectChanges();
+
+    app.accessForm.setValue({ doiType: 'DNI', doi: '12345678' });
+    app.identifyDocument(true);
+    httpTesting.expectOne(`${environment.apiBaseUrl}/users/identify`).flush({
+      registered: true,
+      passwordRequired: true
+    });
+    fixture.detectChanges();
+
+    expect(app.adminLoginInline()).toBeTrue();
+    expect(app.adminLoginPending()).toBeFalse();
+    expect(fixture.nativeElement.querySelector('.admin-login-modal')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.standard-login-form input[type="password"]')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Acceso administrativo');
+  });
+
   it('should show the verification spinner for a registered standard user', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
@@ -903,7 +926,10 @@ describe('App', () => {
     expect(fixture.nativeElement.querySelector('.home-banner')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('app-trust-footer')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.registration-form')).not.toBeNull();
-    expect(fixture.nativeElement.textContent).toContain('Completa tu registro');
+    expect(fixture.nativeElement.textContent).toContain('Crea tu cuenta en Identipat IA');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Completa tus datos para analizar tu creación y recibir un reporte referencial con posibles opciones de protección.'
+    );
 
     await router.navigateByUrl('/');
     fixture.detectChanges();
@@ -941,6 +967,9 @@ describe('App', () => {
     expect(fixture.nativeElement.querySelector('.home-banner')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('app-trust-footer')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.document-fields')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.standard-login-form')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Tipo de documento');
+    expect(fixture.nativeElement.textContent).toContain('Número de documento');
 
     await router.navigateByUrl('/');
     fixture.detectChanges();

@@ -35,6 +35,7 @@ export class PublicAccessPageComponent {
   @Input() checkingDocument = false;
   @Input() standardAccessPending = false;
   @Input() adminLoginPending = false;
+  @Input() adminLoginInline = false;
   @Input() authenticating = false;
   @Input() legalDateLabel = (_value: string | null | undefined): string => '';
 
@@ -43,6 +44,7 @@ export class PublicAccessPageComponent {
   }
 
   @Output() identify = new EventEmitter<void>();
+  @Output() identifyPage = new EventEmitter<void>();
   @Output() register = new EventEmitter<void>();
   @Output() login = new EventEmitter<void>();
   @Output() closeAdminLogin = new EventEmitter<void>();

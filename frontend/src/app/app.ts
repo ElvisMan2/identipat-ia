@@ -265,6 +265,7 @@ export class App {
   readonly checkingDocument = signal(false);
   readonly standardAccessPending = signal(false);
   readonly adminLoginPending = signal(false);
+  readonly adminLoginInline = signal(false);
   readonly authenticating = signal(false);
   readonly adminAuthenticated = signal(false);
   readonly navigationPending = signal<'admin' | 'predictions' | 'exit' | null>(null);
@@ -565,7 +566,7 @@ export class App {
     return isoMatch ? `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]}` : date;
   }
 
-  identifyDocument(): void {
+  identifyDocument(fromLoginPage = false): void {
     if (this.accessForm.invalid) {
       this.accessForm.markAllAsTouched();
       return;
@@ -586,8 +587,12 @@ export class App {
             this.accessMessage.set('Usuario inactivo');
           } else if (passwordRequired) {
             this.standardAccessState.set('UNIDENTIFIED');
-            this.adminLoginPending.set(true);
             this.loginForm.reset({ password: '' });
+            if (fromLoginPage) {
+              this.adminLoginInline.set(true);
+            } else {
+              this.adminLoginPending.set(true);
+            }
           } else if (!registered) {
             this.standardAccessState.set('UNIDENTIFIED');
             this.accessMessage.set('Usuario no registrado');
@@ -775,6 +780,7 @@ export class App {
   private showHome(): void {
     this.view.set('home');
     this.adminLoginPending.set(false);
+    this.adminLoginInline.set(false);
     this.accessMessage.set('');
     this.loginForm.reset({ password: '' });
   }
@@ -846,6 +852,7 @@ export class App {
 
   closeAdminLogin(): void {
     this.adminLoginPending.set(false);
+    this.adminLoginInline.set(false);
     this.loginForm.reset({ password: '' });
     this.accessMessage.set('');
   }
@@ -853,6 +860,7 @@ export class App {
   private showLogin(): void {
     this.accessMessage.set('');
     this.adminLoginPending.set(false);
+    this.adminLoginInline.set(false);
     this.view.set('login');
   }
 
@@ -897,6 +905,7 @@ export class App {
           this.userService.setAccessToken(accessToken, doi, doiType);
           this.authenticating.set(false);
           this.adminLoginPending.set(false);
+          this.adminLoginInline.set(false);
           this.adminAuthenticated.set(true);
           this.analysisForm.reset({ description: '' });
           this.analysisMessage.set('');
