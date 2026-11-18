@@ -1,14 +1,14 @@
 :host { display: block; }
 .home-page { min-height: 100dvh; background: transparent; }
-.home-banner { position: relative; width: 100vw; aspect-ratio: 2060 / 563; margin: 0; border-bottom: 1px solid var(--line); background-color: var(--mint); background-position: center; background-repeat: no-repeat; background-size: 100% 100%; }
-.home-banner-home { height: 75dvh; aspect-ratio: auto; background-size: cover; }
-.home-banner-interior { aspect-ratio: 1920 / 226; height: auto; background-size: cover; }
-.home-logo-link { position: absolute; top: 1.5rem; left: max(1.25rem, calc((100vw - 1180px) / 2)); z-index: 1; display: block; }
+.home-banner { position: relative; width: 100%; box-sizing: border-box; margin: 0; border-bottom: 1px solid var(--line); background-color: var(--mint); background-position: center; background-repeat: no-repeat; background-size: cover; }
+.home-banner-home { display: flex; flex-direction: column; align-items: flex-start; padding: 1.5rem max(1.25rem, calc((100vw - 1180px) / 2)) 2.5rem; }
+.home-banner-interior { display: flex; align-items: center; padding: 1.5rem max(1.25rem, calc((100vw - 1180px) / 2)); }
+.home-logo-link { z-index: 1; display: block; flex: 0 0 auto; }
 .home-logo-link img { display: block; width: 250px; height: auto; }
-.home-header-copy { position: absolute; top: 6rem; left: max(1.25rem, calc((100vw - 1180px) / 2)); display: grid; gap: .3rem; color: #fff; }
+.home-header-copy { display: grid; gap: .3rem; margin-top: 1.5rem; color: #fff; }
 .home-header-copy strong { color: #9d64f9; }
 .home-header-copy strong, .home-header-copy span { font-size: 1.35rem; font-weight: 700; line-height: 1.35; }
-.home-header-access { position: absolute; top: 13.5rem; left: max(1.25rem, calc((100vw - 1180px) / 2)); width: min(430px, calc(100% - 2.5rem)); }
+.home-header-access { width: min(430px, 100%); margin-top: 2rem; }
 .creation-analysis-intro { padding: 2rem 1rem; text-align: center; background: #fff; }
 .creation-analysis-intro h2 { margin-left: auto; margin-right: auto; font-weight: 700; font-size: 1.6em; }
 .creation-analysis-intro p { margin-left: auto; margin-right: auto; }
@@ -120,6 +120,14 @@
 	height: auto;
 }
 @media (max-width: 425px) {
+	.home-logo-link {
+		margin-inline: auto;
+	}
+	.home-header-copy {
+		width: 100%;
+		justify-items: center;
+		text-align: center;
+	}
 	.creation-images {
 		width: auto;
 		margin-inline: 10px;
@@ -182,4 +190,4 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 @keyframes analysis-spin { to { transform: rotate(360deg); } }
 @media (max-width: 920px) { .hero { grid-template-columns: 1fr; padding-top: 2.5rem; } }
 @media (min-width: 621px) { .report-steps { padding: 10px; } }
-@media (max-width: 620px) { .topbar { height: 68px; padding-inline: 1rem; } .outline-button { padding: .55rem .65rem; font-size: .78rem; } .hero { width: min(100% - 2rem, 1180px); gap: 2.25rem; } .hero h1 { font-size: 2.45rem; } .document-fields { grid-template-columns: 92px minmax(0, 1fr); } .document-fields-admin { grid-template-columns: 92px minmax(0, 1fr) minmax(0, 1fr); } .registration-form { grid-template-columns: 1fr; } .registration-wide { grid-column: auto; } .access-block { padding: 1rem; } .home-access { padding: 0; } .home-header-copy { top: 5.75rem; left: 1rem; } .home-header-copy strong, .home-header-copy span { font-size: 1.1rem; } .home-header-access { top: 12.5rem; left: 1rem; width: calc(100% - 2rem); } .report-steps { grid-template-columns: 1fr; } .report-step { width: 100%; } }
+@media (max-width: 620px) { .topbar { height: 68px; padding-inline: 1rem; } .outline-button { padding: .55rem .65rem; font-size: .78rem; } .hero { width: min(100% - 2rem, 1180px); gap: 2.25rem; } .hero h1 { font-size: 2.45rem; } .document-fields { grid-template-columns: 92px minmax(0, 1fr); } .document-fields-admin { grid-template-columns: 92px minmax(0, 1fr) minmax(0, 1fr); } .registration-form { grid-template-columns: 1fr; } .registration-wide { grid-column: auto; } .access-block { padding: 1rem; } .home-access { padding: 0; } .home-banner-home { padding-inline: 1rem; } .home-banner-interior { padding-inline: 1rem; } .home-header-copy { margin-top: 1.25rem; } .home-header-copy strong, .home-header-copy span { font-size: 1.1rem; } .home-header-access { width: 100%; margin-top: 1.25rem; } .report-steps { grid-template-columns: 1fr; } .report-step { width: 100%; } }
