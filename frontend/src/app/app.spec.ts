@@ -782,6 +782,8 @@ describe('App', () => {
     expect(fixture.nativeElement.textContent).toContain('Acceso administrativo');
     expect(fixture.nativeElement.querySelector('.admin-login-modal')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.admin-login-modal input[type="password"]')).not.toBeNull();
+    expect((fixture.nativeElement.querySelector('#admin-login-doi-type') as HTMLSelectElement).value).toBe('DNI');
+    expect((fixture.nativeElement.querySelector('#admin-login-doi') as HTMLInputElement).value).toBe('12345678');
     expect(fixture.nativeElement.querySelector('.header-login-form .document-fields-admin')).toBeNull();
   });
 

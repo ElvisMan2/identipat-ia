@@ -193,10 +193,18 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .analysis-spinner { width: 2rem; height: 2rem; flex: 0 0 auto; border: 3px solid var(--mint); border-top-color: var(--teal); border-radius: 50%; animation: analysis-spin .8s linear infinite; }
 .admin-login-modal { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 1rem; background: rgb(15 26 24 / .58); }
 .admin-login-dialog { position: relative; width: min(420px, 100%); box-sizing: border-box; padding: 1.5rem; border-radius: 10px; border: 1px solid var(--line); background: #fff; box-shadow: 0 20px 60px rgb(24 51 47 / .24); }
-.admin-login-dialog h2 { margin: 0 2.25rem .35rem 0; font-size: 1.35rem; }
-.admin-login-dialog > p { margin: 0 0 1rem; color: var(--muted); }
+.admin-login-dialog h2 { margin: 0 0 .35rem; text-align: center; font-size: 1.35rem; }
+.admin-login-dialog > p { margin: 0 0 1rem; text-align: center; color: var(--muted); }
 .admin-login-dialog form { display: grid; gap: .55rem; }
 .admin-login-dialog form label { margin-bottom: .1rem; }
+.admin-login-document-fields { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: .65rem; margin-bottom: .35rem; }
+.admin-login-document-field { display: grid; gap: .38rem; min-width: 0; }
+.admin-login-document-field label { margin: 0; }
+.admin-login-document-field input,
+.admin-login-document-field select { text-align: center; }
+.admin-login-dialog input[type='password'] { text-align: left; }
+.admin-login-document-fields select:disabled,
+.admin-login-document-fields input[readonly] { background: #f1f4f3; color: var(--muted); opacity: 1; }
 .admin-login-close { position: absolute; top: .75rem; right: .75rem; width: 36px; height: 36px; border: 0; border-radius: 50%; color: var(--muted); background: #f1f4f3; font-size: 1.5rem; line-height: 1; cursor: pointer; }
 .admin-login-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; margin-top: .55rem; }
 .admin-login-actions .primary-button { margin-top: 0; }

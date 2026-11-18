@@ -113,6 +113,17 @@
         <h2 id="admin-login-title">Acceso administrativo</h2>
         <p>Ingresa la contraseña asociada a este documento.</p>
         <form [formGroup]="loginForm" (ngSubmit)="login.emit()" autocomplete="on" name="identipat-admin-login">
+          <div class="admin-login-document-fields">
+            <div class="admin-login-document-field">
+              <select id="admin-login-doi-type" [value]="accessForm.controls['doiType'].value" disabled aria-label="Tipo de documento">
+                <option value="DNI">DNI</option>
+                <option value="CE">CE</option>
+              </select>
+            </div>
+            <div class="admin-login-document-field">
+              <input id="admin-login-doi" type="text" [value]="accessForm.controls['doi'].value" readonly autocomplete="username" aria-label="Número de documento" />
+            </div>
+          </div>
           <label for="admin-login-password">Contraseña</label>
           <input id="admin-login-password" type="password" autocomplete="current-password" formControlName="password" placeholder="Contraseña" />
           @if (loginForm.controls['password']?.touched && loginForm.controls['password']?.invalid) {
