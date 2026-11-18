@@ -1,4 +1,4 @@
-:host { display: block; width: 100%; }
+:host { display: block; width: 100%; margin-top: 2rem; }
 .trust-strip { width: 100%; min-height: 92px; display: grid; grid-template-columns: 1fr; padding: 0; color: #fff; font-family: 'Myriad Pro', sans-serif; }
 .trust-strip div { display: grid; align-content: center; gap: .2rem; padding: 1rem 2rem;}
 .trust-strip > div:first-child { display: block; width: 100%; box-sizing: border-box; color: var(--ink); background:#ededed; }
