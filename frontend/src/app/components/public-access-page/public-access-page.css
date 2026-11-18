@@ -1,8 +1,8 @@
 :host { display: block; }
 .home-page { min-height: 100dvh; background: transparent; }
 .home-banner { position: relative; width: 100%; box-sizing: border-box; margin: 0; border-bottom: 4px solid #f2a123; background-color: var(--mint); background-position: center; background-repeat: no-repeat; background-size: cover; }
-.home-banner-home { display: flex; flex-direction: column; align-items: flex-start; padding: 1.5rem max(1.25rem, calc((100vw - 1180px) / 2)) 2.5rem; }
-.home-banner-interior { display: flex; align-items: center; padding: 1.5rem max(1.25rem, calc((100vw - 1180px) / 2)); }
+.home-banner-home { display: flex; flex-direction: column; align-items: flex-start; padding: 3rem max(1.25rem, calc((100vw - 1180px) / 2)) 2.5rem; }
+.home-banner-interior { display: flex; align-items: center; padding: 3rem max(1.25rem, calc((100vw - 1180px) / 2)); }
 .home-logo-link { z-index: 1; display: block; flex: 0 0 auto; }
 .home-logo-link img { display: block; width: 250px; height: auto; }
 .home-header-copy { display: grid; gap: .3rem; margin-top: 1.5rem; color: #fff; }
