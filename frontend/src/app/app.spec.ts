@@ -968,8 +968,8 @@ describe('App', () => {
     expect(fixture.nativeElement.querySelector('app-trust-footer')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.document-fields')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.standard-login-form')).not.toBeNull();
-    expect(fixture.nativeElement.textContent).toContain('Tipo de documento');
-    expect(fixture.nativeElement.textContent).toContain('Número de documento');
+    expect(fixture.nativeElement.querySelector('[aria-label="Tipo de documento"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[aria-label="Número de documento"]')).not.toBeNull();
 
     await router.navigateByUrl('/');
     fixture.detectChanges();

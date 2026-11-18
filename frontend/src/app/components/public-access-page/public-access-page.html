@@ -184,16 +184,10 @@
     <form [formGroup]="accessForm" (ngSubmit)="view === 'admin-login' || adminLoginInline ? login.emit() : identifyPage.emit()" autocomplete="on" name="identipat-login-page" [class.standard-login-form]="view === 'login'">
       @if (view === 'login') {
         <div class="document-fields standard-login-fields">
-          <label>Tipo de documento
-            <select formControlName="doiType" aria-label="Tipo de documento"><option value="DNI">DNI</option><option value="CE">Carné de extranjería (CE)</option></select>
-          </label>
-          <label>Número de documento
-            <input type="text" [attr.inputmode]="accessForm.controls['doiType']?.value === 'DNI' ? 'numeric' : 'text'" autocomplete="username" formControlName="doi" [attr.maxlength]="accessForm.controls['doiType']?.value === 'DNI' ? 8 : 11" placeholder="Ingresa tu documento" aria-label="Número de documento" />
-          </label>
+          <select formControlName="doiType" aria-label="Tipo de documento"><option value="DNI">D.N.I.</option><option value="CE">C.E.</option></select>
+          <input type="text" [attr.inputmode]="accessForm.controls['doiType']?.value === 'DNI' ? 'numeric' : 'text'" autocomplete="username" formControlName="doi" [attr.maxlength]="accessForm.controls['doiType']?.value === 'DNI' ? 8 : 11" placeholder="Ingresa tu documento" aria-label="Número de documento" />
           @if (adminLoginInline) {
-            <label class="standard-login-password">Contraseña
-              <input type="password" autocomplete="current-password" [formControl]="passwordControl" placeholder="Ingresa tu contraseña" aria-label="Contraseña" />
-            </label>
+            <input class="standard-login-password" type="password" autocomplete="current-password" [formControl]="passwordControl" placeholder="Ingresa tu contraseña" aria-label="Contraseña" />
           }
         </div>
       } @else {
