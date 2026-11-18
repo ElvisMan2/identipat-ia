@@ -113,6 +113,16 @@
 	max-width: 31%;
 	height: auto;
 }
+@media (max-width: 425px) {
+	.creation-images {
+		width: auto;
+		margin-inline: 10px;
+		flex-direction: column;
+	}
+	.creation-images img {
+		max-width: 100%;
+	}
+}
 .topbar { height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0 max(1.25rem, calc((100vw - 1180px) / 2)); border-bottom: 1px solid var(--line); background: rgb(251 250 246 / .94); }
 .brand { color: var(--ink); font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; font-weight: 700; letter-spacing: .08em; text-decoration: none; }
 .hero { width: min(1180px, calc(100% - 2.5rem)); min-height: calc(100dvh - 168px); margin: 0 auto; padding: clamp(2.5rem, 6vw, 5rem) 0 3rem; display: grid; grid-template-columns: minmax(0, 650px); justify-content: center; align-items: center; }
