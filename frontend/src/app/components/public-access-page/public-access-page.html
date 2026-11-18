@@ -98,7 +98,7 @@
     </div>
   </section>
   }
-  @if (authenticating || (checkingDocument && standardAccessPending)) {
+  @if ((authenticating && !adminLoginPending) || (checkingDocument && standardAccessPending)) {
     <section class="access-progress-modal" role="status" aria-live="polite">
       <div class="access-progress">
         <span class="analysis-spinner" aria-hidden="true"></span>
