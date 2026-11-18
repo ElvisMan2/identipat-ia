@@ -98,14 +98,6 @@
     </div>
   </section>
   }
-  @if ((authenticating && !adminLoginPending) || (checkingDocument && standardAccessPending)) {
-    <section class="access-progress-modal" role="status" aria-live="polite">
-      <div class="access-progress">
-        <span class="analysis-spinner" aria-hidden="true"></span>
-        <div><h2>Accediendo</h2><p>Estamos verificando tus datos.</p></div>
-      </div>
-    </section>
-  }
   @if (adminLoginPending) {
     <section class="admin-login-modal" role="dialog" aria-modal="true" aria-labelledby="admin-login-title">
       <div class="admin-login-dialog">
@@ -161,7 +153,12 @@
       @if (accessMessage) { <p class="access-message" [class.access-error]="accessMessage === 'Usuario no registrado'" role="status">{{ accessMessage }}</p> }
       <div class="access-actions header-access-actions">
         <button class="primary-button" type="submit" [disabled]="checkingDocument || authenticating">
-          {{ checkingDocument ? 'Verificando...' : 'Ingresar' }}
+          @if (checkingDocument) {
+            <span class="access-spinner" aria-hidden="true"></span>
+            <span>Verificando...</span>
+          } @else {
+            <span>Ingresar</span>
+          }
         </button>
         <button class="outline-button access-register-button" type="button" (click)="registrationOpen.emit()">Registrarme</button>
       </div>
@@ -185,8 +182,17 @@
       @if (accessMessage) { <p class="access-message" [class.access-error]="accessMessage === 'Usuario no registrado'" role="status">{{ accessMessage }}</p> }
       <div class="access-actions login-view-actions">
         <button class="primary-button" type="submit" [disabled]="checkingDocument || authenticating">
-          @if (view === 'admin-login') { {{ authenticating ? 'Verificando...' : 'Acceder como administrador' }} }
-          @else { {{ checkingDocument ? 'Verificando...' : 'Ingresar' }} }
+          @if (view === 'admin-login' && authenticating) {
+            <span class="access-spinner" aria-hidden="true"></span>
+            <span>Verificando...</span>
+          } @else if (view === 'admin-login') {
+            <span>Acceder como administrador</span>
+          } @else if (checkingDocument) {
+            <span class="access-spinner" aria-hidden="true"></span>
+            <span>Verificando...</span>
+          } @else {
+            <span>Ingresar</span>
+          }
         </button>
         @if (view !== 'admin-login') {
           <button class="outline-button access-register-button" type="button" (click)="registrationOpen.emit()">Registrarme</button>
