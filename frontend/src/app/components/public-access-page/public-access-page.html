@@ -4,6 +4,9 @@
       <a class="home-logo-link" href="./" aria-label="Ir al inicio">
         <img src="logo-identipat-main.png" alt="Identipat IA" />
       </a>
+      @if (view === 'registration' || view === 'login') {
+        <p class="interior-header-description">Herramienta virtual de identificación de propiedad intelectual</p>
+      }
       @if (view === 'home') {
         <div class="home-header-copy">
           <strong>Analiza e identifica con IA:</strong>
