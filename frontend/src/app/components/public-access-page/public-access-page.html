@@ -135,7 +135,12 @@
           <div class="admin-login-actions">
             <button type="button" class="outline-button" (click)="closeAdminLogin.emit()" [disabled]="authenticating">Cancelar</button>
             <button type="submit" class="primary-button" [disabled]="authenticating || loginForm.invalid">
-              {{ authenticating ? 'Verificando...' : 'Ingresar' }}
+              @if (authenticating) {
+                <span class="admin-login-spinner" aria-hidden="true"></span>
+                <span>Verificando...</span>
+              } @else {
+                <span>Ingresar</span>
+              }
             </button>
           </div>
         </form>

@@ -208,6 +208,8 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .admin-login-close { position: absolute; top: .75rem; right: .75rem; width: 36px; height: 36px; border: 0; border-radius: 50%; color: var(--muted); background: #f1f4f3; font-size: 1.5rem; line-height: 1; cursor: pointer; }
 .admin-login-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; margin-top: .55rem; }
 .admin-login-actions .primary-button { margin-top: 0; }
+.admin-login-actions .primary-button:disabled { display: inline-flex; align-items: center; justify-content: center; gap: .55rem; }
+.admin-login-spinner { width: 1rem; height: 1rem; flex: 0 0 auto; box-sizing: border-box; border: 2px solid rgb(255 255 255 / .45); border-top-color: #fff; border-radius: 50%; animation: analysis-spin .8s linear infinite; }
 @keyframes analysis-spin { to { transform: rotate(360deg); } }
 @media (max-width: 920px) { .hero { grid-template-columns: 1fr; padding-top: 2.5rem; } }
 @media (min-width: 621px) { .report-steps { padding: 10px; } }
