@@ -48,6 +48,75 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
+  it('should stop voice recording after one minute', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const stopRecording = jasmine.createSpy('stopRecording');
+    const timerCallbacks: { limit: (() => void) | null } = { limit: null };
+    const originalMediaRecorder = globalThis.MediaRecorder;
+    const originalMediaDevices = navigator.mediaDevices;
+
+    class MockMediaRecorder {
+      static isTypeSupported(): boolean {
+        return true;
+      }
+
+      state = 'recording';
+      mimeType = 'audio/webm';
+      ondataavailable: ((event: BlobEvent) => void) | null = null;
+      onstop: (() => void) | null = null;
+
+      constructor(_stream: MediaStream, _options?: MediaRecorderOptions) {}
+
+      start(): void {}
+
+      stop(): void {
+        stopRecording();
+        this.state = 'inactive';
+        this.onstop?.();
+      }
+    }
+
+    Object.defineProperty(globalThis, 'MediaRecorder', {
+      configurable: true,
+      value: MockMediaRecorder
+    });
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: () => Promise.resolve({
+          getTracks: () => [{ stop: () => undefined }]
+        })
+      }
+    });
+    spyOn(window, 'setInterval').and.returnValue(1);
+    spyOn(window, 'setTimeout').and.callFake((handler: TimerHandler) => {
+      if (typeof handler === 'function') {
+        timerCallbacks.limit = handler as () => void;
+      }
+      return 2;
+    });
+
+    await app.toggleAudioRecording();
+    expect(app.recordingAudio()).toBeTrue();
+
+    timerCallbacks.limit?.();
+
+    expect(app.recordingMilliseconds()).toBe(60_000);
+    expect(stopRecording).toHaveBeenCalledTimes(1);
+    expect(app.recordingAudio()).toBeFalse();
+    expect(app.selectedAudio()).not.toBeNull();
+
+    Object.defineProperty(globalThis, 'MediaRecorder', {
+      configurable: true,
+      value: originalMediaRecorder
+    });
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: originalMediaDevices
+    });
+  });
+
   it('should open the admin panel on Predictions by default', () => {
     const app = TestBed.createComponent(App).componentInstance;
     spyOn(app, 'loadUsers');

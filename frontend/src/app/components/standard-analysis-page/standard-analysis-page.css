@@ -56,6 +56,7 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .recording-card img { width: 96px; height: 96px; object-fit: contain; }
 .recording-card h2 { margin: 0; font-size: 1.35rem; }
 .recording-card p { margin: 0; color: var(--teal-dark); font-family: 'Space Grotesk', sans-serif; font-size: 2rem; font-weight: 700; letter-spacing: .06em; }
+.recording-card .recording-limit-hint { margin-top: .25rem; color: var(--muted); font-family: inherit; font-size: .86rem; font-weight: 600; letter-spacing: 0; line-height: 1.4; }
 .pdf-limit-card p { color: var(--muted); font-family: inherit; font-size: 1rem; font-weight: 400; letter-spacing: 0; line-height: 1.5; }
 .recording-card .primary-button { margin-top: .5rem; }
 @media (max-width: 620px) { .topbar { height: 68px; padding-inline: 1rem; } .outline-button { padding: .55rem .65rem; font-size: .78rem; } .result-actions { gap: .35rem; } .analysis-shell { width: min(100% - 2rem, 860px); padding-top: 2.5rem; } .analysis-actions { align-items: stretch; flex-direction: column; } .analysis-actions .primary-button { width: 100%; } .consent-actions { align-items: stretch; flex-direction: column-reverse; } .consent-actions button, .consent-actions .primary-button { width: 100%; } }

@@ -31,6 +31,7 @@ const adminSettingsReloadKey = 'identipat.admin.reloadSection';
 type AdditionalOrientationType = 'INDUSTRIAL_DESIGN' | 'COPYRIGHT' | 'DISTINCTIVE_SIGN' | 'PLANT_BREEDER_CERTIFICATE' | 'TRADE_SECRET';
 type StandardAccessState = 'UNIDENTIFIED' | 'IDENTIFYING' | 'SESSION_CREATING' | 'CONSENT_REQUIRED' | 'READY' | 'BLOCKED';
 type AnalysisIntentType = 'TEXT' | 'PDF' | 'AUDIO';
+const AUDIO_RECORDING_LIMIT_MS = 60_000;
 
 interface PendingAnalysisIntent {
   type: AnalysisIntentType;
@@ -295,6 +296,7 @@ export class App {
   private recordingStream: MediaStream | null = null;
   private recordingChunks: Blob[] = [];
   private recordingTimer: number | null = null;
+  private recordingLimitTimer: number | null = null;
   private recordingStartedAt = 0;
   private pendingAnalysisIntent: PendingAnalysisIntent | null = null;
 
@@ -2442,7 +2444,7 @@ export class App {
 
   async toggleAudioRecording(): Promise<void> {
     if (this.recordingAudio()) {
-      this.mediaRecorder?.stop();
+      this.stopAudioRecording();
       return;
     }
 
@@ -2470,6 +2472,7 @@ export class App {
         this.analysisForm.controls.description.markAsUntouched();
         this.recordingAudio.set(false);
         this.stopRecordingTimer();
+        this.stopRecordingLimitTimer();
         this.recordingStream?.getTracks().forEach(track => track.stop());
         this.recordingStream = null;
         this.analysisMessage.set('');
@@ -2479,13 +2482,20 @@ export class App {
       this.recordingStartedAt = Date.now();
       this.recordingMilliseconds.set(0);
       this.recordingTimer = window.setInterval(() => {
-        this.recordingMilliseconds.set(Date.now() - this.recordingStartedAt);
+        const elapsed = Date.now() - this.recordingStartedAt;
+        this.recordingMilliseconds.set(Math.min(elapsed, AUDIO_RECORDING_LIMIT_MS));
       }, 50);
+      this.recordingLimitTimer = window.setTimeout(() => {
+        this.recordingMilliseconds.set(AUDIO_RECORDING_LIMIT_MS);
+        this.stopRecordingTimer();
+        this.stopAudioRecording();
+      }, AUDIO_RECORDING_LIMIT_MS);
       this.recordingAudio.set(true);
       this.analysisMessage.set('Grabando... pulsa el botón para detener.');
     } catch {
       this.recordingAudio.set(false);
       this.stopRecordingTimer();
+      this.stopRecordingLimitTimer();
       this.recordingStream?.getTracks().forEach(track => track.stop());
       this.recordingStream = null;
       this.analysisMessage.set('No se pudo acceder al micrófono. Revisa los permisos del navegador.');
@@ -2493,7 +2503,7 @@ export class App {
   }
 
   stopAudioRecording(): void {
-    if (this.recordingAudio()) {
+    if (this.recordingAudio() && this.mediaRecorder?.state !== 'inactive') {
       this.mediaRecorder?.stop();
     }
   }
@@ -2510,6 +2520,13 @@ export class App {
     if (this.recordingTimer !== null) {
       window.clearInterval(this.recordingTimer);
       this.recordingTimer = null;
+    }
+  }
+
+  private stopRecordingLimitTimer(): void {
+    if (this.recordingLimitTimer !== null) {
+      window.clearTimeout(this.recordingLimitTimer);
+      this.recordingLimitTimer = null;
     }
   }
 
