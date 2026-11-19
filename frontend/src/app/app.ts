@@ -14,6 +14,7 @@ import { AdminReportDisclaimerService, ReportDisclaimer } from './services/admin
 import { AdminProtectionGuideService, ProtectionGuide } from './services/admin-protection-guide.service';
 import { AnalysisGuidanceResponse, AnalysisResponse, DiagnosticReport, StandardAnalysisService } from './services/standard-analysis.service';
 import { CsrfService } from './services/csrf.service';
+import { DiagnosticPdfService } from './services/diagnostic-pdf.service';
 import { LegalDocument, LegalDocumentService } from './services/legal-document.service';
 import { StandardSessionResponse, StandardSessionService } from './services/standard-session.service';
 import { TrustFooter } from './components/trust-footer/trust-footer';
@@ -80,6 +81,7 @@ export class App {
   private readonly standardSessionService = inject(StandardSessionService);
   private readonly legalDocumentService = inject(LegalDocumentService);
   private readonly csrfService = inject(CsrfService);
+  private readonly diagnosticPdfService = inject(DiagnosticPdfService);
   private readonly defaultAdminPassword = 'admin';
   private readonly useExampleAnalysis = false;
 
@@ -2595,43 +2597,24 @@ export class App {
     this.clearPendingAnalysisIntent();
   }
 
-  downloadReportPdf(): void {
-    const analysisId = this.analysisResult()?.analysisId;
-    if (!analysisId || this.downloadingReportPdf()) {
+  async downloadReportPdf(content: HTMLElement): Promise<void> {
+    const analysis = this.analysisResult();
+    const analysisId = analysis?.analysisId;
+    if (!analysisId || analysis.status !== 'COMPLETED' || !this.diagnosticReport() || this.downloadingReportPdf()) {
       return;
     }
 
-    if (analysisId === 'example-analysis') {
-      const link = this.document.createElement('a');
-      link.href = 'examples/reporte_demo.html';
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      link.click();
-      return;
-    }
-
-    const accessToken = this.adminAuthenticated() ? this.userService.getAccessToken() : '';
     this.downloadingReportPdf.set(true);
     this.reportPdfError.set('');
-    this.standardAnalysisService.getReportPdf(analysisId, accessToken).subscribe({
-      next: blob => {
-        const url = URL.createObjectURL(blob);
-        const link = this.document.createElement('a');
-        link.href = url;
-        link.download = `identipat-diagnostico-${analysisId}.pdf`;
-        link.click();
-        window.setTimeout(() => URL.revokeObjectURL(url));
-        this.downloadingReportPdf.set(false);
-      },
-      error: error => {
-        this.downloadingReportPdf.set(false);
-        if (!this.adminAuthenticated() && this.apiErrorCode(error) === 'STANDARD_SESSION_REQUIRED') {
-          this.handleExpiredStandardSession();
-          return;
-        }
-        this.reportPdfError.set('No se pudo descargar el reporte PDF. Inténtalo nuevamente.');
+    try {
+      await this.diagnosticPdfService.download(content, analysisId);
+    } catch {
+      if (this.analysisResult()?.analysisId === analysisId) {
+        this.reportPdfError.set('No se pudo generar el reporte PDF. Inténtalo nuevamente.');
       }
-    });
+    } finally {
+      this.downloadingReportPdf.set(false);
+    }
   }
 
   private pollAnalysis(analysisId: string, accessToken = ''): void {

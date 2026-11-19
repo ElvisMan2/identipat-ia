@@ -30,7 +30,7 @@ export class AnalysisResultPageComponent {
   @Input() reportPdfError = '';
   @Input() nextStepsModal: { modality: string; contentHtml: string | null } | null = null;
 
-  @Output() downloadPdf = new EventEmitter<void>();
+  @Output() downloadPdf = new EventEmitter<HTMLElement>();
   @Output() exit = new EventEmitter<void>();
   @Output() newAnalysis = new EventEmitter<void>();
   @Output() openNextSteps = new EventEmitter<OpenNextStepsRequest>();

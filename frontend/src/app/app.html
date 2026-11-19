@@ -164,7 +164,7 @@
     [downloadingPdf]="downloadingReportPdf()"
     [reportPdfError]="reportPdfError()"
     [nextStepsModal]="nextStepsModal()"
-    (downloadPdf)="downloadReportPdf()"
+    (downloadPdf)="downloadReportPdf($event)"
     (exit)="exitResult()"
     (newAnalysis)="startNewAnalysis()"
     (openNextSteps)="handleOpenNextSteps($event)"

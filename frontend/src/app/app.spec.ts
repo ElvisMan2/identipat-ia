@@ -11,6 +11,7 @@ import { AdminAnalysisService } from './services/admin-analysis.service';
 import { AdminReportDisclaimerService } from './services/admin-report-disclaimer.service';
 import { AdminProtectionGuideService } from './services/admin-protection-guide.service';
 import { StandardAnalysisService } from './services/standard-analysis.service';
+import { DiagnosticPdfService } from './services/diagnostic-pdf.service';
 import { UserService } from './services/user.service';
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
@@ -89,8 +90,8 @@ describe('App', () => {
         })
       }
     });
-    spyOn(window, 'setInterval').and.returnValue(1);
-    spyOn(window, 'setTimeout').and.callFake((handler: TimerHandler) => {
+    spyOn<Window, 'setInterval'>(window, 'setInterval').and.returnValue(1);
+    spyOn<Window, 'setTimeout'>(window, 'setTimeout').and.callFake((handler: TimerHandler) => {
       if (typeof handler === 'function') {
         timerCallbacks.limit = handler as () => void;
       }
@@ -123,7 +124,7 @@ describe('App', () => {
     const loadAnalyses = spyOn(app, 'loadAnalyses');
     spyOn<any>(app, 'loadAdminProfile');
     spyOn<any>(app, 'scrollToTop');
-    spyOn(window, 'setTimeout').and.callFake(callback => {
+    spyOn<Window, 'setTimeout'>(window, 'setTimeout').and.callFake(callback => {
       if (typeof callback === 'function') {
         callback();
       }
@@ -1681,12 +1682,71 @@ describe('App', () => {
     compiled.querySelector<HTMLButtonElement>('.analysis-result .hero-main .outline-button')?.click();
     compiled.querySelector<HTMLButtonElement>('.modality-next-steps')?.click();
 
-    expect(downloadReport).toHaveBeenCalled();
+    expect(downloadReport).toHaveBeenCalledWith(compiled.querySelector<HTMLElement>('.analysis-result')!);
     expect(openNextSteps).toHaveBeenCalledWith(
       'Patente de invención',
       'INVENTION_PATENT',
       guidance.modalities[0]
     );
+  });
+
+  for (const analysisId of ['real-analysis', 'example-analysis']) {
+    it(`should download ${analysisId} locally and prevent concurrent downloads`, async () => {
+      const fixture = TestBed.createComponent(App);
+      const app = fixture.componentInstance;
+      app.analysisResult.set({
+        analysisId, status: 'COMPLETED', inputType: 'TEXT',
+        createdAt: '', startedAt: null, completedAt: '', failedAt: null, result: null, failure: null
+      });
+      app.diagnosticReport.set({
+        analysisId, reportVersion: null, sourceResultVersion: null, inputType: 'TEXT',
+        analysisCompletedAt: '', title: 'Diagnóstico', summary: 'Resumen', applicabilityNote: null,
+        protectionOptions: [], patentScreening: null, geneticResourceAccess: null,
+        traditionalKnowledgeAccess: null, historicalPatentability: null, observations: null,
+        warnings: null, scope: null, disclaimer: null
+      });
+      const content = document.createElement('section');
+      let finish!: () => void;
+      const download = spyOn(TestBed.inject(DiagnosticPdfService), 'download')
+        .and.returnValue(new Promise<void>(resolve => { finish = resolve; }));
+
+      const pending = app.downloadReportPdf(content);
+      expect(app.downloadingReportPdf()).toBeTrue();
+      await app.downloadReportPdf(content);
+      expect(download).toHaveBeenCalledOnceWith(content, analysisId);
+      TestBed.inject(HttpTestingController).expectNone(request => request.url.endsWith('/report.pdf'));
+      finish();
+      await pending;
+      expect(app.downloadingReportPdf()).toBeFalse();
+      expect(app.reportPdfError()).toBe('');
+    });
+  }
+
+  it('should show a local PDF generation error and allow retrying', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.analysisResult.set({
+      analysisId: 'analysis', status: 'COMPLETED', inputType: 'TEXT',
+      createdAt: '', startedAt: null, completedAt: '', failedAt: null, result: null, failure: null
+    });
+    app.diagnosticReport.set({
+      analysisId: 'analysis', reportVersion: null, sourceResultVersion: null, inputType: 'TEXT',
+      analysisCompletedAt: '', title: 'Diagnóstico', summary: 'Resumen', applicabilityNote: null,
+      protectionOptions: [], patentScreening: null, geneticResourceAccess: null,
+      traditionalKnowledgeAccess: null, historicalPatentability: null, observations: null,
+      warnings: null, scope: null, disclaimer: null
+    });
+    const download = spyOn(TestBed.inject(DiagnosticPdfService), 'download')
+      .and.rejectWith(new Error('Font loading failed'));
+    const content = document.createElement('section');
+    await app.downloadReportPdf(content);
+    expect(app.downloadingReportPdf()).toBeFalse();
+    expect(app.reportPdfError()).toContain('No se pudo generar');
+    download.and.resolveTo();
+    await app.downloadReportPdf(content);
+    expect(download).toHaveBeenCalledTimes(2);
+    expect(app.reportPdfError()).toBe('');
+    TestBed.inject(HttpTestingController).expectNone(request => request.url.endsWith('/report.pdf'));
   });
 
   it('should retry loading the public legal document from the legal page', () => {

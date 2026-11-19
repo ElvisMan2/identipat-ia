@@ -32,16 +32,16 @@
           <span>Consulta el diagnóstico y la orientación institucional asociada a las modalidades identificadas.</span>
         </p>
       </div>
-      <section class="analysis-result" aria-live="polite">
+      <section #pdfContent class="analysis-result" aria-live="polite">
         <section class="hero">
           <div class="hero-main">
             <div class="hero-left">
               <h2>{{ reportField(completedReport.title) }}</h2>
             </div>
             @if (analysis?.analysisId) {
-              <div class="hero-right">
-                <button class="outline-button" type="button" (click)="downloadPdf.emit()" [disabled]="downloadingPdf">
-                  {{ downloadingPdf ? 'Descargando PDF...' : 'Descargar reporte PDF' }}
+              <div class="hero-right" data-pdf-exclude>
+                <button class="outline-button" type="button" (click)="downloadPdf.emit(pdfContent)" [disabled]="downloadingPdf">
+                  {{ downloadingPdf ? 'Generando PDF...' : 'Descargar reporte PDF' }}
                 </button>
               </div>
             }
@@ -50,7 +50,7 @@
             Fecha de análisis: {{ reportDateLabel(completedReport.analysisCompletedAt) }}
           </p>
         </section>
-        @if (reportPdfError) { <p class="error" role="alert">{{ reportPdfError }}</p> }
+        @if (reportPdfError) { <p class="error" role="alert" data-pdf-exclude>{{ reportPdfError }}</p> }
         <section class="summary-card">
           <div class="summary-content">
             <div class="summary-kicker">Resumen</div>
@@ -84,6 +84,7 @@
                 }
               </div>
               <button
+                data-pdf-exclude
                 class="outline-button modality-next-steps"
                 type="button"
                 (click)="openNextSteps.emit({ modality: option.name || 'Modalidad', protectionType: option.type, guidance: guidanceItem })"
@@ -150,7 +151,7 @@
           </section>
         }
         @if (nextStepsModal; as nextSteps) {
-          <div class="modal-backdrop" (click)="closeNextSteps.emit()" (keydown.escape)="closeNextSteps.emit()">
+          <div class="modal-backdrop" data-pdf-exclude (click)="closeNextSteps.emit()" (keydown.escape)="closeNextSteps.emit()">
             <article class="panel modal-panel" role="dialog" aria-modal="true" aria-labelledby="next-steps-modal-title" (click)="$event.stopPropagation()">
               <h2 id="next-steps-modal-title">Próximos pasos ...</h2>
               <h3>{{ nextSteps.modality }}</h3>
