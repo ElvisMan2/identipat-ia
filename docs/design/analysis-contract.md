@@ -502,7 +502,20 @@ Los detalles técnicos quedan restringidos en `AiInvocation`. El cliente recibe 
 
 ### 9.1 Versión vigente y compatibilidad
 
-Los análisis nuevos usan `analysis-result/2.0`. `analysis-result/1.0` se conserva para lectura histórica y mantiene `patentabilityAssessment`; nunca se reinterpreta como 2.0. La lectura compara la columna y el campo `schemaVersion`, despacha al tipo Java correspondiente y falla de forma controlada ante discrepancias o versiones desconocidas. No se migran ni reescriben JSON históricos y F1.4 no requiere migración Flyway.
+Los análisis nuevos usan `analysis-result/3.0`. `analysis-result/1.0` y `/2.0` se conservan para lectura
+histórica y nunca se reinterpretan como V3. La lectura compara la columna y el campo `schemaVersion`,
+despacha al tipo Java correspondiente y falla de forma controlada ante discrepancias o versiones
+desconocidas. No se migran ni reescriben JSON históricos.
+
+La presentación V3 usa `diagnostic-report/1.1`; las presentaciones V1/V2 y los contextos históricos
+mantienen `diagnostic-report/1.0`. La versión se persiste al completar y API, PDF y reporting ADMIN
+leen el valor guardado.
+
+V3 conserva estructuralmente V2 y añade como propiedad raíz obligatoria `traditionalKnowledgeAccess`,
+con exactamente `assessment`, `rationale` y `missingInformation`. Sus estados son `NOT_INDICATED`,
+`POTENTIALLY_REQUIRED` e `INSUFFICIENT_INFORMATION`; el primero exige lista vacía y el último lista no
+vacía. La alerta corresponde a la Ley N.º 27811, es independiente de `geneticResourceAccess` y no crea
+una octava modalidad ni un campo en `protectionOptions`.
 
 ### 9.2 Envelope 2.0
 

@@ -405,7 +405,10 @@ El tipo histórico `AnalysisResultV1` conserva el envelope `analysis-result/1.0`
 
 ### 9.2 Versionado y despacho de lectura
 
-Los análisis nuevos usan `analysis-result/2.0`; `schema_version` y `schemaVersion` deben coincidir. Un lector versionado selecciona `AnalysisResultV1` o `AnalysisResultV2` y rechaza versiones desconocidas. El cambio es major porque elimina el concepto general `patentabilityAssessment` y lo sustituye por estructuras de clasificación, screening y recursos genéticos.
+Los análisis nuevos usan `analysis-result/3.0`; `schema_version` y `schemaVersion` deben coincidir. Un
+lector versionado selecciona `AnalysisResultV1`, `AnalysisResultV2` o `AnalysisResultV3` y rechaza
+versiones desconocidas. V3 reutiliza `ProtectionOption`, `PatentScreening` y `GeneticResourceAccess`
+de V2, y agrega el objeto obligatorio `traditionalKnowledgeAccess` sin modificar las siete modalidades.
 
 No se reescriben resultados 1.0 ni se añade una migración Flyway: V3 ya proporciona la columna de versión y el JSONB necesarios. Prompt/schema reales siguen registrados por cada `AiInvocation`.
 

@@ -23,7 +23,7 @@ class OperationalAnalysisResultPresenterTest {
             new OperationalAnalysisResultPresenter();
 
     @Test
-    void presentsV1OtherAndV2WithTheSameCitizenLabelsUsedByA1() throws Exception {
+    void presentsV1V2AndV3WithTheSameCitizenLabelsUsedByA1() throws Exception {
         var v1 = reader.read("analysis-result/1.0", objectMapper.readTree("""
                 {
                   "schemaVersion":"analysis-result/1.0",
@@ -56,9 +56,29 @@ class OperationalAnalysisResultPresenterTest {
                   "observations":[],"warnings":[]
                 }
                 """));
+        var v3 = reader.read("analysis-result/3.0", objectMapper.readTree("""
+                {
+                  "schemaVersion":"analysis-result/3.0",
+                  "summary":"COPYRIGHT (LIKELY).",
+                  "protectionOptions":[{
+                    "type":"COPYRIGHT","applicability":"LIKELY",
+                    "protectedSubjectMatter":"Código.","rationale":"Razón.",
+                    "legalBasis":[{"instrument":"DECISION_351","articles":["1","3","4"]}]
+                  }],
+                  "patentScreening":{
+                    "applicable":false,
+                    "article15":{"assessment":"NO_POTENTIAL_MATCH","rationale":"Sin coincidencias.","matches":[]},
+                    "article20":{"assessment":"NO_POTENTIAL_MATCH","rationale":"Sin coincidencias.","matches":[]}
+                  },
+                  "geneticResourceAccess":{"assessment":"NOT_INDICATED","rationale":"No aplica.","missingInformation":[]},
+                  "traditionalKnowledgeAccess":{"assessment":"NOT_INDICATED","rationale":"No aplica.","missingInformation":[]},
+                  "observations":[],"warnings":[]
+                }
+                """));
 
         var presentedV1 = presenter.present(v1);
         var presentedV2 = presenter.present(v2);
+        var presentedV3 = presenter.present(v3);
 
         assertThat(presentedV1.modalities())
                 .containsExactly("Derecho de autor", "Otra modalidad");
@@ -69,6 +89,8 @@ class OperationalAnalysisResultPresenterTest {
         assertThat(presentedV2.conclusion())
                 .isEqualTo("patente de invención — podría corresponder y derecho de autor.");
         assertThat(presentedV2.modalities()).containsExactly("Patente de invención");
+        assertThat(presentedV3.conclusion()).isEqualTo("derecho de autor — se relaciona claramente.");
+        assertThat(presentedV3.modalities()).containsExactly("Derecho de autor");
     }
 
     @Test

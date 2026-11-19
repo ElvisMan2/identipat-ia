@@ -105,6 +105,15 @@ El flujo STANDARD no usa Bearer token: obtiene CSRF y `GET /legal-document`; si 
 | `GET /analyses/{analysisId}/report` | `DiagnosticReport` histórico; solo para `COMPLETED`. |
 | `GET /analyses/{analysisId}/report.pdf` | PDF en memoria con el mismo contenido y disclaimer histórico. |
 
+Los análisis nuevos devuelven `analysis-result/3.0`. Su resultado canónico siempre incluye
+`traditionalKnowledgeAccess`; `DiagnosticReport` solo expone `traditionalKnowledgeAccess` cuando el
+estado es `POTENTIALLY_REQUIRED` o `INSUFFICIENT_INFORMATION`. No cambian URLs, autenticación ni
+aislamiento por sesión/JWT. Consulte `f1.4e-frontend-handoff.md` para el ejemplo verificable.
+
+El reporte de un resultado nuevo V3 incluye `reportVersion: diagnostic-report/1.1`; V1/V2 e históricos
+conservan 1.0. La versión se guarda al completar y se usa sin recalcularla en JSON, PDF y reporting
+ADMIN. V14 admite ambas versiones sin actualizar contextos existentes.
+
 ## Idempotencia y límites de creación
 
 Angular envía `Idempotency-Key: <UUID-v4>` en cada intención nueva de TEXT, PDF o AUDIO y conserva

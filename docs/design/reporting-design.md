@@ -25,8 +25,8 @@ SYSTEM v1; no modifica `result_json`.
 
 ## Presentación ciudadana
 
-`DiagnosticReportAssemblerV1` conserva de forma explícita el contrato histórico y
-`DiagnosticReportAssemblerV2` proyecta el contrato vigente. Las modalidades usan nombres en español;
+`DiagnosticReportAssemblerV1` y `DiagnosticReportAssemblerV2` conservan contratos históricos;
+`DiagnosticReportAssemblerV3` proyecta el contrato vigente. Las modalidades usan nombres en español;
 `LIKELY`, `POSSIBLE` y `UNLIKELY` se muestran como “Se relaciona claramente”, “Podría corresponder” y
 “La relación es limitada”. La orientación y la nota de applicability son texto controlado por Java.
 
@@ -44,10 +44,11 @@ disclaimer institucional y “Alcance del análisis” son bloques distintos y n
 
 ## Bloques transversales
 
-`patentScreening` y `geneticResourceAccess` son bloques transversales de `DiagnosticReport`,
+`patentScreening`, `geneticResourceAccess` y `traditionalKnowledgeAccess` son bloques transversales de `DiagnosticReport`,
 independientes de `protectionOptions`. Nunca se anidan dentro de una modalidad y cada uno se presenta
-como máximo una vez. El contrato vigente `diagnostic-report/1.0` se modificó directamente porque aún
-no había sido presentado ni liberado como contrato externo ante INDECOPI.
+como máximo una vez. V3 proyecta la alerta de conocimientos colectivos después de recursos genéticos
+y antes de observaciones, con referencia general a la Ley N.º 27811. Para `NOT_INDICATED`, el objeto
+canónico permanece en el resultado V3 pero el campo de presentación se omite.
 
 Cuando `patentScreening.applicable` es `true`, el reporte incluye el bloque raíz con título y contexto
 neutrales, sin depender de que exista patente de invención o modelo de utilidad. Si es `false`, el
@@ -58,6 +59,11 @@ Cuando `geneticResourceAccess.assessment` es `POTENTIALLY_REQUIRED` o
 `INSUFFICIENT_INFORMATION`, el reporte incluye el bloque raíz. Para `NOT_INDICATED` es `null`. Esta
 decisión no depende de patente de invención ni de certificado de obtentor, y la presentación ya no
 expone un campo `placement`.
+
+F1.4E persiste `diagnostic-report/1.1` para resultados nuevos `analysis-result/3.0` y conserva
+`diagnostic-report/1.0` para resultados 1.0/2.0 e históricos. La migración V14 amplía el CHECK de
+`analysis_report_contexts` para admitir ambas versiones; V5 y los contextos existentes no se reescriben.
+La consulta JSON, el PDF y el reporting operacional usan la versión guardada en cada contexto.
 
 ## JSON, PDF y seguridad
 

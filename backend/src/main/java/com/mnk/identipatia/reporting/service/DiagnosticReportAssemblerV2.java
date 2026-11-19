@@ -29,7 +29,7 @@ public class DiagnosticReportAssemblerV2 implements DiagnosticReportAssembler<An
                 ? screening(result.patentScreening()) : null;
         DiagnosticReport.GeneticResourcePresentation genetic =
                 result.geneticResourceAccess().assessment() == GeneticResourceAssessment.NOT_INDICATED
-                        ? null : genetic(result);
+                        ? null : genetic(result.geneticResourceAccess());
         List<DiagnosticReport.ProtectionPresentation> options = result.protectionOptions().stream()
                 .map(DiagnosticReportAssemblerV2::option)
                 .toList();
@@ -43,7 +43,7 @@ public class DiagnosticReportAssemblerV2 implements DiagnosticReportAssembler<An
                 DiagnosticReportPresentation.SCOPE, DiagnosticReportPresentation.disclaimer(disclaimer));
     }
 
-    private static DiagnosticReport.ProtectionPresentation option(ProtectionOption option) {
+    static DiagnosticReport.ProtectionPresentation option(ProtectionOption option) {
         return new DiagnosticReport.ProtectionPresentation(
                 option.type().name(),
                 DiagnosticReportPresentation.protectionLabel(option.type().name()),
@@ -56,15 +56,15 @@ public class DiagnosticReportAssemblerV2 implements DiagnosticReportAssembler<An
                 DiagnosticReportPresentation.orientation(option.applicability().name()));
     }
 
-    private static DiagnosticReport.GeneticResourcePresentation genetic(AnalysisResultV2 result) {
-        var genetic = result.geneticResourceAccess();
+    static DiagnosticReport.GeneticResourcePresentation genetic(
+            com.mnk.identipatia.analysis.result.v2.GeneticResourceAccess genetic) {
         return new DiagnosticReport.GeneticResourcePresentation(
                 genetic.assessment().name(), geneticLabel(genetic.assessment().name()),
                 DiagnosticReportPresentation.narrative(genetic.rationale()),
                 DiagnosticReportPresentation.narratives(genetic.missingInformation()));
     }
 
-    private static DiagnosticReport.LegalBasisPresentation legalBasis(LegalBasis basis) {
+    static DiagnosticReport.LegalBasisPresentation legalBasis(LegalBasis basis) {
         return new DiagnosticReport.LegalBasisPresentation(instrumentLabel(basis.instrument().name()),
                 basis.articles());
     }
@@ -79,7 +79,7 @@ public class DiagnosticReportAssemblerV2 implements DiagnosticReportAssembler<An
         };
     }
 
-    private static DiagnosticReport.PatentScreeningPresentation screening(PatentScreening screening) {
+    static DiagnosticReport.PatentScreeningPresentation screening(PatentScreening screening) {
         return new DiagnosticReport.PatentScreeningPresentation(SCREENING_TITLE, SCREENING_CONTEXT,
                 new DiagnosticReport.ScreeningArticlePresentation("Artículo 15",
                         screening.article15().assessment().name(),
@@ -114,11 +114,6 @@ public class DiagnosticReportAssemblerV2 implements DiagnosticReportAssembler<An
     }
 
     private static String geneticLabel(String assessment) {
-        return switch (assessment) {
-            case "NOT_INDICATED" -> "No se identifican indicios";
-            case "POTENTIALLY_REQUIRED" -> "Requiere revisión especializada";
-            case "INSUFFICIENT_INFORMATION" -> "Se necesita más información";
-            default -> throw new IllegalArgumentException("Unsupported genetic resource assessment: " + assessment);
-        };
+        return DiagnosticReportPresentation.accessAssessmentLabel(assessment);
     }
 }

@@ -1,0 +1,408 @@
+{
+  "schemaVersion": "f1.4e-contrast-set/2.0",
+  "resultSchemaVersion": "analysis-result/3.0",
+  "fixtureId": "F1.4E-CONTRAST-V2",
+  "parentFixture": "contrast-cases-v1.json",
+  "parentFixtureVersion": "f1.4e-contrast-set/1.0",
+  "parentFixtureSha256": "B31E7E18B2E18B4BB4DB4EFEE356A86F9DCE82F123F7EF90E04405584FAA9C1E",
+  "provenance": "QA-01..04 copiados sin cambios de contrast-cases-v1.json; QA-05..08 especificados como pares mínimos en F1.4E_ETAPA3_ESPECIFICACION_v1.0.md.",
+  "newCaseIds": [
+    "QA-05",
+    "QA-06",
+    "QA-07",
+    "QA-08"
+  ],
+  "pairs": [
+    {
+      "pairId": "PAIR-SOFTWARE-EFFECT",
+      "cases": [
+        "QA-05",
+        "QA-06"
+      ],
+      "controlledAxis": "detalle del mecanismo y efecto técnico interno"
+    },
+    {
+      "pairId": "PAIR-TK-TECHNICAL-CONTRIBUTION",
+      "cases": [
+        "QA-07",
+        "QA-08"
+      ],
+      "controlledAxis": "aporte técnico propio manteniendo constante el conocimiento colectivo medicinal"
+    }
+  ],
+  "cases": [
+    {
+      "id": "QA-01",
+      "title": "Automatización comercial sin aporte técnico",
+      "input": "Una aplicación web reorganiza pedidos y calcula descuentos según reglas comerciales. Solo se describe el programa y la interfaz; no hay un problema técnico ni un efecto técnico alegado.",
+      "expectedBehavior": "Reconocer expresión de software para COPYRIGHT y no añadir INVENTION_PATENT por la mera automatización comercial.",
+      "justification": "Control negativo frente a la sobreclasificación patentaria de software como tal.",
+      "positiveSignals": [
+        {
+          "path": "protectionOptions[type=COPYRIGHT]",
+          "operator": "exists",
+          "value": true,
+          "rationale": "El programa está expresamente descrito."
+        },
+        {
+          "path": "traditionalKnowledgeAccess.assessment",
+          "operator": "equals",
+          "value": "NOT_INDICATED",
+          "rationale": "No se describen conocimientos colectivos."
+        }
+      ],
+      "negativeSignals": [
+        {
+          "path": "protectionOptions[type=INVENTION_PATENT]",
+          "operator": "exists",
+          "value": false,
+          "rationale": "No se sustenta solución técnica."
+        },
+        {
+          "path": "geneticResourceAccess.assessment",
+          "operator": "equals",
+          "value": "POTENTIALLY_REQUIRED",
+          "rationale": "No se describe acceso a recursos genéticos."
+        }
+      ],
+      "conditionalSignals": [
+        {
+          "condition": "Se incorpora después un mecanismo técnico concreto",
+          "assertion": "revaluar IIO con la nueva información",
+          "applicabilityRule": {
+            "inputContains": "mecanismo técnico concreto"
+          }
+        }
+      ],
+      "reviewAdditionalModalities": {
+        "enabled": true,
+        "supportedModalities": [
+          "COPYRIGHT"
+        ],
+        "rationale": "Cualquier otra modalidad requiere fundamento expreso en la entrada."
+      }
+    },
+    {
+      "id": "QA-02",
+      "title": "IIO con efecto técnico interno y COPYRIGHT sujeto a fundamento",
+      "input": "Un algoritmo reorganiza las escrituras en memoria y reduce en mediciones reproducibles la contención de caché del ordenador. No se aporta código fuente, documentación ni una obra expresiva concreta.",
+      "expectedBehavior": "Considerar INVENTION_PATENT por solución y efecto técnico internos; no asumir automáticamente COPYRIGHT por la mera descripción funcional del algoritmo.",
+      "justification": "Contraste positivo del efecto técnico interno de V3-04 y control de su posible sobreclasificación de COPYRIGHT.",
+      "positiveSignals": [
+        {
+          "path": "protectionOptions[type=INVENTION_PATENT]",
+          "operator": "exists",
+          "value": true,
+          "rationale": "Se describe mecanismo computacional y efecto técnico medible."
+        },
+        {
+          "path": "traditionalKnowledgeAccess.assessment",
+          "operator": "equals",
+          "value": "NOT_INDICATED",
+          "rationale": "No hay señal de conocimiento colectivo."
+        }
+      ],
+      "negativeSignals": [
+        {
+          "path": "protectionOptions[type=UTILITY_MODEL]",
+          "operator": "exists",
+          "value": false,
+          "rationale": "No se describe una configuración de producto que justifique esta modalidad."
+        }
+      ],
+      "conditionalSignals": [
+        {
+          "condition": "Se aporta luego código fuente u otra expresión concreta",
+          "assertion": "revisar COPYRIGHT con evidencia de expresión",
+          "applicabilityRule": {
+            "inputContains": "Se aporta luego código fuente"
+          }
+        }
+      ],
+      "reviewAdditionalModalities": {
+        "enabled": true,
+        "supportedModalities": [
+          "INVENTION_PATENT"
+        ],
+        "rationale": "Una modalidad adicional, incluido COPYRIGHT, requiere examen humano de su fundamento y materia concreta."
+      }
+    },
+    {
+      "id": "QA-03",
+      "title": "Acceso a planta sin conocimiento colectivo",
+      "input": "Un laboratorio recolecta muestras de una planta peruana para estudiar sus compuestos. La investigación no utiliza ni menciona preparaciones, usos o saberes transmitidos por comunidades.",
+      "expectedBehavior": "Mantener la alerta genética independiente y no inferir conocimiento colectivo a partir de la planta o su origen por sí solos.",
+      "justification": "Control negativo de falsos positivos de conocimientos colectivos ante acceso biológico sin uso de saber colectivo.",
+      "positiveSignals": [
+        {
+          "path": "geneticResourceAccess.assessment",
+          "operator": "in",
+          "value": [
+            "POTENTIALLY_REQUIRED",
+            "INSUFFICIENT_INFORMATION"
+          ],
+          "rationale": "Se describe recolección de material vegetal."
+        },
+        {
+          "path": "traditionalKnowledgeAccess.assessment",
+          "operator": "equals",
+          "value": "NOT_INDICATED",
+          "rationale": "La entrada niega uso de saberes comunitarios."
+        }
+      ],
+      "negativeSignals": [
+        {
+          "path": "traditionalKnowledgeAccess.assessment",
+          "operator": "equals",
+          "value": "POTENTIALLY_REQUIRED",
+          "rationale": "No se describe utilización de conocimiento colectivo."
+        }
+      ],
+      "conditionalSignals": [
+        {
+          "condition": "Se identifica posteriormente un saber colectivo utilizado",
+          "assertion": "evaluar TK por separado",
+          "applicabilityRule": {
+            "inputContains": "un saber colectivo utilizado"
+          }
+        }
+      ],
+      "reviewAdditionalModalities": {
+        "enabled": true,
+        "supportedModalities": [],
+        "rationale": "No se describe una creación o materia adicional de PI; cualquier modalidad sugerida necesita revisión."
+      }
+    },
+    {
+      "id": "QA-04",
+      "title": "Uso comercial de conocimiento colectivo sin acceso a muestras",
+      "input": "Una empresa incorpora en un producto una preparación medicinal transmitida por generaciones por una comunidad indígena peruana. Compra el producto vegetal a un proveedor y no recolecta ni accede a muestras o material genético.",
+      "expectedBehavior": "Evaluar el uso de conocimiento colectivo de forma autónoma; no crear alerta de acceso genético por la mera utilización del conocimiento o compra de producto vegetal.",
+      "justification": "Contraste de independencia TK/genética respecto de V3-08 y V3-11; la conclusión jurídica final sobre el régimen aplicable requiere revisión experta.",
+      "positiveSignals": [
+        {
+          "path": "traditionalKnowledgeAccess.assessment",
+          "operator": "equals",
+          "value": "POTENTIALLY_REQUIRED",
+          "rationale": "Se describe uso comercial de conocimiento colectivo con conexión peruana."
+        },
+        {
+          "path": "geneticResourceAccess.assessment",
+          "operator": "equals",
+          "value": "NOT_INDICATED",
+          "rationale": "No se describe recolección o acceso a muestras/material genético."
+        }
+      ],
+      "negativeSignals": [
+        {
+          "path": "geneticResourceAccess.assessment",
+          "operator": "equals",
+          "value": "POTENTIALLY_REQUIRED",
+          "rationale": "No debe inferirse acceso genético únicamente del uso del conocimiento o de compra de producto vegetal."
+        },
+        {
+          "path": "protectionOptions[type=INVENTION_PATENT]",
+          "operator": "exists",
+          "value": true,
+          "rationale": "No se describe invención técnica."
+        }
+      ],
+      "conditionalSignals": [
+        {
+          "condition": "La empresa declara contar con autorización suficiente",
+          "assertion": "mencionarla sin validar suficiencia ni afirmar infracción",
+          "applicabilityRule": {
+            "inputContains": "declara contar con autorización"
+          }
+        }
+      ],
+      "reviewAdditionalModalities": {
+        "enabled": true,
+        "supportedModalities": [],
+        "rationale": "El input describe uso de conocimiento, no una creación técnica; revisar cualquier modalidad de PI añadida."
+      }
+    },
+    {
+      "id": "QA-05",
+      "title": "Rendimiento anunciado sin mecanismo técnico",
+      "deltaFromPairBaseline": "No se identifica mecanismo técnico ni medición de efecto interno; solo se afirma que el programa es más rápido.",
+      "input": "Una empresa describe un algoritmo para optimizar accesos a memoria de un ordenador. Afirma que reduce en 40 % la latencia, pero no explica qué operaciones realiza, qué componente cambia ni presenta mediciones comprobables. No se aporta código fuente, documentación ni otra expresión concreta del programa.",
+      "expectedBehavior": "No afirmar ni inventar mecanismo técnico específico ni recomendar INVENTION_PATENT=LIKELY como si el mecanismo y efecto estuviesen acreditados. Se admite incertidumbre o evaluación condicional. No exigir efecto físico externo como condición universal de IIO.",
+      "justification": "Control negativo emparejado con QA-06, que añade mecanismo y efecto medible de caché.",
+      "positiveSignals": [
+        {
+          "value": "NOT_INDICATED",
+          "operator": "equals",
+          "rationale": "No hay señal de actividad sobre recursos genéticos.",
+          "path": "geneticResourceAccess.assessment"
+        },
+        {
+          "value": "NOT_INDICATED",
+          "operator": "equals",
+          "rationale": "No hay señal de conocimiento colectivo vinculado a recursos biológicos.",
+          "path": "traditionalKnowledgeAccess.assessment"
+        },
+        {
+          "value": "No marcar LIKELY si no se acreditan mecanismo y efecto",
+          "operator": "allowed",
+          "rationale": "Suficiencia técnica requiere revisión experta.",
+          "path": "protectionOptions[type=INVENTION_PATENT]"
+        }
+      ],
+      "negativeSignals": [],
+      "conditionalSignals": [
+        {
+          "condition": "Se explica después un mecanismo técnico y su efecto medible",
+          "assertion": "reevaluar IIO sobre los nuevos hechos",
+          "applicabilityRule": {
+            "inputContains": "Se explica después un mecanismo técnico"
+          }
+        }
+      ],
+      "reviewAdditionalModalities": {
+        "enabled": true,
+        "supportedModalities": [],
+        "rationale": "No hay una obra expresiva concreta ni otra materia descrita; revisar cualquier modalidad adicional."
+      }
+    },
+    {
+      "id": "QA-06",
+      "title": "Efecto técnico interno descrito y medido",
+      "deltaFromPairBaseline": "Respecto de QA-05, se sustituye la promesa genérica de velocidad por la reorganización de escrituras en memoria y reducción medible de contención de caché.",
+      "input": "Una empresa describe un algoritmo para optimizar accesos a memoria de un ordenador. El algoritmo reordena escrituras por bloques contiguos para reducir los conflictos de caché; mediciones reproducibles muestran una reducción de 40 % de la latencia. No se aporta código fuente, documentación ni otra expresión concreta del programa.",
+      "expectedBehavior": "Reconocer una solución computacional con mecanismo y efecto técnico interno descritos; no asumir por ello una obra expresiva concreta ni la concesión de una patente.",
+      "justification": "Control positivo emparejado con QA-05; aísla el detalle técnico que distingue una IIO de una afirmación de velocidad sin mecanismo.",
+      "positiveSignals": [
+        {
+          "value": true,
+          "operator": "exists",
+          "rationale": "Se describe mecanismo y efecto técnico interno medido.",
+          "path": "protectionOptions[type=INVENTION_PATENT]"
+        },
+        {
+          "value": "NOT_INDICATED",
+          "operator": "equals",
+          "rationale": "No hay señal de actividad sobre recursos genéticos.",
+          "path": "geneticResourceAccess.assessment"
+        },
+        {
+          "value": "NOT_INDICATED",
+          "operator": "equals",
+          "rationale": "No hay señal de conocimiento colectivo.",
+          "path": "traditionalKnowledgeAccess.assessment"
+        }
+      ],
+      "negativeSignals": [],
+      "conditionalSignals": [
+        {
+          "condition": "Se aporta después código fuente u otra expresión concreta",
+          "assertion": "revisar independientemente el fundamento de COPYRIGHT",
+          "applicabilityRule": {
+            "inputContains": "Se aporta después código fuente"
+          }
+        }
+      ],
+      "reviewAdditionalModalities": {
+        "enabled": true,
+        "supportedModalities": [
+          "INVENTION_PATENT"
+        ],
+        "rationale": "Cualquier modalidad adicional, incluido COPYRIGHT, requiere revisar la materia expresiva realmente descrita."
+      }
+    },
+    {
+      "id": "QA-07",
+      "title": "Remedio tradicional sin aporte técnico propio",
+      "deltaFromPairBaseline": "Caso base: uso comercial de la preparación medicinal tradicional; no se describe una nueva formulación o procedimiento técnico.",
+      "input": "Una empresa compra a un proveedor una preparación vegetal procesada basada en un remedio medicinal transmitido por generaciones por una comunidad indígena peruana, y la incorpora sin modificaciones a un producto comercial. No describe una nueva formulación, un procedimiento técnico propio ni investigación sobre la composición genética o bioquímica del material.",
+      "expectedBehavior": "Evaluar TK independientemente. No presumir invención técnica propia; valorar acceso genético separadamente y expresar incertidumbre cuando esté justificada.",
+      "justification": "Control negativo emparejado con QA-08; mantiene constante el vínculo colectivo y cambia solo la existencia de aporte técnico propio.",
+      "positiveSignals": [
+        {
+          "value": "POTENTIALLY_REQUIRED",
+          "operator": "equals",
+          "rationale": "Uso comercial de conocimiento medicinal colectivo indígena peruano.",
+          "path": "traditionalKnowledgeAccess.assessment"
+        },
+        {
+          "value": [
+            "NOT_INDICATED",
+            "INSUFFICIENT_INFORMATION"
+          ],
+          "operator": "in",
+          "rationale": "La compra/uso de TK no acredita por sí sola acceso genético; incertidumbre sustentada es admisible.",
+          "path": "geneticResourceAccess.assessment"
+        },
+        {
+          "value": "No marcar LIKELY como invención propia sin aporte técnico documentado",
+          "operator": "allowed",
+          "rationale": "Expectativa semántica para revisión experta.",
+          "path": "protectionOptions[type=INVENTION_PATENT]"
+        }
+      ],
+      "negativeSignals": [],
+      "conditionalSignals": [
+        {
+          "condition": "La empresa añade después una formulación o procedimiento técnico propio",
+          "assertion": "reevaluar la modalidad de patente sin presumir novedad ni concesión",
+          "applicabilityRule": {
+            "inputContains": "añade después una formulación"
+          }
+        }
+      ],
+      "reviewAdditionalModalities": {
+        "enabled": true,
+        "supportedModalities": [],
+        "rationale": "La entrada describe comercialización de una preparación existente, no una creación propia adicional."
+      }
+    },
+    {
+      "id": "QA-08",
+      "title": "Remedio tradicional con formulación técnica nueva",
+      "deltaFromPairBaseline": "Respecto de QA-07, se añade un procedimiento propio de encapsulación de liberación controlada y estabilización; el vínculo colectivo y la procedencia de la preparación se mantienen.",
+      "input": "Una empresa compra a un proveedor una preparación vegetal procesada basada en un remedio medicinal transmitido por generaciones por una comunidad indígena peruana. A diferencia del uso directo, desarrolla una formulación con microencapsulación mediante una matriz polimérica específica que reduce la degradación del principio activo en ensayos comparativos documentados, y la incorpora a un producto comercial. No describe investigación sobre la composición genética o bioquímica del material.",
+      "expectedBehavior": "Mantener TK y evaluar por separado la contribución técnica. No afirmar novedad, actividad inventiva o concesión ni derivar acceso genético del TK.",
+      "justification": "Control positivo jurídico-funcional emparejado con QA-07; prueba coexistencia de TK y una contribución técnica distinta.",
+      "positiveSignals": [
+        {
+          "value": "POTENTIALLY_REQUIRED",
+          "operator": "equals",
+          "rationale": "La nueva formulación no elimina la alerta por uso de conocimiento colectivo.",
+          "path": "traditionalKnowledgeAccess.assessment"
+        },
+        {
+          "value": [
+            "NOT_INDICATED",
+            "INSUFFICIENT_INFORMATION"
+          ],
+          "operator": "in",
+          "rationale": "Evaluar el acceso genético separadamente; no derivarlo de TK.",
+          "path": "geneticResourceAccess.assessment"
+        },
+        {
+          "value": "Revisar vía posible sin afirmar novedad ni concesión",
+          "operator": "allowed",
+          "rationale": "La patentabilidad exige interpretación jurídico-técnica.",
+          "path": "protectionOptions[type=INVENTION_PATENT]"
+        }
+      ],
+      "negativeSignals": [],
+      "conditionalSignals": [
+        {
+          "condition": "La empresa declara contar con autorización para usar el conocimiento colectivo",
+          "assertion": "mencionarla sin dar por validada su suficiencia",
+          "applicabilityRule": {
+            "inputContains": "declara contar con autorización"
+          }
+        }
+      ],
+      "reviewAdditionalModalities": {
+        "enabled": true,
+        "supportedModalities": [
+          "INVENTION_PATENT"
+        ],
+        "rationale": "Revisar cualquier modalidad adicional según su materia y evidencia concretas."
+      }
+    }
+  ]
+}

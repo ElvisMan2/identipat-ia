@@ -196,8 +196,10 @@ class ReportingIntegrationTest {
         try (var document = Loader.loadPDF(pdf)) {
             assertThat(new PDFTextStripper().getText(document))
                     .contains("Patente de invención", "podría corresponder", "Importante",
-                            "requiere revisión especializada", analysisId.toString(), "Versión 1")
-                    .doesNotContain("INVENTION_PATENT", "POSSIBLE", "POTENTIALLY_REQUIRED");
+                            "diagnostic-report/1.0", "requiere revisión especializada",
+                            analysisId.toString(), "Versión 1")
+                    .doesNotContain("INVENTION_PATENT", "POSSIBLE", "POTENTIALLY_REQUIRED",
+                            "Conocimientos colectivos");
         }
 
         User otherAdmin = admin();
@@ -216,6 +218,68 @@ class ReportingIntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.disclaimer.version").value(1));
+    }
+
+    @Test
+    void historicalV1ReportRemainsVersion10WithoutV3Content() throws Exception {
+        User admin = admin();
+        JsonNode v1 = objectMapper.readTree("""
+                {
+                  "schemaVersion":"analysis-result/1.0",
+                  "summary":"Resumen histórico.",
+                  "patentabilityAssessment":{"outcome":"INSUFFICIENT_INFORMATION",
+                    "rationale":"Revisión histórica orientativa."},
+                  "protectionOptions":[{"type":"COPYRIGHT","applicability":"LIKELY",
+                    "rationale":"Obra original."}],
+                  "observations":["Observación histórica."],"warnings":["Advertencia histórica."]
+                }
+                """);
+        UUID analysisId = completedAnalysis(admin, v1);
+        String token = jwtService.generateToken(admin.getDoi());
+
+        mockMvc.perform(get("/analyses/{id}/report", analysisId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reportVersion").value("diagnostic-report/1.0"))
+                .andExpect(jsonPath("$.sourceResultVersion").value("analysis-result/1.0"))
+                .andExpect(jsonPath("$.traditionalKnowledgeAccess").doesNotExist())
+                .andExpect(jsonPath("$.geneticResourceAccess").doesNotExist());
+        assertThat(contextRepository.findById(analysisId).orElseThrow().getReportVersion())
+                .isEqualTo("diagnostic-report/1.0");
+    }
+
+    @Test
+    void v3JsonAndPdfExposeTraditionalKnowledgeWithoutProviderMetadataOrDuplication() throws Exception {
+        User admin = admin();
+        UUID analysisId = completedAnalysis(admin, v3ResultJson());
+        String token = jwtService.generateToken(admin.getDoi());
+
+        String body = mockMvc.perform(get("/analyses/{id}/report", analysisId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reportVersion").value("diagnostic-report/1.1"))
+                .andExpect(jsonPath("$.sourceResultVersion").value("analysis-result/3.0"))
+                .andExpect(jsonPath("$.traditionalKnowledgeAccess.assessment")
+                        .value("POTENTIALLY_REQUIRED"))
+                .andExpect(jsonPath("$.traditionalKnowledgeAccess.assessmentLabel")
+                        .value("Requiere revisión especializada"))
+                .andExpect(jsonPath("$.traditionalKnowledgeAccess.missingInformation[0]")
+                        .value("Finalidad exacta de utilización"))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(body).doesNotContain("promptVersion", "model", "tokenUsage", "rawProviderResponse");
+
+        byte[] pdf = mockMvc.perform(get("/analyses/{id}/report.pdf", analysisId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE))
+                .andReturn().getResponse().getContentAsByteArray();
+        try (var document = Loader.loadPDF(pdf)) {
+            String text = new PDFTextStripper().getText(document);
+            assertThat(text)
+                    .containsOnlyOnce("Acceso a conocimientos colectivos de pueblos indígenas")
+                    .contains("diagnostic-report/1.1", "Importante", "Referencia general", "Ley N.º 27811",
+                            "Finalidad exacta de utilización");
+        }
     }
 
     @Test
@@ -345,13 +409,14 @@ class ReportingIntegrationTest {
             var binding = pool.submit(() -> {
                 start.await();
                 return transactionTemplate.execute(status -> contextService.bindToActiveDisclaimer(
-                        analysisId, Instant.now()));
+                        analysisId, Instant.now(), "analysis-result/3.0"));
             });
             start.countDown();
             activation.get();
             binding.get();
         }
         AnalysisReportContext context = contextRepository.findById(analysisId).orElseThrow();
+        assertThat(context.getReportVersion()).isEqualTo("diagnostic-report/1.1");
         assertThat(disclaimerRepository.findById(context.getDisclaimerId())).isPresent();
         assertThat(jdbc.queryForObject("select count(*) from report_disclaimers where status='ACTIVE'", Integer.class))
                 .isEqualTo(1);
@@ -402,7 +467,8 @@ class ReportingIntegrationTest {
         result.setResultJson(resultJson);
         result.setCreatedAt(now);
         resultRepository.saveAndFlush(result);
-        transactionTemplate.executeWithoutResult(status -> contextService.bindToActiveDisclaimer(id, now));
+        transactionTemplate.executeWithoutResult(status -> contextService.bindToActiveDisclaimer(
+                id, now, resultJson.path("schemaVersion").asText()));
         return id;
     }
 
@@ -424,6 +490,26 @@ class ReportingIntegrationTest {
                    "missingInformation":["Origen del recurso"]},
                  "observations":["Aspecto a considerar"],"warnings":["Advertencia del caso"]}
                 """.formatted(option, screeningApplicable));
+    }
+
+    private JsonNode v3ResultJson() throws Exception {
+        return objectMapper.readTree("""
+                {
+                  "schemaVersion":"analysis-result/3.0",
+                  "summary":"Se identificó una alerta de conocimientos colectivos.",
+                  "protectionOptions":[],
+                  "patentScreening":{"applicable":false,
+                    "article15":{"assessment":"NO_POTENTIAL_MATCH","rationale":"Sin coincidencias.","matches":[]},
+                    "article20":{"assessment":"NO_POTENTIAL_MATCH","rationale":"Sin coincidencias.","matches":[]}},
+                  "geneticResourceAccess":{"assessment":"NOT_INDICATED","rationale":"No hay indicios.","missingInformation":[]},
+                  "traditionalKnowledgeAccess":{
+                    "assessment":"POTENTIALLY_REQUIRED",
+                    "rationale":"Se describe el uso de un conocimiento colectivo indígena peruano bajo la Ley N.º 27811.",
+                    "missingInformation":["Finalidad exacta de utilización"]
+                  },
+                  "observations":[],"warnings":[]
+                }
+                """);
     }
 
     private JsonNode utilityModelObservedResultJson() throws Exception {

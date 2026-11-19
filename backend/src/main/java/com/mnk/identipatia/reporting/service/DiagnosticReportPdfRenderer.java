@@ -90,6 +90,10 @@ public class DiagnosticReportPdfRenderer {
                 writeGeneticResources(cursor, report.geneticResourceAccess());
             }
 
+            if (report.traditionalKnowledgeAccess() != null) {
+                writeTraditionalKnowledge(cursor, report.traditionalKnowledgeAccess());
+            }
+
             writeList(cursor, "Aspectos a considerar", report.observations());
             writeList(cursor, "Advertencias del caso", report.warnings());
             cursor.metadata(report.analysisId().toString(), DATE_FORMAT.format(report.analysisCompletedAt()),
@@ -111,7 +115,7 @@ public class DiagnosticReportPdfRenderer {
 
     private static void writeGeneticResources(Cursor cursor,
             DiagnosticReport.GeneticResourcePresentation genetic) {
-        cursor.keepGeneticResources(genetic);
+        cursor.keepAccessSection("Recursos genéticos", genetic.rationale(), genetic.missingInformation());
         cursor.section("Recursos genéticos");
         cursor.labelBadge("Evaluación", genetic.assessmentLabel(),
                 BadgeTone.forAssessment(genetic.assessment()));
@@ -121,6 +125,23 @@ public class DiagnosticReportPdfRenderer {
                     "• " + genetic.missingInformation().getFirst());
             cursor.label("Información faltante");
             genetic.missingInformation().forEach(cursor::bullet);
+        }
+    }
+
+    private static void writeTraditionalKnowledge(Cursor cursor,
+            DiagnosticReport.TraditionalKnowledgePresentation traditional) {
+        String title = "Acceso a conocimientos colectivos de pueblos indígenas";
+        cursor.keepAccessSection(title, traditional.rationale(), traditional.missingInformation());
+        cursor.section(title);
+        cursor.labelBadge("Evaluación", traditional.assessmentLabel(),
+                BadgeTone.forAssessment(traditional.assessment()));
+        cursor.labelValue("Referencia general", "Ley N.º 27811");
+        cursor.paragraph(traditional.rationale());
+        if (!traditional.missingInformation().isEmpty()) {
+            cursor.keepLabelAndFirstLine("Información faltante",
+                    "• " + traditional.missingInformation().getFirst());
+            cursor.label("Información faltante");
+            traditional.missingInformation().forEach(cursor::bullet);
         }
     }
 
@@ -345,13 +366,13 @@ public class DiagnosticReportPdfRenderer {
             keepTogether(labelBadgeHeight(article.article()) + BODY_LEADING);
         }
 
-        private void keepGeneticResources(DiagnosticReport.GeneticResourcePresentation genetic) {
-            float required = 7 + height("Recursos genéticos", 12.5f, CONTENT_WIDTH - 10) + 2
+        private void keepAccessSection(String title, String rationale, List<String> missingInformation) {
+            float required = 7 + height(title, 12.5f, CONTENT_WIDTH - 10) + 2
                     + labelBadgeHeight("Evaluación")
-                    + height(genetic.rationale(), BODY_SIZE, CONTENT_WIDTH) + 2;
-            if (!genetic.missingInformation().isEmpty()) {
+                    + height(rationale, BODY_SIZE, CONTENT_WIDTH) + 2;
+            if (!missingInformation.isEmpty()) {
                 required += height("Información faltante", 10.2f, CONTENT_WIDTH);
-                required += (float) genetic.missingInformation().stream()
+                required += (float) missingInformation.stream()
                         .mapToDouble(value -> height("• " + value, BODY_SIZE, CONTENT_WIDTH - 12) + 0.5f)
                         .sum();
             }

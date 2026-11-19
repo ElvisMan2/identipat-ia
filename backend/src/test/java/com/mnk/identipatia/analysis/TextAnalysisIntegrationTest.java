@@ -32,6 +32,7 @@ import com.mnk.identipatia.repository.StandardSessionRepository;
 import com.mnk.identipatia.repository.UserRepository;
 import com.mnk.identipatia.service.JwtService;
 import com.mnk.identipatia.reporting.repository.AnalysisReportContextRepository;
+import com.mnk.identipatia.reporting.service.AnalysisReportContextService;
 import com.mnk.identipatia.reporting.service.DiagnosticReportPdfRenderer;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
@@ -116,6 +117,7 @@ class TextAnalysisIntegrationTest {
     @Autowired JdbcTemplate jdbcTemplate;
 
     @MockBean GenerativeAiProvider provider;
+    @SpyBean AnalysisReportContextService reportContextService;
     @SpyBean DiagnosticReportPdfRenderer pdfRenderer;
 
     @BeforeEach
@@ -219,16 +221,17 @@ class TextAnalysisIntegrationTest {
 
         Analysis completed = analysisRepository.findById(analysisId).orElseThrow();
         assertThat(completed.getStatus()).isEqualTo(AnalysisStatus.COMPLETED);
-        assertThat(reportContextRepository.findById(analysisId)).isPresent();
+        assertThat(reportContextRepository.findById(analysisId).orElseThrow().getReportVersion())
+                .isEqualTo("diagnostic-report/1.1");
         assertThat(completed.getLeaseOwner()).isNull();
         assertThat(resultRepository.findById(analysisId)).isPresent();
         AiInvocation invocation = invocationRepository.findAllByAnalysisIdOrderByAttemptNumber(analysisId).getFirst();
         assertThat(invocation.getStatus()).isEqualTo(AiInvocationStatus.SUCCEEDED);
         assertThat(invocation.getAttemptNumber()).isEqualTo(1);
         assertThat(invocation.getPromptId()).isEqualTo("intellectual-property-analysis");
-        assertThat(invocation.getPromptVersion()).isEqualTo("0.2");
+        assertThat(invocation.getPromptVersion()).isEqualTo("0.3");
         assertThat(invocation.getOutputSchemaId()).isEqualTo("analysis-result");
-        assertThat(invocation.getOutputSchemaVersion()).isEqualTo("2.0");
+        assertThat(invocation.getOutputSchemaVersion()).isEqualTo("3.0");
         assertThat(invocation.getRenderedPromptSnapshot()).contains("Mecanismo eléctrico");
         assertThat(invocation.getRequestParameters().path("maxOutputTokens").asInt()).isEqualTo(6000);
         assertThat(invocation.getRawProviderResponse().path("response").asText()).isEqualTo("raw");
@@ -238,9 +241,11 @@ class TextAnalysisIntegrationTest {
         getAnalysis(browser, analysisId)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("COMPLETED"))
-                .andExpect(jsonPath("$.result.schemaVersion").value("analysis-result/2.0"))
+                .andExpect(jsonPath("$.result.schemaVersion").value("analysis-result/3.0"))
                 .andExpect(jsonPath("$.result.patentabilityAssessment").doesNotExist())
                 .andExpect(jsonPath("$.result.patentScreening.applicable").value(true))
+                .andExpect(jsonPath("$.result.traditionalKnowledgeAccess.assessment")
+                        .value("NOT_INDICATED"))
                 .andExpect(jsonPath("$.result.protectionOptions[0].protectedSubjectMatter").exists())
                 .andExpect(jsonPath("$.provider").doesNotExist())
                 .andExpect(jsonPath("$.invocations").doesNotExist());
@@ -253,6 +258,7 @@ class TextAnalysisIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"))
                 .andExpect(jsonPath("$.analysisId").value(analysisId.toString()))
+                .andExpect(jsonPath("$.reportVersion").value("diagnostic-report/1.1"))
                 .andExpect(jsonPath("$.disclaimer.version").value(1))
                 .andExpect(jsonPath("$.sessionId").doesNotExist())
                 .andExpect(jsonPath("$.userId").doesNotExist());
@@ -743,7 +749,7 @@ class TextAnalysisIntegrationTest {
                 valid.provider(), valid.structuredOutput(), valid.rawProviderResponse(), valid.tokenUsage(),
                 "x".repeat(300), valid.latencyMs());
         var canonical = objectMapper.treeToValue(valid.structuredOutput(),
-                com.mnk.identipatia.analysis.result.v2.AnalysisResultV2.class);
+                com.mnk.identipatia.analysis.result.v3.AnalysisResultV3.class);
 
         assertThat(org.assertj.core.api.Assertions.catchThrowable(() ->
                 attemptService.succeed(analysisId, attempt.invocationId(), "atomic-worker",
@@ -752,6 +758,34 @@ class TextAnalysisIntegrationTest {
         assertThat(analysisRepository.findById(analysisId).orElseThrow().getStatus())
                 .isEqualTo(AnalysisStatus.ANALYZING);
         assertThat(resultRepository.findById(analysisId)).isEmpty();
+        assertThat(invocationRepository.findById(attempt.invocationId()).orElseThrow().getStatus())
+                .isEqualTo(AiInvocationStatus.STARTED);
+    }
+
+    @Test
+    void reportContextFailureRollsBackResultAndCompletedTransition() throws Exception {
+        Browser browser = acceptedBrowser();
+        UUID analysisId = id(postAnalysis(browser,
+                "Descripción técnica extensa para verificar atomicidad del contexto del reporte.").andReturn());
+        assertThat(claimService.claimNext("context-worker")).contains(analysisId);
+        AnalysisAttemptService.AttemptContext attempt =
+                attemptService.prepare(analysisId, "context-worker", provider).orElseThrow();
+        GenerativeAiResponse response = successResponse();
+        var canonical = objectMapper.treeToValue(response.structuredOutput(),
+                com.mnk.identipatia.analysis.result.v3.AnalysisResultV3.class);
+        org.mockito.Mockito.doThrow(new IllegalStateException("synthetic context failure"))
+                .when(reportContextService).bindToActiveDisclaimer(
+                        org.mockito.ArgumentMatchers.eq(analysisId), any(Instant.class),
+                        org.mockito.ArgumentMatchers.eq("analysis-result/3.0"));
+
+        assertThatThrownBy(() -> attemptService.succeed(analysisId, attempt.invocationId(),
+                "context-worker", response, canonical))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("synthetic context failure");
+        assertThat(analysisRepository.findById(analysisId).orElseThrow().getStatus())
+                .isEqualTo(AnalysisStatus.ANALYZING);
+        assertThat(resultRepository.findById(analysisId)).isEmpty();
+        assertThat(reportContextRepository.findById(analysisId)).isEmpty();
         assertThat(invocationRepository.findById(attempt.invocationId()).orElseThrow().getStatus())
                 .isEqualTo(AiInvocationStatus.STARTED);
     }
@@ -867,7 +901,7 @@ class TextAnalysisIntegrationTest {
     private GenerativeAiResponse successResponse() throws Exception {
         JsonNode structured = objectMapper.readTree("""
                 {
-                  "schemaVersion":"analysis-result/2.0",
+                  "schemaVersion":"analysis-result/3.0",
                   "summary":"La descripción presenta una posible solución tecnológica.",
                   "protectionOptions":[{
                     "type":"INVENTION_PATENT",
@@ -884,6 +918,11 @@ class TextAnalysisIntegrationTest {
                   "geneticResourceAccess":{
                     "assessment":"NOT_INDICATED",
                     "rationale":"La descripción no menciona recursos genéticos.",
+                    "missingInformation":[]
+                  },
+                  "traditionalKnowledgeAccess":{
+                    "assessment":"NOT_INDICATED",
+                    "rationale":"La descripción no menciona conocimientos colectivos indígenas.",
                     "missingInformation":[]
                   },
                   "observations":[],

@@ -99,9 +99,19 @@ final class DiagnosticReportPresentation {
     }
 
     static void requireSupportedContext(AnalysisReportContext context) {
-        if (!AnalysisReportContextService.REPORT_VERSION.equals(context.getReportVersion())) {
+        if (!AnalysisReportContextService.REPORT_VERSION.equals(context.getReportVersion())
+                && !AnalysisReportContextService.REPORT_VERSION_1_1.equals(context.getReportVersion())) {
             throw new IllegalArgumentException("Unsupported diagnostic report version");
         }
+    }
+
+    static String accessAssessmentLabel(String assessment) {
+        return switch (assessment) {
+            case "POTENTIALLY_REQUIRED" -> "Requiere revisión especializada";
+            case "INSUFFICIENT_INFORMATION" -> "Se necesita más información";
+            case "NOT_INDICATED" -> "No se identifican indicios";
+            default -> throw new IllegalArgumentException("Unsupported access assessment: " + assessment);
+        };
     }
 
     private static String replacePairs(String value) {

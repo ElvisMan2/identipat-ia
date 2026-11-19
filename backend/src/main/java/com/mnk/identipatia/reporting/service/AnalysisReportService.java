@@ -11,6 +11,7 @@ import com.mnk.identipatia.analysis.result.AnalysisResult;
 import com.mnk.identipatia.analysis.result.AnalysisResultReader;
 import com.mnk.identipatia.analysis.result.AnalysisResultV1;
 import com.mnk.identipatia.analysis.result.v2.AnalysisResultV2;
+import com.mnk.identipatia.analysis.result.v3.AnalysisResultV3;
 import com.mnk.identipatia.analysis.service.AnalysisAccessContext;
 import com.mnk.identipatia.exception.ApiException;
 import com.mnk.identipatia.reporting.dto.DiagnosticReport;
@@ -33,6 +34,7 @@ public class AnalysisReportService {
     private final ObjectMapper objectMapper;
     private final DiagnosticReportAssemblerV1 assemblerV1;
     private final DiagnosticReportAssemblerV2 assemblerV2;
+    private final DiagnosticReportAssemblerV3 assemblerV3;
     private final DiagnosticReportPdfRenderer pdfRenderer;
 
     public AnalysisReportService(AnalysisRepository analysisRepository,
@@ -42,6 +44,7 @@ public class AnalysisReportService {
             ObjectMapper objectMapper,
             DiagnosticReportAssemblerV1 assemblerV1,
             DiagnosticReportAssemblerV2 assemblerV2,
+            DiagnosticReportAssemblerV3 assemblerV3,
             DiagnosticReportPdfRenderer pdfRenderer) {
         this.analysisRepository = analysisRepository;
         this.resultRepository = resultRepository;
@@ -50,6 +53,7 @@ public class AnalysisReportService {
         this.objectMapper = objectMapper;
         this.assemblerV1 = assemblerV1;
         this.assemblerV2 = assemblerV2;
+        this.assemblerV3 = assemblerV3;
         this.pdfRenderer = pdfRenderer;
     }
 
@@ -79,6 +83,9 @@ public class AnalysisReportService {
         }
         if (result instanceof AnalysisResultV2 v2) {
             return assemblerV2.assemble(analysis, v2, context, disclaimer);
+        }
+        if (result instanceof AnalysisResultV3 v3) {
+            return assemblerV3.assemble(analysis, v3, context, disclaimer);
         }
         throw unsupportedVersion();
     }

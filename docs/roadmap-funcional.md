@@ -1016,3 +1016,10 @@ El cierre de F1.10A3 y F1.9 completa la integración Angular y el E2E que necesi
 paralelo deben iniciarse la evaluación de calidad, la política de datos y el hardening pendiente. El
 orden de despliegue continúa bajo F2-RELEASE-01: la integración de F2-CONSUMO-01 en `develop` no
 autoriza por sí sola un despliegue en PREPROD ni acredita aceptación institucional.
+
+## F1.4E — diagnóstico jurídico-funcional V3 (backend implementado)
+
+El backend activa prompt 0.3 y `analysis-result/3.0`, preservando lectura V1/V2. V3 incorpora la alerta
+autónoma de conocimientos colectivos, soporte en JSON/PDF/reporting ADMIN y un golden set separado de
+15 casos. El fix de versionado persiste `diagnostic-report/1.1` para V3 mediante V14; V1/V2 e
+históricos conservan 1.0. La integración frontend continúa pendiente.

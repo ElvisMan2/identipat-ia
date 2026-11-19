@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mnk.identipatia.analysis.result.v2.AnalysisResultV2;
+import com.mnk.identipatia.analysis.result.v3.AnalysisResultV3;
 
 import java.util.Objects;
 
@@ -25,11 +26,12 @@ public final class AnalysisResultReader {
         return switch (storedSchemaVersion) {
             case AnalysisResultV1.SCHEMA_VERSION -> objectMapper.treeToValue(json, AnalysisResultV1.class);
             case AnalysisResultV2.SCHEMA_VERSION -> objectMapper.treeToValue(json, AnalysisResultV2.class);
+            case AnalysisResultV3.SCHEMA_VERSION -> objectMapper.treeToValue(json, AnalysisResultV3.class);
             default -> throw new IllegalArgumentException("Unsupported analysis result schemaVersion");
         };
     }
 
-    public AnalysisResultV2 readCurrent(JsonNode json) throws JsonProcessingException {
-        return (AnalysisResultV2) read(AnalysisResultV2.SCHEMA_VERSION, json);
+    public AnalysisResultV3 readCurrent(JsonNode json) throws JsonProcessingException {
+        return (AnalysisResultV3) read(AnalysisResultV3.SCHEMA_VERSION, json);
     }
 }
