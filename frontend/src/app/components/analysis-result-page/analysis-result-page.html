@@ -137,6 +137,18 @@
             }
           </section>
         }
+        @if (completedReport.traditionalKnowledgeAccess; as traditionalKnowledgeAccess) {
+          <section class="context-card">
+            <h3>Acceso a conocimientos colectivos de pueblos indígenas</h3>
+            <p><b>{{ reportField(traditionalKnowledgeAccess.assessmentLabel || traditionalKnowledgeAccess.assessment) }}</b></p>
+            <p>{{ reportField(traditionalKnowledgeAccess.rationale) }}</p>
+            <p>Referencia general: Ley N.º 27811</p>
+            @if (traditionalKnowledgeAccess.missingInformation?.length) {
+              <p>Información faltante</p>
+              <ul>@for (item of traditionalKnowledgeAccess.missingInformation; track item) { <li>{{ reportField(item) }}</li> }</ul>
+            }
+          </section>
+        }
         @if (nextStepsModal; as nextSteps) {
           <div class="modal-backdrop" (click)="closeNextSteps.emit()" (keydown.escape)="closeNextSteps.emit()">
             <article class="panel modal-panel" role="dialog" aria-modal="true" aria-labelledby="next-steps-modal-title" (click)="$event.stopPropagation()">

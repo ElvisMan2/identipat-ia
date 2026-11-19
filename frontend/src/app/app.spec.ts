@@ -1630,7 +1630,18 @@ describe('App', () => {
         orientation: null
       }],
       patentScreening: null,
-      geneticResourceAccess: null,
+      geneticResourceAccess: {
+        assessment: 'NOT_INDICATED',
+        assessmentLabel: 'No indicado',
+        rationale: 'No se identificaron recursos genéticos.',
+        missingInformation: null
+      },
+      traditionalKnowledgeAccess: {
+        assessment: 'POTENTIALLY_REQUIRED',
+        assessmentLabel: 'Requiere revisión especializada',
+        rationale: 'Hay indicios sobre conocimientos colectivos.',
+        missingInformation: ['Finalidad exacta de utilización']
+      },
       historicalPatentability: null,
       observations: null,
       warnings: null,
@@ -1661,6 +1672,12 @@ describe('App', () => {
     expect(compiled.querySelector('app-analysis-result-page')).not.toBeNull();
     expect(compiled.textContent).toContain('Diagnóstico de prueba');
     expect(compiled.textContent).toContain('Resumen de prueba');
+    const contextCards = Array.from(compiled.querySelectorAll('.analysis-result .context-card'));
+    expect(contextCards[0].textContent).toContain('Recursos genéticos');
+    expect(contextCards[1].textContent).toContain('Acceso a conocimientos colectivos de pueblos indígenas');
+    expect(contextCards[1].textContent).toContain('Ley N.º 27811');
+    expect(contextCards[1].textContent).toContain('Requiere revisión especializada');
+    expect(contextCards[1].textContent).toContain('Finalidad exacta de utilización');
     compiled.querySelector<HTMLButtonElement>('.analysis-result .hero-main .outline-button')?.click();
     compiled.querySelector<HTMLButtonElement>('.modality-next-steps')?.click();
 

@@ -33,6 +33,11 @@ export interface AnalysisResult {
     rationale: string;
     missingInformation: string[];
   };
+  traditionalKnowledgeAccess?: {
+    assessment: string;
+    rationale: string;
+    missingInformation: string[];
+  } | null;
   observations: string[];
   warnings: string[];
 }
@@ -67,6 +72,7 @@ export interface DiagnosticReport {
   protectionOptions: DiagnosticProtectionOption[] | null;
   patentScreening: DiagnosticPatentScreening | null;
   geneticResourceAccess: DiagnosticGeneticResourceAccess | null;
+  traditionalKnowledgeAccess?: DiagnosticTraditionalKnowledgeAccess | null;
   historicalPatentability: {
     outcome: string;
     rationale: string;
@@ -117,6 +123,13 @@ export interface DiagnosticScreeningArticle {
 }
 
 export interface DiagnosticGeneticResourceAccess {
+  assessment: string | null;
+  assessmentLabel: string | null;
+  rationale: string | null;
+  missingInformation: string[] | null;
+}
+
+export interface DiagnosticTraditionalKnowledgeAccess {
   assessment: string | null;
   assessmentLabel: string | null;
   rationale: string | null;
