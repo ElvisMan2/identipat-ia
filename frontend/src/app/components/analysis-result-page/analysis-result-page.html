@@ -46,16 +46,9 @@
               </div>
             }
           </div>
-          <div class="meta-stats two">
-            <div class="meta-item">
-              <span>Fecha de análisis:</span>
-              <strong>{{ reportDateLabel(completedReport.analysisCompletedAt) }}</strong>
-            </div>
-            <div class="meta-item">
-              <span>Modalidades identificadas</span>
-              <strong>{{ completedReport.protectionOptions?.length ?? 0 }}</strong>
-            </div>
-          </div>
+          <p class="analysis-date">
+            Fecha de análisis: {{ reportDateLabel(completedReport.analysisCompletedAt) }}
+          </p>
         </section>
         @if (reportPdfError) { <p class="error" role="alert">{{ reportPdfError }}</p> }
         <section class="summary-card">

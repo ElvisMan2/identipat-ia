@@ -78,7 +78,7 @@ export class App {
   private readonly legalDocumentService = inject(LegalDocumentService);
   private readonly csrfService = inject(CsrfService);
   private readonly defaultAdminPassword = 'admin';
-  private readonly useExampleAnalysis = true;
+  private readonly useExampleAnalysis = false;
 
   readonly users = signal<User[]>([]);
   readonly userPage = signal(0);
