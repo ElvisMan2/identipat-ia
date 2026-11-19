@@ -26,17 +26,24 @@
 
   <section class="analysis-shell">
     @if (analysis?.status === 'COMPLETED' && report; as completedReport) {
+      <div class="analysis-intro">
+        <p>
+          <img src="lupa.svg" alt="" aria-hidden="true" />
+          <span>Consulta el diagnóstico y la orientación institucional asociada a las modalidades identificadas.</span>
+        </p>
+      </div>
       <section class="analysis-result" aria-live="polite">
         <section class="hero">
           <div class="hero-main">
             <div class="hero-left">
               <h2>{{ reportField(completedReport.title) }}</h2>
-              <p class="lead">Consulta el diagnóstico y la orientación institucional asociada a las modalidades identificadas.</p>
             </div>
             @if (analysis?.analysisId !== 'example-analysis') {
-              <button class="outline-button" type="button" (click)="downloadPdf.emit()" [disabled]="downloadingPdf">
-                {{ downloadingPdf ? 'Descargando PDF...' : 'Descargar reporte PDF' }}
-              </button>
+              <div class="hero-right">
+                <button class="outline-button" type="button" (click)="downloadPdf.emit()" [disabled]="downloadingPdf">
+                  {{ downloadingPdf ? 'Descargando PDF...' : 'Descargar reporte PDF' }}
+                </button>
+              </div>
             }
           </div>
           <div class="meta-stats two">
