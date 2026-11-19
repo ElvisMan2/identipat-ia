@@ -39,9 +39,9 @@ import java.util.UUID;
 
 @Service
 public class AnalysisAttemptService {
-    static final PromptReference PROMPT = new PromptReference("intellectual-property-analysis", "0.2");
+    static final PromptReference PROMPT = new PromptReference("intellectual-property-analysis", "0.3");
     static final String SCHEMA_ID = "analysis-result";
-    static final String SCHEMA_VERSION = "2.0";
+    static final String SCHEMA_VERSION = "3.0";
     private static final String WORKER_LEASE_LOST = "WORKER_LEASE_LOST";
     private static final String WORKER_LEASE_LOST_MESSAGE = "The previous worker lease expired before completion";
     private static final String MAX_ATTEMPTS_MESSAGE = "The analysis could not be completed within the configured attempt limit";
@@ -154,7 +154,7 @@ public class AnalysisAttemptService {
         stored.setCreatedAt(now);
         resultRepository.save(stored);
 
-        reportContextService.bindToActiveDisclaimer(analysisId, now);
+        reportContextService.bindToActiveDisclaimer(analysisId, now, result.schemaVersion());
 
         analysis.setStatus(AnalysisStatus.COMPLETED);
         analysis.setCompletedAt(now);

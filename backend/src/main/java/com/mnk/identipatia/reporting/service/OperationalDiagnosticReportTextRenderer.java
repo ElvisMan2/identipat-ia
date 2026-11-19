@@ -32,6 +32,11 @@ public class OperationalDiagnosticReportTextRenderer {
             sections.add("Recursos genéticos:\n" + renderGenetic(report.geneticResourceAccess()));
         }
 
+        if (report.traditionalKnowledgeAccess() != null) {
+            sections.add("Conocimientos colectivos de pueblos indígenas:\n"
+                    + renderTraditionalKnowledge(report.traditionalKnowledgeAccess()));
+        }
+
         addList(sections, "Observaciones", report.observations());
         addList(sections, "Advertencias", report.warnings());
         sections.add("Disclaimer:\n" + report.disclaimer().title() + ": "
@@ -64,6 +69,18 @@ public class OperationalDiagnosticReportTextRenderer {
         if (!genetic.missingInformation().isEmpty()) {
             lines.add("Información faltante:");
             genetic.missingInformation().forEach(value -> lines.add("- " + value));
+        }
+        return String.join("\n", lines);
+    }
+
+    private static String renderTraditionalKnowledge(
+            DiagnosticReport.TraditionalKnowledgePresentation traditional) {
+        List<String> lines = new ArrayList<>();
+        lines.add(traditional.assessmentLabel());
+        lines.add(traditional.rationale());
+        if (!traditional.missingInformation().isEmpty()) {
+            lines.add("Información faltante:");
+            traditional.missingInformation().forEach(value -> lines.add("- " + value));
         }
         return String.join("\n", lines);
     }

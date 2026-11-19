@@ -1,0 +1,126 @@
+{
+  "schemaVersion": "f1.4e-golden-set/1.0",
+  "resultSchemaVersion": "analysis-result/3.0",
+  "cases": [
+    {
+      "id": "V3-01",
+      "title": "Patente y coincidencia del artículo 15 sin descarte automático",
+      "input": "Un dispositivo industrial ejecuta un procedimiento técnico de separación de señales. La materia tecnológica se describe con detalle, aunque parte de la reivindicación propuesta incluye una regla matemática como componente.",
+      "positiveSignals": [{"path":"protectionOptions[type=INVENTION_PATENT]","operator":"exists","value":true,"rationale":"La materia tecnológica no desaparece por el screening."},{"path":"patentScreening.article15.assessment","operator":"equals","value":"POTENTIAL_MATCH","rationale":"La regla matemática se revisa separadamente."}],
+      "negativeSignals": [{"path":"protectionOptions[type=INVENTION_PATENT]","operator":"absentBecauseOf","value":"POTENTIAL_MATCH","rationale":"La coincidencia no es descarte automático."}],
+      "conditionalSignals": [{"condition":"La regla matemática es la materia objeto y no un componente técnico","assertion":"article15.matches incluye el literal aplicable"}]
+    },
+    {
+      "id": "V3-02",
+      "title": "Software puro de automatización comercial",
+      "input": "Una aplicación reorganiza pedidos y calcula descuentos según reglas comerciales; la descripción solo comprende el programa y la interfaz.",
+      "positiveSignals": [{"path":"protectionOptions[type=COPYRIGHT]","operator":"exists","value":true,"rationale":"Existe expresión de programa descrita."}],
+      "negativeSignals": [{"path":"protectionOptions[type=INVENTION_PATENT]","operator":"exists","value":false,"rationale":"No hay solución ni efecto técnico sustentado."}],
+      "conditionalSignals": [{"condition":"El software como tal es materia de la vía patentaria","assertion":"article15 puede identificar literal e sin inventar una IIO"}]
+    },
+    {
+      "id": "V3-03",
+      "title": "IIO con efecto técnico físico externo",
+      "input": "Un programa procesa señales de presión en tiempo real y controla válvulas de una planta para estabilizar físicamente el caudal.",
+      "positiveSignals": [{"path":"protectionOptions[type=INVENTION_PATENT]","operator":"exists","value":true,"rationale":"Problema, mecanismo computacional y efecto físico están descritos."},{"path":"protectionOptions[type=COPYRIGHT]","operator":"exists","value":true,"rationale":"La expresión del programa puede coexistir."}],
+      "negativeSignals": [{"path":"patentScreening.article15.matches[literal=e]","operator":"automatic","value":false,"rationale":"No se trata como software puro por defecto."}],
+      "conditionalSignals": [{"condition":"La entrada omite cómo el programa produce el control","assertion":"la vía patentaria puede bajar a POSSIBLE sin inventar mecanismo"}]
+    },
+    {
+      "id": "V3-04",
+      "title": "IIO con efecto técnico interno al ordenador",
+      "input": "El algoritmo modifica la gestión de caché y la planificación de acceso a memoria para reducir contención medible dentro del ordenador.",
+      "positiveSignals": [{"path":"protectionOptions[type=INVENTION_PATENT]","operator":"allowed","value":true,"rationale":"El efecto técnico interno está concretamente descrito."}],
+      "negativeSignals": [{"path":"observations","operator":"requires","value":"hardware externo","rationale":"Una IIO no exige efecto físico externo."}],
+      "conditionalSignals": [{"condition":"Solo se afirma que el algoritmo es más rápido sin mecanismo técnico","assertion":"no inventar efecto técnico interno"}]
+    },
+    {
+      "id": "V3-05",
+      "title": "Programa en hardware convencional sin efecto técnico",
+      "input": "Un sistema web en servidores convencionales asigna turnos de empleados conforme a preferencias y reglas administrativas.",
+      "positiveSignals": [{"path":"protectionOptions[type=COPYRIGHT]","operator":"exists","value":true,"rationale":"El programa está expresamente descrito."}],
+      "negativeSignals": [{"path":"protectionOptions[type=INVENTION_PATENT]","operator":"exists","value":false,"rationale":"Hardware genérico y automatización no demuestran una IIO."}],
+      "conditionalSignals": [{"condition":"Se añade un efecto técnico concreto y su mecanismo","assertion":"reevaluar la vía patentaria sin asumir concesión"}]
+    },
+    {
+      "id": "V3-06",
+      "title": "Movimiento perpetuo evidente",
+      "input": "Una máquina cerrada entrega energía indefinidamente sin combustible ni entrada energética y realimenta su propio generador sin pérdidas.",
+      "positiveSignals": [{"path":"protectionOptions[type=INVENTION_PATENT].applicability","operator":"equals","value":"UNLIKELY","rationale":"La inviabilidad física recae sobre el mecanismo."},{"path":"warnings","operator":"containsConcept","value":"conservación de la energía o termodinámica","rationale":"Se exige advertencia específica."}],
+      "negativeSignals": [{"path":"patentScreening.article15.matches","operator":"createdBy","value":"movimiento perpetuo","rationale":"No existe literal ficticio 15/20."}],
+      "conditionalSignals": [{"condition":"Otra modalidad no depende del mecanismo inviable","assertion":"no rebajarla automáticamente"}]
+    },
+    {
+      "id": "V3-07",
+      "title": "Bajo consumo sin movimiento perpetuo demostrado",
+      "input": "Un controlador reduce consumo ajustando ciclos de trabajo; recibe energía de la red y no afirma generar más energía de la que usa.",
+      "positiveSignals": [{"path":"warnings","operator":"containsConcept","value":"solo riesgos concretos","rationale":"La evaluación se basa en lo descrito."}],
+      "negativeSignals": [{"path":"warnings","operator":"containsConcept","value":"movimiento perpetuo","rationale":"No debe dispararse una advertencia física falsa."}],
+      "conditionalSignals": [{"condition":"La entrada luego afirma autoalimentación indefinida","assertion":"aplicar el caso V3-06"}]
+    },
+    {
+      "id": "V3-08",
+      "title": "Conocimiento medicinal indígena peruano",
+      "input": "Una empresa incorpora a un producto comercial la preparación medicinal de una planta peruana transmitida por generaciones en una comunidad indígena amazónica.",
+      "positiveSignals": [{"path":"traditionalKnowledgeAccess.assessment","operator":"equals","value":"POTENTIALLY_REQUIRED","rationale":"Hay conocimiento identificable, vínculo colectivo, utilización y conexión peruana."}],
+      "negativeSignals": [{"path":"warnings","operator":"duplicates","value":"traditionalKnowledgeAccess","rationale":"La alerta vive en su objeto autónomo."}],
+      "conditionalSignals": [{"condition":"La empresa declara contar con autorización","assertion":"mencionarla sin validar suficiencia ni afirmar infracción"}]
+    },
+    {
+      "id": "V3-09",
+      "title": "Planta nativa sin conocimiento colectivo",
+      "input": "Un laboratorio estudia una planta nativa del Perú recolectada con fines industriales, sin usar ni mencionar saberes comunitarios.",
+      "positiveSignals": [{"path":"geneticResourceAccess.assessment","operator":"in","value":["POTENTIALLY_REQUIRED","INSUFFICIENT_INFORMATION"],"rationale":"Existe señal biológica/genética separada."},{"path":"traditionalKnowledgeAccess.assessment","operator":"equals","value":"NOT_INDICATED","rationale":"La planta por sí sola no demuestra conocimiento colectivo."}],
+      "negativeSignals": [{"path":"traditionalKnowledgeAccess.missingInformation","operator":"nonEmpty","value":true,"rationale":"NOT_INDICATED requiere lista vacía."}],
+      "conditionalSignals": []
+    },
+    {
+      "id": "V3-10",
+      "title": "Origen colectivo o territorial insuficiente",
+      "input": "El equipo usa en una investigación una preparación tradicional sobre una especie vegetal, pero no sabe si procede de una comunidad indígena ni si el conocimiento está vinculado con Perú.",
+      "positiveSignals": [{"path":"traditionalKnowledgeAccess.assessment","operator":"equals","value":"INSUFFICIENT_INFORMATION","rationale":"Hay señal concreta y faltan datos decisivos."},{"path":"traditionalKnowledgeAccess.missingInformation","operator":"nonEmpty","value":true,"rationale":"Debe pedir vínculo colectivo y territorial concretos."}],
+      "negativeSignals": [{"path":"traditionalKnowledgeAccess.assessment","operator":"equals","value":"POTENTIALLY_REQUIRED","rationale":"No debe inventarse procedencia."}],
+      "conditionalSignals": []
+    },
+    {
+      "id": "V3-11",
+      "title": "Coexistencia de recurso genético y conocimiento colectivo",
+      "input": "Se recolecta germoplasma peruano y se usa comercialmente el conocimiento medicinal transgeneracional atribuido a una comunidad indígena peruana sobre esa especie.",
+      "positiveSignals": [{"path":"geneticResourceAccess.assessment","operator":"equals","value":"POTENTIALLY_REQUIRED","rationale":"Se sustenta acceso a recurso genético peruano."},{"path":"traditionalKnowledgeAccess.assessment","operator":"equals","value":"POTENTIALLY_REQUIRED","rationale":"También se sustenta uso de conocimiento colectivo."}],
+      "negativeSignals": [{"path":"traditionalKnowledgeAccess.rationale","operator":"sameAs","value":"geneticResourceAccess.rationale","rationale":"Los fundamentos no deben confundirse."}],
+      "conditionalSignals": []
+    },
+    {
+      "id": "V3-12",
+      "title": "Conocimiento colectivo sin genética automática",
+      "input": "Un documental reproduce y comercializa una explicación tradicional de una comunidad indígena peruana sobre usos de una planta; no recolecta muestras ni material genético.",
+      "positiveSignals": [{"path":"traditionalKnowledgeAccess.assessment","operator":"equals","value":"POTENTIALLY_REQUIRED","rationale":"Se describe utilización del conocimiento."},{"path":"geneticResourceAccess.assessment","operator":"equals","value":"NOT_INDICATED","rationale":"No hay actividad de acceso al recurso genético."}],
+      "negativeSignals": [{"path":"geneticResourceAccess.assessment","operator":"derivedFrom","value":"traditionalKnowledgeAccess","rationale":"Las alertas son independientes."}],
+      "conditionalSignals": []
+    },
+    {
+      "id": "V3-13",
+      "title": "Intercambio tradicional entre pueblos indígenas",
+      "input": "Dos pueblos indígenas peruanos intercambian entre sí, conforme a su práctica tradicional, conocimientos sobre la preparación de una planta.",
+      "positiveSignals": [{"path":"traditionalKnowledgeAccess.rationale","operator":"considers","value":"intercambio tradicional","rationale":"Debe considerar la excepción del artículo 4."}],
+      "negativeSignals": [{"path":"traditionalKnowledgeAccess.rationale","operator":"asserts","value":"licencia obligatoria para el intercambio","rationale":"No se presenta como uso por tercero."}],
+      "conditionalSignals": [{"condition":"Un tercero externo incorpora luego el conocimiento a un producto","assertion":"evaluar separadamente POTENTIALLY_REQUIRED"}]
+    },
+    {
+      "id": "V3-14",
+      "title": "Conocimiento declarado en dominio público",
+      "input": "La descripción afirma que el conocimiento colectivo indígena peruano sobre la planta está en dominio público y será usado en un desarrollo industrial.",
+      "positiveSignals": [{"path":"traditionalKnowledgeAccess.rationale","operator":"considers","value":"régimen particular de dominio público","rationale":"Debe tratar el supuesto especial sin absolutismos."}],
+      "negativeSignals": [{"path":"traditionalKnowledgeAccess.rationale","operator":"asserts","value":"licencia ordinaria obligatoria","rationale":"No se presume el mismo efecto en todos los casos."}],
+      "conditionalSignals": [{"condition":"No está acreditado el dominio público","assertion":"pedir información concreta sin inventar registro"}]
+    },
+    {
+      "id": "V3-15",
+      "title": "Tradición cerámica sin vínculo biológico",
+      "input": "Una asociación reproduce una técnica tradicional de modelado y cocción de cerámica; no usa saberes sobre propiedades, usos o características de recursos biológicos.",
+      "positiveSignals": [{"path":"traditionalKnowledgeAccess.assessment","operator":"equals","value":"NOT_INDICATED","rationale":"La tradición descrita no está vinculada a diversidad biológica."}],
+      "negativeSignals": [{"path":"traditionalKnowledgeAccess.assessment","operator":"triggeredBy","value":"palabra tradicional","rationale":"No se usa keyword como oráculo."}],
+      "conditionalSignals": [{"condition":"Se añade un conocimiento colectivo sobre un recurso biológico","assertion":"reevaluar con señales de vínculo, acceso y conexión peruana"}]
+    }
+  ]
+}

@@ -57,7 +57,7 @@ identipat-ia/
 │   │   │   │   │   ├── model/
 │   │   │   │   │   ├── repository/
 │   │   │   │   │   │   └── OperationalAnalysisSpecifications.java
-│   │   │   │   │   └── service/        # Assemblers V1/V2 y PDF
+│   │   │   │   │   └── service/        # Assemblers V1/V2/V3, PDF y operación ADMIN
 │   │   │   │   │       ├── OperationalAnalysisDatasetException.java
 │   │   │   │   │       ├── OperationalAnalysisDatasetService.java
 │   │   │   │   │       ├── OperationalAnalysisCsvExporter.java
@@ -128,7 +128,12 @@ identipat-ia/
 │   │   │       │       ├── V6__protection_guidance_catalog.sql
 │   │   │       │       ├── V7__seed_protection_guidance_catalog.sql
 │   │   │       │       ├── V8__guidance_views.sql
-│   │   │       │       └── V9__persistent_user_consent.sql
+│   │   │       │       ├── V9__persistent_user_consent.sql
+│   │   │       │       ├── V10__analysis_admissions.sql
+│   │   │       │       ├── V11__analysis_idempotency.sql
+│   │   │       │       ├── V12__analysis_idempotency_claim_retention.sql
+│   │   │       │       ├── V13__drop_users_phone.sql
+│   │   │       │       └── V14__allow_diagnostic_report_v1_1.sql
 │   │   │       ├── prompts/intellectual-property-analysis/v0.1/
 │   │   │       │   ├── system.md
 │   │   │       │   └── user.md

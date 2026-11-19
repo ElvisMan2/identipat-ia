@@ -103,8 +103,13 @@ class PersistentConsentIntegrationTest {
 
     @Test
     void migrationCreatesSingletonHistoryAcceptanceAndTransitionalAnalysisInvariant() {
-        assertThat(jdbc.queryForObject("select version from flyway_schema_history order by installed_rank desc limit 1",
-                String.class)).isEqualTo("13");
+        assertThat(jdbc.queryForObject("""
+                SELECT COUNT(*)
+                FROM flyway_schema_history
+                WHERE version = '9'
+                AND success = true
+                """, Long.class
+        )).isEqualTo(1L);
         assertThat(jdbc.queryForObject("select to_regclass('public.legal_document')::text", String.class))
                 .isEqualTo("legal_document");
         assertThat(jdbc.queryForObject("select to_regclass('public.legal_document_history')::text", String.class))

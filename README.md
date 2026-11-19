@@ -34,12 +34,14 @@ Luego transcribe localmente con `faster-whisper` (`base`, CPU INT8); ni el audio
 persisten o envían a un STT cloud. La transcripción converge al mismo `AnalysisInput`, worker, prompt,
 schema y resultado de TEXT/PDF.
 
-Los análisis nuevos usan el contrato jurídico-funcional `analysis-result/2.0` y el prompt
-`intellectual-property-analysis/0.2`: admiten protecciones concurrentes, screening limitado de los
-artículos 15 y 20 de la Decisión 486 y alerta de recursos genéticos. Los resultados históricos 1.0
+Los análisis nuevos usan el contrato jurídico-funcional `analysis-result/3.0` y el prompt
+`intellectual-property-analysis/0.3`: admiten protecciones concurrentes, screening limitado de los
+artículos 15 y 20 de la Decisión 486 y alertas independientes de recursos genéticos y conocimientos
+colectivos indígenas vinculados a recursos biológicos. Los resultados históricos 1.0 y 2.0
 conservan su versión y siguen siendo legibles; el análisis no evalúa novedad, nivel inventivo,
 aplicación industrial ni ventaja técnica. Las [reglas F1.4](docs/design/f1.4-legal-classification-rules.md)
-y el [golden set J01–J18](docs/design/f1.4-legal-evaluation-cases.md) documentan el alcance.
+y el [golden set J01–J18](docs/design/f1.4-legal-evaluation-cases.md) documentan la base histórica;
+F1.4E añade un fixture V3 separado en `backend/src/test/resources/f1.4e/`.
 
 F1.7 agrega el reporte `diagnostic-report/1.0`, construido exclusivamente desde el resultado
 canónico persistido. `GET /analyses/{id}/report` entrega la proyección JSON y

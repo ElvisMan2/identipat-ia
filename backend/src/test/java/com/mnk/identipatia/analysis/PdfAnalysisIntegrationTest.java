@@ -455,7 +455,7 @@ class PdfAnalysisIntegrationTest {
     private GenerativeAiResponse successResponse() throws Exception {
         JsonNode structured = objectMapper.readTree("""
                 {
-                  "schemaVersion":"analysis-result/2.0",
+                  "schemaVersion":"analysis-result/3.0",
                   "summary":"La descripción presenta una posible solución tecnológica.",
                   "protectionOptions":[{
                     "type":"INVENTION_PATENT",
@@ -472,6 +472,11 @@ class PdfAnalysisIntegrationTest {
                   "geneticResourceAccess":{
                     "assessment":"NOT_INDICATED",
                     "rationale":"No se mencionan recursos genéticos.",
+                    "missingInformation":[]
+                  },
+                  "traditionalKnowledgeAccess":{
+                    "assessment":"NOT_INDICATED",
+                    "rationale":"No se mencionan conocimientos colectivos indígenas.",
                     "missingInformation":[]
                   },
                   "observations":[],

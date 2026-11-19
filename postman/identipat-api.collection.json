@@ -640,7 +640,7 @@
             "method": "GET",
             "auth": { "type": "noauth" },
             "url": "{{baseUrl}}/analyses/{{analysisId}}/report",
-            "description": "Devuelve diagnostic-report/1.0 con patentScreening y geneticResourceAccess únicamente a nivel raíz cuando corresponden, además del disclaimer histórico, sin PII ni metadata del proveedor."
+            "description": "Devuelve el diagnóstico derivado de analysis-result/1.0, /2.0 o /3.0. V3 puede incluir traditionalKnowledgeAccess a nivel raíz cuando corresponde, separado de geneticResourceAccess y del disclaimer histórico, sin PII ni metadata del proveedor."
           }
         },
         {

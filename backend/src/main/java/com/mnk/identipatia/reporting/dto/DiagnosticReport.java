@@ -1,5 +1,6 @@
 package com.mnk.identipatia.reporting.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.mnk.identipatia.analysis.model.AnalysisInputType;
 
 import java.time.Instant;
@@ -18,11 +19,35 @@ public record DiagnosticReport(
         List<ProtectionPresentation> protectionOptions,
         PatentScreeningPresentation patentScreening,
         GeneticResourcePresentation geneticResourceAccess,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        TraditionalKnowledgePresentation traditionalKnowledgeAccess,
         HistoricalPatentabilityPresentation historicalPatentability,
         List<String> observations,
         List<String> warnings,
         String scope,
         DisclaimerPresentation disclaimer) {
+
+    public DiagnosticReport(
+            String reportVersion,
+            UUID analysisId,
+            String sourceResultVersion,
+            AnalysisInputType inputType,
+            Instant analysisCompletedAt,
+            String title,
+            String summary,
+            String applicabilityNote,
+            List<ProtectionPresentation> protectionOptions,
+            PatentScreeningPresentation patentScreening,
+            GeneticResourcePresentation geneticResourceAccess,
+            HistoricalPatentabilityPresentation historicalPatentability,
+            List<String> observations,
+            List<String> warnings,
+            String scope,
+            DisclaimerPresentation disclaimer) {
+        this(reportVersion, analysisId, sourceResultVersion, inputType, analysisCompletedAt, title, summary,
+                applicabilityNote, protectionOptions, patentScreening, geneticResourceAccess, null,
+                historicalPatentability, observations, warnings, scope, disclaimer);
+    }
 
     @Override
     public String toString() {
@@ -68,6 +93,13 @@ public record DiagnosticReport(
     }
 
     public record GeneticResourcePresentation(
+            String assessment,
+            String assessmentLabel,
+            String rationale,
+            List<String> missingInformation) {
+    }
+
+    public record TraditionalKnowledgePresentation(
             String assessment,
             String assessmentLabel,
             String rationale,

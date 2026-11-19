@@ -1,0 +1,91 @@
+{
+  "schemaVersion": "f1.4e-contrast-minimal-pairs/1.0",
+  "resultSchemaVersion": "analysis-result/3.0",
+  "independentOfGoldenAndFirstContrast": true,
+  "pairs": [
+    {
+      "pairId": "PAIR-SOFTWARE-EFFECT",
+      "axis": "detalle del mecanismo y efecto técnico interno",
+      "cases": [
+        {
+          "id": "QA-05",
+          "title": "Software que solo promete mayor velocidad",
+          "deltaFromPairBaseline": "No se identifica mecanismo técnico ni medición de efecto interno; solo se afirma que el programa es más rápido.",
+          "input": "Un programa de planificación de tareas se describe como más rápido que otras soluciones, pero no se explica mecanismo técnico alguno ni se identifica un efecto medible sobre el funcionamiento interno del ordenador. No se aporta código fuente ni otra obra expresiva concreta.",
+          "expectedBehavior": "No inferir invención implementada por ordenador por la afirmación de velocidad sin mecanismo; mantener las conclusiones de modalidad sujetas a su evidencia.",
+          "justification": "Control negativo emparejado con QA-06, que añade mecanismo y efecto medible de caché.",
+          "positiveSignals": [
+            {"path":"traditionalKnowledgeAccess.assessment","operator":"equals","value":"NOT_INDICATED","rationale":"No existe señal de conocimiento colectivo o recurso biológico."}
+          ],
+          "negativeSignals": [
+            {"path":"protectionOptions[type=INVENTION_PATENT]","operator":"exists","value":false,"rationale":"Solo se afirma velocidad comparativa; faltan mecanismo y efecto técnico identificable."}
+          ],
+          "conditionalSignals": [
+            {"condition":"Se explica después un mecanismo técnico y su efecto medible","assertion":"reevaluar IIO sobre los nuevos hechos","applicabilityRule":{"inputContains":"Se explica después un mecanismo técnico"}}
+          ],
+          "reviewAdditionalModalities":{"enabled":true,"supportedModalities":[],"rationale":"No hay una obra expresiva concreta ni otra materia descrita; revisar cualquier modalidad adicional."}
+        },
+        {
+          "id": "QA-06",
+          "title": "Mismo supuesto con mecanismo y efecto interno de caché",
+          "deltaFromPairBaseline": "Respecto de QA-05, se sustituye la promesa genérica de velocidad por la reorganización de escrituras en memoria y reducción medible de contención de caché.",
+          "input": "Un programa de planificación de tareas reorganiza las escrituras en memoria y reduce en mediciones reproducibles la contención de caché del ordenador. No se aporta código fuente ni otra obra expresiva concreta.",
+          "expectedBehavior": "Reconocer una solución computacional con mecanismo y efecto técnico interno descritos; no asumir por ello una obra expresiva concreta ni la concesión de una patente.",
+          "justification": "Control positivo emparejado con QA-05; aísla el detalle técnico que distingue una IIO de una afirmación de velocidad sin mecanismo.",
+          "positiveSignals": [
+            {"path":"protectionOptions[type=INVENTION_PATENT]","operator":"exists","value":true,"rationale":"Se aporta mecanismo interno y efecto técnico medible."},
+            {"path":"traditionalKnowledgeAccess.assessment","operator":"equals","value":"NOT_INDICATED","rationale":"No hay señal de conocimiento colectivo o recurso biológico."}
+          ],
+          "negativeSignals": [],
+          "conditionalSignals": [
+            {"condition":"Se aporta después código fuente u otra expresión concreta","assertion":"revisar independientemente el fundamento de COPYRIGHT","applicabilityRule":{"inputContains":"Se aporta después código fuente"}}
+          ],
+          "reviewAdditionalModalities":{"enabled":true,"supportedModalities":["INVENTION_PATENT"],"rationale":"Cualquier modalidad adicional, incluido COPYRIGHT, requiere revisar la materia expresiva realmente descrita."}
+        }
+      ]
+    },
+    {
+      "pairId": "PAIR-TK-TECHNICAL-CONTRIBUTION",
+      "axis": "aporte técnico propio manteniendo constante el conocimiento colectivo medicinal",
+      "cases": [
+        {
+          "id": "QA-07",
+          "title": "Comercialización de preparación tradicional sin aporte técnico propio",
+          "deltaFromPairBaseline": "Caso base: uso comercial de la preparación medicinal tradicional; no se describe una nueva formulación o procedimiento técnico.",
+          "input": "Una empresa peruana comercializa una preparación medicinal vegetal transmitida por generaciones por una comunidad indígena peruana. Compra la preparación terminada a un proveedor y la incorpora sin cambios; no realiza investigación sobre composición genética o bioquímica, ni desarrolla una formulación o procedimiento técnico propio.",
+          "expectedBehavior": "Evaluar el conocimiento colectivo de forma autónoma y no inferir una invención técnica propia a partir de la comercialización del conocimiento o de la preparación tradicional.",
+          "justification": "Control negativo emparejado con QA-08; mantiene constante el vínculo colectivo y cambia solo la existencia de aporte técnico propio.",
+          "positiveSignals": [
+            {"path":"traditionalKnowledgeAccess.assessment","operator":"equals","value":"POTENTIALLY_REQUIRED","rationale":"Se describe uso comercial de conocimiento medicinal colectivo indígena peruano."},
+            {"path":"geneticResourceAccess.assessment","operator":"equals","value":"NOT_INDICATED","rationale":"No se describe I+D sobre composición genética/bioquímica ni acceso a material genético."}
+          ],
+          "negativeSignals": [
+            {"path":"protectionOptions[type=INVENTION_PATENT]","operator":"exists","value":false,"rationale":"No se describe formulación o procedimiento técnico propio."}
+          ],
+          "conditionalSignals": [
+            {"condition":"La empresa añade después una formulación o procedimiento técnico propio","assertion":"reevaluar la modalidad de patente sin presumir novedad ni concesión","applicabilityRule":{"inputContains":"añade después una formulación"}}
+          ],
+          "reviewAdditionalModalities":{"enabled":true,"supportedModalities":[],"rationale":"La entrada describe comercialización de una preparación existente, no una creación propia adicional."}
+        },
+        {
+          "id": "QA-08",
+          "title": "Mismo uso colectivo con procedimiento técnico nuevo descrito",
+          "deltaFromPairBaseline": "Respecto de QA-07, se añade un procedimiento propio de encapsulación de liberación controlada y estabilización; el vínculo colectivo y la procedencia de la preparación se mantienen.",
+          "input": "Una empresa peruana comercializa la misma preparación medicinal vegetal transmitida por generaciones por una comunidad indígena peruana. Además desarrolla un procedimiento propio de encapsulación de liberación controlada que estabiliza los compuestos durante almacenamiento; la empresa no recolecta muestras ni realiza investigación sobre composición genética o bioquímica.",
+          "expectedBehavior": "Mantener la evaluación autónoma del conocimiento colectivo y someter la contribución técnica propia a revisión de la vía patentaria, sin afirmar novedad, actividad inventiva o concesión.",
+          "justification": "Control positivo jurídico-funcional emparejado con QA-07; prueba coexistencia de TK y una contribución técnica distinta.",
+          "positiveSignals": [
+            {"path":"traditionalKnowledgeAccess.assessment","operator":"equals","value":"POTENTIALLY_REQUIRED","rationale":"El uso comercial del conocimiento colectivo se mantiene sin cambios."},
+            {"path":"geneticResourceAccess.assessment","operator":"equals","value":"NOT_INDICATED","rationale":"Se excluye investigación genética/bioquímica y recolección de muestras."},
+            {"path":"protectionOptions[type=INVENTION_PATENT]","operator":"allowed","value":true,"rationale":"Existe procedimiento técnico propio descrito; el encaje en patentabilidad requiere revisión."}
+          ],
+          "negativeSignals": [],
+          "conditionalSignals": [
+            {"condition":"La empresa declara contar con autorización para usar el conocimiento colectivo","assertion":"mencionarla sin dar por validada su suficiencia","applicabilityRule":{"inputContains":"declara contar con autorización"}}
+          ],
+          "reviewAdditionalModalities":{"enabled":true,"supportedModalities":["INVENTION_PATENT"],"rationale":"Revisar cualquier modalidad adicional según su materia y evidencia concretas."}
+        }
+      ]
+    }
+  ]
+}

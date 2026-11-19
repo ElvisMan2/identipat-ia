@@ -315,9 +315,10 @@ AnalysisResult
 
 Los prompts y schemas se almacenan como recursos versionados. El adapter solicita structured output y Java valida localmente la respuesta antes de aceptar un `AnalysisResult`.
 
-F1.4 publica `analysis-result/2.0` para clasificación concurrente, screening limitado de los artículos
-15 y 20 y alerta de recursos genéticos. El lector conserva `analysis-result/1.0` como contrato histórico
-sin reinterpretarlo; la columna y el campo de versión deben coincidir.
+F1.4E publica `analysis-result/3.0` para análisis nuevos mediante el prompt 0.3. Mantiene las siete
+modalidades y añade `traditionalKnowledgeAccess` como alerta independiente de recursos genéticos,
+screening y modalidades. El lector conserva `analysis-result/1.0` y `/2.0` como contratos históricos
+sin reinterpretarlos; la columna y el campo de versión deben coincidir.
 
 La aplicación no interpreta la salida del LLM como una probabilidad calibrada. Cuando el contrato utilice niveles o categorías de evaluación, estos deben considerarse clasificaciones controladas, no porcentajes de confianza.
 
