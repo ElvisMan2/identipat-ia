@@ -1,8 +1,8 @@
 :host { display: block; width: 100%; margin-top: 2rem; }
 .trust-strip { width: 100%; min-height: 92px; display: grid; grid-template-columns: 1fr; padding: 0; color: #fff; font-family: 'Myriad Pro', sans-serif; }
 .trust-strip div { display: grid; align-content: center; gap: .2rem; padding: 1rem 2rem;}
-.trust-strip > div:first-child { display: block; width: 100%; box-sizing: border-box; color: var(--ink); background:#ededed; }
-.trust-strip > div:first-child > div:first-child { display: flex; flex-direction: row; width: 100%; max-width: 1024px; margin: 0 auto; box-sizing: border-box; }
+.trust-strip > div:first-child { display: block; width: 100%; box-sizing: border-box; padding-right: 0; color: var(--ink); background:#ededed; }
+.trust-strip > div:first-child > div:first-child { display: flex; flex-direction: row; width: 100%; max-width: 1024px; margin: 0 auto; box-sizing: border-box; padding-right: 0; padding-left: 10px; padding-right: 10px; }
 .trust-strip > div:first-child > div:first-child > div { flex: 0 0 50%; width: 50%; box-sizing: border-box; }
 .trust-strip > div:first-child > div:first-child p { margin: 0; color: #555555; }
 .trust-strip > div:first-child > div:first-child p:first-of-type { margin-top: .5rem; }
