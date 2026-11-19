@@ -304,6 +304,7 @@ export class App {
   private recordingLimitTimer: number | null = null;
   private recordingStartedAt = 0;
   private pendingAnalysisIntent: PendingAnalysisIntent | null = null;
+  private exampleAnalysisSequence = 0;
 
   constructor() {
     const currentPath = this.document.location.pathname.replace(/\/+$/, '') || '/';
@@ -2448,6 +2449,7 @@ export class App {
         this.submittingAnalysis.set(false);
         this.analysisMessage.set('');
         this.view.set('standard-result');
+        this.countStandardPrediction(analysisId, `example-analysis-${++this.exampleAnalysisSequence}`);
         this.scrollToTop();
       },
       error: () => {
@@ -2595,7 +2597,16 @@ export class App {
 
   downloadReportPdf(): void {
     const analysisId = this.analysisResult()?.analysisId;
-    if (!analysisId || analysisId === 'example-analysis' || this.downloadingReportPdf()) {
+    if (!analysisId || this.downloadingReportPdf()) {
+      return;
+    }
+
+    if (analysisId === 'example-analysis') {
+      const link = this.document.createElement('a');
+      link.href = 'examples/reporte_demo.html';
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.click();
       return;
     }
 
@@ -3104,15 +3115,15 @@ export class App {
     this.predictionLimitModal.set(false);
   }
 
-  private countStandardPrediction(analysisId: string): void {
-    if (this.adminAuthenticated() || this.standardStorage()?.getItem(standardLastCountedAnalysisKey) === analysisId) {
+  private countStandardPrediction(analysisId: string, countKey = analysisId): void {
+    if (this.adminAuthenticated() || this.standardStorage()?.getItem(standardLastCountedAnalysisKey) === countKey) {
       return;
     }
 
     const storage = this.standardStorage();
     const count = this.standardPredictionCount();
     storage?.setItem(standardPredictionCountKey, String(Math.min(standardPredictionLimit, count + 1)));
-    storage?.setItem(standardLastCountedAnalysisKey, analysisId);
+    storage?.setItem(standardLastCountedAnalysisKey, countKey);
   }
 
   private removeStandardPredictionCount(): void {
