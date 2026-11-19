@@ -1,4 +1,5 @@
 import { ChangeDetectorRef, Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, inject } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { LegalDocument } from '../../services/legal-document.service';
 import { TrustFooter } from '../trust-footer/trust-footer';
@@ -11,6 +12,9 @@ import { TrustFooter } from '../trust-footer/trust-footer';
   styleUrl: './standard-analysis-page.css'
 })
 export class StandardAnalysisPageComponent implements OnChanges, OnDestroy {
+  private readonly document = inject(DOCUMENT);
+  readonly interiorBannerUrl = `url('${new URL('banner-interior.png', this.document.baseURI).href}')`;
+
   @Input({ required: true }) analysisForm!: FormGroup;
   @Input() adminAuthenticated = false;
   @Input() navigationPending: 'admin' | 'predictions' | 'exit' | null = null;

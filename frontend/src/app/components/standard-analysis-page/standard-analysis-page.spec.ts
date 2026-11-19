@@ -55,6 +55,22 @@ describe('StandardAnalysisPageComponent', () => {
     expect(submit).toHaveBeenCalledTimes(1);
   });
 
+  it('resolves the interior banner relative to the deployed application base', () => {
+    TestBed.configureTestingModule({
+      imports: [StandardAnalysisPageComponent],
+      providers: [provideZonelessChangeDetection()]
+    });
+    const fixture = TestBed.createComponent(StandardAnalysisPageComponent);
+    const component = fixture.componentInstance;
+    component.analysisForm = new FormGroup({
+      description: new FormControl('', [Validators.required])
+    });
+    fixture.detectChanges();
+
+    const banner = fixture.nativeElement.querySelector('.home-banner') as HTMLElement;
+    expect(banner.style.backgroundImage).toContain('banner-interior.png');
+  });
+
   it('shows and dismisses the oversized PDF modal', () => {
     TestBed.configureTestingModule({
       imports: [StandardAnalysisPageComponent],
