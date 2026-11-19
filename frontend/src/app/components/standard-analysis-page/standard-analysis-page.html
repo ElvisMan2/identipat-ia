@@ -1,6 +1,9 @@
 <main class="analysis-page">
-  <header class="topbar">
-    <a class="brand" href="./" (click)="$event.preventDefault(); exit.emit()">IDENTIPAT IA</a>
+  <header class="home-banner home-banner-interior" aria-label="Banner principal de Identipat IA">
+    <a class="home-logo-link" href="./" (click)="$event.preventDefault(); exit.emit()" aria-label="Ir al inicio">
+      <img src="logo-identipat-main.png" alt="Identipat IA" />
+    </a>
+    <p class="interior-header-description">Herramienta virtual de identificación de propiedad intelectual</p>
     <div class="result-actions">
       @if (adminAuthenticated) {
         <button class="outline-button" type="button" (click)="openAdminPanel.emit()" [disabled]="!!navigationPending">Panel de administración</button>
