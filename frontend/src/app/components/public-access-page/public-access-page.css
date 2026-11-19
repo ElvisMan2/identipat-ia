@@ -134,9 +134,7 @@
 		gap: 1rem;
 	}
 	.interior-header-description {
-		width: 100%;
-		max-width: none;
-		text-align: center;
+		display: none;
 	}
 	.home-header-copy {
 		width: 100%;

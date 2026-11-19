@@ -18,7 +18,7 @@
 .hero-left { width: 50%; max-width: 720px; }
 .hero-left h2 { margin: 0; color: var(--ink); font-family: 'Space Grotesk', sans-serif; font-size: 2rem; line-height: 1.15; }
 .hero-left .lead { margin: .65rem 0 0; color: var(--muted); line-height: 1.6; }
-.hero-right { display: flex; width: 50%; justify-content: flex-end; }
+.hero-right { display: flex; width: 50%; align-self: center; justify-content: flex-end; }
 .hero-right .outline-button { flex: 0 0 auto; border-color: #9d64f9; color: #fff; background: #9d64f9; }
 .meta-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin-top: 1.25rem; }
 .analysis-date { margin: 1.25rem 0 0; color: var(--muted); text-align: left; }
@@ -72,19 +72,26 @@
 .modal-backdrop { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 1rem; background: rgb(15 26 24 / .55); }
 .panel { border: 1px solid var(--line); border-radius: 7px; padding: 1rem; background: #fff; box-shadow: 0 10px 25px rgb(24 51 47 / .06); }
 .panel h2 { margin-top: 0; font-size: 1.2rem; }
-.modal-panel { width: min(760px, 100%); max-height: 90vh; overflow-y: auto; }
+.modal-panel { width: min(760px, 100%); max-height: 90vh; overflow-y: auto; background: #ededed; }
+.modal-panel > h2 { color: var(--muted); font-size: 1rem; }
+.modal-panel > h3 { text-align: center; }
+.modal-panel > .actions { justify-content: center; }
 .rich-content { color: var(--muted); font-size: .87rem; line-height: 1.55; }
 .rich-content :first-child { margin-top: 0; }
 .rich-content :last-child { margin-bottom: 0; }
 .actions { display: flex; align-items: center; gap: .55rem; margin-top: .4rem; }
 .actions button { border: 0; border-radius: 5px; padding: .62rem .9rem; color: #fff; background: var(--teal); font-weight: 600; cursor: pointer; }
+@media (max-width: 900px) {
+  .home-banner-interior { flex-wrap: wrap; }
+  .interior-header-description { margin-left: auto; }
+}
 @media (max-width: 700px) {
   .home-banner-interior { padding-inline: 1rem; }
   .analysis-shell { width: min(100% - 2rem, 860px); padding-top: 2.5rem; }
   .analysis-result > .hero { padding-top: 1.1rem; }
   .hero-main { align-items: stretch; flex-direction: column; }
   .hero-left { width: 100%; }
-  .hero-right { width: 100%; justify-content: flex-start; }
+  .hero-right { width: 100%; justify-content: center; }
   .hero-left h2 { font-size: 1.55rem; }
   .result-actions { flex-wrap: wrap; justify-content: flex-end; }
   .meta-stats, .diagnosis-panel, .context-grid { grid-template-columns: 1fr; }
@@ -96,6 +103,12 @@
 @media (max-width: 426px) {
   .home-banner-interior { flex-direction: column; justify-content: center; gap: 1rem; }
   .home-banner-interior .home-logo-link { margin-inline: auto; }
-  .interior-header-description { width: 100%; max-width: none; text-align: center; }
+  .interior-header-description { display: none; }
+  .hero-left h2 { text-align: center; }
+  .context-section > h2 { text-align: center; }
+  .analysis-date { text-align: center; }
+  .summary-card p { text-align: justify; }
+  .analysis-result p { text-align: justify; }
+  .modality-next-steps { margin-inline: auto; }
   .result-actions { justify-content: center; }
 }
