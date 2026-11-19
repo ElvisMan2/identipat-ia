@@ -40,12 +40,16 @@ export class StandardAnalysisPageComponent implements OnChanges, OnDestroy {
   curiosityFadeIn = false;
   readonly curiosities = [
     'La primera patente concedida en el Perú data de 1837 y fue otorgada a Carmen Noriega por una máquina para moler chocolate.',
-    'Juan Alberto Grieve Becerra destacó por su capacidad inventiva entre 1907 y 1908.',
+    'El registro de diseño industrial permite proteger las características estéticas de los productos',
     'Entre 1911 y 1918, se concedieron 108 patentes de invención en el Perú.',
+    'En Perú existen dos modalidades de patentamiento: patentes de invención y modelos de utilidad',
+    'Además de ser nueva una invención debe cumplir con ventaja técnica o nivel inventivo para poder registrarse',
+    'En Perú existe la protección acumulativa, por lo cual un producto puede estar protegido por más de un tipo de registro de propiedad intelectual.',
     'La fórmula de Coca-Cola es un ejemplo clásico de secreto empresarial, protegido durante más de 130 años.',
-    'La Ley de Privilegios de Invención de 1869 fue el primer marco legal peruano en esta materia.',
-    'La Decisión 486 estableció un régimen común andino de propiedad industrial.',
-    'El Certificado de Obtentor protege variedades vegetales nuevas dentro del sistema de propiedad intelectual.',
+    'La Ley de Privilegios de Invención de 1869 fue el primer marco legal peruano en materia de patentes.',
+    'La Decisión 486 estableció un régimen común de propiedad industrial para los países de la Comunidad Andina.',
+    'El Certificado de Obtentor protege variedades vegetales dentro del sistema de propiedad intelectual.',
+    'Las patentes son territoriales, es decir que tienen vigencia en el territorio del país donde se otorgan',
     'Un secreto empresarial puede protegerse indefinidamente mientras se mantenga confidencial.'
   ];
   currentCuriosity = this.curiosities[0];
