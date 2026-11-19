@@ -1,0 +1,55 @@
+{
+  "guidanceVersion": "analysis-guidance/1.0",
+  "analysisId": "05f47779-d28c-418f-9f36-92bf755063e4",
+  "resolvedAt": "2026-11-19T01:34:36.751645300Z",
+  "modalities": [
+    {
+      "protectionType": "DISTINCTIVE_SIGN",
+      "name": "Signo distintivo",
+      "applicability": "LIKELY",
+      "applicabilityLabel": "Se relaciona claramente",
+      "guideVersion": 1,
+      "shortDescription": "Protege signos que permiten distinguir productos o servicios en el mercado.",
+      "nextSteps": {
+        "contentHtml": "<h3>Requisitos a preparar</h3><ul><li>Identifica la clase a la que pertenece tu marca.</li><li>Descarga los formularios actualizados.</li></ul><h3>Cómo avanzar</h3><ol><li>Busca marcas similares a la tuya.</li><li>Si tienes dudas, agenda una cita o acércate a nuestras plataformas de atención al ciudadano.</li></ol><h3>Recursos de orientación</h3><ul><li><a href=\"https://servicio.indecopi.gob.pe/appNIZAWeb/index.seam#\" target=\"_blank\" rel=\"noopener noreferrer\">Clasificador</a></li><li><a href=\"https://pi.indecopi.gob.pe/buscatumarca/#/inicio\" target=\"_blank\" rel=\"noopener noreferrer\">Busca tu marca</a></li><li><a href=\"https://www.gob.pe/333-registrar-la-marca-de-producto-o-servicio-de-tu-negocio-en-indecopi\" target=\"_blank\" rel=\"noopener noreferrer\">Inicia tu trámite</a></li></ul>"
+      },
+      "lastVerifiedAt": "2026-10-29T05:00:00Z"
+    },
+    {
+      "protectionType": "COPYRIGHT",
+      "name": "Derecho de autor",
+      "applicability": "POSSIBLE",
+      "applicabilityLabel": "Podría corresponder",
+      "guideVersion": 1,
+      "shortDescription": "Protege la expresión original de obras creativas, textos, ilustraciones y programas de ordenador.",
+      "nextSteps": {
+        "contentHtml": "<h3>Requisitos a preparar</h3><ul><li>Identifica los componentes creativos que se desea documentar.</li><li>Organiza los archivos y versiones de la aplicación y sus contenidos.</li><li>Reúne la información de autoría y titularidad cuando corresponda.</li></ul><h3>Cómo avanzar</h3><ol><li>Ingresa a la web de la Dirección de Derecho de Autor (DDA).</li><li>Sigue los pasos para iniciar tu solicitud.</li></ol><h3>Recursos de orientación</h3><ul><li><a href=\"https://www.gob.pe/83358-registrar-una-obra-en-el-indecopi\" target=\"_blank\" rel=\"noopener noreferrer\">Web de la DDA</a></li><li><a href=\"https://www.gob.pe/institucion/indecopi/contacto-y-numeros-de-emergencias\" target=\"_blank\" rel=\"noopener noreferrer\">Canales de atención</a></li></ul>"
+      },
+      "lastVerifiedAt": "2026-10-29T05:00:00Z"
+    },
+    {
+      "protectionType": "INDUSTRIAL_DESIGN",
+      "name": "Diseño industrial",
+      "applicability": "LIKELY",
+      "applicabilityLabel": "Se relaciona claramente",
+      "guideVersion": 1,
+      "shortDescription": "Protege la apariencia particular de un producto, no su funcionamiento técnico.",
+      "nextSteps": {
+        "contentHtml": "<h3>Requisitos a preparar</h3><ul><li>Prepara los dibujos que permitan identificar la apariencia particular de tu creación.</li><li>Identifica potenciales diseños similares.</li></ul><h3>Cómo avanzar</h3><ol><li>Ingresa a nuestra web Patenta y entérate de nuestros programas y capacitaciones.</li><li>Participa en nuestro Programa de Protección de Diseños.</li></ol><h3>Recursos de orientación</h3><ul><li><a href=\"https://www.patenta.pe/ppd/\" target=\"_blank\" rel=\"noopener noreferrer\">Programa de Protección de Diseños</a></li><li><a href=\"https://www.patenta.pe/canales-de-atencion/\" target=\"_blank\" rel=\"noopener noreferrer\">Canales de atención</a></li></ul>"
+      },
+      "lastVerifiedAt": "2026-10-29T05:00:00Z"
+    },
+    {
+      "protectionType": "UTILITY_MODEL",
+      "name": "Modelo de utilidad",
+      "applicability": "LIKELY",
+      "applicabilityLabel": "Se relaciona claramente",
+      "guideVersion": 1,
+      "shortDescription": "Protege mejoras en la forma o disposición de objetos que aportan una ventaja práctica.",
+      "nextSteps": {
+        "contentHtml": "<h3>Requisitos a preparar</h3><ul><li>Plasma tu invención en un documento.</li><li>Prepara los dibujos que permitan identificar las piezas, su disposición y movimiento.</li><li>Identifica potenciales inventos similares.</li></ul><h3>Cómo avanzar</h3><ol><li>Ingresa a nuestra web Patenta y entérate de nuestros programas y capacitaciones.</li><li>Participa en nuestro Programa Patenta.</li></ol><h3>Recursos de orientación</h3><ul><li><a href=\"https://www.patenta.pe/programa-patenta/\" target=\"_blank\" rel=\"noopener noreferrer\">Programa Patenta</a></li><li><a href=\"https://www.patenta.pe/canales-de-atencion/\" target=\"_blank\" rel=\"noopener noreferrer\">Canales de atención</a></li></ul>"
+      },
+      "lastVerifiedAt": "2026-10-29T05:00:00Z"
+    }
+  ]
+}

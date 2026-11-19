@@ -1,0 +1,91 @@
+{
+  "reportVersion": "diagnostic-report/1.0",
+  "analysisId": "05f47779-d28c-418f-9f36-92bf755063e4",
+  "sourceResultVersion": "analysis-result/2.0",
+  "inputType": "TEXT",
+  "analysisCompletedAt": "2026-11-19T01:34:36.255106Z",
+  "title": "Reporte orientativo de identificación de propiedad intelectual",
+  "summary": "Se identifican vías para proteger el nombre y logotipo (signo distintivo se relaciona claramente; derecho de autor podría corresponder), la apariencia externa (diseño industrial se relaciona claramente) y la configuración funcional del mecanismo de apertura/sujeción (modelo de utilidad se relaciona claramente). Se realiza screening de artículos 15 y 20 respecto de la materia susceptible de vía patentaria (mecanismo/configuración) sin coincidencias. No hay indicios de recurso genético.",
+  "applicabilityNote": "La relación mostrada indica qué tan directamente lo descrito en tu creación se vincula con esta modalidad de protección. No representa una probabilidad de registro, concesión o reconocimiento definitivo de un derecho.",
+  "protectionOptions": [
+    {
+      "type": "DISTINCTIVE_SIGN",
+      "name": "Signo distintivo",
+      "relationshipQuestion": "¿Cómo se relaciona con tu creación?",
+      "applicability": "LIKELY",
+      "applicabilityLabel": "Se relaciona claramente",
+      "protectedSubjectMatter": "Nombre comercial 'KUMAY' y logotipo compuesto por una K estilizada con silueta de montaña destinado a distinguir botellas y empaques",
+      "rationale": "El texto describe explícitamente el nombre 'KUMAY' y un logotipo con función de uso en botellas, empaques, etiquetas y publicidad, es decir, un signo destinado a distinguir productos/servicios en el mercado.",
+      "legalBasis": [{ "instrument": "Decisión 486", "articles": ["134"] }],
+      "orientation": "Esta modalidad presenta una relación clara con la materia descrita y puede considerarse como una vía principal para una revisión especializada."
+    },
+    {
+      "type": "COPYRIGHT",
+      "name": "Derecho de autor",
+      "relationshipQuestion": "¿Cómo se relaciona con tu creación?",
+      "applicability": "POSSIBLE",
+      "applicabilityLabel": "Podría corresponder",
+      "protectedSubjectMatter": "Expresión gráfica del logotipo (K estilizada combinada con la silueta de una montaña)",
+      "rationale": "Se describe una composición gráfica concreta del logotipo; como obra gráfica vinculada al signo distintivo, la protección por derechos de autor sobre su expresión gráfica es plausible pero se limita a la expresión concreta del logo descrito.",
+      "legalBasis": [{ "instrument": "Decisión 351", "articles": ["1", "3", "4"] }],
+      "orientation": "Esta modalidad podría corresponder a parte de la materia descrita. Se recomienda revisar la información disponible y considerar una evaluación especializada."
+    },
+    {
+      "type": "INDUSTRIAL_DESIGN",
+      "name": "Diseño industrial",
+      "relationshipQuestion": "¿Cómo se relaciona con tu creación?",
+      "applicability": "LIKELY",
+      "applicabilityLabel": "Se relaciona claramente",
+      "protectedSubjectMatter": "Apariencia externa de la botella: forma ligeramente triangular con bordes redondeados, superficie con líneas diagonales en relieve y tapa integrada visualmente con el cuerpo; combinación de colores verde oscuro y cobre",
+      "rationale": "La entrada describe de forma concreta elementos de la apariencia exterior (forma, contornos, textura en relieve, integración de la tapa y esquema cromático), que encajan con la protección de diseño industrial enfocada en la apariencia del producto.",
+      "legalBasis": [{ "instrument": "Decisión 486", "articles": ["113"] }],
+      "orientation": "Esta modalidad presenta una relación clara con la materia descrita y puede considerarse como una vía principal para una revisión especializada."
+    },
+    {
+      "type": "UTILITY_MODEL",
+      "name": "Modelo de utilidad",
+      "relationshipQuestion": "¿Cómo se relaciona con tu creación?",
+      "applicability": "LIKELY",
+      "applicabilityLabel": "Se relaciona claramente",
+      "protectedSubjectMatter": "Mecanismo de apertura de una sola mano por presión lateral y pieza plegable en el costado para enganchar la botella a mochila/cinturón/bicicleta",
+      "rationale": "La descripción detalla una configuración física y funcional concreta del artefacto (mecanismo de presión lateral para apertura con una mano y una pieza plegable de sujeción), lo que encaja con la protección por modelo de utilidad sobre la disposición/configuración de elementos de un objeto para un funcionamiento distinto.",
+      "legalBasis": [{ "instrument": "Decisión 486", "articles": ["81"] }],
+      "orientation": "Esta modalidad presenta una relación clara con la materia descrita y puede considerarse como una vía principal para una revisión especializada."
+    }
+  ],
+  "patentScreening": {
+    "title": "Revisión de la vía patentaria",
+    "context": "La descripción fue revisada respecto de posibles exclusiones previstas en los artículos 15 y 20 de la Decisión 486.",
+    "article15": {
+      "article": "Artículo 15",
+      "assessment": "NO_POTENTIAL_MATCH",
+      "assessmentLabel": "No se identifican coincidencias potenciales",
+      "rationale": "La materia objeto de la vía (mecanismo/configuración mecánica de la botella) no encaja con literales del artículo 15 (no es software, obra, teoría ni material biológico).",
+      "matches": []
+    },
+    "article20": {
+      "article": "Artículo 20",
+      "assessment": "NO_POTENTIAL_MATCH",
+      "assessmentLabel": "No se identifican coincidencias potenciales",
+      "rationale": "No hay indicios de que la materia objeto de la vía implique riesgos de orden público/moral, protección de salud/medio ambiente, ni se refiera a plantas, animales o métodos terapéuticos; por tanto no encaja con los literales del artículo 20.",
+      "matches": []
+    },
+    "scopeNote": "Este screening se limita a posibles coincidencias con los artículos 15 y 20 de la Decisión 486 y no constituye un examen completo de patentabilidad."
+  },
+  "geneticResourceAccess": null,
+  "historicalPatentability": null,
+  "observations": [
+    "Se menciona un prototipo funcional probado durante caminatas, lo cual es relevante para la explotación comercial y para trámites formales pero no modifica las modalidades identificadas.",
+    "La protección del logotipo puede articularse en dos dimensiones: distintivo (marca) y protección por derechos de autor sobre la expresión gráfica; aquí se indicó signo distintivo se relaciona claramente y derecho de autor podría corresponder para la expresión gráfica concreta."
+  ],
+  "warnings": [
+    "No se incluyó patente de invención: la descripción del mecanismo/configuración encaja como modelo de utilidad según la información proporcionada y no se describió materia tecnológica adicional que justifique una vía de patente de invención separada."
+  ],
+  "scope": "Este análisis identifica relaciones orientativas a partir de la información disponible. No determina registrabilidad, concesión o reconocimiento definitivo, ni sustituye una evaluación especializada o una decisión oficial.",
+  "disclaimer": {
+    "id": "2af80683-7708-43f3-8a9a-43c966bac360",
+    "version": 18,
+    "title": "Importante",
+    "content": "Este reporte constituye una guía complementaria basada en inteligencia artificial y tiene carácter orientativo. No reemplaza, bajo ninguna circunstancia, el juicio técnico, la evaluación experta ni las decisiones oficiales del personal examinador del Indecopi. Sus resultados deben interpretarse bajo el principio de supervisión.dddd"
+  }
+}

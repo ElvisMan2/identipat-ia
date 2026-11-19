@@ -155,7 +155,11 @@ export class StandardAnalysisService {
   private readonly endpoint = environment.apiBaseUrl;
 
   getExampleDiagnosticReport(): Observable<DiagnosticReport> {
-    return this.http.get<DiagnosticReport>('/examples/analysis-result-v2.json');
+    return this.http.get<DiagnosticReport>('/examples/stati-report.json');
+  }
+
+  getExampleGuidance(): Observable<AnalysisGuidanceResponse> {
+    return this.http.get<AnalysisGuidanceResponse>('/examples/static-guidance.json');
   }
 
   createTextAnalysis(
