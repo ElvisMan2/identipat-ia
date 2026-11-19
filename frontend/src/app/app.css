@@ -29,7 +29,9 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .panel { border: 1px solid var(--line); border-radius: 7px; padding: 1rem; background: #fff; box-shadow: 0 10px 25px rgb(24 51 47 / .06); }
 .panel h2 { margin-top: 0; font-size: 1.2rem; }
 .modal-backdrop { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 1rem; background: rgb(15 26 24 / .55); }
-.modal-panel { width: min(760px, 100%); max-height: 90vh; overflow-y: auto; }
+.modal-panel { width: min(480px, 100%); max-height: 90vh; overflow-y: auto; }
+.prediction-limit-modal { text-align: center; }
+.prediction-limit-modal .actions { justify-content: center; }
 .error { padding: .65rem; color: #7a2424; background: #fff0ee; }
 
 @media (max-width: 620px) {

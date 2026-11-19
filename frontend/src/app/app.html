@@ -204,7 +204,7 @@
 
 @if (predictionLimitModal()) {
   <div class="modal-backdrop" (click)="closePredictionLimitModal()">
-    <article class="panel modal-panel" role="dialog" aria-modal="true" aria-labelledby="prediction-limit-title" (click)="$event.stopPropagation()">
+    <article class="panel modal-panel prediction-limit-modal" role="dialog" aria-modal="true" aria-labelledby="prediction-limit-title" (click)="$event.stopPropagation()">
       <h2 id="prediction-limit-title">Máximo de predicciones alcanzado</h2>
       <p>Has utilizado tus tres predicciones disponibles para esta sesión.</p>
       <div class="actions">
