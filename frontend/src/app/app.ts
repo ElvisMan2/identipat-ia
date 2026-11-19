@@ -6,7 +6,7 @@ import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Va
 import { NavigationEnd, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Alignment, Bold, ClassicEditor, EditorConfig, Essentials, FindAndReplace, Heading, Image, ImageInsert, Italic, Link, List, Paragraph, RemoveFormat, SourceEditing, Strikethrough, Underline } from 'ckeditor5';
-import { filter, Observable } from 'rxjs';
+import { filter, forkJoin, Observable } from 'rxjs';
 import { StandardUserRegistrationRequest, UserService } from './services/user.service';
 import { User } from './models/user.model';
 import { AdminAnalysis, AdminAnalysisService, AnalysisStatus } from './services/admin-analysis.service';
@@ -78,7 +78,7 @@ export class App {
   private readonly legalDocumentService = inject(LegalDocumentService);
   private readonly csrfService = inject(CsrfService);
   private readonly defaultAdminPassword = 'admin';
-  private readonly useExampleAnalysis = false;
+  private readonly useExampleAnalysis = true;
 
   readonly users = signal<User[]>([]);
   readonly userPage = signal(0);
@@ -2404,8 +2404,11 @@ export class App {
 
   private loadExampleAnalysis(inputType: string): void {
     const analysisId = 'example-analysis';
-    this.standardAnalysisService.getExampleDiagnosticReport().subscribe({
-      next: report => {
+    forkJoin({
+      report: this.standardAnalysisService.getExampleDiagnosticReport(),
+      guidance: this.standardAnalysisService.getExampleGuidance()
+    }).subscribe({
+      next: ({ report, guidance }) => {
         const now = new Date().toISOString();
         this.analysisResult.set({
           analysisId,
@@ -2419,7 +2422,7 @@ export class App {
           failure: null
         });
         this.diagnosticReport.set({ ...report, analysisId, inputType, analysisCompletedAt: now });
-        this.analysisGuidance.set(null);
+        this.analysisGuidance.set({ ...guidance, analysisId });
         this.submittingAnalysis.set(false);
         this.analysisMessage.set('');
         this.view.set('standard-result');

@@ -153,13 +153,14 @@ export class StandardAnalysisService {
   private readonly http = inject(HttpClient);
   private readonly csrf = inject(CsrfService);
   private readonly endpoint = environment.apiBaseUrl;
+  private readonly staticExamplesBaseUrl = environment.staticExamplesBaseUrl;
 
   getExampleDiagnosticReport(): Observable<DiagnosticReport> {
-    return this.http.get<DiagnosticReport>('/examples/stati-report.json');
+    return this.http.get<DiagnosticReport>(`${this.staticExamplesBaseUrl}/stati-report.json`);
   }
 
   getExampleGuidance(): Observable<AnalysisGuidanceResponse> {
-    return this.http.get<AnalysisGuidanceResponse>('/examples/static-guidance.json');
+    return this.http.get<AnalysisGuidanceResponse>(`${this.staticExamplesBaseUrl}/static-guidance.json`);
   }
 
   createTextAnalysis(
