@@ -28,6 +28,9 @@ import { AdminSettingsSectionComponent, AdminSettingsViewModel, OrientationViewS
 import { AdminUsersAction, AdminUsersSectionComponent } from './components/admin-users-section/admin-users-section';
 
 const adminSettingsReloadKey = 'identipat.admin.reloadSection';
+const standardPredictionCountKey = 'identipat.standard.predictionCount';
+const standardLastCountedAnalysisKey = 'identipat.standard.lastCountedAnalysis';
+const standardPredictionLimit = 3;
 type AdditionalOrientationType = 'INDUSTRIAL_DESIGN' | 'COPYRIGHT' | 'DISTINCTIVE_SIGN' | 'PLANT_BREEDER_CERTIFICATE' | 'TRADE_SECRET';
 type StandardAccessState = 'UNIDENTIFIED' | 'IDENTIFYING' | 'SESSION_CREATING' | 'CONSENT_REQUIRED' | 'READY' | 'BLOCKED';
 type AnalysisIntentType = 'TEXT' | 'PDF' | 'AUDIO';
@@ -276,6 +279,7 @@ export class App {
   readonly savingPassword = signal(false);
   readonly passwordMessage = signal('');
   readonly passwordSuccessModal = signal(false);
+  readonly predictionLimitModal = signal(false);
   readonly adminProfile = signal<User | null>(null);
   readonly submittingAnalysis = signal(false);
   readonly analysisMessage = signal('');
@@ -664,6 +668,7 @@ export class App {
   }
 
   private finishStandardSessionAccess(session: StandardSessionResponse): void {
+    this.resetStandardPredictionCount();
     this.analysisMessage.set('');
     this.analysisResult.set(null);
     this.diagnosticReport.set(null);
@@ -892,6 +897,15 @@ export class App {
       this.standardAccessState.set('READY');
     }
     this.view.set('standard-analysis');
+    this.scrollToTop();
+  }
+
+  closePredictionLimitModal(): void {
+    this.predictionLimitModal.set(false);
+    this.removeStandardPredictionCount();
+    this.clearStandardState();
+    this.accessForm.reset({ doiType: 'DNI', doi: '' });
+    this.view.set('home');
     this.scrollToTop();
   }
 
@@ -2178,6 +2192,10 @@ export class App {
       this.analysisMessage.set('Debes aceptar el documento legal vigente antes de iniciar un análisis.');
       return;
     }
+    if (!this.adminAuthenticated() && this.standardPredictionCount() >= standardPredictionLimit) {
+      this.predictionLimitModal.set(true);
+      return;
+    }
     const selectedPdf = this.selectedPdf();
     const selectedAudio = this.selectedAudio();
     if (!selectedPdf && !selectedAudio && this.analysisForm.invalid) {
@@ -2654,6 +2672,7 @@ export class App {
         this.analysisMessage.set('');
         this.reportLoadError.set('');
         this.view.set('standard-result');
+        this.countStandardPrediction(analysisId);
         this.scrollToTop();
       },
       error: error => {
@@ -3056,6 +3075,46 @@ export class App {
     this.view.set('home');
     this.accessMessage.set('Tu sesión expiró. Identifícate nuevamente.');
     this.scrollToTop();
+  }
+  private standardStorage(): Storage | null {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    try {
+      return window.localStorage;
+    } catch {
+      return null;
+    }
+  }
+
+  private standardPredictionCount(): number {
+    const storedCount = Number(this.standardStorage()?.getItem(standardPredictionCountKey));
+    return Number.isInteger(storedCount) && storedCount >= 0 ? storedCount : 0;
+  }
+
+  private resetStandardPredictionCount(): void {
+    const storage = this.standardStorage();
+    storage?.setItem(standardPredictionCountKey, '0');
+    storage?.removeItem(standardLastCountedAnalysisKey);
+    this.predictionLimitModal.set(false);
+  }
+
+  private countStandardPrediction(analysisId: string): void {
+    if (this.adminAuthenticated() || this.standardStorage()?.getItem(standardLastCountedAnalysisKey) === analysisId) {
+      return;
+    }
+
+    const storage = this.standardStorage();
+    const count = this.standardPredictionCount();
+    storage?.setItem(standardPredictionCountKey, String(Math.min(standardPredictionLimit, count + 1)));
+    storage?.setItem(standardLastCountedAnalysisKey, analysisId);
+  }
+
+  private removeStandardPredictionCount(): void {
+    const storage = this.standardStorage();
+    storage?.removeItem(standardPredictionCountKey);
+    storage?.removeItem(standardLastCountedAnalysisKey);
   }
 
   private clearStandardState(): void {
