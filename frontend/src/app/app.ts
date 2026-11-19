@@ -884,6 +884,10 @@ export class App {
   }
 
   startNewAnalysis(): void {
+    if (!this.adminAuthenticated() && this.standardPredictionCount() >= standardPredictionLimit) {
+      this.predictionLimitModal.set(true);
+      return;
+    }
     this.analysisForm.reset({ description: '' });
     this.analysisMessage.set('');
     this.analysisResult.set(null);
