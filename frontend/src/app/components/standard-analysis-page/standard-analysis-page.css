@@ -60,12 +60,12 @@ button:disabled { opacity: .62; cursor: not-allowed; }
 .analysis-fact { padding: .9rem 1rem; border-radius: 4px; background: #f1f8f6; }
 .analysis-fact h3 { margin: 0; color: var(--teal-dark); font-size: 1.2rem; font-weight: 700; text-align: center; }
 .analysis-fact p { margin-top: .7rem; color: rgb(0 0 0 / 85%); font-size: .9rem; text-align: justify; }
-.analysis-fact p.curiosity-fade-in { animation: curiosity-fade-in 700ms ease both; }
+.analysis-fact p.curiosity-fade-in { animation: curiosity-fade-in 900ms ease both; }
 
 @keyframes analysis-spin { to { transform: rotate(360deg); } }
 @keyframes curiosity-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
