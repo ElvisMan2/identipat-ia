@@ -3,6 +3,7 @@ package com.mnk.identipatia.reporting.service;
 import com.mnk.identipatia.analysis.result.AnalysisResult;
 import com.mnk.identipatia.analysis.result.AnalysisResultV1;
 import com.mnk.identipatia.analysis.result.v2.AnalysisResultV2;
+import com.mnk.identipatia.analysis.result.v3.AnalysisResultV3;
 import com.mnk.identipatia.reporting.dto.OperationalModalityApplicability;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +13,12 @@ import java.util.List;
 public class OperationalAnalysisResultPresenter {
 
     public PresentedResult present(AnalysisResult result) {
+        if (result instanceof AnalysisResultV3 v3) {
+            return presented(
+                    v3.summary(),
+                    v3.protectionOptions().stream().map(option -> option.type().name()).toList(),
+                    v3.protectionOptions().stream().map(option -> option.applicability().name()).toList());
+        }
         if (result instanceof AnalysisResultV1 v1) {
             return presented(
                     v1.summary(),

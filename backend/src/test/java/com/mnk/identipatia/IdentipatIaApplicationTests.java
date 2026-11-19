@@ -322,11 +322,20 @@ class IdentipatIaApplicationTests {
         JsonNode reportProperties = api.at("/components/schemas/DiagnosticReport/properties");
         assertThat(reportProperties.has("patentScreening")).isTrue();
         assertThat(reportProperties.has("geneticResourceAccess")).isTrue();
+        assertThat(reportProperties.has("traditionalKnowledgeAccess")).isTrue();
         JsonNode protectionProperties = api.at("/components/schemas/ProtectionPresentation/properties");
         assertThat(protectionProperties.has("patentScreening")).isFalse();
         assertThat(protectionProperties.has("geneticResourceAccess")).isFalse();
+        assertThat(protectionProperties.has("traditionalKnowledgeAccess")).isFalse();
         JsonNode geneticProperties = api.at("/components/schemas/GeneticResourcePresentation/properties");
         assertThat(geneticProperties.has("placement")).isFalse();
+        JsonNode traditionalProperties = api.at(
+                "/components/schemas/TraditionalKnowledgePresentation/properties");
+        assertThat(traditionalProperties.size()).isEqualTo(4);
+        assertThat(traditionalProperties.has("assessment")).isTrue();
+        assertThat(traditionalProperties.has("assessmentLabel")).isTrue();
+        assertThat(traditionalProperties.has("rationale")).isTrue();
+        assertThat(traditionalProperties.has("missingInformation")).isTrue();
 
         mockMvc.perform(get("/swagger-ui.html"))
                 .andExpect(status().is3xxRedirection());

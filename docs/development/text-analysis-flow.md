@@ -75,19 +75,26 @@ exactly-once.
 
 ## Prompt, schema y resultado
 
-El worker renderiza `intellectual-property-analysis/0.2`, carga `analysis-result/2.0` y usa
+El worker renderiza `intellectual-property-analysis/0.3`, carga `analysis-result/3.0` y usa
 `GenerationOptions(maxOutputTokens=ANALYSIS_AI_MAX_OUTPUT_TOKENS, temperature=null)`, con default
 `6000`. La descripción es la única variable del user prompt. El schema estricto exige
-`additionalProperties=false`. El modelo Java 2.0 valida además duplicados e invariantes condicionales
-de screening y recursos genéticos después de Jackson.
+`additionalProperties=false`. El modelo Java 3.0 valida además duplicados e invariantes condicionales
+de screening, recursos genéticos y conocimientos colectivos después de Jackson.
 
 La evaluación live posterior mostró que J16 con `4000` terminaba con JSON truncado e
 `INVALID_RESPONSE`, mientras que con `6000` pasó y reportó `4291` tokens de salida. Por ello F1.4
 usa `6000` como default para nuevas invocaciones.
 
 Los resultados 1.0 ya persistidos siguen leyéndose con su tipo histórico. La consulta compara
-`analysis_results.schema_version` con el `schemaVersion` del JSON y despacha explícitamente a 1.0 o
-2.0; una versión desconocida o discordante falla de forma controlada. No existe migración V4.
+`analysis_results.schema_version` con el `schemaVersion` del JSON y despacha explícitamente a 1.0,
+2.0 o 3.0. V3 añade `traditionalKnowledgeAccess` como alerta autónoma y obligatoria en el resultado
+canónico; la presentación la omite cuando su estado es `NOT_INDICATED`. Los contratos históricos no
+se reescriben. El evaluador F1.4 de prompt 0.2 continúa leyendo V2 de forma explícita.
+
+> Nota operativa F1.4E: la migración histórica V5 restringe `analysis_report_contexts.report_version`
+> a `diagnostic-report/1.0`. Activar `1.1` exige una migración que cambie ese `CHECK`; como F1.4E
+> prohíbe migraciones, la persistencia mantiene 1.0 y el lector queda preparado para ambas versiones.
+Una versión desconocida o discordante falla de forma controlada. F1.4E no añade migración Flyway.
 
 Durante desarrollo se persisten snapshot/hashes de prompt, respuesta raw/structured, usage, tokens,
 latencia y finish reason. Esos datos no se escriben en logs ni se exponen a STANDARD.

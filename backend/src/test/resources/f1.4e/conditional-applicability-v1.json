@@ -1,0 +1,16 @@
+{
+  "version": "f1.4e-conditional-applicability/1.0",
+  "rules": [
+    {"caseId":"V3-01","index":0,"notApplicableWhenInputContains":"como componente","rationale":"La entrada sitúa la regla matemática como componente de materia tecnológica, no como objeto aislado."},
+    {"caseId":"V3-02","index":0,"status":"NEEDS_EXPERT_REVIEW","rationale":"Determinar si el supuesto descrito es software como tal bajo la exclusión requiere interpretación jurídico-funcional."},
+    {"caseId":"V3-03","index":0,"notApplicableWhenInputContains":"controla válvulas de una planta para estabilizar físicamente el caudal","rationale":"La entrada sí indica qué controla el programa y el efecto físico; el condicional describe omisión de ese dato."},
+    {"caseId":"V3-04","index":0,"notApplicableWhenInputContains":"modifica la gestión de caché y la planificación de acceso a memoria","rationale":"La entrada describe mecanismo técnico interno y no afirma únicamente mayor velocidad."},
+    {"caseId":"V3-05","index":0,"notApplicableWhenInputOmits":"efecto técnico concreto","rationale":"La entrada no añade el supuesto hipotético de un efecto técnico concreto y su mecanismo."},
+    {"caseId":"V3-06","index":0,"notApplicableWhenInputOmits":"otra modalidad","rationale":"El input se limita al mecanismo inviable y no describe otra modalidad cuya independencia pueda evaluarse."},
+    {"caseId":"V3-07","index":0,"notApplicableWhenInputOmits":"autoalimentación indefinida","rationale":"La entrada afirma alimentación desde la red y niega generación energética excedente; no presenta el supuesto futuro."},
+    {"caseId":"V3-08","index":0,"notApplicableWhenInputOmits":"autorización","rationale":"La entrada no declara contar con autorización; no debe inferirse esa declaración."},
+    {"caseId":"V3-13","index":0,"notApplicableWhenInputOmits":"tercero externo","rationale":"El input describe intercambio entre pueblos y no incorporación posterior por un tercero."},
+    {"caseId":"V3-14","index":0,"status":"NEEDS_EXPERT_REVIEW","rationale":"Que la entrada afirme dominio público no prueba su acreditación; valorar suficiencia documental requiere revisión."},
+    {"caseId":"V3-15","index":0,"notApplicableWhenInputContains":"no usa saberes sobre propiedades, usos o características de recursos biológicos","rationale":"La entrada excluye expresamente el hecho añadido por el condicional."}
+  ]
+}

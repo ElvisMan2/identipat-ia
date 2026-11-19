@@ -86,7 +86,8 @@ class OpenAiF14LiveEvalIT {
                                     Map.of("USER_DESCRIPTION", testCase.path("input").asText())),
                             schemas.load("analysis-result", "2.0"),
                             new GenerationOptions(maxOutputTokens, null)));
-                    AnalysisResultV2 result = reader.readCurrent(response.structuredOutput());
+                    AnalysisResultV2 result = (AnalysisResultV2) reader.read(
+                            AnalysisResultV2.SCHEMA_VERSION, response.structuredOutput());
                     saveStructuredResponse(objectMapper, outputDirectory, id, response.structuredOutput());
                     validateDeterministicRules(id, result);
                     passed = true;

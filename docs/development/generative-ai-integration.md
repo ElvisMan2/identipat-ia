@@ -216,10 +216,16 @@ El snapshot renderizado se persiste en `AiInvocation`. Puede contener informaci�
 backend/src/main/resources/ai-schemas/
 ├── analysis-result/v1.0/schema.json
 ├── analysis-result/v2.0/schema.json
+├── analysis-result/v3.0/schema.json
 └── provider-smoke-result/v1.0/schema.json
 ```
 
-`analysis-result/2.0` es el contrato utilizado por el worker. Exige:
+`analysis-result/3.0` es el contrato utilizado por el worker. Conserva las estructuras V2 y exige además
+`traditionalKnowledgeAccess` con `assessment`, `rationale` y `missingInformation`. El prompt vigente es
+`intellectual-property-analysis/0.3`; cada llamada real sigue generando una sola `AiInvocation`, sin retries
+en el SDK y sin una segunda inferencia para reportes.
+
+El contrato histórico `analysis-result/2.0` exigía:
 
 - `schemaVersion`;
 - `summary`;
@@ -322,7 +328,7 @@ La latencia se mide alrededor de la llamada síncrona mediante reloj monotónico
 3. verifica el límite de intentos;
 4. carga `AnalysisInput.processedText`;
 5. renderiza `intellectual-property-analysis/0.2`;
-6. carga `analysis-result/2.0`;
+6. carga `analysis-result/3.0`;
 7. construye `GenerationOptions`;
 8. persiste `AiInvocation(STARTED)` antes de llamar al provider.
 

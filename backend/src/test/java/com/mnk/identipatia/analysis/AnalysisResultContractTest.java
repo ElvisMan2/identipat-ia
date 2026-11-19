@@ -12,6 +12,7 @@ import com.mnk.identipatia.analysis.dto.TextAnalysisRequest;
 import com.mnk.identipatia.analysis.result.AnalysisResultReader;
 import com.mnk.identipatia.analysis.result.AnalysisResultV1;
 import com.mnk.identipatia.analysis.result.v2.AnalysisResultV2;
+import com.mnk.identipatia.analysis.result.v3.AnalysisResultV3;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -34,15 +35,17 @@ class AnalysisResultContractTest {
     }
 
     @Test
-    void bothPromptVersionsLoadAndV02UsesOnlyUserDescriptionDeterministically() {
+    void allPromptVersionsLoadAndV03UsesOnlyUserDescriptionDeterministically() {
         PromptRegistry registry = new PromptRegistry();
         assertThat(registry.load(new PromptReference("intellectual-property-analysis", "0.1")))
                 .isNotNull();
         assertThat(registry.load(new PromptReference("intellectual-property-analysis", "0.2")))
                 .isNotNull();
+        assertThat(registry.load(new PromptReference("intellectual-property-analysis", "0.3")))
+                .isNotNull();
 
         PromptRenderer renderer = new PromptRenderer(registry);
-        var reference = new PromptReference("intellectual-property-analysis", "0.2");
+        var reference = new PromptReference("intellectual-property-analysis", "0.3");
         var first = renderer.render(reference, Map.of("USER_DESCRIPTION", "Descripción técnica sintética."));
         var second = renderer.render(reference, Map.of("USER_DESCRIPTION", "Descripción técnica sintética."));
 
@@ -57,13 +60,45 @@ class AnalysisResultContractTest {
     }
 
     @Test
-    void bothSchemasLoadAndV20AcceptsCanonicalResult() throws Exception {
+    void allSchemasLoadAndV30AcceptsCanonicalResult() throws Exception {
         assertThat(schemaRegistry.load("analysis-result", "1.0").jsonSchema()).isNotNull();
-        var definition = schemaRegistry.load("analysis-result", "2.0");
-        JsonNode valid = validV2();
+        assertThat(schemaRegistry.load("analysis-result", "2.0").jsonSchema()).isNotNull();
+        var definition = schemaRegistry.load("analysis-result", "3.0");
+        JsonNode valid = validV3();
 
         validator.validate(definition, valid, "fake");
-        assertThat(reader.readCurrent(valid)).isInstanceOf(AnalysisResultV2.class);
+        assertThat(reader.readCurrent(valid)).isInstanceOf(AnalysisResultV3.class);
+        assertThat(reader.read(AnalysisResultV2.SCHEMA_VERSION, validV2()))
+                .isInstanceOf(AnalysisResultV2.class);
+    }
+
+    @Test
+    void strictSchemaV30RequiresTraditionalKnowledgeAndRejectsInvalidShape() throws Exception {
+        JsonNode missing = validV3();
+        ((com.fasterxml.jackson.databind.node.ObjectNode) missing).remove("traditionalKnowledgeAccess");
+        assertInvalidV3(missing);
+
+        JsonNode invalidEnum = validV3();
+        ((com.fasterxml.jackson.databind.node.ObjectNode) invalidEnum.path("traditionalKnowledgeAccess"))
+                .put("assessment", "REQUIRED");
+        assertInvalidV3(invalidEnum);
+
+        JsonNode additional = validV3();
+        ((com.fasterxml.jackson.databind.node.ObjectNode) additional.path("traditionalKnowledgeAccess"))
+                .put("community", "No permitido");
+        assertInvalidV3(additional);
+    }
+
+    @Test
+    void schemaV30DiffersFromV20OnlyByVersionAndTraditionalKnowledge() throws Exception {
+        JsonNode v2 = schemaRegistry.load("analysis-result", "2.0").jsonSchema();
+        JsonNode v3 = schemaRegistry.load("analysis-result", "3.0").jsonSchema();
+        var normalized = (com.fasterxml.jackson.databind.node.ObjectNode) v3.deepCopy();
+        normalized.withObject("/properties").remove("traditionalKnowledgeAccess");
+        normalized.withArray("required").remove(normalized.withArray("required").size() - 3);
+        normalized.withObject("/properties/schemaVersion").withArray("enum")
+                .set(0, objectMapper.getNodeFactory().textNode("analysis-result/2.0"));
+        assertThat(normalized).isEqualTo(v2);
     }
 
     @Test
@@ -138,6 +173,20 @@ class AnalysisResultContractTest {
     private void assertInvalidV2(JsonNode json) {
         assertThatThrownBy(() -> validator.validate(schemaRegistry.load("analysis-result", "2.0"), json, "fake"))
                 .isInstanceOf(GenerativeAiException.class);
+    }
+
+    private void assertInvalidV3(JsonNode json) {
+        assertThatThrownBy(() -> validator.validate(schemaRegistry.load("analysis-result", "3.0"), json, "fake"))
+                .isInstanceOf(GenerativeAiException.class);
+    }
+
+    private JsonNode validV3() throws Exception {
+        var v3 = (com.fasterxml.jackson.databind.node.ObjectNode) validV2();
+        v3.put("schemaVersion", "analysis-result/3.0");
+        v3.set("traditionalKnowledgeAccess", objectMapper.readTree("""
+                {"assessment":"NOT_INDICATED","rationale":"No hay indicios.","missingInformation":[]}
+                """));
+        return v3;
     }
 
     private JsonNode validV2() throws Exception {

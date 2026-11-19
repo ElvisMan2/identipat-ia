@@ -12,6 +12,7 @@ import com.mnk.identipatia.analysis.result.AnalysisResultReader;
 import com.mnk.identipatia.analysis.result.AnalysisResultV1;
 import com.mnk.identipatia.analysis.result.v2.AnalysisResultV2;
 import com.mnk.identipatia.analysis.result.v2.ProtectionType;
+import com.mnk.identipatia.analysis.result.v3.AnalysisResultV3;
 import com.mnk.identipatia.analysis.service.AnalysisAccessContext;
 import com.mnk.identipatia.exception.ApiException;
 import org.springframework.http.HttpStatus;
@@ -75,6 +76,11 @@ public class GuidanceAnalysisResolver {
     }
 
     private List<Option> options(AnalysisResult result) {
+        if (result instanceof AnalysisResultV3 v3) {
+            return v3.protectionOptions().stream()
+                    .map(option -> new Option(option.type(), option.applicability().name()))
+                    .toList();
+        }
         if (result instanceof AnalysisResultV2 v2) {
             return v2.protectionOptions().stream()
                     .map(option -> new Option(option.type(), option.applicability().name()))

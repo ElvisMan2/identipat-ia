@@ -11,6 +11,7 @@ import com.mnk.identipatia.analysis.result.AnalysisResult;
 import com.mnk.identipatia.analysis.result.AnalysisResultReader;
 import com.mnk.identipatia.analysis.result.AnalysisResultV1;
 import com.mnk.identipatia.analysis.result.v2.AnalysisResultV2;
+import com.mnk.identipatia.analysis.result.v3.AnalysisResultV3;
 import com.mnk.identipatia.guidance.repository.GuidanceViewRepository;
 import com.mnk.identipatia.model.User;
 import com.mnk.identipatia.reporting.dto.DiagnosticReport;
@@ -51,6 +52,7 @@ public class OperationalAnalysisDatasetService {
     private final AnalysisResultReader resultReader;
     private final DiagnosticReportAssemblerV1 assemblerV1;
     private final DiagnosticReportAssemblerV2 assemblerV2;
+    private final DiagnosticReportAssemblerV3 assemblerV3;
     private final OperationalDiagnosticReportTextRenderer textRenderer;
     private final OperationalAnalysisResultPresenter resultPresenter;
 
@@ -64,6 +66,7 @@ public class OperationalAnalysisDatasetService {
             ObjectMapper objectMapper,
             DiagnosticReportAssemblerV1 assemblerV1,
             DiagnosticReportAssemblerV2 assemblerV2,
+            DiagnosticReportAssemblerV3 assemblerV3,
             OperationalDiagnosticReportTextRenderer textRenderer,
             OperationalAnalysisResultPresenter resultPresenter) {
         this.analysisRepository = analysisRepository;
@@ -75,6 +78,7 @@ public class OperationalAnalysisDatasetService {
         this.resultReader = new AnalysisResultReader(objectMapper);
         this.assemblerV1 = assemblerV1;
         this.assemblerV2 = assemblerV2;
+        this.assemblerV3 = assemblerV3;
         this.textRenderer = textRenderer;
         this.resultPresenter = resultPresenter;
     }
@@ -234,6 +238,9 @@ public class OperationalAnalysisDatasetService {
             }
             if (result instanceof AnalysisResultV2 v2) {
                 return assemblerV2.assemble(analysis, v2, context, disclaimer);
+            }
+            if (result instanceof AnalysisResultV3 v3) {
+                return assemblerV3.assemble(analysis, v3, context, disclaimer);
             }
             throw new IllegalArgumentException("Unsupported in-memory analysis result type");
         } catch (RuntimeException exception) {

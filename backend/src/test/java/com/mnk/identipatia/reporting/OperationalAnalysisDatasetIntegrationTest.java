@@ -137,7 +137,7 @@ class OperationalAnalysisDatasetIntegrationTest {
         Instant now = Instant.parse("2026-11-03T12:00:00Z");
         Analysis received = analysis(shared, UUID.randomUUID(), now, AnalysisStatus.RECEIVED, false);
         Analysis failed = analysis(shared, UUID.randomUUID(), now.plusSeconds(1), AnalysisStatus.FAILED, false);
-        reportContext(received);
+        reportContext(received, "analysis-result/2.0");
 
         User onlyPaternal = user("SoloPaterno", "  ");
         Analysis analyzing = analysis(onlyPaternal, UUID.randomUUID(), now.plusSeconds(2),
@@ -176,12 +176,19 @@ class OperationalAnalysisDatasetIntegrationTest {
     }
 
     @Test
-    void v1V2ReportsMissingContextAndGuidanceExistenceProduceCompleteRowsWithoutDuplicates() throws Exception {
+    void v1V2V3ReportsMissingContextAndGuidanceExistenceProduceCompleteRowsWithoutDuplicates() throws Exception {
         User user = user("Paterno", "Materno");
         Instant base = Instant.parse("2026-11-03T15:00:00Z");
         Analysis v1 = completed(user, UUID.randomUUID(), base, v1Result(), true);
         Analysis v2 = completed(user, UUID.randomUUID(), base.plusSeconds(1), v2Result(), true);
-        Analysis noContext = completed(user, UUID.randomUUID(), base.plusSeconds(2), v2Result(), false);
+        Analysis v3 = completed(user, UUID.randomUUID(), base.plusSeconds(2), v3Result(), true);
+        Analysis noContext = completed(user, UUID.randomUUID(), base.plusSeconds(3), v2Result(), false);
+        assertThat(contextRepository.findById(v1.getAnalysisId()).orElseThrow().getReportVersion())
+                .isEqualTo("diagnostic-report/1.0");
+        assertThat(contextRepository.findById(v2.getAnalysisId()).orElseThrow().getReportVersion())
+                .isEqualTo("diagnostic-report/1.0");
+        assertThat(contextRepository.findById(v3.getAnalysisId()).orElseThrow().getReportVersion())
+                .isEqualTo("diagnostic-report/1.1");
 
         guidance(v2.getAnalysisId(), ProtectionType.INVENTION_PATENT);
         guidance(noContext.getAnalysisId(), ProtectionType.INVENTION_PATENT);
@@ -189,7 +196,7 @@ class OperationalAnalysisDatasetIntegrationTest {
 
         List<OperationalAnalysisReportRow> rows = datasetService.build(
                 new OperationalAnalysisReportCriteria(null, null));
-        assertThat(rows).hasSize(3);
+        assertThat(rows).hasSize(4);
 
         OperationalAnalysisReportRow v1Row = row(rows, v1.getAnalysisId());
         assertThat(v1Row.conclusion()).isEqualTo("Resumen histórico.");
@@ -223,6 +230,14 @@ class OperationalAnalysisDatasetIntegrationTest {
                 .doesNotContain("INVENTION_PATENT", "COPYRIGHT", "POSSIBLE",
                         "POTENTIALLY_REQUIRED");
         assertThat(v2Row.guidanceConsulted()).isTrue();
+
+        OperationalAnalysisReportRow v3Row = row(rows, v3.getAnalysisId());
+        assertThat(v3Row.conclusion()).isEqualTo("derecho de autor — se relaciona claramente.");
+        assertThat(v3Row.reportText())
+                .contains("Conocimientos colectivos de pueblos indígenas:\n",
+                        "Requiere revisión especializada", "Finalidad exacta de utilización")
+                .doesNotContain("Recursos genéticos:\n")
+                .containsOnlyOnce("Conocimientos colectivos de pueblos indígenas:\n");
 
         OperationalAnalysisReportRow noContextRow = row(rows, noContext.getAnalysisId());
         assertThat(noContextRow.conclusion()).isNotBlank();
@@ -264,9 +279,13 @@ class OperationalAnalysisDatasetIntegrationTest {
 
         UUID firstId = uuid(21);
         UUID secondId = uuid(22);
-        UUID outsideId = uuid(23);
-        completed(admin, firstId, Instant.parse("2026-11-03T06:00:00Z"), v2Result(), true);
-        analysis(admin, secondId, Instant.parse("2026-11-03T07:00:00Z"),
+        UUID thirdId = uuid(23);
+        UUID pendingId = uuid(24);
+        UUID outsideId = uuid(25);
+        completed(admin, firstId, Instant.parse("2026-11-03T06:00:00Z"), v1Result(), true);
+        completed(admin, secondId, Instant.parse("2026-11-03T07:00:00Z"), v2Result(), true);
+        completed(admin, thirdId, Instant.parse("2026-11-03T08:00:00Z"), v3Result(), true);
+        analysis(admin, pendingId, Instant.parse("2026-11-03T09:00:00Z"),
                 AnalysisStatus.RECEIVED, false);
         analysis(admin, outsideId, Instant.parse("2026-11-04T05:00:00Z"),
                 AnalysisStatus.RECEIVED, false);
@@ -289,10 +308,12 @@ class OperationalAnalysisDatasetIntegrationTest {
         assertThat(headerRow.split(",", -1)).hasSize(20);
         assertThat(headerRow).contains("\"Id Analisis\"", "\"Orientacion Consultada\"")
                 .doesNotContain("Telefono", "userId", "sessionId", "provider", "model", "tokens");
-        assertThat(csv).contains(firstId.toString(), secondId.toString(), "\"COMPLETADO\"")
-                .contains("requiere revisión especializada")
+        assertThat(csv).contains(firstId.toString(), secondId.toString(), thirdId.toString(),
+                        pendingId.toString(), "\"COMPLETADO\"")
+                .contains("requiere revisión especializada", "Conocimientos colectivos")
                 .doesNotContain(outsideId.toString(), "POTENTIALLY_REQUIRED");
         assertThat(csv.indexOf(firstId.toString())).isLessThan(csv.indexOf(secondId.toString()));
+        assertThat(csv.indexOf(secondId.toString())).isLessThan(csv.indexOf(thirdId.toString()));
     }
 
     private User user(String paternalLastName, String maternalLastName) {
@@ -347,16 +368,16 @@ class OperationalAnalysisDatasetIntegrationTest {
         stored.setCreatedAt(createdAt.plusSeconds(1));
         resultRepository.saveAndFlush(stored);
         if (reportContext) {
-            reportContext(analysis);
+            reportContext(analysis, stored.getSchemaVersion());
         }
         return analysis;
     }
 
-    private void reportContext(Analysis analysis) {
+    private void reportContext(Analysis analysis, String resultSchemaVersion) {
         AnalysisReportContext context = new AnalysisReportContext();
         context.setAnalysisId(analysis.getAnalysisId());
         context.setDisclaimerId(DISCLAIMER_ID);
-        context.setReportVersion(AnalysisReportContextService.REPORT_VERSION);
+        context.setReportVersion(AnalysisReportContextService.reportVersionForResult(resultSchemaVersion));
         context.setCreatedAt(analysis.getUpdatedAt().plusSeconds(1));
         contextRepository.saveAndFlush(context);
     }
@@ -464,6 +485,34 @@ class OperationalAnalysisDatasetIntegrationTest {
                   },
                   "observations":["Observación presentada."],
                   "warnings":["Advertencia presentada."]
+                }
+                """);
+    }
+
+    private JsonNode v3Result() throws Exception {
+        return objectMapper.readTree("""
+                {
+                  "schemaVersion":"analysis-result/3.0",
+                  "summary":"COPYRIGHT (LIKELY).",
+                  "protectionOptions":[{
+                    "type":"COPYRIGHT","applicability":"LIKELY",
+                    "protectedSubjectMatter":"Código fuente.","rationale":"Expresión del programa.",
+                    "legalBasis":[{"instrument":"DECISION_351","articles":["1","3","4"]}]
+                  }],
+                  "patentScreening":{
+                    "applicable":false,
+                    "article15":{"assessment":"NO_POTENTIAL_MATCH","rationale":"Sin coincidencias.","matches":[]},
+                    "article20":{"assessment":"NO_POTENTIAL_MATCH","rationale":"Sin coincidencias.","matches":[]}
+                  },
+                  "geneticResourceAccess":{
+                    "assessment":"NOT_INDICATED","rationale":"No hay indicios.","missingInformation":[]
+                  },
+                  "traditionalKnowledgeAccess":{
+                    "assessment":"POTENTIALLY_REQUIRED",
+                    "rationale":"Se describe el uso de un conocimiento colectivo bajo la Ley N.º 27811.",
+                    "missingInformation":["Finalidad exacta de utilización"]
+                  },
+                  "observations":[],"warnings":[]
                 }
                 """);
     }
