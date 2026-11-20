@@ -27,6 +27,11 @@ h3 {
 }
 
 @media print {
+	.applicability-label {
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
+	}
+
 	.home-banner,
 	.hero-right,
 	.modality-next-steps {
