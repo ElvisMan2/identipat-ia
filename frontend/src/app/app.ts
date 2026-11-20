@@ -14,7 +14,6 @@ import { AdminReportDisclaimerService, ReportDisclaimer } from './services/admin
 import { AdminProtectionGuideService, ProtectionGuide } from './services/admin-protection-guide.service';
 import { AnalysisGuidanceResponse, AnalysisResponse, DiagnosticReport, StandardAnalysisService } from './services/standard-analysis.service';
 import { CsrfService } from './services/csrf.service';
-import { DiagnosticPdfService } from './services/diagnostic-pdf.service';
 import { LegalDocument, LegalDocumentService } from './services/legal-document.service';
 import { StandardSessionResponse, StandardSessionService } from './services/standard-session.service';
 import { TrustFooter } from './components/trust-footer/trust-footer';
@@ -81,7 +80,6 @@ export class App {
   private readonly standardSessionService = inject(StandardSessionService);
   private readonly legalDocumentService = inject(LegalDocumentService);
   private readonly csrfService = inject(CsrfService);
-  private readonly diagnosticPdfService = inject(DiagnosticPdfService);
   private readonly defaultAdminPassword = 'admin';
   private readonly useExampleAnalysis = false;
 
@@ -2597,7 +2595,7 @@ export class App {
     this.clearPendingAnalysisIntent();
   }
 
-  async downloadReportPdf(content: HTMLElement): Promise<void> {
+  async downloadReportPdf(_content: HTMLElement): Promise<void> {
     const analysis = this.analysisResult();
     const analysisId = analysis?.analysisId;
     if (!analysisId || analysis.status !== 'COMPLETED' || !this.diagnosticReport() || this.downloadingReportPdf()) {
@@ -2607,10 +2605,10 @@ export class App {
     this.downloadingReportPdf.set(true);
     this.reportPdfError.set('');
     try {
-      await this.diagnosticPdfService.download(content, analysisId);
+      window.print();
     } catch {
       if (this.analysisResult()?.analysisId === analysisId) {
-        this.reportPdfError.set('No se pudo generar el reporte PDF. Inténtalo nuevamente.');
+        this.reportPdfError.set('No se pudo abrir la ventana de impresión. Inténtalo nuevamente.');
       }
     } finally {
       this.downloadingReportPdf.set(false);

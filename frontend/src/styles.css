@@ -25,4 +25,11 @@ h3 {
 .orientation-subsection .ck-editor__editable {
 	min-height: 180px;
 }
-/* You can add global styles to this file, and also import other style files */
+
+@media print {
+	.home-banner,
+	.hero-right,
+	.modality-next-steps {
+		display: none !important;
+	}
+}

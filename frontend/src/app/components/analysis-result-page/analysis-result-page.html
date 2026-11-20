@@ -41,7 +41,7 @@
             @if (analysis?.analysisId) {
               <div class="hero-right" data-pdf-exclude>
                 <button class="outline-button" type="button" (click)="downloadPdf.emit(pdfContent)" [disabled]="downloadingPdf">
-                  {{ downloadingPdf ? 'Generando PDF...' : 'Descargar reporte PDF' }}
+                  {{ downloadingPdf ? 'Abriendo impresión...' : 'Guardar reporte como PDF' }}
                 </button>
               </div>
             }
