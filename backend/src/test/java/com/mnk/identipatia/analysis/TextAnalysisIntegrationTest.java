@@ -229,7 +229,7 @@ class TextAnalysisIntegrationTest {
         assertThat(invocation.getStatus()).isEqualTo(AiInvocationStatus.SUCCEEDED);
         assertThat(invocation.getAttemptNumber()).isEqualTo(1);
         assertThat(invocation.getPromptId()).isEqualTo("intellectual-property-analysis");
-        assertThat(invocation.getPromptVersion()).isEqualTo("0.3");
+        assertThat(invocation.getPromptVersion()).isEqualTo("0.3.1");
         assertThat(invocation.getOutputSchemaId()).isEqualTo("analysis-result");
         assertThat(invocation.getOutputSchemaVersion()).isEqualTo("3.0");
         assertThat(invocation.getRenderedPromptSnapshot()).contains("Mecanismo eléctrico");

@@ -173,7 +173,12 @@ class ReportingIntegrationTest {
                         .value("patente de invención — podría corresponder. Existe indicio suficiente "
                                 + "(requiere revisión especializada)."))
                 .andExpect(jsonPath("$.protectionOptions[0].name").value("Patente de invención"))
+                .andExpect(jsonPath("$.protectionOptions[0].relationshipQuestion")
+                        .value("Elementos Identificados"))
                 .andExpect(jsonPath("$.patentScreening.title").value("Revisión de la vía patentaria"))
+                .andExpect(jsonPath("$.patentScreening.scopeNote")
+                        .value("Esta revisión identifica posibles exclusiones previstas en los artículos 15 y 20 de la "
+                                + "Decisión 486. No constituye una evaluación completa de patentabilidad."))
                 .andExpect(jsonPath("$.geneticResourceAccess.assessment")
                         .value("POTENTIALLY_REQUIRED"))
                 .andExpect(jsonPath("$.geneticResourceAccess.assessmentLabel")
@@ -196,9 +201,10 @@ class ReportingIntegrationTest {
         try (var document = Loader.loadPDF(pdf)) {
             assertThat(new PDFTextStripper().getText(document))
                     .contains("Patente de invención", "podría corresponder", "Importante",
-                            "diagnostic-report/1.0", "requiere revisión especializada",
+                            "diagnostic-report/1.0", "Elementos Identificados", "Esta revisión identifica",
+                            "requiere revisión especializada",
                             analysisId.toString(), "Versión 1")
-                    .doesNotContain("INVENTION_PATENT", "POSSIBLE", "POTENTIALLY_REQUIRED",
+                    .doesNotContain("screening", "INVENTION_PATENT", "POSSIBLE", "POTENTIALLY_REQUIRED",
                             "Conocimientos colectivos");
         }
 
@@ -242,6 +248,8 @@ class ReportingIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.reportVersion").value("diagnostic-report/1.0"))
                 .andExpect(jsonPath("$.sourceResultVersion").value("analysis-result/1.0"))
+                .andExpect(jsonPath("$.protectionOptions[0].relationshipQuestion")
+                        .value("Elementos Identificados"))
                 .andExpect(jsonPath("$.traditionalKnowledgeAccess").doesNotExist())
                 .andExpect(jsonPath("$.geneticResourceAccess").doesNotExist());
         assertThat(contextRepository.findById(analysisId).orElseThrow().getReportVersion())
@@ -301,6 +309,8 @@ class ReportingIntegrationTest {
                         .value("No se identifican coincidencias potenciales"))
                 .andExpect(jsonPath("$.patentScreening.article20.assessmentLabel")
                         .value("No se identifican coincidencias potenciales"))
+                .andExpect(jsonPath("$.protectionOptions[0].relationshipQuestion")
+                        .value("Elementos Identificados"))
                 .andExpect(jsonPath("$.protectionOptions[*].patentScreening").doesNotExist())
                 .andExpect(jsonPath("$.protectionOptions[*].geneticResourceAccess").doesNotExist())
                 .andExpect(jsonPath("$.protectionOptions[1].rationale")
@@ -324,7 +334,7 @@ class ReportingIntegrationTest {
                     .contains("Signo distintivo", "Derecho de autor", "Diseño industrial", "Modelo de utilidad",
                             "Revisión de la vía patentaria", "Artículo 15", "Artículo 20",
                             "No se identifican coincidencias potenciales")
-                    .containsOnlyOnce("Este screening se limita")
+                    .containsOnlyOnce("Esta revisión identifica posibles exclusiones")
                     .doesNotContain("patente no aparece como modalidad positiva", "DISTINCTIVE_SIGN",
                             "INDUSTRIAL_DESIGN", "UTILITY_MODEL", "(LIKELY)", "(POSSIBLE)");
             assertThat(text.indexOf("Modelo de utilidad"))

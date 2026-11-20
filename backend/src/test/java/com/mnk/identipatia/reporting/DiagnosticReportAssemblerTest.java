@@ -1,5 +1,6 @@
 package com.mnk.identipatia.reporting;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mnk.identipatia.analysis.model.Analysis;
 import com.mnk.identipatia.analysis.model.AnalysisInputType;
 import com.mnk.identipatia.analysis.result.AnalysisResultV1;
@@ -60,6 +61,11 @@ class DiagnosticReportAssemblerTest {
                 .containsOnly("Se relaciona claramente");
         assertThat(report.protectionOptions().getFirst().legalBasis().getFirst().instrument())
                 .isEqualTo("Decisión 486");
+        assertThat(report.protectionOptions().getFirst().relationshipQuestion())
+                .isEqualTo("Elementos Identificados");
+        assertThat(new ObjectMapper().findAndRegisterModules().valueToTree(report)
+                .at("/protectionOptions/0/relationshipQuestion").asText())
+                .isEqualTo("Elementos Identificados");
         assertThat(report.patentScreening()).isNotNull();
         assertThat(report.patentScreening().title()).isEqualTo("Revisión de la vía patentaria");
         assertThat(report.patentScreening().context())
@@ -68,6 +74,10 @@ class DiagnosticReportAssemblerTest {
         assertThat(report.observations()).containsExactly("Aspecto específico");
         assertThat(report.warnings()).containsExactly("Advertencia específica");
         assertThat(report.scope()).contains("No determina registrabilidad");
+        assertThat(report.patentScreening().scopeNote())
+                .isEqualTo("Esta revisión identifica posibles exclusiones previstas en los artículos 15 y 20 de la "
+                        + "Decisión 486. No constituye una evaluación completa de patentabilidad.")
+                .doesNotContainIgnoringCase("screening");
     }
 
     @Test
@@ -144,6 +154,8 @@ class DiagnosticReportAssemblerTest {
         assertThat(report.summary()).contains("derecho de autor — podría corresponder");
         assertThat(report.protectionOptions().getFirst().rationale())
                 .contains("podría corresponder", "COPYRIGHTABLE").doesNotContain(" POSSIBLE");
+        assertThat(report.protectionOptions().getFirst().relationshipQuestion())
+                .isEqualTo("Elementos Identificados");
         assertThat(report.historicalPatentability().rationale()).contains("patente de invención");
         assertThat(report.observations()).containsExactly("signo distintivo requiere contexto");
         assertThat(report.warnings()).containsExactly("Relación relación limitada");
@@ -330,8 +342,8 @@ class DiagnosticReportAssemblerTest {
                     report.analysisId().toString(), "áéíóú", "¿pregunta?", "¡énfasis!",
                     "A → B", "INICIO-DISCLAIMER", "FIN-DISCLAIMER",
                     "INICIO-MATERIA", "FIN-MATERIA", "INICIO-RAZON", "FIN-RAZON",
-                    "Revisión de la vía patentaria", "Artículo 15", "Artículo 20",
-                    "Este screening se limita", "signo distintivo", "derecho de autor",
+                    "Elementos Identificados", "Revisión de la vía patentaria", "Artículo 15", "Artículo 20",
+                    "Esta revisión identifica posibles exclusiones", "signo distintivo", "derecho de autor",
                     "Recursos genéticos", "Se necesita más información",
                     "No hay datos suficientes", "Origen del recurso");
             assertThat(text)
@@ -340,8 +352,9 @@ class DiagnosticReportAssemblerTest {
                     .containsOnlyOnce("INICIO-RAZON")
                     .containsOnlyOnce("FIN-RAZON")
                     .containsOnlyOnce("Revisión de la vía patentaria")
-                    .containsOnlyOnce("Este screening se limita")
+                    .containsOnlyOnce("Esta revisión identifica posibles exclusiones")
                     .containsOnlyOnce("Recursos genéticos")
+                    .doesNotContain("screening")
                     .doesNotContain("Alcance del análisis", "DISTINCTIVE_SIGN", "COPYRIGHT (",
                             "(LIKELY)", "(POSSIBLE)");
         }

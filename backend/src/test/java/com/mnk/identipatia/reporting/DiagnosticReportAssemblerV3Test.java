@@ -7,7 +7,12 @@ import com.mnk.identipatia.analysis.result.v2.Article15Screening;
 import com.mnk.identipatia.analysis.result.v2.Article20Screening;
 import com.mnk.identipatia.analysis.result.v2.GeneticResourceAccess;
 import com.mnk.identipatia.analysis.result.v2.GeneticResourceAssessment;
+import com.mnk.identipatia.analysis.result.v2.LegalBasis;
+import com.mnk.identipatia.analysis.result.v2.LegalInstrument;
 import com.mnk.identipatia.analysis.result.v2.PatentScreening;
+import com.mnk.identipatia.analysis.result.v2.ProtectionApplicability;
+import com.mnk.identipatia.analysis.result.v2.ProtectionOption;
+import com.mnk.identipatia.analysis.result.v2.ProtectionType;
 import com.mnk.identipatia.analysis.result.v2.ScreeningAssessment;
 import com.mnk.identipatia.analysis.result.v3.AnalysisResultV3;
 import com.mnk.identipatia.analysis.result.v3.TraditionalKnowledgeAccess;
@@ -89,6 +94,28 @@ class DiagnosticReportAssemblerV3Test {
                     .isLessThan(text.indexOf("Acceso a conocimientos colectivos de pueblos indígenas"));
             assertThat(text.indexOf("Acceso a conocimientos colectivos de pueblos indígenas"))
                     .isLessThan(text.indexOf("Aspectos a considerar"));
+        }
+    }
+
+    @Test
+    void v3KeepsRelationshipQuestionJsonFieldAndCitizenLabel() throws Exception {
+        AnalysisResultV3 base = result(GeneticResourceAssessment.NOT_INDICATED,
+                TraditionalKnowledgeAssessment.NOT_INDICATED, List.of());
+        AnalysisResultV3 withOption = new AnalysisResultV3(base.schemaVersion(), base.summary(),
+                List.of(new ProtectionOption(ProtectionType.COPYRIGHT, ProtectionApplicability.LIKELY,
+                        "Expresión gráfica descrita", "Se describe una obra gráfica concreta.",
+                        List.of(new LegalBasis(LegalInstrument.DECISION_351, List.of("4"))))),
+                base.patentScreening(), base.geneticResourceAccess(), base.traditionalKnowledgeAccess(),
+                base.observations(), base.warnings());
+
+        DiagnosticReport report = assembler.assemble(analysis(), withOption,
+                context("diagnostic-report/1.1"), disclaimer());
+
+        assertThat(report.protectionOptions().getFirst().relationshipQuestion()).isEqualTo("Elementos Identificados");
+        assertThat(new ObjectMapper().findAndRegisterModules().valueToTree(report)
+                .at("/protectionOptions/0/relationshipQuestion").asText()).isEqualTo("Elementos Identificados");
+        try (var document = Loader.loadPDF(new DiagnosticReportPdfRenderer().render(report))) {
+            assertThat(new PDFTextStripper().getText(document)).contains("Elementos Identificados");
         }
     }
 
