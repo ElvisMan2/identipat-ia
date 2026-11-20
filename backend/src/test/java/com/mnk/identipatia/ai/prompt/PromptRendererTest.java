@@ -26,6 +26,34 @@ class PromptRendererTest {
     }
 
     @Test
+    void loadsCitizenLanguagePromptAndKeepsV3BaselineAvailable() {
+        PromptRenderer renderer = new PromptRenderer(new PromptRegistry());
+        PromptReference baselineReference = new PromptReference("intellectual-property-analysis", "0.3");
+        PromptReference activeReference = new PromptReference("intellectual-property-analysis", "0.3.1");
+
+        RenderedPrompt baseline = renderer.render(baselineReference, Map.of("USER_DESCRIPTION", "caso sintético"));
+        RenderedPrompt active = renderer.render(activeReference, Map.of("USER_DESCRIPTION", "caso sintético"));
+        String activeSystem = active.messages().getFirst().content();
+        String activeUser = active.messages().getLast().content();
+
+        assertThat(baseline.reference()).isEqualTo(baselineReference);
+        assertThat(baseline.messages().getFirst().content()).contains("screening limitado");
+        assertThat(active.reference()).isEqualTo(activeReference);
+        assertThat(activeSystem)
+                .contains("español natural, claro y profesional")
+                .contains("No uses la palabra inglesa `screening` en esos campos")
+                .contains("«revisión preliminar»", "«evaluación de posibles exclusiones»",
+                        "«posibles limitaciones para la protección mediante patente»")
+                .contains("No afirmes que una patente será concedida, rechazada o definitivamente excluida")
+                .contains("No confundas la referencia general del artículo 14")
+                .contains("artículos 15 y 20", "evita repetir mecánicamente los artículos")
+                .contains("Estas reglas son editoriales")
+                .contains("summary", "rationale", "observations", "warnings");
+        assertThat(activeUser).contains("evaluación preliminar y limitada")
+                .doesNotContainIgnoringCase("screening");
+    }
+
+    @Test
     void renderingIsDeterministicAndNormalizesCrLfInTemplatesAndValues() {
         PromptRenderer crlf = renderer("sistema\r\nlinea", "dato={{VALUE}}\rfin");
         PromptRenderer lf = renderer("sistema\nlinea", "dato={{VALUE}}\nfin");

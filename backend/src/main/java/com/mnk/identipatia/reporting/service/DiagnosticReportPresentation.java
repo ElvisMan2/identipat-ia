@@ -13,9 +13,9 @@ import java.util.regex.Pattern;
 
 final class DiagnosticReportPresentation {
     static final String TITLE = "Reporte orientativo de identificación de propiedad intelectual";
-    static final String RELATIONSHIP_QUESTION = "¿Cómo se relaciona con tu creación?";
+    static final String RELATIONSHIP_QUESTION = "Elementos Identificados";
     static final String APPLICABILITY_NOTE = "La relación mostrada indica qué tan directamente lo descrito en tu creación se vincula con esta modalidad de protección. No representa una probabilidad de registro, concesión o reconocimiento definitivo de un derecho.";
-    static final String SCREENING_NOTE = "Este screening se limita a posibles coincidencias con los artículos 15 y 20 de la Decisión 486 y no constituye un examen completo de patentabilidad.";
+    static final String SCREENING_NOTE = "Esta revisión identifica posibles exclusiones previstas en los artículos 15 y 20 de la Decisión 486. No constituye una evaluación completa de patentabilidad.";
     static final String SCOPE = "Este análisis identifica relaciones orientativas a partir de la información disponible. No determina registrabilidad, concesión o reconocimiento definitivo, ni sustituye una evaluación especializada o una decisión oficial.";
     private static final Map<String, String> NARRATIVE_PROTECTION_LABELS = labels(
             "PLANT_BREEDER_CERTIFICATE", "certificado de obtentor",

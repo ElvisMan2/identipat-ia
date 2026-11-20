@@ -1621,7 +1621,7 @@ describe('App', () => {
       protectionOptions: [{
         type: 'INVENTION_PATENT',
         name: 'Patente de invención',
-        relationshipQuestion: null,
+        relationshipQuestion: 'Elementos Identificados',
         applicability: 'POSSIBLE',
         applicabilityLabel: 'Posible',
         protectedSubjectMatter: 'Una creación',
@@ -1672,6 +1672,7 @@ describe('App', () => {
     expect(compiled.querySelector('app-analysis-result-page')).not.toBeNull();
     expect(compiled.textContent).toContain('Diagnóstico de prueba');
     expect(compiled.textContent).toContain('Resumen de prueba');
+    expect(compiled.textContent).toContain('Elementos Identificados');
     const contextCards = Array.from(compiled.querySelectorAll('.analysis-result .context-card'));
     expect(contextCards[0].textContent).toContain('Recursos genéticos');
     expect(contextCards[1].textContent).toContain('Acceso a conocimientos colectivos de pueblos indígenas');

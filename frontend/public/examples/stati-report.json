@@ -5,13 +5,13 @@
   "inputType": "TEXT",
   "analysisCompletedAt": "2026-11-19T01:34:36.255106Z",
   "title": "Reporte orientativo de identificación de propiedad intelectual",
-  "summary": "Se identifican vías para proteger el nombre y logotipo (signo distintivo se relaciona claramente; derecho de autor podría corresponder), la apariencia externa (diseño industrial se relaciona claramente) y la configuración funcional del mecanismo de apertura/sujeción (modelo de utilidad se relaciona claramente). Se realiza screening de artículos 15 y 20 respecto de la materia susceptible de vía patentaria (mecanismo/configuración) sin coincidencias. No hay indicios de recurso genético.",
+  "summary": "Se identifican vías para proteger el nombre y logotipo (signo distintivo se relaciona claramente; derecho de autor podría corresponder), la apariencia externa (diseño industrial se relaciona claramente) y la configuración funcional del mecanismo de apertura/sujeción (modelo de utilidad se relaciona claramente). La revisión preliminar de los artículos 15 y 20 de la Decisión 486 no identifica posibles exclusiones para la configuración mecánica descrita. No hay indicios de recursos genéticos.",
   "applicabilityNote": "La relación mostrada indica qué tan directamente lo descrito en tu creación se vincula con esta modalidad de protección. No representa una probabilidad de registro, concesión o reconocimiento definitivo de un derecho.",
   "protectionOptions": [
     {
       "type": "DISTINCTIVE_SIGN",
       "name": "Signo distintivo",
-      "relationshipQuestion": "¿Cómo se relaciona con tu creación?",
+      "relationshipQuestion": "Elementos Identificados",
       "applicability": "LIKELY",
       "applicabilityLabel": "Se relaciona claramente",
       "protectedSubjectMatter": "Nombre comercial 'KUMAY' y logotipo compuesto por una K estilizada con silueta de montaña destinado a distinguir botellas y empaques",
@@ -22,7 +22,7 @@
     {
       "type": "COPYRIGHT",
       "name": "Derecho de autor",
-      "relationshipQuestion": "¿Cómo se relaciona con tu creación?",
+      "relationshipQuestion": "Elementos Identificados",
       "applicability": "POSSIBLE",
       "applicabilityLabel": "Podría corresponder",
       "protectedSubjectMatter": "Expresión gráfica del logotipo (K estilizada combinada con la silueta de una montaña)",
@@ -33,7 +33,7 @@
     {
       "type": "INDUSTRIAL_DESIGN",
       "name": "Diseño industrial",
-      "relationshipQuestion": "¿Cómo se relaciona con tu creación?",
+      "relationshipQuestion": "Elementos Identificados",
       "applicability": "LIKELY",
       "applicabilityLabel": "Se relaciona claramente",
       "protectedSubjectMatter": "Apariencia externa de la botella: forma ligeramente triangular con bordes redondeados, superficie con líneas diagonales en relieve y tapa integrada visualmente con el cuerpo; combinación de colores verde oscuro y cobre",
@@ -44,7 +44,7 @@
     {
       "type": "UTILITY_MODEL",
       "name": "Modelo de utilidad",
-      "relationshipQuestion": "¿Cómo se relaciona con tu creación?",
+      "relationshipQuestion": "Elementos Identificados",
       "applicability": "LIKELY",
       "applicabilityLabel": "Se relaciona claramente",
       "protectedSubjectMatter": "Mecanismo de apertura de una sola mano por presión lateral y pieza plegable en el costado para enganchar la botella a mochila/cinturón/bicicleta",
@@ -70,7 +70,7 @@
       "rationale": "No hay indicios de que la materia objeto de la vía implique riesgos de orden público/moral, protección de salud/medio ambiente, ni se refiera a plantas, animales o métodos terapéuticos; por tanto no encaja con los literales del artículo 20.",
       "matches": []
     },
-    "scopeNote": "Este screening se limita a posibles coincidencias con los artículos 15 y 20 de la Decisión 486 y no constituye un examen completo de patentabilidad."
+    "scopeNote": "Esta revisión identifica posibles exclusiones previstas en los artículos 15 y 20 de la Decisión 486. No constituye una evaluación completa de patentabilidad."
   },
   "geneticResourceAccess": null,
   "historicalPatentability": null,
