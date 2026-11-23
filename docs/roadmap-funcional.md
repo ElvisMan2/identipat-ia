@@ -1,8 +1,8 @@
 # Roadmap funcional — IDENTIPAT-IA
 
-**Estado:** F2 iniciada; F2-CONSUMO-01 completada e integrada en `develop`, pendiente de despliegue en PREPROD; F1.10A3 y F1.9 pendientes
-**Versión del roadmap:** 1.12
-**Última actualización:** 9 de noviembre de 2026
+**Estado:** F2 iniciada; F2-CONSUMO-01 integrada y F2-GEMINI-01 implementada en rama, con smokes y E2E real aprobados; integración a develop pendiente. F1.10A3 y F1.9 pendientes
+**Versión del roadmap:** 1.13
+**Última actualización:** 23 de noviembre de 2026
 **Objetivo:** mantener una visión vigente de la secuencia funcional del producto, diferenciando lo ya materializado de las fases pendientes.
 
 ---
@@ -43,6 +43,7 @@ La estabilización técnica F0 está completada. El backend también materializa
 | F1.10A2C | Filtros y orden compartidos entre tabla y CSV | ✅ Implementada |
 | F1.10A3 | Tabla y descarga CSV en Angular ADMIN | ⏳ Pendiente |
 | F2 | Preparación para piloto y producción | 🚧 Iniciada: F2-CONSUMO-01 integrada en `develop`, no desplegada en PREPROD |
+| F2-GEMINI-01 | Adapter Gemini mediante Vertex AI | ✅ Implementado y validado con smokes opt-in y E2E real; integración a develop pendiente |
 
 Los estados **implementada** indican que el alcance técnico existe en el backend y está cubierto por pruebas. No sustituyen la revisión funcional, jurídica, de seguridad o de aceptación que corresponda antes del piloto.
 
@@ -60,7 +61,7 @@ La base actual incluye:
 - protección CSRF para las mutaciones STANDARD implementadas;
 - contenido legal único con aceptación persistente por usuario, hash canónico y vigencia efectiva;
 - análisis de texto asíncrono y durable;
-- abstracción `GenerativeAiProvider` con OpenAI como adapter actual;
+- abstracción `GenerativeAiProvider` con adapters OpenAI y Gemini/Vertex AI mutuamente excluyentes;
 - prompts y JSON Schemas versionados;
 - persistencia de intentos, resultados y metadata técnica;
 - lease, retry y recuperación de trabajos interrumpidos.
@@ -169,8 +170,8 @@ Analysis + AnalysisInput (RECEIVED)
 worker asíncrono con lease
       ↓
 GenerativeAiProvider
-      ↓
-OpenAiGenerativeAiProvider
+      ├→ OpenAiGenerativeAiProvider
+      └→ GeminiGenerativeAiProvider
       ↓
 validación de structured output
       ↓
@@ -200,7 +201,7 @@ Texto PDF    Audio
                        ↓
               GenerativeAiProvider
                        ↓
-        OpenAI actual / adapters futuros
+        OpenAI Responses / Gemini Vertex AI
                        ↓
               resultado estructurado
                        ↓
@@ -214,8 +215,8 @@ Principios:
 - Python realiza preprocesamiento técnico especializado para PDF y audio.
 - Python no accede a PostgreSQL ni ejecuta el diagnóstico de propiedad intelectual.
 - El código de negocio depende de `GenerativeAiProvider`, no del SDK de un proveedor concreto.
-- `OpenAiGenerativeAiProvider` es el adapter vigente.
-- Gemini u otros proveedores podrán añadirse como adapters futuros sin cambiar el contrato central.
+- `OpenAiGenerativeAiProvider` y `GeminiGenerativeAiProvider` son adapters disponibles.
+- Solo uno se activa por instancia y ambos conservan el mismo contrato central.
 
 ---
 
@@ -309,7 +310,8 @@ OpenAiGenerativeAiProvider
 - persistencia de proveedor, modelo, tokens, latencia y metadata disponible;
 - aislamiento de las clases del SDK dentro del adapter OpenAI.
 
-Gemini queda reservado como adapter futuro y no forma parte de la implementación vigente.
+F2-GEMINI-01 amplía esta infraestructura con Google Gen AI Java 2.5.0, Vertex AI API `v1`, ADC,
+structured output V3, errores saneados y un único intento HTTP por `generate()`.
 
 ## Mejoras técnicas identificadas
 
@@ -654,6 +656,20 @@ despliegue en PREPROD, a una validación QA ni a la aceptación institucional de
 
 # F2.0 — Evaluación de calidad
 
+## F2-GEMINI-01 — Segundo adapter generativo mediante Vertex AI
+
+**Objetivo:** permitir evaluar Gemini sin modificar el worker, el prompt jurídico ni el contrato de
+salida. La instancia selecciona `openai` o `gemini` al arrancar y no aplica fallback automático.
+
+**Estado:** implementado en `feat/f2-gemini-vertex-provider`, con suite offline, smokes live opt-in y
+E2E real aprobados según [el reporte de validación](../codex-prompts/F2/F2-GEMINI-01/reporte-validacion-e2e.md).
+Pendiente de revisión humana e integración a `develop`. Estas pruebas no acreditan calidad jurídica,
+costos, IAM, privacidad ni residencia productiva.
+
+**Alcance técnico:** Google Gen AI Java 2.5.0, Vertex AI API `v1`, ADC, `responseJsonSchema`,
+validación local `analysis-result/3.0`, normalización de uso/finish reason, errores saneados y un
+único intento HTTP por cada `generate()`.
+
 ## F2-QUALITY-01 — Evaluación funcional y jurídica de la IA
 
 **Objetivo:** demostrar con evidencia reproducible que el diagnóstico asistido por IA alcanza un nivel
@@ -971,7 +987,8 @@ No duplicar reglas de diagnóstico por tipo de entrada, reporte o canal.
 Caso de uso
      ↓
 GenerativeAiProvider
-     ├── OpenAiGenerativeAiProvider (actual)
+     ├── OpenAiGenerativeAiProvider
+     ├── GeminiGenerativeAiProvider
      └── otros adapters (futuro)
 ```
 

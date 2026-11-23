@@ -75,7 +75,7 @@ exactly-once.
 
 ## Prompt, schema y resultado
 
-El worker renderiza `intellectual-property-analysis/0.3`, carga `analysis-result/3.0` y usa
+El worker renderiza `intellectual-property-analysis/0.3.1`, carga `analysis-result/3.0` y usa
 `GenerationOptions(maxOutputTokens=ANALYSIS_AI_MAX_OUTPUT_TOKENS, temperature=null)`, con default
 `6000`. La descripción es la única variable del user prompt. El schema estricto exige
 `additionalProperties=false`. El modelo Java 3.0 valida además duplicados e invariantes condicionales

@@ -12,8 +12,9 @@ Repositorio del sistema IDENTIPAT-IA, organizado como una aplicación web con ba
 - `docker-compose.yml`: PostgreSQL 16, pgAdmin y `preprocessing-service` para desarrollo local.
 - `codex-prompts/`: instrucciones locales para Codex; su contenido no se versiona.
 
-El backend contiene una capa de IA generativa agnóstica al proveedor. OpenAI es el adapter inicial
-mediante Responses API; el launcher DEV habilita esta integración y requiere una API key local.
+El backend contiene una capa de IA generativa agnóstica al proveedor. Están disponibles los adapters
+OpenAI Responses y Gemini sobre Vertex AI; una instancia activa exactamente uno mediante
+`IDENTIPAT_AI_PROVIDER`. El launcher DEV exige la credencial correspondiente al adapter elegido.
 Otros entornos pueden arrancar sin credenciales externas mientras `IDENTIPAT_AI_ENABLED=false`. Consulta la
 [guía de integración de IA generativa](docs/development/generative-ai-integration.md).
 
@@ -35,7 +36,7 @@ persisten o envían a un STT cloud. La transcripción converge al mismo `Analysi
 schema y resultado de TEXT/PDF.
 
 Los análisis nuevos usan el contrato jurídico-funcional `analysis-result/3.0` y el prompt
-`intellectual-property-analysis/0.3`: admiten protecciones concurrentes, screening limitado de los
+`intellectual-property-analysis/0.3.1`: admiten protecciones concurrentes, screening limitado de los
 artículos 15 y 20 de la Decisión 486 y alertas independientes de recursos genéticos y conocimientos
 colectivos indígenas vinculados a recursos biológicos. Los resultados históricos 1.0 y 2.0
 conservan su versión y siguen siendo legibles; el análisis no evalúa novedad, nivel inventivo,
@@ -155,9 +156,11 @@ El perfil se selecciona con `SPRING_PROFILES_ACTIVE`; no hay un perfil activo po
 
 PROD exige `SPRING_PROFILES_ACTIVE=prod` y valores externos para `DB_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`, `STANDARD_SESSION_PEPPER` y `CORS_ALLOWED_ORIGINS`. El contenido legal y su hash ya no provienen de configuración: se administran en PostgreSQL mediante `/admin/legal-document`.
 
-La IA se controla con `IDENTIPAT_AI_ENABLED` y `IDENTIPAT_AI_PROVIDER`. DEV habilita OpenAI por
-defecto, usa `gpt-5-mini` y `60s` como defaults reemplazables, y exige `OPENAI_API_KEY` local.
-PROD continúa requiriendo `OPENAI_API_KEY`, `OPENAI_MODEL` y `OPENAI_TIMEOUT` explícitos.
+La IA se controla con `IDENTIPAT_AI_ENABLED` y `IDENTIPAT_AI_PROVIDER`; solo se admiten `openai` y
+`gemini`. DEV conserva OpenAI como default. OpenAI requiere `OPENAI_API_KEY`, `OPENAI_MODEL` y
+`OPENAI_TIMEOUT`; Gemini usa el SDK Google Gen AI 2.5.0, Vertex AI API `v1`, ADC mediante
+`GOOGLE_APPLICATION_CREDENTIALS` y proyecto, ubicación, modelo y timeout externos. PROD no define
+fallbacks para la configuración del provider activo.
 
 La sesión STANDARD es server-side y usa `IDENTIPAT_STANDARD_SESSION` HttpOnly; no es login ni JWT. Las mutaciones de sesión/consentimiento requieren `XSRF-TOKEN` y `X-XSRF-TOKEN`. El backend no devuelve PII, IDs internos ni el token de sesión en esos contratos.
 

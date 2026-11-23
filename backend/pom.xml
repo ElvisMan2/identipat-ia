@@ -28,6 +28,7 @@
         <testcontainers.version>1.21.4</testcontainers.version>
         <springdoc.version>2.5.0</springdoc.version>
         <openai-java.version>4.63.1</openai-java.version>
+        <google-genai.version>2.5.0</google-genai.version>
         <json-schema-validator.version>1.0.88</json-schema-validator.version>
         <pdfbox.version>3.0.3</pdfbox.version>
         <owasp-html-sanitizer.version>20261011.1</owasp-html-sanitizer.version>
@@ -132,6 +133,11 @@
             <groupId>com.openai</groupId>
             <artifactId>openai-java</artifactId>
             <version>${openai-java.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.genai</groupId>
+            <artifactId>google-genai</artifactId>
+            <version>${google-genai.version}</version>
         </dependency>
         <dependency>
             <groupId>com.networknt</groupId>

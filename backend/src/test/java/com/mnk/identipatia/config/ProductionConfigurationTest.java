@@ -55,6 +55,11 @@ class ProductionConfigurationTest {
                 .contains("api-key: ${OPENAI_API_KEY:}")
                 .contains("model: ${OPENAI_MODEL:gpt-5-mini}")
                 .contains("timeout: ${OPENAI_TIMEOUT:60s}")
+                .contains("project: ${GOOGLE_CLOUD_PROJECT:identipat}")
+                .contains("location: ${GOOGLE_CLOUD_LOCATION:global}")
+                .contains("model: ${GEMINI_MODEL:gemini-3.8-flash}")
+                .contains("api-version: ${GEMINI_API_VERSION:v1}")
+                .contains("timeout: ${GEMINI_TIMEOUT:60s}")
                 .doesNotContain("api-key: sk-");
     }
 
@@ -73,6 +78,11 @@ class ProductionConfigurationTest {
                 .contains("api-key: ${OPENAI_API_KEY}")
                 .contains("model: ${OPENAI_MODEL}")
                 .contains("timeout: ${OPENAI_TIMEOUT}")
+                .contains("project: ${GOOGLE_CLOUD_PROJECT}")
+                .contains("location: ${GOOGLE_CLOUD_LOCATION}")
+                .contains("model: ${GEMINI_MODEL}")
+                .contains("api-version: ${GEMINI_API_VERSION}")
+                .contains("timeout: ${GEMINI_TIMEOUT}")
                 .doesNotContain("${DB_PASSWORD:")
                 .doesNotContain("${JWT_SECRET:")
                 .doesNotContain("${ANALYSIS_IDEMPOTENCY_HMAC_SECRET:")
@@ -82,7 +92,12 @@ class ProductionConfigurationTest {
                 .doesNotContain("${PREPROCESSING_SERVICE_BASE_URL:")
                 .doesNotContain("${OPENAI_API_KEY:")
                 .doesNotContain("${OPENAI_MODEL:")
-                .doesNotContain("${OPENAI_TIMEOUT:");
+                .doesNotContain("${OPENAI_TIMEOUT:")
+                .doesNotContain("${GOOGLE_CLOUD_PROJECT:")
+                .doesNotContain("${GOOGLE_CLOUD_LOCATION:")
+                .doesNotContain("${GEMINI_MODEL:")
+                .doesNotContain("${GEMINI_API_VERSION:")
+                .doesNotContain("${GEMINI_TIMEOUT:");
     }
 
     @Test

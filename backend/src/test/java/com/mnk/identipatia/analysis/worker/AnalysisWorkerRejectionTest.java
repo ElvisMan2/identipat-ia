@@ -17,10 +17,10 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,7 +41,7 @@ class AnalysisWorkerRejectionTest {
                 new AnalysisProperties.Pdf(10_485_760, 50),
                 new AnalysisProperties.Audio(20_971_520, 180));
         UUID analysisId = UUID.randomUUID();
-        when(providerSource.orderedStream()).thenReturn(Stream.of(provider));
+        when(providerSource.getIfUnique()).thenReturn(provider);
         when(executor.getActiveCount()).thenReturn(0);
         when(executor.getThreadPoolExecutor()).thenReturn(threadPoolExecutor);
         when(threadPoolExecutor.getQueue()).thenReturn(queue);
@@ -55,5 +55,35 @@ class AnalysisWorkerRejectionTest {
 
         assertThat(worker.pollOnce()).isZero();
         verify(claimService).release(analysisId, "worker-test");
+    }
+
+    @Test
+    void workerDoesNotChooseArbitrarilyWhenProviderIsNotUnique() {
+        AnalysisProperties properties = new AnalysisProperties(
+                20, 20_000, true, Duration.ofSeconds(2), 1, 0,
+                Duration.ofSeconds(120), 2, Duration.ofSeconds(5), 4000,
+                new AnalysisProperties.Pdf(10_485_760, 50),
+                new AnalysisProperties.Audio(20_971_520, 180));
+        when(providerSource.getIfUnique()).thenReturn(null);
+        AnalysisWorker worker = new AnalysisWorker(properties, claimService, attemptService, providerSource,
+                new StructuredOutputValidator(), new ObjectMapper(), executor, "worker-test");
+
+        assertThat(worker.pollOnce()).isZero();
+        verifyNoInteractions(claimService, attemptService, executor);
+    }
+
+    @Test
+    void synchronousWorkerDoesNotClaimWhenProviderIsNotUnique() {
+        AnalysisProperties properties = new AnalysisProperties(
+                20, 20_000, true, Duration.ofSeconds(2), 1, 0,
+                Duration.ofSeconds(120), 2, Duration.ofSeconds(5), 4000,
+                new AnalysisProperties.Pdf(10_485_760, 50),
+                new AnalysisProperties.Audio(20_971_520, 180));
+        when(providerSource.getIfUnique()).thenReturn(null);
+        AnalysisWorker worker = new AnalysisWorker(properties, claimService, attemptService, providerSource,
+                new StructuredOutputValidator(), new ObjectMapper(), executor, "worker-test");
+
+        assertThat(worker.processOneSynchronously()).isFalse();
+        verifyNoInteractions(claimService, attemptService, executor);
     }
 }

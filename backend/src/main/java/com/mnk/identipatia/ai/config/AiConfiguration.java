@@ -19,7 +19,7 @@ public class AiConfiguration {
         return () -> {
             if (properties.enabled()
                     && (properties.provider() == null
-                    || !"openai".equals(properties.provider()))) {
+                    || !("openai".equals(properties.provider()) || "gemini".equals(properties.provider())))) {
                 throw new IllegalStateException("Unsupported generative AI provider");
             }
         };

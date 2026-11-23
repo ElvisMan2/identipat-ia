@@ -269,7 +269,7 @@ public class AnalysisApplicationService {
     }
 
     private void ensureAiAvailable() {
-        if (!aiProperties.enabled() || provider.orderedStream().findFirst().isEmpty()) {
+        if (!aiProperties.enabled() || provider.getIfUnique() == null) {
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "ANALYSIS_AI_UNAVAILABLE",
                     "Analysis is temporarily unavailable");
         }

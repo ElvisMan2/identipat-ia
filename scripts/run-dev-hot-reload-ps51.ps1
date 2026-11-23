@@ -163,14 +163,38 @@ $aiEnabled = if ([string]::IsNullOrWhiteSpace($env:IDENTIPAT_AI_ENABLED)) {
 }
 
 $historicalApiKeyPlaceholder = "replace-with-local-openai-key"
-if ($aiEnabled -and
+$aiProvider = if ([string]::IsNullOrWhiteSpace($env:IDENTIPAT_AI_PROVIDER)) {
+    "openai"
+} else {
+    $env:IDENTIPAT_AI_PROVIDER.Trim().ToLowerInvariant()
+}
+
+if ($aiEnabled -and $aiProvider -notin @("openai", "gemini")) {
+    throw "IDENTIPAT_AI_PROVIDER must be 'openai' or 'gemini'"
+}
+
+if ($aiEnabled -and $aiProvider -eq "openai" -and
     ([string]::IsNullOrWhiteSpace($env:OPENAI_API_KEY) -or
      $env:OPENAI_API_KEY.Trim().Equals($historicalApiKeyPlaceholder, [System.StringComparison]::OrdinalIgnoreCase))) {
     throw "OPENAI_API_KEY is not configured in .env"
 }
 
-if ($aiEnabled) {
+if ($aiEnabled -and $aiProvider -eq "gemini") {
+    foreach ($requiredName in @("GOOGLE_CLOUD_PROJECT", "GOOGLE_CLOUD_LOCATION", "GEMINI_MODEL", "GEMINI_API_VERSION", "GEMINI_TIMEOUT")) {
+        if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($requiredName))) {
+            throw "$requiredName is not configured in .env"
+        }
+    }
+    if ([string]::IsNullOrWhiteSpace($env:GOOGLE_APPLICATION_CREDENTIALS) -or
+        -not (Test-Path -LiteralPath $env:GOOGLE_APPLICATION_CREDENTIALS -PathType Leaf)) {
+        throw "GOOGLE_APPLICATION_CREDENTIALS must reference a readable local ADC file"
+    }
+}
+
+if ($aiEnabled -and $aiProvider -eq "openai") {
     Write-Host "OPENAI_API_KEY: configured"
+} elseif ($aiEnabled -and $aiProvider -eq "gemini") {
+    Write-Host "Gemini Vertex AI ADC: configured"
 }
 
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {

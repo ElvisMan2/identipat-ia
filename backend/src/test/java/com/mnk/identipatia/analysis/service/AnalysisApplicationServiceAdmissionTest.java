@@ -23,7 +23,6 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockMultipartFile;
 
-import java.util.stream.Stream;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -63,7 +62,7 @@ class AnalysisApplicationServiceAdmissionTest {
         lenient().when(pdfProperties.maxFileSizeBytes()).thenReturn(10_000L);
         lenient().when(audioProperties.maxFileSizeBytes()).thenReturn(10_000L);
         lenient().when(aiProperties.enabled()).thenReturn(true);
-        lenient().when(providers.orderedStream()).thenReturn(Stream.of(provider));
+        lenient().when(providers.getIfUnique()).thenReturn(provider);
         service = new AnalysisApplicationService(
                 analysisRepository, resultRepository, termsAcceptanceService, analysisProperties,
                 aiProperties, providers, new ObjectMapper(), preprocessingClient, admissionService,
@@ -152,7 +151,28 @@ class AnalysisApplicationServiceAdmissionTest {
                 admin, "Descripción suficientemente extensa para recuperar el replay.", "replay-key"))
                 .isEqualTo(response);
         verify(admissionService, never()).reserve(any(), any());
-        verify(providers, never()).orderedStream();
+        verify(providers, never()).getIfUnique();
+    }
+
+    @Test
+    void nonUniqueProviderRejectsBeforeReservationAndReleasesIdempotencyClaim() {
+        var claim = AnalysisIdempotencyService.Claim.claimed(UUID.randomUUID(), UUID.randomUUID());
+        when(idempotencyService.fingerprintText(any())).thenReturn("payload-digest");
+        when(idempotencyService.claimOrReplay(
+                admin, "provider-check-key", AnalysisInputType.TEXT, "payload-digest"))
+                .thenReturn(claim);
+        when(providers.getIfUnique()).thenReturn(null);
+
+        assertThatThrownBy(() -> service.createText(
+                admin,
+                "Descripción suficientemente extensa para comprobar proveedor único.",
+                "provider-check-key"))
+                .isInstanceOf(ApiException.class)
+                .extracting("code")
+                .isEqualTo("ANALYSIS_AI_UNAVAILABLE");
+
+        verify(admissionService, never()).reserve(any(), any());
+        verify(idempotencyService).release(claim);
     }
 
     private static ApiException capacity() {
