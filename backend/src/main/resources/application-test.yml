@@ -24,6 +24,12 @@ app:
       api-key: ''
       model: ''
       timeout: 60s
+    gemini:
+      project: ''
+      location: ''
+      model: ''
+      api-version: v1
+      timeout: 60s
   preprocessing:
     base-url: http://preprocessing-service.test
     connect-timeout: 5s

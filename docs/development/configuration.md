@@ -15,8 +15,8 @@ Desde la raíz del repositorio:
 
 ```powershell
 Copy-Item .env.example .env
-# Completa los valores locales/secretos necesarios, especialmente OPENAI_API_KEY.
-.\scripts\run-backend-dev.ps1
+# Elige openai o gemini y completa únicamente la credencial del provider activo.
+.\scripts\run-backend-dev-ps51.ps1
 ```
 
 El launcher carga `.env` solo en el entorno del proceso, fuerza siempre
@@ -79,10 +79,16 @@ Producción requiere `SPRING_PROFILES_ACTIVE=prod` además de todas las variable
 | `PREPROCESSING_AUDIO_TIMEOUT` | `300s` | `300s` | `300s` | Timeout de lectura exclusivo de transcripción |
 | `PREPROCESSING_AUDIO_READY_TIMEOUT_SECONDS` | `300` | No aplica | Operativo DEV | Espera del launcher al readiness del modelo |
 | `IDENTIPAT_AI_ENABLED` | `true` | `false` | Obligatoria | Activa la creación del adapter LLM |
-| `IDENTIPAT_AI_PROVIDER` | `openai` | `openai` | Obligatoria | Selecciona el provider; F1.2 admite `openai` |
+| `IDENTIPAT_AI_PROVIDER` | `openai` | `openai` | Obligatoria | Selecciona exactamente `openai` o `gemini` |
 | `OPENAI_API_KEY` | Sin default efectivo | Vacía con IA deshabilitada | Obligatoria al habilitar OpenAI | Secreto del SDK oficial |
 | `OPENAI_MODEL` | `gpt-5-mini` | Vacío con IA deshabilitada | Obligatoria al habilitar OpenAI | Modelo Responses configurable |
 | `OPENAI_TIMEOUT` | `60s` | `60s` | Obligatoria al habilitar OpenAI | Timeout total positivo |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Ruta privada sin default | No se usa | ADC del entorno o ruta privada | Archivo ADC local; nunca se versiona ni se carga como texto de dominio |
+| `GOOGLE_CLOUD_PROJECT` | `identipat` | Vacío con IA deshabilitada | Obligatoria al habilitar Gemini | Proyecto de Vertex AI |
+| `GOOGLE_CLOUD_LOCATION` | `global` | Vacío con IA deshabilitada | Obligatoria al habilitar Gemini | Ubicación de Vertex AI; validar residencia antes de producción |
+| `GEMINI_MODEL` | `gemini-3.8-flash` | Vacío con IA deshabilitada | Obligatoria al habilitar Gemini | Modelo externo configurable |
+| `GEMINI_API_VERSION` | `v1` | `v1` | Obligatoria y fijada a `v1` | API estable utilizada por `generateContent` |
+| `GEMINI_TIMEOUT` | `60s` | `60s` | Obligatoria al habilitar Gemini | Timeout por intento, positivo y menor al lease |
 | `ANALYSIS_TEXT_MIN_LENGTH` | `20` | `20` | Configurable | Límite técnico mínimo aplicado al texto normalizado |
 | `ANALYSIS_TEXT_MAX_LENGTH` | `20000` | `20000` | Configurable | Límite técnico máximo aplicado al texto normalizado |
 | `ANALYSIS_PDF_MAX_FILE_SIZE_BYTES` | `10485760` | `10485760` | Configurable | Máximo funcional PDF (10 MiB) |
@@ -101,7 +107,7 @@ Producción requiere `SPRING_PROFILES_ACTIVE=prod` además de todas las variable
 | `PGADMIN_EMAIL` | Sin default en Compose | No aplica | No aplica | Cuenta local de pgAdmin |
 | `PGADMIN_PASSWORD` | Sin default en Compose | No aplica | No aplica | Password local de pgAdmin |
 
-Los valores DEV son conocidos, no productivos y pueden reemplazarse desde el entorno. TEST recibe la conexión a PostgreSQL mediante `@ServiceConnection`; no usa variables de base DEV. PROD no tiene fallback para URL, usuario o password de base de datos, secreto JWT, pepper, versión/hash de consentimiento, orígenes CORS ni configuración OpenAI; un placeholder obligatorio sin resolver impide crear los componentes que consumen esa configuración. El hash no es texto legal: debe calcularse sobre el documento aprobado externamente.
+Los valores DEV son conocidos, no productivos y pueden reemplazarse desde el entorno. TEST recibe la conexión a PostgreSQL mediante `@ServiceConnection`; no usa variables de base DEV. PROD no tiene fallback para URL, usuario o password de base de datos, secreto JWT, pepper, versión/hash de consentimiento, orígenes CORS ni configuración de OpenAI/Gemini. Las propiedades del provider inactivo no se enlazan ni bloquean el arranque. El hash no es texto legal: debe calcularse sobre el documento aprobado externamente.
 
 ## Servicio de preprocesamiento
 
@@ -117,11 +123,12 @@ consulta health por request. Python replica los límites PDF y audio. Audio se c
 `PREPROCESSING_AUDIO_MODEL_CACHE_DIR=/models`. Consulta
 [preprocessing-service.md](preprocessing-service.md).
 
-## IA generativa y OpenAI
+## IA generativa: OpenAI o Gemini/Vertex AI
 
-`IDENTIPAT_AI_ENABLED` activa la capa LLM y `IDENTIPAT_AI_PROVIDER` selecciona su adapter. DEV usa
-`true` y `openai`; el launcher exige la API key local antes del arranque. TEST conserva `false` y no
-realiza tráfico externo. PROD exige ambos valores explícitos.
+`IDENTIPAT_AI_ENABLED` activa la capa LLM y `IDENTIPAT_AI_PROVIDER` selecciona un único adapter. DEV
+usa `true` y `openai` por defecto. El launcher valida la credencial correspondiente; TEST conserva
+`false` y no realiza tráfico externo. Un valor vacío o distinto de `openai`/`gemini` falla de forma
+saneada cuando la IA está activa.
 
 Cuando `IDENTIPAT_AI_ENABLED=true` y `IDENTIPAT_AI_PROVIDER=openai`, son obligatorios:
 
@@ -134,6 +141,35 @@ Cuando `IDENTIPAT_AI_ENABLED=true` y `IDENTIPAT_AI_PROVIDER=openai`, son obligat
 OpenAI no se contacta durante el arranque ni desde health checks. Los retries internos están
 deshabilitados. Consulta [generative-ai-integration.md](generative-ai-integration.md) para el diseño y
 el smoke test manual.
+
+Cuando `IDENTIPAT_AI_ENABLED=true` y `IDENTIPAT_AI_PROVIDER=gemini`, son obligatorios proyecto,
+ubicación, modelo, API `v1` y timeout. El SDK Google Gen AI 2.5.0 usa Vertex AI con Application
+Default Credentials. En desarrollo, `GOOGLE_APPLICATION_CREDENTIALS` apunta a un JSON privado de
+cuenta de servicio; el backend no lee ni persiste su contenido. El SDK localiza ADC al construir el
+cliente y renueva el token al enviar una solicitud, pero no ejecuta inferencias ni health checks
+remotos durante el arranque.
+
+El timeout de Gemini se valida contra `ANALYSIS_LEASE_DURATION`: el lease debe ser estrictamente
+mayor. Los retries HTTP del SDK se fijan a un intento total; los retries funcionales permanecen en
+el worker y generan una nueva `AiInvocation`.
+
+Conmutación local en PowerShell:
+
+```powershell
+$env:IDENTIPAT_AI_PROVIDER="gemini"
+$env:GOOGLE_APPLICATION_CREDENTIALS="C:\ruta-privada\service-account.json"
+$env:GOOGLE_CLOUD_PROJECT="identipat"
+$env:GOOGLE_CLOUD_LOCATION="global"
+$env:GEMINI_MODEL="gemini-3.8-flash"
+$env:GEMINI_API_VERSION="v1"
+$env:GEMINI_TIMEOUT="60s"
+# Para volver:
+$env:IDENTIPAT_AI_PROVIDER="openai"
+```
+
+La existencia de ADC no autoriza pruebas de pago. `GeminiLiveSmokeIT` requiere además
+`RUN_GEMINI_LIVE_SMOKE=true`. Antes de PREPROD/PROD deben aprobarse IAM mínimo, API habilitada,
+cuotas, costos, privacidad, región y residencia de datos.
 
 ## Análisis de texto y worker
 

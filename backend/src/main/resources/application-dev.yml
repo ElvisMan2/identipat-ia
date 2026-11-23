@@ -25,6 +25,12 @@ app:
       api-key: ${OPENAI_API_KEY:}
       model: ${OPENAI_MODEL:gpt-5-mini}
       timeout: ${OPENAI_TIMEOUT:60s}
+    gemini:
+      project: ${GOOGLE_CLOUD_PROJECT:identipat}
+      location: ${GOOGLE_CLOUD_LOCATION:global}
+      model: ${GEMINI_MODEL:gemini-3.8-flash}
+      api-version: ${GEMINI_API_VERSION:v1}
+      timeout: ${GEMINI_TIMEOUT:60s}
   preprocessing:
     base-url: ${PREPROCESSING_SERVICE_BASE_URL:http://localhost:8090}
     connect-timeout: ${PREPROCESSING_SERVICE_CONNECT_TIMEOUT:5s}

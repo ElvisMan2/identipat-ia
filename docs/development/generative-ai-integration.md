@@ -1,12 +1,13 @@
 # Integración de IA generativa — IDENTIPAT-IA
 
-**Estado:** infraestructura F1.2 integrada al flujo durable F1.3  
-**Versión:** 1.1  
-**Última actualización:** 16 de septiembre de 2026
+**Estado:** infraestructura F1.2 ampliada por F2-GEMINI-01 e integrada al flujo durable
+**Versión:** 1.2
+**Última actualización:** 23 de noviembre de 2026
 
 ## 1. Alcance actual
 
-La integración de IA generativa está implementada en Java y participa en la vertical de análisis de texto.
+La integración de IA generativa está implementada en Java y es compartida por las entradas TEXT,
+PDF y AUDIO. OpenAI y Gemini/Vertex AI son adapters alternativos; solo uno está activo por instancia.
 
 F1.2 incorporó:
 
@@ -28,14 +29,9 @@ F1.3 integró esa infraestructura con:
 - validación y persistencia de `AnalysisResult`;
 - recuperación después de fallos o reinicios.
 
-No forman parte todavía de esta integración:
-
-- diagnóstico jurídico definitivo de F1.4;
-- PDF y audio;
-- RAG;
-- adapters distintos de OpenAI;
-- circuit breaker;
-- política productiva definitiva de retención y confidencialidad.
+F2-GEMINI-01 añadió Google Gen AI Java 2.5.0, Vertex AI API `v1`, ADC, structured output V3 y pruebas
+offline. Siguen fuera de alcance RAG, circuit breaker, fallback automático, selección por solicitud y
+la política productiva definitiva de retención y confidencialidad.
 
 ## 2. Arquitectura vigente
 
@@ -54,12 +50,8 @@ AnalysisAttemptService
   └── AiInvocation(STARTED)
         ↓
 GenerativeAiProvider
-        ↓
-OpenAiGenerativeAiProvider
-        ↓
-openai-java 4.63.1
-        ↓
-OpenAI Responses API
+        ├── OpenAiGenerativeAiProvider ── openai-java 4.63.1 ── OpenAI Responses API
+        └── GeminiGenerativeAiProvider ── google-genai 2.5.0 ── Vertex AI generateContent v1
         ↓
 validación + AnalysisResult + estado terminal
 ```
@@ -68,13 +60,17 @@ La interfaz permite adapters futuros:
 
 ```text
 GenerativeAiProvider
-├── OpenAiGenerativeAiProvider          ← actual
-└── GeminiGenerativeAiProvider          ← futuro, si se aprueba
+├── OpenAiGenerativeAiProvider
+└── GeminiGenerativeAiProvider
 ```
 
-Solo el paquete `ai/provider/openai` y su configuración técnica conocen tipos `com.openai.*`. Controllers, servicios de análisis, sesión STANDARD, persistencia y worker utilizan únicamente modelos internos de IDENTIPAT-IA.
+Solo los packages `ai/provider/openai` y `ai/provider/gemini` conocen sus respectivos SDKs.
+Controllers, servicios de análisis, sesión STANDARD, persistencia y worker utilizan únicamente
+modelos internos de IDENTIPAT-IA.
 
-OpenAI es el proveedor vigente. Gemini no está implementado y no debe describirse como proveedor inicial actual.
+`IDENTIPAT_AI_PROVIDER` admite exactamente `openai` o `gemini` cuando la IA está habilitada. Las
+configuraciones Spring son mutuamente excluyentes y el worker exige un bean único; no escoge por
+orden ni implementa fallback.
 
 ## 3. Contrato común
 
@@ -140,13 +136,16 @@ backend/src/main/resources/prompts/
 ├── intellectual-property-analysis/v0.2/
 │   ├── system.md
 │   └── user.md
+├── intellectual-property-analysis/v0.3.1/
+│   ├── system.md
+│   └── user.md
 └── provider-smoke-test/v1.0/
     ├── system.md
     └── user.md
 ```
 
 `provider-smoke-test/1.0` es técnico y sintético. El worker usa
-`intellectual-property-analysis/0.2`; 0.1 se conserva para trazabilidad histórica.
+`intellectual-property-analysis/0.3.1`; las versiones anteriores se conservan para trazabilidad.
 
 El prompt funcional actual:
 
@@ -222,7 +221,7 @@ backend/src/main/resources/ai-schemas/
 
 `analysis-result/3.0` es el contrato utilizado por el worker. Conserva las estructuras V2 y exige además
 `traditionalKnowledgeAccess` con `assessment`, `rationale` y `missingInformation`. El prompt vigente es
-`intellectual-property-analysis/0.3`; cada llamada real sigue generando una sola `AiInvocation`, sin retries
+`intellectual-property-analysis/0.3.1`; cada llamada real sigue generando una sola `AiInvocation`, sin retries
 en el SDK y sin una segunda inferencia para reportes.
 
 El contrato histórico `analysis-result/2.0` exigía:
@@ -241,7 +240,9 @@ Utiliza enums cerrados, campos obligatorios y `additionalProperties: false`.
 
 `OutputSchemaRegistry` carga el contrato de IDENTIPAT-IA y lo entrega como `StructuredOutputDefinition` con `strict=true`.
 
-El adapter convierte el JSON Schema campo por campo a `ResponseFormatTextJsonSchemaConfig.Schema`. No deriva un contrato alternativo desde clases del SDK.
+OpenAI convierte el JSON Schema a `ResponseFormatTextJsonSchemaConfig.Schema`. Gemini envía el mismo
+`JsonNode` canónico mediante `responseJsonSchema`; no fue necesaria una transformación ni un
+`GeminiSchemaAdapter`. En ambos casos el contrato sigue perteneciendo a IDENTIPAT-IA.
 
 La solicitud utiliza:
 
@@ -265,9 +266,33 @@ Se utiliza `com.networknt:json-schema-validator:1.0.88`, draft 2020-12.
 
 JSON inválido, violación del schema o invariante Java se traduce a `INVALID_RESPONSE`; no se crea `AnalysisResult`.
 
-## 6. Mapping a OpenAI
+## 6. Mapping a Gemini/Vertex AI
 
-### 6.1 Request
+El cliente singleton usa `Client.builder().enterprise(true)`, proyecto, ubicación, ADC y
+`HttpOptions(apiVersion="v1")`. `GOOGLE_APPLICATION_CREDENTIALS` solo comunica a ADC la ubicación
+del archivo privado; la aplicación no abre el JSON ni incorpora credenciales al dominio. La carga
+local de ADC ocurre al construir el cliente y el refresh OAuth al enviar la solicitud.
+
+El mensaje SYSTEM se transporta como `systemInstruction`; los mensajes USER permanecen como
+`Content(role="user")` en su orden original. `maxOutputTokens` y `temperature` solo se envían cuando
+están presentes. No se activan tools, grounding, búsqueda, function calling, caching ni thinking.
+
+La generación usa `responseMimeType=application/json`, `candidateCount=1` y
+`responseJsonSchema=<schema canónico>`. Java exige una sola candidate, un solo part textual final y
+rechaza bloqueos, múltiples candidatos, partes incompatibles, `MAX_TOKENS` y cualquier finalización
+distinta de `STOP`/metadata ausente. Los parts marcados como pensamiento no se concatenan con el JSON.
+
+`ProviderExecution` usa `responseId` cuando existe y `modelVersion` cuando Vertex lo devuelve; si no
+hay versión efectiva se conserva transparentemente el modelo configurado. Usage normaliza
+`promptTokenCount`, `candidatesTokenCount` y `totalTokenCount`; el detalle completo, incluido
+`thoughtsTokenCount`, permanece en `providerDetails` sin sumarlo de nuevo.
+
+`rawProviderResponse` es el JSON semántico serializado por el SDK. No contiene headers, objetos
+`Credentials` ni tokens OAuth. La latencia usa reloj monotónico alrededor de la llamada síncrona.
+
+## 7. Mapping a OpenAI
+
+### 7.1 Request
 
 - Cada `AiMessage` se convierte en `ResponseInputItem`.
 - Se conservan roles `system` y `user`.
@@ -277,7 +302,7 @@ JSON inválido, violación del schema o invariante Java se traduce a `INVALID_RE
 - El adapter no simula compatibilidad de opciones no soportadas por un modelo.
 - La solicitud establece explícitamente `store(false)`.
 
-### 6.2 Extracción de contenido
+### 7.2 Extracción de contenido
 
 El adapter recorre todos los elementos de `Response.output`, localiza bloques `output_text` dentro de mensajes y exige exactamente uno.
 
@@ -287,7 +312,7 @@ El adapter recorre todos los elementos de `Response.output`, localiza bloques `o
 | `0` | `INVALID_RESPONSE`. |
 | `>1` | `INVALID_RESPONSE` para evitar concatenación ambigua. |
 
-### 6.3 Modelo y request ID
+### 7.3 Modelo y request ID
 
 - `providerRequestId` corresponde a `Response.id`.
 - El modelo efectivo se obtiene de `ResponsesModel` mediante su `Visitor`.
@@ -295,7 +320,7 @@ El adapter recorre todos los elementos de `Response.output`, localiza bloques `o
 - Una variante desconocida solo se acepta si el JSON crudo contiene un string no vacío.
 - No se reemplaza silenciosamente con el modelo configurado ni se usa `toString()`.
 
-### 6.4 Usage
+### 7.4 Usage
 
 Se normalizan:
 
@@ -305,7 +330,7 @@ Se normalizan:
 
 El objeto de usage completo se conserva como detalle del proveedor. Si OpenAI no devuelve usage, los conteos permanecen nulos.
 
-### 6.5 Finalización y latencia
+### 7.5 Finalización y latencia
 
 `finishReason` usa:
 
@@ -317,9 +342,9 @@ cuando ese dato existe. En otro caso utiliza el valor wire de `Response.status`;
 
 La latencia se mide alrededor de la llamada síncrona mediante reloj monotónico.
 
-## 7. Integración con AnalysisWorker
+## 8. Integración con AnalysisWorker
 
-### 7.1 Preparación del intento
+### 8.1 Preparación del intento
 
 `AnalysisAttemptService.prepare()`:
 
@@ -327,12 +352,12 @@ La latencia se mide alrededor de la llamada síncrona mediante reloj monotónico
 2. marca como `ABANDONED` una invocación `STARTED` obsoleta si corresponde;
 3. verifica el límite de intentos;
 4. carga `AnalysisInput.processedText`;
-5. renderiza `intellectual-property-analysis/0.2`;
+5. renderiza `intellectual-property-analysis/0.3.1`;
 6. carga `analysis-result/3.0`;
 7. construye `GenerationOptions`;
 8. persiste `AiInvocation(STARTED)` antes de llamar al provider.
 
-### 7.2 Llamada remota
+### 8.2 Llamada remota
 
 La llamada:
 
@@ -342,7 +367,7 @@ provider.generate(attempt.request())
 
 ocurre fuera de una transacción de PostgreSQL. Así no se mantiene una conexión ni locks de base de datos durante la latencia del proveedor.
 
-### 7.3 Éxito
+### 8.3 Éxito
 
 En una transacción final se persisten atómicamente:
 
@@ -358,7 +383,7 @@ En una transacción final se persisten atómicamente:
 
 El lease y `next_attempt_at` se limpian.
 
-### 7.4 Fallo y retry
+### 8.4 Fallo y retry
 
 Los errores del adapter se mapean a códigos del dominio:
 
@@ -384,7 +409,7 @@ No se usa `sleep` para implementar retry.
 
 Si el error no es retryable o se agotan los intentos, `Analysis` pasa a `FAILED` con un mensaje interno saneado. La API traduce después el fallo a un código público estable.
 
-## 8. Persistencia de `AiInvocation`
+## 9. Persistencia de `AiInvocation`
 
 Cada intento conserva:
 
@@ -411,9 +436,9 @@ retryable = true
 
 La semántica general es *at-least-once*.
 
-## 9. Errores del adapter
+## 10. Errores de adapters
 
-Ninguna excepción `com.openai.*` atraviesa el boundary.
+Ninguna excepción `com.openai.*` o `com.google.genai.*` atraviesa su boundary.
 
 `GenerativeAiException` conserva internamente la causa y publica únicamente:
 
@@ -427,7 +452,8 @@ Mapping vigente:
 | Condición | Tipo | Retryable |
 |---|---|---:|
 | HTTP `401/403` | `AUTHENTICATION` | No |
-| HTTP `400/404/409/422` | `INVALID_REQUEST` | No |
+| HTTP `400/404/422` | `INVALID_REQUEST` | No |
+| HTTP `408` | `TIMEOUT` | Sí |
 | HTTP `429` | `RATE_LIMITED` | Sí |
 | Timeout de transporte | `TIMEOUT` | Sí |
 | Error de conexión | `PROVIDER_UNAVAILABLE` | Sí |
@@ -437,22 +463,22 @@ Mapping vigente:
 
 No se propagan mensajes remotos, headers, prompts, salidas, credenciales ni contenido del usuario en las excepciones públicas.
 
-## 10. Retry y timeout
+## 11. Retry y timeout
 
-### 10.1 SDK y transporte
+### 11.1 SDK y transporte
 
-El cliente se construye sin retries automáticos:
+Ambos clientes se construyen sin retries automáticos:
 
 ```text
 maxRetries(0)
-retryOnConnectionFailure(false)
+HttpRetryOptions.attempts(1)
 ```
 
 Las pruebas verifican un solo request HTTP por cada `generate()`, incluso ante `429`, `5xx` o timeout.
 
 Esto es esencial: cada retry debe ser visible como una nueva `AiInvocation` controlada por la aplicación.
 
-### 10.2 Política de aplicación
+### 11.2 Política de aplicación
 
 La configuración por defecto actual es:
 
@@ -463,10 +489,11 @@ La configuración por defecto actual es:
 | `ANALYSIS_LEASE_DURATION` | `120s` |
 | `ANALYSIS_POLL_INTERVAL` | `2s` |
 | `OPENAI_TIMEOUT` en DEV | `60s` |
+| `GEMINI_TIMEOUT` en DEV | `60s` |
 
 No existe circuit breaker actualmente.
 
-### 10.3 Invariante timeout/lease
+### 11.3 Invariante timeout/lease
 
 Sin heartbeat, el lease debe superar el timeout del proveedor más un margen operativo:
 
@@ -474,13 +501,14 @@ Sin heartbeat, el lease debe superar el timeout del proveedor más un margen ope
 leaseDuration >= providerTimeout + margin
 ```
 
-Los defaults DEV cumplen la relación, pero el código todavía no la valida en startup. Una configuración productiva incorrecta podría permitir que otro worker reclame el análisis mientras el primero continúa esperando al LLM.
+Los defaults DEV cumplen la relación. Gemini valida al arrancar que el lease sea estrictamente mayor
+que su timeout; OpenAI conserva esta validación cruzada como pendiente.
 
 Debe añadirse una validación cruzada de configuración antes de producción.
 
-## 11. Configuración y arranque
+## 12. Configuración y arranque
 
-### 11.1 Proveedor
+### 12.1 Proveedor
 
 | Variable | DEV | TEST | PROD |
 |---|---|---|---|
@@ -489,12 +517,19 @@ Debe añadirse una validación cruzada de configuración antes de producción.
 | `OPENAI_API_KEY` | requerida si IA activa | vacía con IA deshabilitada | requerida con OpenAI activo |
 | `OPENAI_MODEL` | `gpt-5-mini` por defecto | vacío | requerida con OpenAI activo |
 | `OPENAI_TIMEOUT` | `60s` | `60s` | requerida con OpenAI activo |
+| `GOOGLE_APPLICATION_CREDENTIALS` | ruta ADC privada | no usada | ADC administrada por ambiente |
+| `GOOGLE_CLOUD_PROJECT` | `identipat` | vacío | requerida con Gemini activo |
+| `GOOGLE_CLOUD_LOCATION` | `global` | vacío | requerida con Gemini activo |
+| `GEMINI_MODEL` | `gemini-3.8-flash` | vacío | requerida con Gemini activo |
+| `GEMINI_API_VERSION` | `v1` | `v1` | requerida, solo `v1` |
+| `GEMINI_TIMEOUT` | `60s` | `60s` | requerida con Gemini activo |
 
 Con IA deshabilitada no se crea cliente ni provider, y el backend puede arrancar sin key/model.
 
-Con IA habilitada, un provider desconocido, key/model ausentes o timeout no positivo impiden el arranque. No se usa `fromEnv()` ni se llama al proveedor durante startup.
+Con IA habilitada, un provider desconocido o su configuración incompleta impiden el arranque. El
+provider inactivo no exige sus credenciales. No se llama al proveedor durante startup.
 
-### 11.2 Worker y análisis
+### 12.2 Worker y análisis
 
 | Variable | Default general |
 |---|---:|
@@ -511,19 +546,20 @@ Con IA habilitada, un provider desconocido, key/model ausentes o timeout no posi
 
 En TEST el worker está deshabilitado para que las pruebas controlen explícitamente el procesamiento.
 
-### 11.3 Inicio local
+### 12.3 Inicio local
 
 El inicio recomendado de DEV desde la raíz es:
 
 ```powershell
-.\scripts\run-backend-dev.ps1
+.\scripts\run-backend-dev-ps51.ps1
 ```
 
-El script carga el `.env` local, fuerza el perfil `dev`, valida la API key y asegura PostgreSQL antes de iniciar Spring Boot.
+El script carga el `.env` local, fuerza `dev`, valida la credencial del provider seleccionado y
+asegura PostgreSQL antes de iniciar Spring Boot.
 
-## 12. Pruebas y validación real
+## 13. Pruebas y validación real
 
-### 12.1 Suite automatizada
+### 13.1 Suite automatizada
 
 Las pruebas normales no llaman a Internet. Utilizan provider simulado o servidor HTTP local y cubren:
 
@@ -546,7 +582,7 @@ Las pruebas normales no llaman a Internet. Utilizan provider simulado o servidor
 - aislamiento por sesión;
 - no exposición de metadata del proveedor.
 
-### 12.2 Smoke técnico
+### 13.2 Smoke técnico
 
 `OpenAiLiveSmokeIT` usa `provider-smoke-test/1.0` y datos sintéticos. Termina en `IT`, por lo que Surefire no lo ejecuta con `mvn test`.
 
@@ -572,7 +608,42 @@ cd backend
 
 No imprime key, prompt ni response.
 
-### 12.3 Validación end-to-end
+Gemini ofrece dos smokes en `GeminiLiveSmokeIT`: contrato técnico y prompt jurídico sintético V3.
+No forman parte de `mvn test` y requieren un opt-in adicional:
+
+```powershell
+$env:RUN_GEMINI_LIVE_SMOKE="true"
+$env:GOOGLE_APPLICATION_CREDENTIALS="C:\ruta-privada\service-account.json"
+$env:GOOGLE_CLOUD_PROJECT="identipat"
+$env:GOOGLE_CLOUD_LOCATION="global"
+$env:GEMINI_MODEL="gemini-3.8-flash"
+$env:GEMINI_API_VERSION="v1"
+$env:GEMINI_TIMEOUT="60s"
+cd backend
+.\mvnw.cmd "-Dtest=GeminiLiveSmokeIT" test
+```
+
+Sin el flag, ambos casos se omiten y no realizan tráfico ni consumo facturable.
+
+Para diagnosticar localmente una terminación incompleta sin exponer contenido, habilitar además
+`GEMINI_SAFE_DIAGNOSTICS=true`. El diagnóstico registra únicamente el máximo de salida configurado,
+`finishReason`, `blockReason`, cantidades de candidatos y parts, indicadores de bloqueo y contadores
+de tokens. No registra prompts, parts, respuestas, credenciales ni tokens OAuth.
+
+Reejecución exclusiva del smoke técnico:
+
+```powershell
+$env:GEMINI_SAFE_DIAGNOSTICS="true"
+cd backend
+.\mvnw.cmd "-Dtest=GeminiLiveSmokeIT#callsVertexAiWithSyntheticTechnicalSchema" test
+```
+
+El smoke técnico configura `maxOutputTokens=200`; el jurídico configura `6000`. Un
+`finishReason=MAX_TOKENS` demostraría que la terminación fue por presupuesto, pero el valor de
+`thoughtTokens` y su relación con el límite deben observarse antes de atribuirlo a razonamiento
+interno. La respuesta sigue rechazándose: el diagnóstico no relaja la validación.
+
+### 13.3 Validación end-to-end
 
 El flujo real de texto contra OpenAI fue validado hasta:
 
@@ -582,9 +653,17 @@ RECEIVED → ANALYZING → COMPLETED
 
 con una `AiInvocation(SUCCEEDED)` y un `AnalysisResult` persistido.
 
-Esta validación confirma la integración técnica; no equivale a aceptación jurídica o funcional del diagnóstico, que corresponde a F1.4 y fases de evaluación.
+Gemini está validado offline contra un servidor local. En la validación manual del 2026-11-22, el smoke
+jurídico sintético V3 pasó. Dos ejecuciones técnicas anteriores fueron rechazadas por un finish reason
+no conservado; una ejecución posterior pasó con `STOP`, un candidato, un part y sin bloqueos. Esa
+ejecución informó 180 tokens de prompt, 32 de candidato, 96 de thoughts y 308 totales con
+`maxOutputTokens=200`; no demuestra la causa de los rechazos antiguos ni justifica aumentar el
+límite. El E2E integrado Angular → Java → PostgreSQL → worker → Gemini se reportó aprobado el
+2026-11-23; los metadatos de persistencia y el alcance de la evidencia de interfaz constan en el
+reporte de validación. Ninguna de estas pruebas equivale a aceptación jurídica ni a autorización de
+producción.
 
-## 13. Seguridad y privacidad
+## 14. Seguridad y privacidad
 
 - La API key proviene únicamente de configuración externa.
 - `.env.example` no contiene secretos reales.
@@ -594,6 +673,9 @@ Esta validación confirma la integración técnica; no equivale a aceptación ju
 - Los mensajes de error están saneados.
 - Cookies, tokens STANDARD y PII no atraviesan el provider.
 - El adapter recibe solo el prompt renderizado y el contrato técnico.
+- Cuando Gemini está activo, el contenido se transmite a Google Cloud. Antes de producción deben
+  aprobarse IAM, cuota, costos, privacidad, región y residencia; `global` es una referencia técnica,
+  no una decisión institucional de residencia.
 
 La base sí conserva durante desarrollo:
 
@@ -607,9 +689,9 @@ Por tanto, PostgreSQL puede contener descripciones confidenciales de invenciones
 
 Mientras no exista una política aprobada, no deben utilizarse casos reales confidenciales o reservados para pruebas con un proveedor externo.
 
-## 14. Limitaciones y mejoras identificadas
+## 15. Limitaciones y mejoras identificadas
 
-### 14.1 Respuestas `incomplete`
+### 15.1 Respuestas `incomplete`
 
 El adapter intenta primero extraer y validar `output_text`. Solo después construye `GenerativeAiResponse` y obtiene metadata completa.
 
@@ -624,26 +706,27 @@ Si OpenAI devuelve una respuesta `incomplete` sin un único output válido, se p
 
 Debe refactorizarse el adapter para capturar primero metadata técnica segura y adjuntarla también al camino de error.
 
-### 14.2 Lease y concurrencia
+### 15.2 Lease y concurrencia
 
-- Falta validación startup de `leaseDuration > providerTimeout + margen`.
+- OpenAI aún no valida en startup `leaseDuration > providerTimeout`; Gemini valida la desigualdad
+  estricta, pero el margen operativo concreto sigue siendo una decisión de despliegue.
 - Cerca del vencimiento existe una carrera residual entre el worker que termina y otro que reclama.
 - Conviene arbitrar la transición terminal mediante un `UPDATE` condicionado por owner/vigencia del lease o locking optimista equivalente.
 
-### 14.3 Observabilidad
+### 15.3 Observabilidad
 
 - Los 500 inesperados necesitan logging estructurado interno y correlation ID.
 - No deben incluir contenido sensible.
 - Las métricas deben distinguir intentos técnicos, análisis funcionales, retry, latencia, tokens y errores por tipo.
 
-### 14.4 Contrato jurídico
+### 15.4 Contrato jurídico
 
 F1.4 mantiene prompt/schema 0.1/1.0 para historia y utiliza 0.2/2.0 en análisis nuevos. La revisión
 semántica del golden set por especialistas sigue siendo necesaria antes de piloto.
 
-## 15. Extensión futura
+## 16. Extensión futura
 
-### 15.1 Otro proveedor
+### 16.1 Otro proveedor
 
 Para agregar un proveedor:
 
@@ -663,7 +746,7 @@ No deben cambiar:
 - schemas comunes;
 - modelo de persistencia.
 
-### 15.2 RAG
+### 16.2 RAG
 
 RAG no modifica el provider. Un futuro `KnowledgeRetriever` obtendría contexto antes del renderer y lo entregaría como variable explícita, por ejemplo:
 

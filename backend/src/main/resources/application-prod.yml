@@ -27,6 +27,12 @@ app:
       api-key: ${OPENAI_API_KEY}
       model: ${OPENAI_MODEL}
       timeout: ${OPENAI_TIMEOUT}
+    gemini:
+      project: ${GOOGLE_CLOUD_PROJECT}
+      location: ${GOOGLE_CLOUD_LOCATION}
+      model: ${GEMINI_MODEL}
+      api-version: ${GEMINI_API_VERSION}
+      timeout: ${GEMINI_TIMEOUT}
   preprocessing:
     base-url: ${PREPROCESSING_SERVICE_BASE_URL}
     connect-timeout: ${PREPROCESSING_SERVICE_CONNECT_TIMEOUT:5s}

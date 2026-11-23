@@ -1,8 +1,8 @@
 # Arquitectura de referencia de IDENTIPAT-IA
 
 **Estado:** arquitectura vigente y materializada hasta F1.7
-**Versión:** 1.4
-**Última actualización:** 24 de octubre de 2026
+**Versión:** 1.5
+**Última actualización:** 23 de noviembre de 2026
 
 ## Contexto
 
@@ -21,14 +21,15 @@ Angular (frontend)
 Java / Spring Boot (backend principal)
   ├── JPA/JDBC ───────────────► PostgreSQL
   ├── REST interno ───────────► Python preprocessing-service
-  └── GenerativeAiProvider ───► OpenAiGenerativeAiProvider
-                                      │
-                                      └──► OpenAI Responses API
+  └── GenerativeAiProvider ───┬──► OpenAiGenerativeAiProvider ──► OpenAI Responses API
+                              └──► GeminiGenerativeAiProvider ──► Vertex AI generateContent v1
 ```
 
 Angular se comunica exclusivamente con Java. Java es el dueño de los casos de uso, accede a PostgreSQL, encapsula la comunicación futura con Python y ejecuta la inferencia generativa mediante una interfaz independiente del proveedor.
 
-OpenAI es el proveedor implementado actualmente. Gemini u otros proveedores podrán incorporarse como adapters futuros sin alterar el contrato central ni los casos de uso.
+OpenAI y Gemini/Vertex AI están implementados como adapters alternativos. Una instancia activa uno
+solo al arrancar; no existe selección por request, fallback entre proveedores ni dependencia del
+orden de beans.
 
 ## Responsabilidades
 
@@ -64,9 +65,13 @@ Java es el backend principal y dueño de los casos de uso. Es responsable de:
 - integración interna con Python;
 - reportes, catálogo y orientación de propiedad intelectual en fases posteriores.
 
-La integración generativa se realiza mediante `GenerativeAiProvider`. `OpenAiGenerativeAiProvider` es el primer adapter técnico y utiliza el SDK oficial de OpenAI y Responses API.
+La integración generativa se realiza mediante `GenerativeAiProvider`. `OpenAiGenerativeAiProvider`
+usa Responses API y `GeminiGenerativeAiProvider` usa Google Gen AI Java 2.5.0 contra Vertex AI API
+`v1` con ADC.
 
-Ningún controller ni caso de uso conoce tipos `com.openai.*`. Los prompts y JSON Schemas son contratos versionados de IDENTIPAT-IA. El adapter traduce las respuestas y excepciones del proveedor a modelos y errores internos.
+Ningún controller ni caso de uso conoce tipos `com.openai.*` o `com.google.genai.*`. Los prompts y
+JSON Schemas son contratos versionados de IDENTIPAT-IA. Cada adapter traduce respuestas y
+excepciones del proveedor a modelos y errores internos.
 
 ### Python: `preprocessing-service`
 
@@ -315,7 +320,7 @@ AnalysisResult
 
 Los prompts y schemas se almacenan como recursos versionados. El adapter solicita structured output y Java valida localmente la respuesta antes de aceptar un `AnalysisResult`.
 
-F1.4E publica `analysis-result/3.0` para análisis nuevos mediante el prompt 0.3. Mantiene las siete
+F1.4E publica `analysis-result/3.0` para análisis nuevos mediante el prompt 0.3.1. Mantiene las siete
 modalidades y añade `traditionalKnowledgeAccess` como alerta independiente de recursos genéticos,
 screening y modalidades. El lector conserva `analysis-result/1.0` y `/2.0` como contratos históricos
 sin reinterpretarlos; la columna y el campo de versión deben coincidir.
@@ -355,7 +360,7 @@ También conviene reforzar la transición terminal mediante una actualización c
 
 1. Java es dueño de los casos de negocio; Python no es un segundo backend funcional.
 2. Java es dueño de la inferencia generativa mediante `GenerativeAiProvider`.
-3. OpenAI es el adapter implementado actualmente; Gemini u otros proveedores son extensiones futuras.
+3. OpenAI y Gemini/Vertex AI son adapters disponibles y mutuamente excluyentes por instancia.
 4. Python realiza preprocesamiento técnico y es consumido únicamente por Java.
 5. STANDARD no se autentica; DNI/CE solo identifica o reconoce un registro.
 6. ADMIN se autentica mediante Spring Security y JWT Bearer.
@@ -417,7 +422,7 @@ Permanecen abiertas y deben cerrarse en las fases correspondientes:
 - observabilidad productiva y logging estructurado;
 - estrategia definitiva de empaquetado y despliegue;
 - eventual autenticación futura de STANDARD;
-- incorporación de adapters generativos adicionales si se aprueba.
+- evaluación comparativa, IAM, cuota, costo, privacidad y residencia antes de habilitar Gemini en producción.
 
 Cuando un usuario ya tenga sesiones, consentimientos, análisis u otra evidencia histórica, la dirección funcional vigente es la desactivación lógica y conservación de trazabilidad. La anonimización de PII, el derecho de eliminación y las condiciones de borrado físico corresponden a la política de gobierno de datos que se cierre antes de producción.
 
@@ -435,4 +440,5 @@ Cuando un usuario ya tenga sesiones, consentimientos, análisis u otra evidencia
 | F1.6 | Entrada mediante audio | Implementada |
 | F1.7 | Reporte JSON/PDF y disclaimer institucional versionado | Implementada |
 | F1.8–F1.9 | Recursos e integración E2E | Pendientes |
+| F2-GEMINI-01 | Adapter Gemini mediante Vertex AI | Implementada; smokes y E2E real reportados como aprobados; integración a develop pendiente |
 | F2 | Preparación para piloto y producción | Pendiente |

@@ -33,7 +33,9 @@ identipat-ia/
 │   │   │   │   │   ├── model/       # Request, response, prompt, schema, usage
 │   │   │   │   │   ├── prompt/      # Registry, renderer y hashes
 │   │   │   │   │   ├── schema/      # Registry y validación JSON Schema
-│   │   │   │   │   └── provider/openai/ # Único boundary del SDK OpenAI
+│   │   │   │   │   └── provider/
+│   │   │   │   │       ├── openai/     # Boundary del SDK OpenAI
+│   │   │   │   │       └── gemini/     # Boundary Google Gen AI/Vertex AI
 │   │   │   │   ├── guidance/           # Catálogo F1.8 y tracking idempotente F1.8D
 │   │   │   │   │   ├── controller/
 │   │   │   │   │   ├── dto/
@@ -140,12 +142,16 @@ identipat-ia/
 │   │   │       ├── prompts/intellectual-property-analysis/v0.2/
 │   │   │       │   ├── system.md
 │   │   │       │   └── user.md
+│   │   │       ├── prompts/intellectual-property-analysis/v0.3.1/
+│   │   │       │   ├── system.md
+│   │   │       │   └── user.md
 │   │   │       ├── prompts/provider-smoke-test/v1.0/
 │   │   │       │   ├── system.md
 │   │   │       │   └── user.md
 │   │   │       ├── ai-schemas/provider-smoke-result/v1.0/schema.json
 │   │   │       ├── ai-schemas/analysis-result/v1.0/schema.json
 │   │   │       ├── ai-schemas/analysis-result/v2.0/schema.json
+│   │   │       ├── ai-schemas/analysis-result/v3.0/schema.json
 │   │   │       ├── application.yml
 │   │   │       ├── application-dev.yml
 │   │   │       ├── application-test.yml
@@ -155,7 +161,7 @@ identipat-ia/
 │   │           ├── config/
 │   │           │   ├── ProductionConfigurationTest.java
 │   │           │   └── SecurityConfigTest.java
-│   │           ├── ai/               # Contratos, prompts, schemas, config y adapter OpenAI
+│   │           ├── ai/               # Contratos, config y adapters OpenAI/Gemini
 │   │           ├── analysis/         # E2E, contratos, claim, retry, recovery y rechazo local
 │   │           ├── guidance/         # Catálogo, /guidance, tracking, seguridad y concurrencia
 │   │           ├── reporting/        # Reporte web/PDF y reporting operacional A1/A2/A2B/A2C

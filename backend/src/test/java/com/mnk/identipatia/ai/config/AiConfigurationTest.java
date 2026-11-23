@@ -2,6 +2,7 @@ package com.mnk.identipatia.ai.config;
 
 import com.mnk.identipatia.ai.GenerativeAiProvider;
 import com.mnk.identipatia.ai.provider.openai.OpenAiConfiguration;
+import com.mnk.identipatia.ai.provider.gemini.GeminiConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.context.ConfigurationPropertiesAutoConfiguration;
@@ -20,7 +21,7 @@ class AiConfigurationTest {
                     ConfigurationPropertiesAutoConfiguration.class,
                     ValidationAutoConfiguration.class,
                     JacksonAutoConfiguration.class))
-            .withUserConfiguration(AiConfiguration.class, OpenAiConfiguration.class);
+            .withUserConfiguration(AiConfiguration.class, OpenAiConfiguration.class, GeminiConfiguration.class);
 
     @Test
     void disabledAiStartsWithoutOpenAiCredentialsOrProviderBean() {
@@ -67,6 +68,14 @@ class AiConfigurationTest {
     }
 
     @Test
+    void enabledAiRejectsEmptyProvider() {
+        contextRunner.withPropertyValues(
+                "app.ai.enabled=true",
+                "app.ai.provider=")
+                .run(context -> assertThat(context).hasFailed());
+    }
+
+    @Test
     void enabledOpenAiCreatesProviderWithoutCallingRemoteService() {
         enabledContext(
                 "app.ai.openai.api-key=test-key",
@@ -75,6 +84,23 @@ class AiConfigurationTest {
                 .run(context -> {
                     assertThat(context).hasNotFailed();
                     assertThat(context).hasSingleBean(GenerativeAiProvider.class);
+                });
+    }
+
+    @Test
+    void enabledOpenAiDoesNotResolveInactiveGeminiPlaceholders() {
+        enabledContext(
+                "app.ai.openai.api-key=test-key",
+                "app.ai.openai.model=test-model",
+                "app.ai.openai.timeout=60s",
+                "app.ai.gemini.project=${F2_MISSING_GEMINI_PROJECT}",
+                "app.ai.gemini.location=${F2_MISSING_GEMINI_LOCATION}",
+                "app.ai.gemini.model=${F2_MISSING_GEMINI_MODEL}",
+                "app.ai.gemini.timeout=${F2_MISSING_GEMINI_TIMEOUT}")
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    assertThat(context).hasSingleBean(GenerativeAiProvider.class);
+                    assertThat(context.getBean(GenerativeAiProvider.class).providerId()).isEqualTo("openai");
                 });
     }
 

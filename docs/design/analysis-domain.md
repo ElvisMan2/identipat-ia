@@ -1,8 +1,8 @@
 # Dominio de análisis — IDENTIPAT-IA
 
 **Estado:** diseño F1.0 materializado en F1.1–F1.6
-**Versión:** 1.4
-**Última actualización:** 24 de octubre de 2026
+**Versión:** 1.5
+**Última actualización:** 22 de noviembre de 2026
 **Alcance:** modelo vigente de sesión, consentimiento, análisis de texto/PDF/audio, invocaciones de IA y resultado canónico.
 
 ## 1. Objetivo
@@ -31,7 +31,7 @@ F1.0 produjo el diseño conceptual. F1.1 materializó sesión y consentimiento; 
 - DNI/CE identifica o deduplica un registro; no autentica ni verifica la identidad real de quien opera el navegador.
 - La sesión de análisis es una capacidad temporal revocable y exclusiva de registros `STANDARD` activos. Nunca concede privilegios ADMIN.
 - El motor funcional es IA generativa; no existe un pipeline paralelo de NLP, embeddings, clasificadores o ML clásico.
-- OpenAI es el adapter implementado actualmente mediante `GenerativeAiProvider`; Gemini u otros proveedores son extensiones futuras.
+- OpenAI y Gemini/Vertex AI son adapters alternativos de `GenerativeAiProvider`; solo uno está activo por instancia.
 - La información funcional y técnica se conserva ampliamente durante el desarrollo para trazabilidad y evaluación.
 - La persistencia interna no habilita un historial visible para `STANDARD` ni fija la política productiva de retención.
 - Consentimiento y disclaimer son artefactos distintos. El consentimiento habilita el tratamiento y uso; el disclaimer institucional acompañará el resultado en F1.7.
@@ -319,9 +319,10 @@ Los códigos y mensajes de error deben estar saneados. No contienen stack traces
 
 ### 8.3 Proveedor vigente
 
-El adapter implementado actualmente es OpenAI. El dominio conserva `provider` y `model` como campos agnósticos, de modo que un adapter futuro —por ejemplo Gemini— no requiera rediseñar `Analysis` ni `AiInvocation`.
+Los adapters implementados son OpenAI y Gemini/Vertex AI. El dominio conserva `provider` y `model`
+como campos agnósticos; la selección ocurre al arrancar y no rediseña `Analysis` ni `AiInvocation`.
 
-Las clases del SDK de OpenAI permanecen dentro del boundary del adapter y no atraviesan hacia el dominio.
+Las clases de ambos SDK permanecen dentro del boundary de su adapter y no atraviesan hacia el dominio.
 
 ### 8.4 Prompts, schemas y reproducibilidad
 
@@ -609,7 +610,7 @@ Las decisiones definitivas de cifrado, retención, minimización, anonimización
 | Analysis/Input | Un `Analysis` + `analysis_inputs` 1:1 | Implementada F1.3 |
 | Invocaciones | `ai_invocations` 1:N | Implementada F1.3 |
 | Resultado | `analysis_results` 0..1 con JSONB validado | Implementada F1.3 |
-| Proveedor | `GenerativeAiProvider` + adapter OpenAI | Implementada F1.2/F1.3 |
+| Proveedor | `GenerativeAiProvider` + adapters OpenAI/Gemini | Implementada F1.2/F2-GEMINI-01 |
 | Ejecución | Asíncrona durable en PostgreSQL, sin broker inicial | Implementada F1.3 |
 | Concurrencia | `FOR UPDATE SKIP LOCKED` + lease | Implementada F1.3 |
 | Retry | `next_attempt_at`, sin `sleep` bloqueante | Implementada F1.3 |

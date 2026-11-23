@@ -63,7 +63,7 @@ public class AnalysisWorker {
     }
 
     public int pollOnce() {
-        Optional<GenerativeAiProvider> provider = providerSource.orderedStream().findFirst();
+        Optional<GenerativeAiProvider> provider = Optional.ofNullable(providerSource.getIfUnique());
         if (provider.isEmpty()) {
             return 0;
         }
@@ -89,7 +89,7 @@ public class AnalysisWorker {
     }
 
     public boolean processOneSynchronously() {
-        Optional<GenerativeAiProvider> provider = providerSource.orderedStream().findFirst();
+        Optional<GenerativeAiProvider> provider = Optional.ofNullable(providerSource.getIfUnique());
         if (provider.isEmpty()) {
             return false;
         }
