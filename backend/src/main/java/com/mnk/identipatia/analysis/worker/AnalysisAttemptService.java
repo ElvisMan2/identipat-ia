@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mnk.identipatia.ai.GenerativeAiProvider;
 import com.mnk.identipatia.ai.exception.GenerativeAiException;
 import com.mnk.identipatia.ai.model.GenerationOptions;
+import com.mnk.identipatia.ai.model.AiAttachment;
 import com.mnk.identipatia.ai.model.GenerativeAiRequest;
 import com.mnk.identipatia.ai.model.GenerativeAiResponse;
 import com.mnk.identipatia.ai.model.PromptReference;
@@ -20,10 +21,13 @@ import com.mnk.identipatia.analysis.model.AiInvocationStatus;
 import com.mnk.identipatia.analysis.model.Analysis;
 import com.mnk.identipatia.analysis.model.AnalysisFailureCode;
 import com.mnk.identipatia.analysis.model.AnalysisInput;
+import com.mnk.identipatia.analysis.model.AnalysisInputType;
+import com.mnk.identipatia.analysis.model.AnalysisPdfDocument;
 import com.mnk.identipatia.analysis.model.AnalysisStatus;
 import com.mnk.identipatia.analysis.model.StoredAnalysisResult;
 import com.mnk.identipatia.analysis.repository.AiInvocationRepository;
 import com.mnk.identipatia.analysis.repository.AnalysisInputRepository;
+import com.mnk.identipatia.analysis.repository.AnalysisPdfDocumentRepository;
 import com.mnk.identipatia.analysis.repository.AnalysisRepository;
 import com.mnk.identipatia.analysis.repository.StoredAnalysisResultRepository;
 import com.mnk.identipatia.analysis.result.AnalysisResult;
@@ -33,13 +37,18 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
 public class AnalysisAttemptService {
-    static final PromptReference PROMPT = new PromptReference("intellectual-property-analysis", "0.3.1");
+    static final PromptReference TEXT_PROMPT = new PromptReference("intellectual-property-analysis", "0.3.1");
+    static final PromptReference PDF_PROMPT = new PromptReference("intellectual-property-analysis", "0.3.2");
     static final String SCHEMA_ID = "analysis-result";
     static final String SCHEMA_VERSION = "3.0";
     private static final String WORKER_LEASE_LOST = "WORKER_LEASE_LOST";
@@ -48,6 +57,7 @@ public class AnalysisAttemptService {
 
     private final AnalysisRepository analysisRepository;
     private final AnalysisInputRepository inputRepository;
+    private final AnalysisPdfDocumentRepository pdfDocumentRepository;
     private final AiInvocationRepository invocationRepository;
     private final StoredAnalysisResultRepository resultRepository;
     private final PromptRenderer promptRenderer;
@@ -60,6 +70,7 @@ public class AnalysisAttemptService {
     public AnalysisAttemptService(
             AnalysisRepository analysisRepository,
             AnalysisInputRepository inputRepository,
+            AnalysisPdfDocumentRepository pdfDocumentRepository,
             AiInvocationRepository invocationRepository,
             StoredAnalysisResultRepository resultRepository,
             PromptRenderer promptRenderer,
@@ -70,6 +81,7 @@ public class AnalysisAttemptService {
             AnalysisReportContextService reportContextService) {
         this.analysisRepository = analysisRepository;
         this.inputRepository = inputRepository;
+        this.pdfDocumentRepository = pdfDocumentRepository;
         this.invocationRepository = invocationRepository;
         this.resultRepository = resultRepository;
         this.promptRenderer = promptRenderer;
@@ -98,8 +110,11 @@ public class AnalysisAttemptService {
 
         AnalysisInput input = inputRepository.findById(analysisId)
                 .orElseThrow(() -> new IllegalStateException("Analysis input is missing"));
-        RenderedPrompt rendered = promptRenderer.render(PROMPT,
-                Map.of("USER_DESCRIPTION", input.getProcessedText()));
+        PreparedInput prepared = prepareInput(analysis, input, provider, now);
+        if (prepared == null) {
+            return Optional.empty();
+        }
+        RenderedPrompt rendered = prepared.rendered();
         StructuredOutputDefinition output = schemaRegistry.load(SCHEMA_ID, SCHEMA_VERSION);
         GenerationOptions options = new GenerationOptions(properties.aiMaxOutputTokens(), null);
 
@@ -116,12 +131,58 @@ public class AnalysisAttemptService {
         invocation.setRenderedPromptSnapshot(rendered.renderedSnapshot());
         invocation.setOutputSchemaId(output.schemaId());
         invocation.setOutputSchemaVersion(output.schemaVersion());
-        invocation.setRequestParameters(requestParameters(options));
+        invocation.setRequestParameters(requestParameters(options, analysis, input, prepared.attachments()));
         invocation.setCreatedAt(now);
         invocationRepository.saveAndFlush(invocation);
 
         return Optional.of(new AttemptContext(invocation.getInvocationId(), invocation.getAttemptNumber(),
-                new GenerativeAiRequest(rendered, output, options)));
+                new GenerativeAiRequest(rendered, output, options, prepared.attachments())));
+    }
+
+    private PreparedInput prepareInput(
+            Analysis analysis, AnalysisInput input, GenerativeAiProvider provider, Instant now) {
+        if (analysis.getInputType() != AnalysisInputType.PDF) {
+            if (input.getProcessedText() == null) {
+                throw new IllegalStateException("Textual analysis input is missing");
+            }
+            return new PreparedInput(promptRenderer.render(TEXT_PROMPT,
+                    Map.of("USER_DESCRIPTION", input.getProcessedText())), List.of());
+        }
+        if (!provider.supportsAttachment("application/pdf")) {
+            failPreparation(analysis, AnalysisFailureCode.AI_INVALID_REQUEST,
+                    "The active provider does not support PDF attachments", now);
+            return null;
+        }
+        AnalysisPdfDocument document = pdfDocumentRepository.findById(analysis.getAnalysisId()).orElse(null);
+        if (document == null || !validPdfDocument(document, input)) {
+            failPreparation(analysis, AnalysisFailureCode.PDF_DOCUMENT_UNAVAILABLE,
+                    "The durable PDF document is missing or failed its integrity check", now);
+            return null;
+        }
+        return new PreparedInput(
+                promptRenderer.render(PDF_PROMPT, Map.of()),
+                List.of(new AiAttachment(document.getMediaType(), document.getContent())));
+    }
+
+    private static boolean validPdfDocument(AnalysisPdfDocument document, AnalysisInput input) {
+        byte[] content = document.getContent();
+        if (content == null || content.length == 0
+                || !"application/pdf".equals(document.getMediaType())
+                || document.getSizeBytes() != content.length
+                || !document.getSha256().equals(sha256(content))) {
+            return false;
+        }
+        JsonNode metadata = input.getSourceMetadata();
+        return metadata != null
+                && document.getSha256().equals(metadata.path("sha256").asText())
+                && document.getSizeBytes() == metadata.path("sizeBytes").asLong(-1);
+    }
+
+    private void failPreparation(
+            Analysis analysis, AnalysisFailureCode code, String message, Instant now) {
+        failAnalysis(analysis, code, message, now);
+        clearLease(analysis);
+        analysis.setUpdatedAt(now);
     }
 
     @Transactional
@@ -241,11 +302,32 @@ public class AnalysisAttemptService {
         analysis.setLeaseUntil(null);
     }
 
-    private ObjectNode requestParameters(GenerationOptions options) {
+    private ObjectNode requestParameters(
+            GenerationOptions options,
+            Analysis analysis,
+            AnalysisInput input,
+            List<AiAttachment> attachments) {
         ObjectNode parameters = objectMapper.createObjectNode();
         parameters.put("maxOutputTokens", options.maxOutputTokens());
         parameters.putNull("temperature");
+        parameters.put("inputType", analysis.getInputType().name());
+        parameters.put("attachmentCount", attachments.size());
+        if (analysis.getInputType() == AnalysisInputType.PDF) {
+            JsonNode metadata = input.getSourceMetadata();
+            parameters.put("attachmentMediaType", "application/pdf");
+            parameters.put("attachmentSizeBytes", metadata.path("sizeBytes").asLong());
+            parameters.put("attachmentSha256", metadata.path("sha256").asText());
+            parameters.put("pageCount", metadata.path("pageCount").asInt());
+        }
         return parameters;
+    }
+
+    private static String sha256(byte[] bytes) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 is unavailable", exception);
+        }
     }
 
     private JsonNode tokenUsage(TokenUsage usage) {
@@ -266,5 +348,8 @@ public class AnalysisAttemptService {
     }
 
     public record AttemptContext(UUID invocationId, int attemptNumber, GenerativeAiRequest request) {
+    }
+
+    private record PreparedInput(RenderedPrompt rendered, List<AiAttachment> attachments) {
     }
 }

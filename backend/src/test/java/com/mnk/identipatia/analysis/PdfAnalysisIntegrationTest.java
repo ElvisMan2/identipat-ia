@@ -4,7 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mnk.identipatia.ai.GenerativeAiProvider;
 import com.mnk.identipatia.ai.config.AiProperties;
+import com.mnk.identipatia.ai.exception.GenerativeAiErrorType;
+import com.mnk.identipatia.ai.exception.GenerativeAiException;
 import com.mnk.identipatia.ai.model.GenerativeAiResponse;
+import com.mnk.identipatia.ai.model.GenerativeAiRequest;
 import com.mnk.identipatia.ai.model.ProviderExecution;
 import com.mnk.identipatia.ai.model.TokenUsage;
 import com.mnk.identipatia.analysis.model.Analysis;
@@ -13,8 +16,10 @@ import com.mnk.identipatia.analysis.model.AnalysisInputType;
 import com.mnk.identipatia.analysis.model.AnalysisStatus;
 import com.mnk.identipatia.analysis.repository.AiInvocationRepository;
 import com.mnk.identipatia.analysis.repository.AnalysisInputRepository;
+import com.mnk.identipatia.analysis.repository.AnalysisPdfDocumentRepository;
 import com.mnk.identipatia.analysis.repository.AnalysisRepository;
 import com.mnk.identipatia.analysis.repository.StoredAnalysisResultRepository;
+import com.mnk.identipatia.analysis.service.AnalysisPdfRetentionService;
 import com.mnk.identipatia.analysis.worker.AnalysisWorker;
 import com.mnk.identipatia.model.StandardSession;
 import com.mnk.identipatia.model.User;
@@ -22,7 +27,7 @@ import com.mnk.identipatia.TestLegalDocumentFixture;
 import com.mnk.identipatia.legal.repository.LegalDocumentHistoryRepository;
 import com.mnk.identipatia.legal.repository.LegalDocumentRepository;
 import com.mnk.identipatia.legal.repository.UserTermsAcceptanceRepository;
-import com.mnk.identipatia.preprocessing.client.PdfExtractionResponse;
+import com.mnk.identipatia.preprocessing.client.PdfInspectionResponse;
 import com.mnk.identipatia.preprocessing.client.PreprocessingPdfException;
 import com.mnk.identipatia.preprocessing.client.PreprocessingServiceClient;
 import com.mnk.identipatia.preprocessing.client.PreprocessingServiceUnavailableException;
@@ -102,10 +107,12 @@ class PdfAnalysisIntegrationTest {
     @Autowired LegalDocumentHistoryRepository legalHistoryRepository;
     @Autowired AnalysisRepository analysisRepository;
     @Autowired AnalysisInputRepository inputRepository;
+    @Autowired AnalysisPdfDocumentRepository pdfDocumentRepository;
     @Autowired AiInvocationRepository invocationRepository;
     @Autowired StoredAnalysisResultRepository resultRepository;
     @Autowired AnalysisReportContextRepository reportContextRepository;
     @Autowired AnalysisWorker worker;
+    @Autowired AnalysisPdfRetentionService pdfRetentionService;
     @Autowired JwtService jwtService;
     @Autowired JdbcTemplate jdbcTemplate;
 
@@ -119,6 +126,7 @@ class PdfAnalysisIntegrationTest {
         reportContextRepository.deleteAll();
         resultRepository.deleteAll();
         invocationRepository.deleteAll();
+        pdfDocumentRepository.deleteAll();
         inputRepository.deleteAll();
         analysisRepository.deleteAll();
         acceptanceRepository.deleteAll();
@@ -128,8 +136,9 @@ class PdfAnalysisIntegrationTest {
         TestLegalDocumentFixture.ensureCurrent(legalDocumentRepository, legalHistoryRepository);
         reset(provider, preprocessingClient, aiProperties);
         when(provider.providerId()).thenReturn("fake");
+        when(provider.supportsAttachment("application/pdf")).thenReturn(true);
         when(aiProperties.enabled()).thenReturn(true);
-        when(preprocessingClient.extractPdf(any(byte[].class))).thenReturn(extraction(EXTRACTED_TEXT, 1));
+        when(preprocessingClient.inspectPdf(any(byte[].class))).thenReturn(inspection(true, 1));
     }
 
     @Test
@@ -144,16 +153,17 @@ class PdfAnalysisIntegrationTest {
 
         assertThat(id(replay)).isEqualTo(id(first));
         assertThat(analysisRepository.count()).isEqualTo(1);
-        verify(preprocessingClient, org.mockito.Mockito.times(1)).extractPdf(VALID_PDF);
+        assertThat(pdfDocumentRepository.count()).isEqualTo(1);
+        verify(preprocessingClient, org.mockito.Mockito.times(1)).inspectPdf(VALID_PDF);
     }
 
     @Test
     void failedPdfPreprocessingCanRetrySafelyWithTheSameKey() throws Exception {
         Browser browser = browser(true);
         String key = UUID.randomUUID().toString();
-        when(preprocessingClient.extractPdf(any(byte[].class)))
+        when(preprocessingClient.inspectPdf(any(byte[].class)))
                 .thenThrow(new PreprocessingServiceUnavailableException("timeout"))
-                .thenReturn(extraction(EXTRACTED_TEXT, 1));
+                .thenReturn(inspection(true, 1));
 
         postPdf(browser, pdf(VALID_PDF, MediaType.APPLICATION_PDF_VALUE), key)
                 .andExpect(status().isServiceUnavailable())
@@ -165,7 +175,7 @@ class PdfAnalysisIntegrationTest {
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*) FROM analysis_idempotency_keys WHERE state = 'ACCEPTED'
                 """, Integer.class)).isEqualTo(1);
-        verify(preprocessingClient, org.mockito.Mockito.times(2)).extractPdf(VALID_PDF);
+        verify(preprocessingClient, org.mockito.Mockito.times(2)).inspectPdf(VALID_PDF);
     }
 
     @Test
@@ -186,19 +196,22 @@ class PdfAnalysisIntegrationTest {
         assertThat(analysis.getInputType()).isEqualTo(AnalysisInputType.PDF);
         assertThat(analysis.getConsentEventId()).isNull();
         assertThat(analysis.getTermsAcceptanceId()).isNotNull();
-        assertThat(input.getOriginalText()).isEqualTo(EXTRACTED_TEXT);
-        assertThat(input.getProcessedText())
-                .isEqualTo("Descripción técnica extraída del documento PDF para el análisis.");
+        assertThat(input.getOriginalText()).isNull();
+        assertThat(input.getProcessedText()).isNull();
         JsonNode metadata = input.getSourceMetadata();
         assertThat(metadata.path("mediaType").asText()).isEqualTo("application/pdf");
         assertThat(metadata.path("sizeBytes").asLong()).isEqualTo(VALID_PDF.length);
         assertThat(metadata.path("pageCount").asInt()).isEqualTo(1);
         assertThat(metadata.path("characterCount").asInt())
                 .isEqualTo(EXTRACTED_TEXT.codePointCount(0, EXTRACTED_TEXT.length()));
+        assertThat(metadata.path("hasTextLayer").asBoolean()).isTrue();
         assertThat(metadata.path("extractionMethod").asText()).isEqualTo("TEXT_LAYER");
         assertThat(metadata.path("sha256").asText()).isEqualTo(sha256(VALID_PDF));
         assertThat(metadata.has("filename")).isFalse();
         assertThat(metadata.toString()).doesNotContain("%PDF-");
+        var document = pdfDocumentRepository.findById(analysisId).orElseThrow();
+        assertThat(document.getContent()).isEqualTo(VALID_PDF);
+        assertThat(document.getSha256()).isEqualTo(sha256(VALID_PDF));
 
         getPdf(browser, analysisId)
                 .andExpect(status().isOk())
@@ -208,7 +221,98 @@ class PdfAnalysisIntegrationTest {
         assertThat(worker.processOneSynchronously()).isTrue();
         assertThat(analysisRepository.findById(analysisId).orElseThrow().getStatus())
                 .isEqualTo(AnalysisStatus.COMPLETED);
-        verify(provider).generate(any());
+        var requestCaptor = org.mockito.ArgumentCaptor.forClass(GenerativeAiRequest.class);
+        verify(provider).generate(requestCaptor.capture());
+        GenerativeAiRequest request = requestCaptor.getValue();
+        assertThat(request.prompt().reference().version()).isEqualTo("0.3.2");
+        assertThat(request.attachments()).singleElement().satisfies(attachment -> {
+            assertThat(attachment.mediaType()).isEqualTo("application/pdf");
+            assertThat(attachment.content()).isEqualTo(VALID_PDF);
+        });
+        assertThat(request.prompt().renderedSnapshot()).doesNotContain("%PDF-", "JVBER");
+        var invocation = invocationRepository.findAllByAnalysisIdOrderByAttemptNumber(analysisId).get(0);
+        assertThat(invocation.getPromptVersion()).isEqualTo("0.3.2");
+        assertThat(invocation.getRenderedPromptSnapshot()).doesNotContain("%PDF-", "JVBER");
+        assertThat(invocation.getRequestParameters().path("attachmentSha256").asText())
+                .isEqualTo(sha256(VALID_PDF));
+        assertThat(invocation.getRequestParameters().toString()).doesNotContain("%PDF-", "JVBER");
+    }
+
+    @Test
+    void retryReloadsTheSameDurablePdfWithoutCreatingAnotherCopy() throws Exception {
+        Browser browser = browser(true);
+        UUID analysisId = id(postPdf(browser, pdf(VALID_PDF, MediaType.APPLICATION_PDF_VALUE))
+                .andExpect(status().isAccepted()).andReturn());
+        when(provider.generate(any()))
+                .thenThrow(new GenerativeAiException(
+                        GenerativeAiErrorType.TIMEOUT, "fake", true,
+                        "Synthetic timeout without document content", null))
+                .thenReturn(successResponse());
+
+        assertThat(worker.processOneSynchronously()).isTrue();
+        assertThat(analysisRepository.findById(analysisId).orElseThrow().getStatus())
+                .isEqualTo(AnalysisStatus.ANALYZING);
+        assertThat(pdfDocumentRepository.count()).isEqualTo(1);
+        jdbcTemplate.update("""
+                UPDATE analyses SET next_attempt_at = clock_timestamp() - interval '1 second'
+                WHERE analysis_id = ?
+                """, analysisId);
+
+        assertThat(worker.processOneSynchronously()).isTrue();
+        assertThat(analysisRepository.findById(analysisId).orElseThrow().getStatus())
+                .isEqualTo(AnalysisStatus.COMPLETED);
+        var requests = org.mockito.ArgumentCaptor.forClass(GenerativeAiRequest.class);
+        verify(provider, org.mockito.Mockito.times(2)).generate(requests.capture());
+        assertThat(requests.getAllValues()).allSatisfy(request ->
+                assertThat(request.attachments()).singleElement().satisfies(attachment -> {
+                    assertThat(attachment.mediaType()).isEqualTo("application/pdf");
+                    assertThat(attachment.content()).isEqualTo(VALID_PDF);
+                }));
+        assertThat(invocationRepository.count()).isEqualTo(2);
+        assertThat(pdfDocumentRepository.count()).isEqualTo(1);
+        assertThat(pdfDocumentRepository.findById(analysisId).orElseThrow().getSha256())
+                .isEqualTo(sha256(VALID_PDF));
+    }
+
+    @Test
+    void historicalPdfWithoutBinaryFailsWithControlledPublicError() throws Exception {
+        Browser browser = browser(true);
+        UUID analysisId = id(postPdf(browser, pdf(VALID_PDF, MediaType.APPLICATION_PDF_VALUE))
+                .andExpect(status().isAccepted()).andReturn());
+        pdfDocumentRepository.deleteAll();
+
+        assertThat(worker.processOneSynchronously()).isTrue();
+
+        Analysis failed = analysisRepository.findById(analysisId).orElseThrow();
+        assertThat(failed.getStatus()).isEqualTo(AnalysisStatus.FAILED);
+        assertThat(failed.getFailureCode()).isEqualTo("PDF_DOCUMENT_UNAVAILABLE");
+        getPdf(browser, analysisId)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.failure.code").value("ANALYSIS_DOCUMENT_UNAVAILABLE"));
+        verify(provider, never()).generate(any());
+        assertThat(invocationRepository.count()).isZero();
+    }
+
+    @Test
+    void retentionDeletesOnlyTerminalPdfAfterConfiguredWindow() throws Exception {
+        UUID terminalId = id(postPdf(browser(true), pdf(VALID_PDF, MediaType.APPLICATION_PDF_VALUE))
+                .andExpect(status().isAccepted()).andReturn());
+        UUID activeId = id(postPdf(browser(true), pdf(VALID_PDF, MediaType.APPLICATION_PDF_VALUE))
+                .andExpect(status().isAccepted()).andReturn());
+        jdbcTemplate.update("""
+                UPDATE analyses
+                SET status = 'COMPLETED', completed_at = clock_timestamp() - interval '8 days',
+                    updated_at = clock_timestamp() - interval '8 days'
+                WHERE analysis_id = ?
+                """, terminalId);
+        jdbcTemplate.update("""
+                UPDATE analyses SET updated_at = clock_timestamp() - interval '8 days'
+                WHERE analysis_id = ?
+                """, activeId);
+
+        assertThat(pdfRetentionService.deleteExpiredTerminalDocuments()).isEqualTo(1);
+        assertThat(pdfDocumentRepository.findById(terminalId)).isEmpty();
+        assertThat(pdfDocumentRepository.findById(activeId)).isPresent();
     }
 
     @Test
@@ -220,7 +324,7 @@ class PdfAnalysisIntegrationTest {
         postPdf(browser, pdf(VALID_PDF, MediaType.APPLICATION_PDF_VALUE))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CONSENT_REQUIRED"));
-        verify(preprocessingClient, never()).extractPdf(any());
+        verify(preprocessingClient, never()).inspectPdf(any());
         verify(provider, never()).generate(any());
 
         acceptCurrent(browser);
@@ -254,7 +358,7 @@ class PdfAnalysisIntegrationTest {
                         .file(pdf(VALID_PDF, MediaType.APPLICATION_PDF_VALUE))
                         .cookie(csrf.cookie()).header("X-XSRF-TOKEN", csrf.token()))
                 .andExpect(status().isUnauthorized());
-        verify(preprocessingClient, never()).extractPdf(any());
+        verify(preprocessingClient, never()).inspectPdf(any());
         verify(provider, never()).generate(any());
         assertThat(analysisRepository.count()).isZero();
     }
@@ -304,7 +408,7 @@ class PdfAnalysisIntegrationTest {
                 MediaType.APPLICATION_PDF_VALUE))
                 .andExpect(status().isPayloadTooLarge())
                 .andExpect(jsonPath("$.code").value("PDF_TOO_LARGE"));
-        verify(preprocessingClient, never()).extractPdf(any());
+        verify(preprocessingClient, never()).inspectPdf(any());
         assertThat(analysisRepository.count()).isZero();
     }
 
@@ -312,13 +416,12 @@ class PdfAnalysisIntegrationTest {
     @CsvSource({
             "INVALID_PDF,INVALID_PDF",
             "PDF_ENCRYPTED,PDF_ENCRYPTED_NOT_SUPPORTED",
-            "PDF_PAGE_LIMIT_EXCEEDED,PDF_PAGE_LIMIT_EXCEEDED",
-            "PDF_TEXT_NOT_EXTRACTABLE,PDF_TEXT_NOT_EXTRACTABLE"
+            "PDF_PAGE_LIMIT_EXCEEDED,PDF_PAGE_LIMIT_EXCEEDED"
     })
     void mapsControlledPreprocessingErrorsAndDoesNotPersist(String internalCode, String publicCode)
             throws Exception {
         Browser browser = browser(true);
-        when(preprocessingClient.extractPdf(any(byte[].class)))
+        when(preprocessingClient.inspectPdf(any(byte[].class)))
                 .thenThrow(new PreprocessingPdfException(internalCode));
 
         postPdf(browser, pdf(VALID_PDF, MediaType.APPLICATION_PDF_VALUE))
@@ -328,36 +431,29 @@ class PdfAnalysisIntegrationTest {
     }
 
     @Test
-    void validatesPageAndTextLimitsFromExtractionResult() throws Exception {
+    void validatesPageLimitButAcceptsPdfWithoutTextLayer() throws Exception {
         Browser browser = browser(true);
-        when(preprocessingClient.extractPdf(any(byte[].class))).thenReturn(extraction(EXTRACTED_TEXT, 3));
+        when(preprocessingClient.inspectPdf(any(byte[].class))).thenReturn(inspection(true, 3));
         postPdf(browser, pdf(VALID_PDF, MediaType.APPLICATION_PDF_VALUE))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("PDF_PAGE_LIMIT_EXCEEDED"));
 
-        when(preprocessingClient.extractPdf(any(byte[].class))).thenReturn(extraction("muy corto", 1));
+        when(preprocessingClient.inspectPdf(any(byte[].class))).thenReturn(inspection(false, 1));
         postPdf(browser, pdf(VALID_PDF, MediaType.APPLICATION_PDF_VALUE))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("PDF_TEXT_NOT_EXTRACTABLE"));
-
-        String tooLong = "x".repeat(20_001);
-        when(preprocessingClient.extractPdf(any(byte[].class))).thenReturn(extraction(tooLong, 1));
-        postPdf(browser, pdf(VALID_PDF, MediaType.APPLICATION_PDF_VALUE))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("PDF_TEXT_TOO_LONG"));
-        assertThat(analysisRepository.count()).isZero();
+                .andExpect(status().isAccepted());
+        assertThat(analysisRepository.count()).isEqualTo(1);
     }
 
     @Test
     void serviceOrAiUnavailableReturns503AndDoesNotPersist() throws Exception {
         Browser browser = browser(true);
-        when(preprocessingClient.extractPdf(any(byte[].class)))
+        when(preprocessingClient.inspectPdf(any(byte[].class)))
                 .thenThrow(new PreprocessingServiceUnavailableException("timeout"));
         postPdf(browser, pdf(VALID_PDF, MediaType.APPLICATION_PDF_VALUE))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.code").value("PREPROCESSING_SERVICE_UNAVAILABLE"));
 
-        when(preprocessingClient.extractPdf(any(byte[].class))).thenReturn(extraction(EXTRACTED_TEXT, 1));
+        when(preprocessingClient.inspectPdf(any(byte[].class))).thenReturn(inspection(true, 1));
         when(aiProperties.enabled()).thenReturn(false);
         postPdf(browser, pdf(VALID_PDF, MediaType.APPLICATION_PDF_VALUE))
                 .andExpect(status().isServiceUnavailable())
@@ -436,8 +532,10 @@ class PdfAnalysisIntegrationTest {
         return new MockMultipartFile("file", "sensitive-name.pdf", mediaType, content);
     }
 
-    private PdfExtractionResponse extraction(String text, int pages) {
-        return new PdfExtractionResponse(text, pages, text.codePointCount(0, text.length()), "TEXT_LAYER");
+    private PdfInspectionResponse inspection(boolean hasText, int pages) {
+        return new PdfInspectionResponse(pages, hasText,
+                hasText ? EXTRACTED_TEXT.codePointCount(0, EXTRACTED_TEXT.length()) : 0,
+                hasText ? "TEXT_LAYER" : "NONE");
     }
 
     private UUID id(MvcResult result) throws Exception {

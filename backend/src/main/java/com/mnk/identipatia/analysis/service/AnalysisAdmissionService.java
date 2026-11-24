@@ -128,9 +128,24 @@ public class AnalysisAdmissionService {
             String processedText,
             JsonNode sourceMetadata,
             UserTermsAcceptance acceptance) {
+        return confirm(reservation, idempotencyClaim, access, inputType, originalText,
+                processedText, sourceMetadata, acceptance, null);
+    }
+
+    @Transactional
+    public AnalysisCreatedResponse confirm(
+            Reservation reservation,
+            AnalysisIdempotencyService.Claim idempotencyClaim,
+            AnalysisAccessContext access,
+            AnalysisInputType inputType,
+            String originalText,
+            String processedText,
+            JsonNode sourceMetadata,
+            UserTermsAcceptance acceptance,
+            AnalysisCreationPersistenceService.PdfDocumentPayload pdfDocument) {
         if (!reservation.enabled()) {
             AnalysisCreatedResponse created = creationService.create(
-                    access, inputType, originalText, processedText, sourceMetadata, acceptance);
+                    access, inputType, originalText, processedText, sourceMetadata, acceptance, pdfDocument);
             idempotencyService.accept(idempotencyClaim, created.analysisId());
             return created;
         }
@@ -147,7 +162,7 @@ public class AnalysisAdmissionService {
         }
 
         AnalysisCreatedResponse created = creationService.create(
-                access, inputType, originalText, processedText, sourceMetadata, acceptance);
+                access, inputType, originalText, processedText, sourceMetadata, acceptance, pdfDocument);
         int changed = jdbc.update("""
                 UPDATE analysis_admissions
                 SET state = 'ACCEPTED', analysis_id = ?, accepted_at = ?

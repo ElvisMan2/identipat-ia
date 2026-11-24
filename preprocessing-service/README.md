@@ -17,6 +17,8 @@ uvicorn preprocessing_service.main:app --host 127.0.0.1 --port 8090
 
 `GET /health` devuelve el estado estable. `POST /v1/pdf/extract` recibe multipart `file`, valida
 `application/pdf`, firma, 10 MiB y 50 páginas por defecto, y extrae la capa de texto con `pypdf`.
+`POST /v1/pdf/inspect` aplica las mismas validaciones y devuelve solo metadata; acepta documentos
+válidos sin capa textual para que Java pueda enviarlos por la ruta multimodal.
 No incluye OCR, persistencia, autenticación ni llamadas externas. Los límites se sobrescriben con
 `PREPROCESSING_PDF_MAX_FILE_SIZE_BYTES` y `PREPROCESSING_PDF_MAX_PAGES`. Consulta la guía del
 repositorio en `../docs/development/preprocessing-service.md` para contratos, pruebas y Docker.

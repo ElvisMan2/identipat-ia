@@ -5,7 +5,7 @@ from io import BytesIO
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 
-from preprocessing_service.schemas.pdf import PdfExtractionResponse
+from preprocessing_service.schemas.pdf import PdfExtractionResponse, PdfInspectionResponse
 
 PDF_SIGNATURE = b"%PDF-"
 
@@ -22,6 +22,32 @@ class PdfExtractionError(Exception):
 
 def extract_pdf(data: bytes, max_pages: int) -> PdfExtractionResponse:
     """Extract ordered text from a digital PDF using only its embedded text layer."""
+    page_count, text = _read_pdf(data, max_pages)
+    if not text:
+        raise PdfExtractionError(
+            "PDF_TEXT_NOT_EXTRACTABLE",
+            "The PDF does not contain an extractable text layer",
+        )
+    return PdfExtractionResponse(
+        text=text,
+        page_count=page_count,
+        character_count=len(text),
+    )
+
+
+def inspect_pdf(data: bytes, max_pages: int) -> PdfInspectionResponse:
+    """Validate a PDF and return metadata without requiring or returning extracted text."""
+    page_count, text = _read_pdf(data, max_pages)
+    has_text_layer = bool(text)
+    return PdfInspectionResponse(
+        page_count=page_count,
+        has_text_layer=has_text_layer,
+        character_count=len(text),
+        extraction_method="TEXT_LAYER" if has_text_layer else "NONE",
+    )
+
+
+def _read_pdf(data: bytes, max_pages: int) -> tuple[int, str]:
     if not data.startswith(PDF_SIGNATURE):
         raise PdfExtractionError("INVALID_PDF", "The uploaded file is not a valid PDF")
 
@@ -33,6 +59,8 @@ def extract_pdf(data: bytes, max_pages: int) -> PdfExtractionResponse:
                 "Encrypted or password-protected PDFs are not supported",
             )
         page_count = len(reader.pages)
+        if page_count == 0:
+            raise PdfExtractionError("INVALID_PDF", "The PDF does not contain pages")
         if page_count > max_pages:
             raise PdfExtractionError(
                 "PDF_PAGE_LIMIT_EXCEEDED",
@@ -51,16 +79,7 @@ def extract_pdf(data: bytes, max_pages: int) -> PdfExtractionResponse:
         raise PdfExtractionError("INVALID_PDF", "The PDF could not be read") from exception
 
     text = "\n\n".join(page_texts).strip()
-    if not text:
-        raise PdfExtractionError(
-            "PDF_TEXT_NOT_EXTRACTABLE",
-            "The PDF does not contain an extractable text layer",
-        )
-    return PdfExtractionResponse(
-        text=text,
-        page_count=page_count,
-        character_count=len(text),
-    )
+    return page_count, text
 
 
 def _normalize_technical_text(text: str) -> str:

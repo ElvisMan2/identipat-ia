@@ -38,7 +38,7 @@ class AnalysisWorkerRejectionTest {
         AnalysisProperties properties = new AnalysisProperties(
                 20, 20_000, true, Duration.ofSeconds(2), 1, 0,
                 Duration.ofSeconds(120), 2, Duration.ofSeconds(5), 4000,
-                new AnalysisProperties.Pdf(10_485_760, 50),
+                new AnalysisProperties.Pdf(10_485_760, 50, Duration.ofDays(7), Duration.ofHours(1)),
                 new AnalysisProperties.Audio(20_971_520, 180));
         UUID analysisId = UUID.randomUUID();
         when(providerSource.getIfUnique()).thenReturn(provider);
@@ -62,7 +62,7 @@ class AnalysisWorkerRejectionTest {
         AnalysisProperties properties = new AnalysisProperties(
                 20, 20_000, true, Duration.ofSeconds(2), 1, 0,
                 Duration.ofSeconds(120), 2, Duration.ofSeconds(5), 4000,
-                new AnalysisProperties.Pdf(10_485_760, 50),
+                new AnalysisProperties.Pdf(10_485_760, 50, Duration.ofDays(7), Duration.ofHours(1)),
                 new AnalysisProperties.Audio(20_971_520, 180));
         when(providerSource.getIfUnique()).thenReturn(null);
         AnalysisWorker worker = new AnalysisWorker(properties, claimService, attemptService, providerSource,
@@ -77,7 +77,7 @@ class AnalysisWorkerRejectionTest {
         AnalysisProperties properties = new AnalysisProperties(
                 20, 20_000, true, Duration.ofSeconds(2), 1, 0,
                 Duration.ofSeconds(120), 2, Duration.ofSeconds(5), 4000,
-                new AnalysisProperties.Pdf(10_485_760, 50),
+                new AnalysisProperties.Pdf(10_485_760, 50, Duration.ofDays(7), Duration.ofHours(1)),
                 new AnalysisProperties.Audio(20_971_520, 180));
         when(providerSource.getIfUnique()).thenReturn(null);
         AnalysisWorker worker = new AnalysisWorker(properties, claimService, attemptService, providerSource,

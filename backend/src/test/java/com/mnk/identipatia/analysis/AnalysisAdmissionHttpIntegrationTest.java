@@ -12,7 +12,7 @@ import com.mnk.identipatia.legal.repository.LegalDocumentRepository;
 import com.mnk.identipatia.model.StandardSession;
 import com.mnk.identipatia.model.User;
 import com.mnk.identipatia.preprocessing.client.AudioTranscriptionResponse;
-import com.mnk.identipatia.preprocessing.client.PdfExtractionResponse;
+import com.mnk.identipatia.preprocessing.client.PdfInspectionResponse;
 import com.mnk.identipatia.preprocessing.client.PreprocessingServiceClient;
 import com.mnk.identipatia.repository.StandardSessionRepository;
 import com.mnk.identipatia.repository.UserRepository;
@@ -102,6 +102,7 @@ class AnalysisAdmissionHttpIntegrationTest {
     @BeforeEach
     void resetState() {
         jdbc.update("DELETE FROM analysis_admissions");
+        jdbc.update("DELETE FROM analysis_pdf_documents");
         jdbc.update("DELETE FROM analysis_inputs");
         jdbc.update("DELETE FROM analyses");
         jdbc.update("DELETE FROM user_terms_acceptances");
@@ -111,6 +112,7 @@ class AnalysisAdmissionHttpIntegrationTest {
         TestLegalDocumentFixture.ensureCurrent(legalDocumentRepository, legalHistoryRepository);
         reset(provider, preprocessingClient);
         when(provider.providerId()).thenReturn("fake");
+        when(provider.supportsAttachment("application/pdf")).thenReturn(true);
     }
 
     @Test
@@ -141,8 +143,8 @@ class AnalysisAdmissionHttpIntegrationTest {
     void standardPdfAndAudioUsePythonDoublesAndPersistAcceptedAdmissions() throws Exception {
         Browser pdfBrowser = acceptedBrowser();
         Browser audioBrowser = acceptedBrowser();
-        when(preprocessingClient.extractPdf(any())).thenReturn(new PdfExtractionResponse(
-                PDF_TEXT, 1, PDF_TEXT.codePointCount(0, PDF_TEXT.length()), "TEXT_LAYER"));
+        when(preprocessingClient.inspectPdf(any())).thenReturn(new PdfInspectionResponse(
+                1, true, PDF_TEXT.codePointCount(0, PDF_TEXT.length()), "TEXT_LAYER"));
         when(preprocessingClient.transcribeAudio(any(), anyString())).thenReturn(new AudioTranscriptionResponse(
                 AUDIO_TEXT, 12.5, AUDIO_TEXT.codePointCount(0, AUDIO_TEXT.length()),
                 "es", "FASTER_WHISPER", "base"));
@@ -158,7 +160,7 @@ class AnalysisAdmissionHttpIntegrationTest {
                         .header("X-XSRF-TOKEN", audioBrowser.csrf().token()))
                 .andExpect(status().isAccepted()).andReturn();
 
-        verify(preprocessingClient).extractPdf(PDF);
+        verify(preprocessingClient).inspectPdf(PDF);
         verify(preprocessingClient).transcribeAudio(AUDIO, "audio/wav");
         assertAcceptedType(analysisId(pdf), AnalysisInputType.PDF);
         assertAcceptedType(analysisId(audio), AnalysisInputType.AUDIO);

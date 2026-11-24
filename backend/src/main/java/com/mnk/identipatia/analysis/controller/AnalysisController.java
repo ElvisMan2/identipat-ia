@@ -74,13 +74,13 @@ public class AnalysisController {
 
     @PostMapping(value = "/pdf", consumes = "multipart/form-data")
     @Operation(summary = "Crear análisis desde PDF",
-            description = "Acepta un PDF digital application/pdf con firma %PDF-. Los defaults configurables son 10 MiB, 50 páginas y los límites de texto comunes. STANDARD requiere sesión activa, consentimiento vigente y CSRF; ADMIN requiere Bearer JWT. Idempotency-Key acepta un UUID v4 opcional durante la transición; el fingerprint usa los bytes exactos y no el filename. La extracción síncrona no incluye OCR, el binario no se persiste y el análisis reutiliza el pipeline asíncrono existente.",
+            description = "Acepta un PDF application/pdf con firma %PDF-, incluida una digitalización sin capa textual. Los defaults configurables son 10 MiB y 50 páginas. STANDARD requiere sesión activa, consentimiento vigente y CSRF; ADMIN requiere Bearer JWT. Idempotency-Key acepta un UUID v4 opcional durante la transición; el fingerprint usa los bytes exactos y no el filename. El PDF original se persiste de forma durable y se envía como adjunto multimodal; esta ruta requiere un proveedor con soporte PDF y no hace fallback a texto.",
             security = {
                     @SecurityRequirement(name = OpenApiConfig.STANDARD_SESSION),
                     @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
             })
     @ApiResponses({
-            @ApiResponse(responseCode = "202", description = "PDF extraído y análisis recibido"),
+            @ApiResponse(responseCode = "202", description = "PDF inspeccionado, persistido y análisis recibido"),
             @ApiResponse(responseCode = "400", description = "INVALID_IDEMPOTENCY_KEY o clave requerida por configuración"),
             @ApiResponse(responseCode = "401", description = "Sesión STANDARD o Bearer ADMIN inválido"),
             @ApiResponse(responseCode = "403", description = "CSRF STANDARD inválido"),
@@ -88,8 +88,8 @@ public class AnalysisController {
             @ApiResponse(responseCode = "413", description = "PDF_TOO_LARGE"),
             @ApiResponse(responseCode = "415", description = "UNSUPPORTED_PDF_MEDIA_TYPE"),
             @ApiResponse(responseCode = "429", description = "Cuota o análisis activo STANDARD"),
-            @ApiResponse(responseCode = "422", description = "PDF inválido, cifrado, sin texto o fuera de límites"),
-            @ApiResponse(responseCode = "503", description = "Preprocesamiento o IA no disponible")
+            @ApiResponse(responseCode = "422", description = "PDF inválido, cifrado o fuera del límite de páginas"),
+            @ApiResponse(responseCode = "503", description = "Preprocesamiento, IA o soporte multimodal no disponible")
     })
     public ResponseEntity<AnalysisCreatedResponse> createPdf(
             @RequestPart(name = "file", required = false) MultipartFile file,

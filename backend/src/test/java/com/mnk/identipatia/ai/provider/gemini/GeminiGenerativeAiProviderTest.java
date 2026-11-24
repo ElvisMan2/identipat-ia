@@ -16,6 +16,7 @@ import com.mnk.identipatia.ai.exception.GenerativeAiErrorType;
 import com.mnk.identipatia.ai.exception.GenerativeAiException;
 import com.mnk.identipatia.ai.model.AiMessage;
 import com.mnk.identipatia.ai.model.AiMessageRole;
+import com.mnk.identipatia.ai.model.AiAttachment;
 import com.mnk.identipatia.ai.model.GenerationOptions;
 import com.mnk.identipatia.ai.model.GenerativeAiRequest;
 import com.mnk.identipatia.ai.model.GenerativeAiResponse;
@@ -42,6 +43,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -102,6 +104,31 @@ class GeminiGenerativeAiProviderTest {
         assertThat(response.tokenUsage().providerDetails().path("thoughtsTokenCount").asInt()).isEqualTo(3);
         assertThat(response.finishReason()).isEqualTo("STOP");
         assertThat(response.latencyMs()).isGreaterThanOrEqualTo(0);
+    }
+
+    @Test
+    void mapsOriginalPdfAsInlineDataAfterUserInstructions() {
+        byte[] pdf = "%PDF-original-table".getBytes(StandardCharsets.US_ASCII);
+        CapturingTransport transport = new CapturingTransport(successfulResponse(validSmokeOutput()));
+
+        GeminiGenerativeAiProvider provider = provider(transport);
+        provider.generate(pdfRequest(new GenerationOptions(120, null), pdf));
+
+        assertThat(provider.supportsAttachment("application/pdf")).isTrue();
+        assertThat(transport.contents).singleElement().satisfies(content -> {
+            assertThat(content.parts().orElseThrow()).hasSize(2);
+            assertThat(content.parts().orElseThrow().get(0).text()).contains("user content");
+            try {
+                JsonNode binaryPart = objectMapper.readTree(
+                        content.parts().orElseThrow().get(1).toJson());
+                assertThat(binaryPart.path("inlineData").path("mimeType").asText())
+                        .isEqualTo("application/pdf");
+                assertThat(binaryPart.path("inlineData").path("data").asText())
+                        .isEqualTo(Base64.getEncoder().encodeToString(pdf));
+            } catch (JsonProcessingException exception) {
+                throw new AssertionError(exception);
+            }
+        });
     }
 
     @Test
@@ -299,7 +326,8 @@ class GeminiGenerativeAiProviderTest {
                 "http://127.0.0.1:" + server.getAddress().getPort());
         GeminiGenerativeAiProvider sdkProvider = provider(new GoogleGenAiGeminiTransport(liveClient));
 
-        assertThatThrownBy(() -> sdkProvider.generate(smokeRequest(new GenerationOptions(120, 0.2))))
+        byte[] pdf = "%PDF-sdk-original".getBytes(StandardCharsets.US_ASCII);
+        assertThatThrownBy(() -> sdkProvider.generate(pdfRequest(new GenerationOptions(120, 0.2), pdf)))
                 .isInstanceOfSatisfying(GenerativeAiException.class, exception -> {
                     assertThat(exception.type()).isEqualTo(status == 429
                             ? GenerativeAiErrorType.RATE_LIMITED
@@ -316,6 +344,11 @@ class GeminiGenerativeAiProviderTest {
         assertThat(sent.path("contents").get(0).path("role").asText()).isEqualTo("user");
         assertThat(sent.path("contents").get(0).path("parts").get(0).path("text").asText())
                 .isEqualTo("user content");
+        assertThat(sent.path("contents").get(0).path("parts").get(1)
+                .path("inlineData").path("mimeType").asText()).isEqualTo("application/pdf");
+        assertThat(sent.path("contents").get(0).path("parts").get(1)
+                .path("inlineData").path("data").asText())
+                .isEqualTo(Base64.getEncoder().encodeToString(pdf));
         assertThat(sent.path("generationConfig").path("responseMimeType").asText())
                 .isEqualTo("application/json");
         assertThat(sent.path("generationConfig").path("responseJsonSchema"))
@@ -398,6 +431,12 @@ class GeminiGenerativeAiProviderTest {
 
     private GenerativeAiRequest smokeRequest(GenerationOptions options) {
         return request(smokeSchema(), options);
+    }
+
+    private GenerativeAiRequest pdfRequest(GenerationOptions options, byte[] pdf) {
+        GenerativeAiRequest textRequest = smokeRequest(options);
+        return new GenerativeAiRequest(textRequest.prompt(), textRequest.output(), textRequest.options(),
+                List.of(new AiAttachment("application/pdf", pdf)));
     }
 
     private GenerativeAiRequest request(StructuredOutputDefinition output, GenerationOptions options) {

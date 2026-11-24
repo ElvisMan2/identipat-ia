@@ -17,6 +17,7 @@ import com.mnk.identipatia.ai.exception.GenerativeAiErrorType;
 import com.mnk.identipatia.ai.exception.GenerativeAiException;
 import com.mnk.identipatia.ai.model.AiMessage;
 import com.mnk.identipatia.ai.model.AiMessageRole;
+import com.mnk.identipatia.ai.model.AiAttachment;
 import com.mnk.identipatia.ai.model.GenerativeAiRequest;
 import com.mnk.identipatia.ai.model.GenerativeAiResponse;
 import com.mnk.identipatia.ai.model.ProviderExecution;
@@ -73,6 +74,11 @@ public class GeminiGenerativeAiProvider implements GenerativeAiProvider {
     }
 
     @Override
+    public boolean supportsAttachment(String mediaType) {
+        return "application/pdf".equalsIgnoreCase(mediaType);
+    }
+
+    @Override
     public GenerativeAiResponse generate(GenerativeAiRequest request) {
         Objects.requireNonNull(request, "request must not be null");
         GeminiCall call;
@@ -104,7 +110,14 @@ public class GeminiGenerativeAiProvider implements GenerativeAiProvider {
         AiMessage system = null;
         List<Content> contents = new ArrayList<>();
         boolean userSeen = false;
-        for (AiMessage message : messages) {
+        int lastUserIndex = -1;
+        for (int index = 0; index < messages.size(); index++) {
+            if (messages.get(index).role() == AiMessageRole.USER) {
+                lastUserIndex = index;
+            }
+        }
+        for (int index = 0; index < messages.size(); index++) {
+            AiMessage message = messages.get(index);
             if (message.role() == AiMessageRole.SYSTEM) {
                 if (system != null || userSeen) {
                     throw new IllegalArgumentException("Gemini requires one leading system message");
@@ -112,9 +125,19 @@ public class GeminiGenerativeAiProvider implements GenerativeAiProvider {
                 system = message;
             } else if (message.role() == AiMessageRole.USER) {
                 userSeen = true;
+                List<Part> parts = new ArrayList<>();
+                parts.add(Part.fromText(message.content()));
+                if (index == lastUserIndex) {
+                    for (AiAttachment attachment : request.attachments()) {
+                        if (!supportsAttachment(attachment.mediaType())) {
+                            throw new IllegalArgumentException("Unsupported Gemini attachment media type");
+                        }
+                        parts.add(Part.fromBytes(attachment.content(), attachment.mediaType()));
+                    }
+                }
                 contents.add(Content.builder()
                         .role("user")
-                        .parts(Part.fromText(message.content()))
+                        .parts(parts)
                         .build());
             } else {
                 throw new IllegalArgumentException("Unsupported Gemini message role");

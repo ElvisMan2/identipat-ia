@@ -274,10 +274,11 @@ Separarla mantiene liviana la fila operativa del análisis, evita arrastrar cont
 `source_metadata` debe ser un objeto JSON. No debe usarse como contenedor indiscriminado de información sensible.
 
 Para `TEXT`, se conserva el original y se diferencia del texto técnicamente normalizado. Para `PDF`,
-`original_text` es el texto devuelto por la extracción técnica y `processed_text` es su normalización
-funcional con `TextNormalizer`. El binario no se persiste. `source_metadata` guarda únicamente
-`mediaType`, `sizeBytes`, `pageCount`, `characterCount`, `extractionMethod` y SHA-256; no guarda el
-filename. Para `AUDIO`, `original_text` es la transcripción y `processed_text` su normalización;
+`original_text` y `processed_text` quedan nulos: el worker usa el PDF original multimodal almacenado
+en `analysis_pdf_documents`, una tabla 1:1 durable separada para no cargar el binario durante claims.
+`source_metadata` guarda únicamente `mediaType`, `sizeBytes`, `pageCount`, `hasTextLayer`,
+`characterCount`, `extractionMethod` y SHA-256; no guarda filename, bytes ni base64. Para `AUDIO`,
+`original_text` es la transcripción y `processed_text` su normalización;
 metadata conserva `mediaType`, `sizeBytes`, `durationSeconds`, `characterCount`, `language`,
 `transcriptionMethod`, `model` y SHA-256. No se guardan audio, filename, rutas ni segmentos.
 

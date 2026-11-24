@@ -125,6 +125,10 @@ class IdentipatIaApplicationTests {
                 """, Integer.class));
         assertEquals(1, jdbcTemplate.queryForObject("""
                 SELECT COUNT(*) FROM information_schema.tables
+                WHERE table_schema = 'public' AND table_name = 'analysis_pdf_documents'
+                """, Integer.class));
+        assertEquals(1, jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM information_schema.tables
                 WHERE table_schema = 'public' AND table_name = 'ai_invocations'
                 """, Integer.class));
         assertEquals(1, jdbcTemplate.queryForObject("""
@@ -159,6 +163,8 @@ class IdentipatIaApplicationTests {
                 """, Integer.class));
         assertEquals(1, jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '13' AND success", Integer.class));
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '15' AND success", Integer.class));
         assertEquals("validate", environment.getRequiredProperty("spring.jpa.hibernate.ddl-auto"));
         assertFalse(environment.getRequiredProperty("spring.flyway.baseline-on-migrate", Boolean.class));
     }

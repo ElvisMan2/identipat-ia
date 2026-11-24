@@ -41,7 +41,14 @@ public record AnalysisProperties(
 
     public record Pdf(
             @Min(1) long maxFileSizeBytes,
-            @Min(1) int maxPages) {
+            @Min(1) int maxPages,
+            @NotNull Duration retention,
+            @NotNull Duration cleanupInterval) {
+
+        public Pdf {
+            requirePositive(retention, "pdf.retention");
+            requirePositive(cleanupInterval, "pdf.cleanupInterval");
+        }
     }
 
     public record Audio(

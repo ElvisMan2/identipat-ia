@@ -24,6 +24,11 @@ public class AnalysisWorkerConfiguration {
         return properties.pollInterval().toMillis();
     }
 
+    @Bean
+    Long analysisPdfCleanupIntervalMillis(AnalysisProperties properties) {
+        return properties.pdf().cleanupInterval().toMillis();
+    }
+
     @Bean(name = "analysisTaskExecutor")
     ThreadPoolTaskExecutor analysisTaskExecutor(AnalysisProperties properties) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();

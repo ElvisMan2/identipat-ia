@@ -108,7 +108,7 @@ Consultar desde el contenedor Python: GET http://127.0.0.1:8090/v1/audio/health
 Ejecutar POST /v1/audio/transcribe con fixture aprobado: [cliente y fixture pendientes]
 ```
 
-5. Verificar extracción de PDF de texto digital con PDF sintético autorizado y caso rechazado de PDF escaneado/no extraíble. F1.5 no implementa OCR. El binario no se almacena por el servicio Python; texto extraído se procesa después en Java.
+5. Verificar inspección de PDF con archivos sintéticos autorizados, tanto digital como escaneado. Python valida estructura, cifrado, páginas y tamaño mediante `/v1/pdf/inspect`, sin persistir ni devolver el texto. Java conserva temporalmente el original en PostgreSQL y lo envía al proveedor multimodal configurado; no se implementa OCR local.
 
 ### 4.3 Arrancar Java y migraciones
 
@@ -139,7 +139,7 @@ Guardar evidencia con fecha/hora, ambiente, SHA y digests. Usar cuentas de prueb
 | Seguridad STANDARD/ADMIN | Manual con cuentas de prueba; complementada por tests CI | STANDARD sin login/JWT; sesión activa y consentimiento requerido; acceso a análisis solo dentro de su sesión. ADMIN requiere JWT y funciones admin devuelven no autorizado sin credencial. No usar DNI/CE como contraseña. |
 | Consentimiento y disclaimer | Manual y evidencias funcionales | Consentimiento de tratamiento aparece/registra de forma separada del disclaimer orientativo; versión legal aprobada corresponde al entorno. |
 | Texto | Manual con entrada sintética y autorización para IA | Aceptación de análisis, estado asíncrono y resultado estructurado; trazas no contienen texto/respuesta. Llamada real a OpenAI solo después de aprobación de proveedor y credenciales. |
-| PDF | Manual con PDF digital sintético | Extracción y análisis completan; caso escaneado no extraíble se rechaza con error controlado; verificar descarga de reporte PDF. |
+| PDF | Manual con PDF digital y PDF escaneado sintéticos | Ambos análisis completan mediante Gemini multimodal; comprobar que no existe fallback textual, que el resultado cumple el esquema V3 y que el original se elimina según retención después de un estado terminal. Verificar también la descarga del reporte PDF. |
 | Audio | Automatizada en endpoint de readiness + manual de transcripción | `/v1/audio/health` `UP`; audio sintético español transcribe y produce análisis; medir latencia/recursos. `/health` sola no es suficiente. |
 | Persistencia/Flyway | Manual por DBA + observación de log saneado | BD/base/esquema correctos, migraciones esperadas y Hibernate `validate` exitoso; backup previo comprobado. |
 | OpenAI y política de datos | Manual con responsable de seguridad/privacidad | Credencial administrada, conectividad/modelo/costos y política contractual aprobados; evidencia técnica sin contenido enviado ni secreto. |

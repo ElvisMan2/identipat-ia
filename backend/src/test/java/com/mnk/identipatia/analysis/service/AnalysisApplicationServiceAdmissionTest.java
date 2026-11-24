@@ -63,6 +63,7 @@ class AnalysisApplicationServiceAdmissionTest {
         lenient().when(audioProperties.maxFileSizeBytes()).thenReturn(10_000L);
         lenient().when(aiProperties.enabled()).thenReturn(true);
         lenient().when(providers.getIfUnique()).thenReturn(provider);
+        lenient().when(provider.supportsAttachment("application/pdf")).thenReturn(true);
         service = new AnalysisApplicationService(
                 analysisRepository, resultRepository, termsAcceptanceService, analysisProperties,
                 aiProperties, providers, new ObjectMapper(), preprocessingClient, admissionService,
@@ -85,7 +86,7 @@ class AnalysisApplicationServiceAdmissionTest {
         assertThatThrownBy(() -> service.createPdf(admin, pdf))
                 .isInstanceOf(ApiException.class)
                 .extracting("code").isEqualTo("ANALYSIS_CAPACITY_EXCEEDED");
-        verify(preprocessingClient, never()).extractPdf(any());
+        verify(preprocessingClient, never()).inspectPdf(any());
     }
 
     @Test
@@ -105,7 +106,7 @@ class AnalysisApplicationServiceAdmissionTest {
         var claim = AnalysisIdempotencyService.Claim.claimed(UUID.randomUUID(), UUID.randomUUID());
         when(idempotencyService.claimOrReplay(any(), any(), any(), any())).thenReturn(claim);
         when(admissionService.reserve(admin, AnalysisInputType.PDF)).thenReturn(reservation);
-        when(preprocessingClient.extractPdf(any()))
+        when(preprocessingClient.inspectPdf(any()))
                 .thenThrow(new PreprocessingServiceUnavailableException("timeout"));
         MockMultipartFile pdf = new MockMultipartFile(
                 "file", "sample.pdf", "application/pdf", "%PDF-valid".getBytes());
@@ -117,13 +118,27 @@ class AnalysisApplicationServiceAdmissionTest {
     }
 
     @Test
+    void providerWithoutPdfSupportRejectsBeforeReservationWithoutTextFallback() {
+        when(provider.supportsAttachment("application/pdf")).thenReturn(false);
+        MockMultipartFile pdf = new MockMultipartFile(
+                "file", "sample.pdf", "application/pdf", "%PDF-valid".getBytes());
+
+        assertThatThrownBy(() -> service.createPdf(admin, pdf))
+                .isInstanceOf(ApiException.class)
+                .extracting("code").isEqualTo("PDF_MULTIMODAL_PROVIDER_REQUIRED");
+
+        verify(admissionService, never()).reserve(any(), any());
+        verify(preprocessingClient, never()).inspectPdf(any());
+    }
+
+    @Test
     void idempotencyClaimIsReleasedEvenWhenAdmissionReleaseFailsIndependently() {
         AnalysisAdmissionService.Reservation reservation =
                 new AnalysisAdmissionService.Reservation(UUID.randomUUID(), true);
         var claim = AnalysisIdempotencyService.Claim.claimed(UUID.randomUUID(), UUID.randomUUID());
         when(idempotencyService.claimOrReplay(any(), any(), any(), any())).thenReturn(claim);
         when(admissionService.reserve(admin, AnalysisInputType.PDF)).thenReturn(reservation);
-        when(preprocessingClient.extractPdf(any()))
+        when(preprocessingClient.inspectPdf(any()))
                 .thenThrow(new PreprocessingServiceUnavailableException("timeout"));
         doThrow(new IllegalStateException("synthetic admission release failure"))
                 .when(admissionService).release(reservation);

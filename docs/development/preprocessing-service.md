@@ -106,7 +106,20 @@ publicar 8090 al host. El procedimiento de health, warm-up, recursos y rollback 
 
 ## Extracción PDF
 
-El contrato privado es:
+Se conservan dos contratos privados. El flujo multimodal actual usa:
+
+```http
+POST /v1/pdf/inspect
+Content-Type: multipart/form-data
+file: <application/pdf>
+```
+
+La inspección devuelve únicamente `pageCount`, `hasTextLayer`, `characterCount` y
+`extractionMethod`; nunca devuelve texto. Valida MIME, tamaño, firma `%PDF-`, estructura, cifrado y
+límite de páginas. Un PDF escaneado sin capa textual es válido y se informa con
+`hasTextLayer: false`. El binario se mantiene solo en memoria durante la petición y no se persiste.
+
+El contrato anterior se mantiene por compatibilidad:
 
 ```http
 POST /v1/pdf/extract
@@ -121,9 +134,10 @@ controlados usan `{code,message}` con `INVALID_PDF`, `PDF_ENCRYPTED`,
 `PDF_PAGE_LIMIT_EXCEEDED`, `PDF_TEXT_NOT_EXTRACTABLE`, `PDF_TOO_LARGE` o
 `UNSUPPORTED_PDF_MEDIA_TYPE`.
 
-F1.5 no implementa OCR. Un PDF escaneado sin capa de texto suficiente se rechaza; un PDF previamente
-OCRizado funciona si `pypdf` puede extraer su capa de texto. El servicio no escribe archivos, no
-persiste el binario y no envía contenido a terceros.
+`/v1/pdf/extract` conserva su semántica histórica y rechaza un PDF sin texto extraíble. Ninguno de
+los dos endpoints implementa OCR, escribe archivos, persiste el binario o envía contenido a
+terceros. La aceptación de escaneos corresponde a `/v1/pdf/inspect`; la inferencia visual ocurre en
+Java mediante el proveedor multimodal.
 
 La extracción usa `pypdf`; el multipart usa `python-multipart`; y audio usa `faster-whisper`
 (CTranslate2 + PyAV). No se agregaron Torch, OpenAI Whisper, servicios STT cloud ni OCR.
@@ -156,9 +170,10 @@ el modelo se hornea en la imagen o se provisiona previamente. F2.0 evaluará cal
 
 El backend usa `PreprocessingServiceClient`, un cliente interno basado en Spring `RestClient`.
 No existe ni se debe agregar un endpoint Java público proxy de health. Su método `health()` consulta
-`GET {app.preprocessing.base-url}/health`. `extractPdf(...)` envía el documento como multipart a
-`/v1/pdf/extract`, usa un filename interno neutro y convierte los errores controlados en códigos
-públicos saneados. Fallos de red, timeout, 5xx o contratos inválidos se convierten en
+`GET {app.preprocessing.base-url}/health`. `inspectPdf(...)` envía el documento como multipart a
+`/v1/pdf/inspect`, usa un filename interno neutro y convierte los errores controlados en códigos
+públicos saneados. `extractPdf(...)` se conserva para compatibilidad con el contrato anterior.
+Fallos de red, timeout, 5xx o contratos inválidos se convierten en
 `PREPROCESSING_SERVICE_UNAVAILABLE`. `transcribeAudio(...)` usa un cliente separado con timeout
 largo y mapea red, timeout, 5xx o contrato inválido a `AUDIO_TRANSCRIPTION_UNAVAILABLE`.
 

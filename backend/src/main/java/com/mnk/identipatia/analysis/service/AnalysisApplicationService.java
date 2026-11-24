@@ -21,8 +21,8 @@ import com.mnk.identipatia.analysis.result.AnalysisResultReader;
 import com.mnk.identipatia.exception.ApiException;
 import com.mnk.identipatia.legal.model.UserTermsAcceptance;
 import com.mnk.identipatia.legal.service.TermsAcceptanceService;
-import com.mnk.identipatia.preprocessing.client.PdfExtractionResponse;
 import com.mnk.identipatia.preprocessing.client.AudioTranscriptionResponse;
+import com.mnk.identipatia.preprocessing.client.PdfInspectionResponse;
 import com.mnk.identipatia.preprocessing.client.PreprocessingAudioException;
 import com.mnk.identipatia.preprocessing.client.PreprocessingPdfException;
 import com.mnk.identipatia.preprocessing.client.PreprocessingServiceClient;
@@ -140,11 +140,11 @@ public class AnalysisApplicationService {
         AnalysisAdmissionService.Reservation reservation = null;
 
         try {
-            ensureAiAvailable();
+            ensurePdfAiAvailable();
             reservation = admissionService.reserve(access, AnalysisInputType.PDF);
-            PdfExtractionResponse extraction;
+            PdfInspectionResponse inspection;
             try {
-                extraction = preprocessingClient.extractPdf(pdfBytes);
+                inspection = preprocessingClient.inspectPdf(pdfBytes);
             } catch (PreprocessingPdfException exception) {
                 throw mapPdfError(exception.getCode());
             } catch (PreprocessingServiceUnavailableException exception) {
@@ -152,21 +152,23 @@ public class AnalysisApplicationService {
                         "PDF preprocessing is temporarily unavailable");
             }
 
-            if (extraction.pageCount() > analysisProperties.pdf().maxPages()) {
+            if (inspection.pageCount() > analysisProperties.pdf().maxPages()) {
                 throw pdfError("PDF_PAGE_LIMIT_EXCEEDED", "The PDF exceeds the configured page limit");
             }
-            String processedText = TextNormalizer.normalize(extraction.text());
-            validatePdfLength(processedText);
 
             ObjectNode metadata = objectMapper.createObjectNode();
             metadata.put("mediaType", "application/pdf");
             metadata.put("sizeBytes", pdfBytes.length);
-            metadata.put("pageCount", extraction.pageCount());
-            metadata.put("characterCount", extraction.characterCount());
-            metadata.put("extractionMethod", extraction.extractionMethod());
-            metadata.put("sha256", sha256(pdfBytes));
+            metadata.put("pageCount", inspection.pageCount());
+            metadata.put("hasTextLayer", inspection.hasTextLayer());
+            metadata.put("characterCount", inspection.characterCount());
+            metadata.put("extractionMethod", inspection.extractionMethod());
+            String digest = sha256(pdfBytes);
+            metadata.put("sha256", digest);
             return admissionService.confirm(reservation, claim, access, AnalysisInputType.PDF,
-                    extraction.text(), processedText, metadata, acceptance);
+                    null, null, metadata, acceptance,
+                    new AnalysisCreationPersistenceService.PdfDocumentPayload(
+                            pdfBytes, "application/pdf", digest));
         } catch (RuntimeException exception) {
             releaseFailedAttempt(reservation, claim);
             throw exception;
@@ -275,22 +277,23 @@ public class AnalysisApplicationService {
         }
     }
 
+    private void ensurePdfAiAvailable() {
+        GenerativeAiProvider activeProvider = provider.getIfUnique();
+        if (!aiProperties.enabled() || activeProvider == null) {
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "ANALYSIS_AI_UNAVAILABLE",
+                    "Analysis is temporarily unavailable");
+        }
+        if (!activeProvider.supportsAttachment("application/pdf")) {
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "PDF_MULTIMODAL_PROVIDER_REQUIRED",
+                    "PDF analysis requires a provider with application/pdf support");
+        }
+    }
+
     private void validateTextLength(String text) {
         int length = text == null ? 0 : text.codePointCount(0, text.length());
         if (length < analysisProperties.textMinLength() || length > analysisProperties.textMaxLength()) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_ANALYSIS_DESCRIPTION",
                     "Analysis description is outside the configured limits");
-        }
-    }
-
-    private void validatePdfLength(String text) {
-        int length = text == null ? 0 : text.codePointCount(0, text.length());
-        if (length < analysisProperties.textMinLength()) {
-            throw pdfError("PDF_TEXT_NOT_EXTRACTABLE",
-                    "The PDF does not contain enough extractable text");
-        }
-        if (length > analysisProperties.textMaxLength()) {
-            throw pdfError("PDF_TEXT_TOO_LONG", "The extracted PDF text exceeds the configured limit");
         }
     }
 
@@ -448,6 +451,8 @@ public class AnalysisApplicationService {
                     "ANALYSIS_INVALID_RESULT", "El proveedor devolvió un resultado que no pudo ser validado.");
             case AI_AUTHENTICATION, AI_INVALID_REQUEST -> new AnalysisFailureResponse(
                     "ANALYSIS_CONFIGURATION_ERROR", "El análisis no está disponible por un problema de configuración.");
+            case PDF_DOCUMENT_UNAVAILABLE -> new AnalysisFailureResponse(
+                    "ANALYSIS_DOCUMENT_UNAVAILABLE", "El documento PDF original no está disponible para el análisis.");
             case WORKER_PROCESSING_ERROR -> new AnalysisFailureResponse(
                     "ANALYSIS_INTERNAL_ERROR", PUBLIC_TEMPORARY_MESSAGE);
         };
