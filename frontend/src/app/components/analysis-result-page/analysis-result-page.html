@@ -99,16 +99,16 @@
             @let guidanceItem = guidanceFor(option.type ?? '');
             <article>
               <div class="modality-heading">
-                <div>
-                  <h3>{{ reportField(option.name) }}</h3>
-                  <p>{{ guidanceItem?.shortDescription || '' }}</p>
-                </div>
                 <b
                   class="applicability-label"
                   [class.applicability-likely]="option.applicability === 'LIKELY'"
                   [class.applicability-possible]="option.applicability === 'POSSIBLE'"
                   [class.applicability-unlikely]="option.applicability === 'UNLIKELY'"
                 >{{ reportField(option.applicabilityLabel || applicabilityLabel(option.applicability)) }}</b>
+                <div>
+                  <h3>{{ reportField(option.name) }}</h3>
+                  <p>{{ guidanceItem?.shortDescription || '' }}</p>
+                </div>
               </div>
               <div class="diagnosis-panel">
                 <div class="diag-item">

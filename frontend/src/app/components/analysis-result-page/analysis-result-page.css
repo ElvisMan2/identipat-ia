@@ -37,15 +37,16 @@
 .modalities-grid { display: grid; gap: .85rem; }
 .modalities-grid > h2 { width: 100%; padding: .6rem 0; color: #fff; background: #9D64F9; text-align: center; }
 .modalities-grid > article { min-width: 0; border: 1px solid var(--line); border-radius: 1rem; background: #fff; }
-.modality-heading { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 1.1fr) auto; align-items: center; gap: .65rem 1rem; padding: 1rem 1.1rem; }
+.modality-heading { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: .65rem 1rem; padding: 1rem 1.1rem; }
+.modality-heading > div { width: 100%; max-width: 600px; margin-inline: auto; text-align: center; }
 .modality-heading span:first-child { color: var(--ink); font-family: 'Space Grotesk', sans-serif; font-weight: 700; }
 .modality-heading span:nth-child(2) { color: var(--muted); font-size: .83rem; line-height: 1.45; }
 .modality-heading b { align-self: start; justify-self: end; margin-top: 20px; padding: .45rem .7rem; border-radius: 999px; color: var(--teal-dark); background: var(--mint); font-size: .8rem; }
 .modality-heading b.applicability-likely { color: #fff; background: #218838; }
 .modality-heading b.applicability-possible { color: #fff; background: #b89b00; }
 .modality-heading b.applicability-unlikely { color: #fff; background: #c62828; }
-.diagnosis-panel { display: grid; grid-template-columns: 1fr; gap: 1rem; padding: 0 1.1rem 1.1rem; }
-.modality-next-steps { display: block; margin: 0 1.1rem 1.1rem auto; }
+.diagnosis-panel { display: grid; grid-template-columns: 1fr; gap: 1rem; max-width: 600px; margin-inline: auto; padding: 0 1.1rem 1.1rem; }
+.modality-next-steps { display: block; margin: 1rem auto 1.5rem; }
 .diag-item { display: flex; align-items: flex-start; gap: .75rem; min-width: 0; padding: .85rem; border: 1px solid #9D64F9; border-radius: 1rem; background: transparent; }
 .diag-item-icon { align-self: center; width: 3rem; height: 3rem; flex: 0 0 auto; object-fit: contain; }
 .diag-item-content { min-width: 0; flex: 1; }
@@ -119,6 +120,5 @@
   .context-section > h2 { text-align: center; }
   .analysis-date { text-align: center; }
   .analysis-result p { text-align: justify; }
-  .modality-next-steps { margin-inline: auto; }
   .result-actions { justify-content: center; }
 }
