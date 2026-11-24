@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Capa_2" data-name="Capa 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 27.61 15.14">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #f2a123;
+        stroke: #f2a123;
+        stroke-miterlimit: 10;
+      }
+    </style>
+  </defs>
+  <g id="Capa_1-2" data-name="Capa 1">
+    <g id="F384_Arrow_right_up" data-name="F384, Arrow, right, up">
+      <path class="cls-1" d="M26.82,7.9S26.84,7.88,26.82,7.9T26.82,7.9l.02-.02h0l.02-.02h0l.02-.02h0l.02-.03h0l-.02-.02h0l-.02-.02h0l-.02-.02h0l-.03-.03h0l-.02-.02h0l-.02-.02h0l-.02-.02h0L18.98.59c-.18-.13-.43-.11-.56.02-.13.18-.13.4,0,.54l.02.02,7.03,6.06-24.57-.13c-.22,0-.4.17-.4.4,0,.09.05.22.11.29s.16.11.29.11l24.58.08-6.95,5.97c-.18.13-.18.4-.02.55l.02.03c.13.13.38.15.53,0L26.82,7.9H26.82Z"/>
+    </g>
+  </g>
+</svg>
