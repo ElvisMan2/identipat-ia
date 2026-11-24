@@ -20,6 +20,8 @@
 .creation-info-container {
 	width: min(1024px, calc(100% - 2rem));
 	margin: 0 auto;
+	border-radius: 20px;
+	background: #F6F6F6;
 }
 .creation-info-container {
 	display: flex;
