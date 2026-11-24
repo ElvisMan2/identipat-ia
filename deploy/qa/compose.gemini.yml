@@ -1,0 +1,11 @@
+services:
+  app:
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/vertex-qa.json
+    volumes:
+      - type: bind
+        source: ${VERTEX_CREDENTIALS_HOST_PATH:?Set absolute path to authorized QA ADC credentials file}
+        target: /run/secrets/vertex-qa.json
+        read_only: true
+        bind:
+          create_host_path: false
