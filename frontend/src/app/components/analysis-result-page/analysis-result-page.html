@@ -112,17 +112,26 @@
               </div>
               <div class="diagnosis-panel">
                 <div class="diag-item">
-                  <strong>Elemento identificado</strong>
-                  <p>{{ reportField(option.protectedSubjectMatter) }}</p>
+                  <img class="diag-item-icon" src="comment-icon.svg" alt="" aria-hidden="true" />
+                  <div class="diag-item-content">
+                    <strong>Elemento identificado</strong>
+                    <p>{{ reportField(option.protectedSubjectMatter) }}</p>
+                  </div>
                 </div>
                 <div class="diag-item">
-                  <strong>¿Por qué se identificó?</strong>
-                  <p>{{ reportField(option.rationale) }}</p>
+                  <img class="diag-item-icon" src="gear-icon.svg" alt="" aria-hidden="true" />
+                  <div class="diag-item-content">
+                    <strong>¿Por qué se identificó?</strong>
+                    <p>{{ reportField(option.rationale) }}</p>
+                  </div>
                 </div>
                 @if (option.orientation) {
                   <div class="diag-item">
-                    <strong>Orientación diagnóstica</strong>
-                    <p>{{ reportField(option.orientation) }}</p>
+                    <img class="diag-item-icon" src="lupa-2-icon.svg" alt="" aria-hidden="true" />
+                    <div class="diag-item-content">
+                      <strong>Orientación diagnóstica</strong>
+                      <p>{{ reportField(option.orientation) }}</p>
+                    </div>
                   </div>
                 }
               </div>
