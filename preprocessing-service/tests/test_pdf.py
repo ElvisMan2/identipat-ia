@@ -80,6 +80,37 @@ def test_extracts_valid_pdf_text_and_metadata() -> None:
     }
 
 
+def test_inspects_digital_pdf_without_returning_document_text() -> None:
+    response = _client().post(
+        "/v1/pdf/inspect",
+        files={"file": ("document.pdf", _text_pdf("Texto digital valido"), "application/pdf")},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "pageCount": 1,
+        "hasTextLayer": True,
+        "characterCount": 20,
+        "extractionMethod": "TEXT_LAYER",
+    }
+    assert "Texto digital valido" not in response.text
+
+
+def test_inspect_accepts_scanned_pdf_without_text_layer() -> None:
+    response = _client().post(
+        "/v1/pdf/inspect",
+        files={"file": ("scan.pdf", _writer_pdf(), "application/pdf")},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "pageCount": 1,
+        "hasTextLayer": False,
+        "characterCount": 0,
+        "extractionMethod": "NONE",
+    }
+
+
 def test_preserves_page_order() -> None:
     response = _client().post(
         "/v1/pdf/extract",

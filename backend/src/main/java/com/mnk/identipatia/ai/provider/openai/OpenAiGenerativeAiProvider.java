@@ -102,6 +102,9 @@ public class OpenAiGenerativeAiProvider implements GenerativeAiProvider {
     }
 
     private ResponseCreateParams toOpenAiRequest(GenerativeAiRequest request) {
+        if (!request.attachments().isEmpty()) {
+            throw new IllegalArgumentException("OpenAI attachments are not enabled for this flow");
+        }
         List<ResponseInputItem> input = request.prompt().messages().stream()
                 .map(this::toInputItem)
                 .toList();

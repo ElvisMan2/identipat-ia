@@ -154,14 +154,19 @@ Las mutaciones anteriores, incluidos los POST bajo `/analyses/**` sin Bearer, re
 ## Contrato público PDF
 
 `POST /analyses/pdf` consume `multipart/form-data` con un único campo `file`. Solo acepta
-`application/pdf` con firma `%PDF-`; los defaults son 10 MiB, 50 páginas y los mismos límites de
-texto normalizado de TEXT (20–20000 caracteres). La extracción es síncrona y el `202 Accepted` usa
-exactamente `AnalysisCreatedResponse`, `Location` y `Retry-After`; el resultado se consulta con el
-GET común. El binario no se persiste y OCR no está incluido.
+`application/pdf` con firma `%PDF-`; los defaults son 10 MiB y 50 páginas. Python inspecciona
+síncronamente estructura, cifrado, páginas y presencia de capa textual, pero no devuelve el texto.
+El PDF original se persiste de forma durable junto con el análisis y el worker lo envía como adjunto
+al proveedor multimodal configurado. Se aceptan PDFs digitales y escaneados sin OCR local. El
+`202 Accepted` usa exactamente `AnalysisCreatedResponse`, `Location` y `Retry-After`; el resultado
+se consulta con el GET común.
 
 Respuestas PDF: `413 PDF_TOO_LARGE`, `415 UNSUPPORTED_PDF_MEDIA_TYPE`, `422 INVALID_PDF`,
-`PDF_ENCRYPTED_NOT_SUPPORTED`, `PDF_PAGE_LIMIT_EXCEEDED`, `PDF_TEXT_NOT_EXTRACTABLE` o
-`PDF_TEXT_TOO_LONG`; `503 PREPROCESSING_SERVICE_UNAVAILABLE` o `ANALYSIS_AI_UNAVAILABLE`.
+`PDF_ENCRYPTED_NOT_SUPPORTED` o `PDF_PAGE_LIMIT_EXCEEDED`; `503
+PREPROCESSING_SERVICE_UNAVAILABLE`, `ANALYSIS_AI_UNAVAILABLE` o
+`PDF_MULTIMODAL_PROVIDER_REQUIRED`. Si un documento durable histórico falta o no supera la
+verificación de integridad, el análisis finaliza con el error público saneado
+`ANALYSIS_DOCUMENT_UNAVAILABLE` sin invocar al proveedor.
 
 ## Contrato público audio
 

@@ -7,5 +7,9 @@ public interface GenerativeAiProvider {
 
     String providerId();
 
+    default boolean supportsAttachment(String mediaType) {
+        return false;
+    }
+
     GenerativeAiResponse generate(GenerativeAiRequest request);
 }

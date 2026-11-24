@@ -3,6 +3,7 @@ package com.mnk.identipatia.ai.provider.gemini;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.genai.Client;
 import com.mnk.identipatia.ai.model.GenerationOptions;
+import com.mnk.identipatia.ai.model.AiAttachment;
 import com.mnk.identipatia.ai.model.GenerativeAiRequest;
 import com.mnk.identipatia.ai.model.GenerativeAiResponse;
 import com.mnk.identipatia.ai.model.PromptReference;
@@ -13,11 +14,19 @@ import com.mnk.identipatia.ai.schema.StructuredOutputValidator;
 import com.mnk.identipatia.analysis.result.AnalysisResultReader;
 import com.mnk.identipatia.analysis.result.v3.AnalysisResultV3;
 import org.junit.jupiter.api.Test;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.convert.DurationStyle;
 
 import java.time.Duration;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -66,6 +75,44 @@ class GeminiLiveSmokeIT {
             assertThat(new AnalysisResultReader(context.objectMapper())
                     .readCurrent(response.structuredOutput())).isInstanceOf(AnalysisResultV3.class);
             assertThat(response.provider().provider()).isEqualTo("gemini");
+        }
+    }
+
+    @Test
+    void callsVertexAiWithSyntheticPdfAndV3Schema() throws Exception {
+        SmokeContext context = context();
+        byte[] pdf = syntheticPdf();
+        try (Client client = GeminiConfiguration.createClient(context.properties(), null, null)) {
+            GeminiGenerativeAiProvider provider = provider(
+                    client, context.objectMapper(), LEGAL_MAX_OUTPUT_TOKENS);
+            GenerativeAiResponse response = provider.generate(new GenerativeAiRequest(
+                    context.renderer().render(
+                            new PromptReference("intellectual-property-analysis", "0.3.2"), Map.of()),
+                    context.schemas().load("analysis-result", "3.0"),
+                    new GenerationOptions(LEGAL_MAX_OUTPUT_TOKENS, null),
+                    List.of(new AiAttachment("application/pdf", pdf))));
+
+            assertThat(new AnalysisResultReader(context.objectMapper())
+                    .readCurrent(response.structuredOutput())).isInstanceOf(AnalysisResultV3.class);
+            assertThat(response.provider().provider()).isEqualTo("gemini");
+            assertThat(response.tokenUsage().totalTokens()).isPositive();
+        }
+    }
+
+    private static byte[] syntheticPdf() throws IOException {
+        try (PDDocument document = new PDDocument();
+                ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            PDPage page = new PDPage();
+            document.addPage(page);
+            try (PDPageContentStream content = new PDPageContentStream(document, page)) {
+                content.beginText();
+                content.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 11);
+                content.newLineAtOffset(72, 720);
+                content.showText("Prototipo sintetico: sensor | alerta | panel local sin datos personales.");
+                content.endText();
+            }
+            document.save(output);
+            return output.toByteArray();
         }
     }
 

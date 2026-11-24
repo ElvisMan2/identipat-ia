@@ -88,6 +88,23 @@ class PreprocessingServiceClientTest {
     }
 
     @Test
+    void inspectPdfAcceptsMetadataForDocumentWithoutTextLayer() {
+        server.expect(requestTo("http://preprocessing.test/v1/pdf/inspect"))
+                .andExpect(method(POST))
+                .andRespond(withSuccess("""
+                        {"pageCount":1,"hasTextLayer":false,
+                         "characterCount":0,"extractionMethod":"NONE"}
+                        """, MediaType.APPLICATION_JSON));
+
+        PdfInspectionResponse response = client.inspectPdf("%PDF-scan".getBytes());
+
+        assertThat(response.pageCount()).isEqualTo(1);
+        assertThat(response.hasTextLayer()).isFalse();
+        assertThat(response.characterCount()).isZero();
+        server.verify();
+    }
+
+    @Test
     void extractPdfMapsControlledClientErrorWithoutLeakingMessage() {
         server.expect(requestTo("http://preprocessing.test/v1/pdf/extract"))
                 .andRespond(withStatus(org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY)

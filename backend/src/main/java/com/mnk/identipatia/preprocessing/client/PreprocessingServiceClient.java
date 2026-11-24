@@ -67,6 +67,16 @@ public class PreprocessingServiceClient {
     }
 
     public PdfExtractionResponse extractPdf(byte[] pdfBytes) {
+        return postPdf(pdfBytes, "/v1/pdf/extract", PdfExtractionResponse.class,
+                "PDF extraction");
+    }
+
+    public PdfInspectionResponse inspectPdf(byte[] pdfBytes) {
+        return postPdf(pdfBytes, "/v1/pdf/inspect", PdfInspectionResponse.class,
+                "PDF inspection");
+    }
+
+    private <T> T postPdf(byte[] pdfBytes, String uri, Class<T> responseType, String operation) {
         ByteArrayResource resource = new ByteArrayResource(pdfBytes) {
             @Override
             public String getFilename() {
@@ -79,15 +89,17 @@ public class PreprocessingServiceClient {
         body.add("file", new HttpEntity<>(resource, partHeaders));
 
         try {
-            PdfExtractionResponse response = pdfRestClient.post()
-                    .uri("/v1/pdf/extract")
+            T response = pdfRestClient.post()
+                    .uri(uri)
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(body)
                     .retrieve()
-                    .body(PdfExtractionResponse.class);
-            if (response == null || !response.isValid()) {
+                    .body(responseType);
+            boolean valid = response instanceof PdfExtractionResponse extraction && extraction.isValid()
+                    || response instanceof PdfInspectionResponse inspection && inspection.isValid();
+            if (response == null || !valid) {
                 throw new PreprocessingServiceUnavailableException(
-                        "Preprocessing service returned an invalid PDF extraction response");
+                        "Preprocessing service returned an invalid " + operation + " response");
             }
             return response;
         } catch (PreprocessingServiceUnavailableException exception) {
@@ -97,10 +109,10 @@ public class PreprocessingServiceClient {
                 throw controlledPdfError(exception);
             }
             throw new PreprocessingServiceUnavailableException(
-                    "Preprocessing service PDF extraction failed", exception);
+                    "Preprocessing service " + operation + " failed", exception);
         } catch (RestClientException exception) {
             throw new PreprocessingServiceUnavailableException(
-                    "Preprocessing service PDF extraction failed", exception);
+                    "Preprocessing service " + operation + " failed", exception);
         }
     }
 

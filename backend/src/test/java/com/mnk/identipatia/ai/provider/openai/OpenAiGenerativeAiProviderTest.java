@@ -6,6 +6,7 @@ import com.mnk.identipatia.ai.exception.GenerativeAiErrorType;
 import com.mnk.identipatia.ai.exception.GenerativeAiException;
 import com.mnk.identipatia.ai.model.AiMessage;
 import com.mnk.identipatia.ai.model.AiMessageRole;
+import com.mnk.identipatia.ai.model.AiAttachment;
 import com.mnk.identipatia.ai.model.GenerationOptions;
 import com.mnk.identipatia.ai.model.GenerativeAiRequest;
 import com.mnk.identipatia.ai.model.GenerativeAiResponse;
@@ -109,6 +110,22 @@ class OpenAiGenerativeAiProviderTest {
 
         assertThat(sent.has("max_output_tokens")).isFalse();
         assertThat(sent.has("temperature")).isFalse();
+    }
+
+    @Test
+    void rejectsPdfAttachmentInsteadOfSilentlyFallingBackToText() {
+        GenerativeAiRequest textRequest = request(GenerationOptions.defaults());
+        GenerativeAiRequest pdfRequest = new GenerativeAiRequest(
+                textRequest.prompt(), textRequest.output(), textRequest.options(),
+                List.of(new AiAttachment("application/pdf", "%PDF-test".getBytes(StandardCharsets.US_ASCII))));
+
+        assertThat(provider(Duration.ofSeconds(2)).supportsAttachment("application/pdf")).isFalse();
+        assertThatThrownBy(() -> provider(Duration.ofSeconds(2)).generate(pdfRequest))
+                .isInstanceOfSatisfying(GenerativeAiException.class, exception -> {
+                    assertThat(exception.type()).isEqualTo(GenerativeAiErrorType.INVALID_REQUEST);
+                    assertThat(exception.retryable()).isFalse();
+                });
+        assertThat(requestCount).hasValue(0);
     }
 
     @Test
