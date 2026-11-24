@@ -50,6 +50,10 @@ CASCADE`. Sus constraints validan MIME, tamaño real y formato del SHA-256.
 
 ## Configuración local
 
+Para la configuración de QA con Vertex AI/ADC, revisar la
+[guía de despliegue QA](../deployment/qa-gemini-vertex-ai.md). Esta configuración no se aplica
+automáticamente a producción.
+
 ```text
 IDENTIPAT_AI_ENABLED=true
 IDENTIPAT_AI_PROVIDER=gemini
