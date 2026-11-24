@@ -53,7 +53,10 @@
         @if (reportPdfError) { <p class="error" role="alert" data-pdf-exclude>{{ reportPdfError }}</p> }
         <section class="summary-card">
           <div class="summary-content">
-            <div class="summary-kicker">Resumen</div>
+            <div class="summary-heading">
+              <img class="summary-icon" src="reporte-icon.svg" alt="reporte" aria-hidden="true" />
+              <div class="summary-kicker">RESUMEN DEL REPORTE</div>
+            </div>
             <p>{{ reportField(completedReport.summary) }}</p>
           </div>
         </section>

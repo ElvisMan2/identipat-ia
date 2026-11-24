@@ -27,8 +27,10 @@
 .meta-item span { color: var(--muted); font-size: .75rem; }
 .meta-item strong { color: var(--ink); font-family: 'Space Grotesk', sans-serif; font-size: 1rem; }
 .summary-card { margin: 1.25rem 0 1.5rem; padding: 1.1rem 1.25rem; border: 1px solid #c8e1d8; border-left: 4px solid var(--teal); background: #f0f8f5; }
-.summary-kicker { margin-bottom: .4rem; color: var(--teal-dark); font-size: .75rem; font-weight: 700; text-transform: uppercase; }
-.summary-card p { margin: 0; color: var(--ink); line-height: 1.7; }
+.summary-heading { display: flex; align-items: center; gap: .5rem; margin: .5rem 0; }
+.summary-icon { width: 1.75rem; height: 1.75rem; object-fit: contain; }
+.summary-kicker { color: #353535; font-size: 1rem; font-weight: 700; text-transform: uppercase; }
+.summary-card p { margin: 0; color: var(--ink); line-height: 1.7; text-align: justify; }
 .modalities-grid { display: grid; gap: .85rem; }
 .modalities-grid > article { min-width: 0; border: 1px solid var(--line); background: #fff; }
 .modality-heading { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 1.1fr) auto; align-items: center; gap: .65rem 1rem; padding: 1rem 1.1rem; }
@@ -110,7 +112,6 @@
   .hero-left h2 { text-align: center; }
   .context-section > h2 { text-align: center; }
   .analysis-date { text-align: center; }
-  .summary-card p { text-align: justify; }
   .analysis-result p { text-align: justify; }
   .modality-next-steps { margin-inline: auto; }
   .result-actions { justify-content: center; }
