@@ -14,6 +14,9 @@
 .analysis-intro p img { width: 1.25rem; height: 1.25rem; flex: 0 0 auto; }
 .analysis-result { margin-top: 0; padding-top: 0; border-top: 0; }
 .analysis-result > .hero { width: 100%; min-height: 0; display: block; margin: 0; padding: 1.5rem 0 1.25rem; border-bottom: 0; }
+@media (min-width: 426px) {
+  .analysis-result > .hero { padding-inline: 1.5rem; }
+}
 .hero-main { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.25rem; }
 .hero-left { width: 50%; max-width: 720px; }
 .hero-left h2 { margin: 0; color: var(--ink); font-family: 'Space Grotesk', sans-serif; font-size: 2rem; line-height: 1.15; }
