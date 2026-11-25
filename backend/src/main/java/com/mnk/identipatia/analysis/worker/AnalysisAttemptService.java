@@ -47,8 +47,8 @@ import java.util.UUID;
 
 @Service
 public class AnalysisAttemptService {
-    static final PromptReference TEXT_PROMPT = new PromptReference("intellectual-property-analysis", "0.3.1");
-    static final PromptReference PDF_PROMPT = new PromptReference("intellectual-property-analysis", "0.3.2");
+    static final PromptReference TEXT_PROMPT = new PromptReference("intellectual-property-analysis", "0.5.1");
+    static final PromptReference PDF_PROMPT = new PromptReference("intellectual-property-analysis", "0.5");
     static final String SCHEMA_ID = "analysis-result";
     static final String SCHEMA_VERSION = "3.0";
     private static final String WORKER_LEASE_LOST = "WORKER_LEASE_LOST";
