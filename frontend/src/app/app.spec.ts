@@ -1672,7 +1672,7 @@ describe('App', () => {
     expect(compiled.querySelector('app-analysis-result-page')).not.toBeNull();
     expect(compiled.textContent).toContain('Diagnóstico de prueba');
     expect(compiled.textContent).toContain('Resumen de prueba');
-    expect(compiled.textContent).toContain('Elementos Identificados');
+    expect(compiled.textContent).toContain('Modalidades identificadas');
     const contextCards = Array.from(compiled.querySelectorAll('.analysis-result .context-card'));
     expect(contextCards[0].textContent).toContain('Recursos genéticos');
     expect(contextCards[1].textContent).toContain('Acceso a conocimientos colectivos de pueblos indígenas');
