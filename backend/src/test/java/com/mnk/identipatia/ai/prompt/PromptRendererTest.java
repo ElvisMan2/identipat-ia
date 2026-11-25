@@ -29,7 +29,7 @@ class PromptRendererTest {
     void loadsCitizenLanguagePromptAndKeepsV3BaselineAvailable() {
         PromptRenderer renderer = new PromptRenderer(new PromptRegistry());
         PromptReference baselineReference = new PromptReference("intellectual-property-analysis", "0.3");
-        PromptReference activeReference = new PromptReference("intellectual-property-analysis", "0.3.1");
+        PromptReference activeReference = new PromptReference("intellectual-property-analysis", "0.5.1");
 
         RenderedPrompt baseline = renderer.render(baselineReference, Map.of("USER_DESCRIPTION", "caso sintético"));
         RenderedPrompt active = renderer.render(activeReference, Map.of("USER_DESCRIPTION", "caso sintético"));
@@ -51,6 +51,64 @@ class PromptRendererTest {
                 .contains("summary", "rationale", "observations", "warnings");
         assertThat(activeUser).contains("evaluación preliminar y limitada")
                 .doesNotContainIgnoringCase("screening");
+    }
+
+    @Test
+    void geneticResourcePromptsRenderForTheirInputsAndKeepHistoricalVersionsAvailable() {
+        PromptRenderer renderer = new PromptRenderer(new PromptRegistry());
+        PromptReference historicalText = new PromptReference("intellectual-property-analysis", "0.3.1");
+        PromptReference historicalPdf = new PromptReference("intellectual-property-analysis", "0.3.2");
+        PromptReference currentText = new PromptReference("intellectual-property-analysis", "0.4.1");
+        PromptReference currentPdf = new PromptReference("intellectual-property-analysis", "0.4");
+
+        RenderedPrompt oldText = renderer.render(historicalText, Map.of("USER_DESCRIPTION", "caso sintético"));
+        RenderedPrompt oldPdf = renderer.render(historicalPdf, Map.of());
+        RenderedPrompt text = renderer.render(currentText, Map.of("USER_DESCRIPTION", "caso sintético"));
+        RenderedPrompt pdf = renderer.render(currentPdf, Map.of());
+
+        assertThat(text.messages().getLast().content()).contains("caso sintético").doesNotContain("{{");
+        assertThat(pdf.messages().getLast().content())
+                .contains("documento PDF adjunto", "elementos visuales")
+                .doesNotContain("{{");
+        assertThat(section5(text.messages().getFirst().content()))
+                .isEqualTo(section5(pdf.messages().getFirst().content()))
+                .contains("Finalidad orientativa", "POTENTIALLY_REQUIRED", "INSUFFICIENT_INFORMATION",
+                        "NOT_INDICATED", "missingInformation", "conocimientos colectivos")
+                .contains("No utilices este estado únicamente porque faltan datos complementarios")
+                .contains("La presencia de un recurso biológico no demuestra por sí misma");
+        assertThat(text.templateHash()).matches("[0-9a-f]{64}").isNotEqualTo(oldText.templateHash());
+        assertThat(pdf.templateHash()).matches("[0-9a-f]{64}").isNotEqualTo(oldPdf.templateHash());
+        assertThat(text.renderedHash()).matches("[0-9a-f]{64}");
+        assertThat(pdf.renderedHash()).matches("[0-9a-f]{64}");
+        assertThat(text.renderedSnapshot()).contains("caso sintético");
+        assertThat(pdf.renderedSnapshot()).contains("documento PDF adjunto");
+    }
+
+    @Test
+    void activeTextAndPdfPromptsLoadAndRender() {
+        PromptRenderer renderer = new PromptRenderer(new PromptRegistry());
+        PromptReference textReference = new PromptReference("intellectual-property-analysis", "0.5.1");
+        PromptReference pdfReference = new PromptReference("intellectual-property-analysis", "0.5");
+
+        RenderedPrompt text = renderer.render(textReference, Map.of("USER_DESCRIPTION", "caso sintético"));
+        RenderedPrompt pdf = renderer.render(pdfReference, Map.of());
+        assertThat(text.reference()).isEqualTo(textReference);
+        assertThat(pdf.reference()).isEqualTo(pdfReference);
+        assertThat(text.messages().getLast().content()).contains("caso sintético").doesNotContain("{{");
+        assertThat(pdf.messages().getLast().content())
+                .contains("documento PDF adjunto", "elementos visuales")
+                .doesNotContain("{{");
+        assertThat(text.templateHash()).matches("[0-9a-f]{64}");
+        assertThat(pdf.templateHash()).matches("[0-9a-f]{64}");
+        assertThat(text.renderedHash()).matches("[0-9a-f]{64}");
+        assertThat(pdf.renderedHash()).matches("[0-9a-f]{64}");
+        assertThat(text.renderedSnapshot()).contains("caso sintético");
+        assertThat(pdf.renderedSnapshot()).contains("documento PDF adjunto");
+    }
+
+    private static String section5(String system) {
+        return system.substring(system.indexOf("## 5. Recursos genéticos"),
+                system.indexOf("## 6. Acceso a conocimientos colectivos"));
     }
 
     @Test

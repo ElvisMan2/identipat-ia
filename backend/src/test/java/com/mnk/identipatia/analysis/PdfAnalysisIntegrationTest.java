@@ -224,14 +224,21 @@ class PdfAnalysisIntegrationTest {
         var requestCaptor = org.mockito.ArgumentCaptor.forClass(GenerativeAiRequest.class);
         verify(provider).generate(requestCaptor.capture());
         GenerativeAiRequest request = requestCaptor.getValue();
-        assertThat(request.prompt().reference().version()).isEqualTo("0.3.2");
+        assertThat(request.prompt().reference().version()).isEqualTo("0.5");
+        assertThat(request.output().schemaId()).isEqualTo("analysis-result");
+        assertThat(request.output().schemaVersion()).isEqualTo("3.0");
         assertThat(request.attachments()).singleElement().satisfies(attachment -> {
             assertThat(attachment.mediaType()).isEqualTo("application/pdf");
             assertThat(attachment.content()).isEqualTo(VALID_PDF);
         });
         assertThat(request.prompt().renderedSnapshot()).doesNotContain("%PDF-", "JVBER");
         var invocation = invocationRepository.findAllByAnalysisIdOrderByAttemptNumber(analysisId).get(0);
-        assertThat(invocation.getPromptVersion()).isEqualTo("0.3.2");
+        assertThat(invocation.getPromptVersion()).isEqualTo("0.5");
+        assertThat(invocation.getOutputSchemaId()).isEqualTo("analysis-result");
+        assertThat(invocation.getOutputSchemaVersion()).isEqualTo("3.0");
+        assertThat(invocation.getTemplateHash()).isEqualTo(request.prompt().templateHash());
+        assertThat(invocation.getRenderedHash()).isEqualTo(request.prompt().renderedHash());
+        assertThat(invocation.getRenderedPromptSnapshot()).isEqualTo(request.prompt().renderedSnapshot());
         assertThat(invocation.getRenderedPromptSnapshot()).doesNotContain("%PDF-", "JVBER");
         assertThat(invocation.getRequestParameters().path("attachmentSha256").asText())
                 .isEqualTo(sha256(VALID_PDF));
